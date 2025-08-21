@@ -1,0 +1,139 @@
+name: Monitor OpenAI API Changes
+
+on:
+  # Run every hour
+  schedule:
+    - cron: '0 * * * *'
+  # Allow manual triggering
+  workflow_dispatch:
+  # Run when the workflow file is changed
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/monitor-openai-api.yml'
+
+jobs:
+  monitor-openai:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create cache directory
+        run: mkdir -p cache/openai
+
+      - name: Download API specification
+        id: download
+        run: |
+          # Check if this is the first run (no previous spec exists)
+          if [ ! -f "cache/openai/openapi.yml" ]; then
+            echo "first_run=true" >> $GITHUB_OUTPUT
+            echo "New specification detected"
+            exit 0
+          fi
+
+      # If this is the first run, create PR with the initial spec
+      - name: Create initial PR
+        if: steps.download.outputs.first_run == 'true'
+        uses: peter-evans/create-pull-request@v5
+        with:
+          title: "feat!: add initial OpenAI API specification"
+          body: |
+            This PR adds the initial OpenAI API specification file for monitoring changes.
+            
+            This repository will now track changes to the OpenAI API specification and create automated pull requests when changes are detected.
+          branch: update/openai
+          delete-branch: true
+          labels: |
+            provider:openai
+            version:breaking
+          commit-message: "feat!: add initial OpenAI API specification"
+
+      - name: Detect changes
+        if: ! steps.download.outputs.first_run
+        id: detect-changes
+        run: |
+          # Download the current OpenAI API spec
+          curl -s "https://app.stainless.com/api/spec/documented/openai/openapi.documented.yml" \
+            -o cache/openai/openapi.yml
+          
+          # Compare with previous version using git
+          if ! git diff --quiet HEAD cache/openai/openapi.yml; then
+            echo "changes_detected=true" >> $GITHUB_OUTPUT
+            echo "Changes detected in OpenAI API specification"
+          else
+            echo "changes_detected=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
+          fi
+
+      - name: Generate release notes
+        if: steps.detect-changes.outputs.changes_detected == 'true'
+        id: release-notes
+        uses: actions/ai-inference@v1
+        with:
+          model: gpt-4
+          prompt: |
+            Analyze the following OpenAPI specification diff and create release notes in markdown format.
+            Focus on three categories:
+            1. Breaking changes (removed endpoints, parameters, or changed behavior)
+            2. New features (new endpoints, parameters, or options)
+            3. Fixes (documentation updates, typo corrections)
+            
+            Diff:
+            ${{ steps.diff.outputs.diff }}
+          
+          temperature: 0.2
+          max-tokens: 1000
+
+      - name: Set version and format release notes
+        if: steps.detect-changes.outputs.changes_detected == 'true'
+        id: version
+        run: |
+          NOTES="${{ steps.release-notes.outputs.text }}"
+          
+          # Check for breaking changes (look for ## Breaking Changes section with content)
+          if echo "$NOTES" | grep -A 1 "## Breaking Changes" | grep -q "[[:alnum:]]"; then
+            echo "version=breaking" >> $GITHUB_OUTPUT
+          # Check for feature changes
+          elif echo "$NOTES" | grep -A 1 "## New Features" | grep -q "[[:alnum:]]"; then
+            echo "version=feature" >> $GITHUB_OUTPUT
+          # Must be fixes only
+          else
+            echo "version=fix" >> $GITHUB_OUTPUT
+          fi
+          
+          # Set release notes output
+          echo "release-notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        if: steps.download.outputs.changes_detected == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Update OpenAI API specification"
+          title: "🤖 OpenAI API specification update detected"
+          body: ${{ steps.version.outputs.release-notes }}
+          branch: update/openai
+          delete-branch: true
+          labels: |
+            version:${{ steps.version.outputs.version }}
+            provider:openai
+          assignees: ${{ github.repository_owner }}
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.download.outputs.first_run }}" = "true" ]; then
+            echo "✅ First run completed - OpenAI API specification saved"
+          elif [ "${{ steps.detect-changes.outputs.changes_detected }}" = "true" ]; then
+            echo "🔄 Changes detected - Pull request created: ${{ steps.create-pr.outputs.pr_url }}"
+          else
+            echo "✅ No changes detected - OpenAI API specification is up to date"
+          fi
