@@ -99,27 +99,21 @@ jobs:
             Do not list items in new features that are listed in breaking changes.
             Do not list items in fixes that are listed in breaking changes or new features.
 
+            Respond with a JSON object in the following format:
+            {
+              "description": "<description in markdown>",
+              "version": "<one of: breaking, feature, fix>"
+            }
+            Do not respond with anything else.
+
             Diff:
             ${{ steps.diff.outputs.text }}
 
-      - name: Set version and format release notes
+      - name: debug
         if: steps.detect-changes.outputs.changes_detected == 'true'
         id: version
         run: |
-          read -r -d '' NOTES << EOF
-          ${{ steps.release-notes.outputs.text }}
-          EOF
-          
-          # Check for breaking changes (look for ## Breaking Changes section with content)
-          if echo "$NOTES" | grep -A 1 "## Breaking Changes" | grep -q "[[:alnum:]]"; then
-            echo "version=breaking" >> $GITHUB_OUTPUT
-          # Check for feature changes
-          elif echo "$NOTES" | grep -A 1 "## New Features" | grep -q "[[:alnum:]]"; then
-            echo "version=feature" >> $GITHUB_OUTPUT
-          # Must be fixes only
-          else
-            echo "version=fix" >> $GITHUB_OUTPUT
-          fi
+          echo "${{ steps.release-notes.outputs.text }}"
 
       - name: Create Pull Request
         if: steps.detect-changes.outputs.changes_detected == 'true'
@@ -128,11 +122,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "Update OpenAI API specification"
           title: "🤖 OpenAI API specification update detected"
-          body: ${{ steps.release-notes.outputs.text }}
+          body: ${{ fromJson(steps.release-notes.outputs.text).description }}
           branch: update/openai
           delete-branch: true
           labels: |
-            version:${{ steps.version.outputs.version }}
+            version:${{ fromJson(steps.release-notes.outputs.text).version }}
             provider:openai
           assignees: ${{ github.repository_owner }}
 
