@@ -77,8 +77,9 @@ jobs:
         if: steps.detect-changes.outputs.changes_detected == 'true'
         id: diff
         run: |
+          GIT_DIFF=$(git diff) 
           echo "text<<EOF" >> $GITHUB_OUTPUT
-          git diff >> $GITHUB_OUTPUT
+          echo "$GIT_DIFF" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Generate release notes
@@ -94,7 +95,10 @@ jobs:
             1. Breaking changes (removed endpoints, parameters, or changed behavior)
             2. New features (new endpoints, parameters, or options)
             3. Fixes (documentation updates, typo corrections)
-            
+
+            Do not list items in new features that are listed in breaking changes.
+            Do not list items in fixes that are listed in breaking changes or new features.
+
             Diff:
             ${{ steps.diff.outputs.text }}
 
@@ -102,7 +106,9 @@ jobs:
         if: steps.detect-changes.outputs.changes_detected == 'true'
         id: version
         run: |
-          NOTES="${{ steps.release-notes.outputs.text }}"
+          read -r -d '' NOTES << EOF
+          ${{ steps.release-notes.outputs.text }}
+          EOF
           
           # Check for breaking changes (look for ## Breaking Changes section with content)
           if echo "$NOTES" | grep -A 1 "## Breaking Changes" | grep -q "[[:alnum:]]"; then
