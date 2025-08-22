@@ -27,7 +27,7 @@ jobs:
         run: mkdir -p cache/openai
 
       - name: Download API specification
-        id: download
+        id: detect-first-run
         run: |
           # Check if this is the first run (no previous spec exists)
           if [ ! -f "cache/openai/openapi.yml" ]; then
@@ -36,9 +36,15 @@ jobs:
             exit 0
           fi
 
+      - name: Download
+        id: download
+        run: |
+          # Download the current OpenAI API spec
+          curl -s "https://app.stainless.com/api/spec/documented/openai/openapi.documented.yml" -o cache/openai/openapi.yml
+
       # If this is the first run, create PR with the initial spec
       - name: Create initial PR
-        if: steps.download.outputs.first_run == 'true'
+        if: steps.detect-first-run.outputs.first_run == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
           title: "feat!: add initial OpenAI API specification"
@@ -57,10 +63,6 @@ jobs:
         if: steps.download.outputs.first_run != 'true'
         id: detect-changes
         run: |
-          # Download the current OpenAI API spec
-          curl -s "https://app.stainless.com/api/spec/documented/openai/openapi.documented.yml" \
-            -o cache/openai/openapi.yml
-          
           # Compare with previous version using git
           if ! git diff --quiet HEAD cache/openai/openapi.yml; then
             echo "changes_detected=true" >> $GITHUB_OUTPUT
