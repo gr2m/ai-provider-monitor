@@ -90,8 +90,14 @@ jobs:
           model: 'openai/gpt5'
           api-key: ${{ secrets.AI_GATEWAY_API_KEY }}
           prompt: |
-            Analyze the following OpenAPI specification diff and create release notes in markdown format.
-            Focus on three categories:
+            Analyze the following OpenAPI specification diff and calculate these three things
+
+            1. Summary of changes as conventional commit messages
+            2. A detailed description of the changes, in markdown format
+            3. The type of version change: "breaking", "feature", or "fix"
+
+            For the markdown description, create three sections:
+
             1. Breaking changes (removed endpoints, parameters, or changed behavior)
             2. New features (new endpoints, parameters, or options)
             3. Fixes (documentation updates, typo corrections)
@@ -107,6 +113,10 @@ jobs:
               "title": "Change Description",
               "type": "object",
               "properties": {
+                "summary": {
+                  "type": "string",
+                  "description": "Summary of changes as conventional commit messages"
+                },
                 "description": {
                   "type": "string",
                   "description": "Description of the change, in markdown format."
@@ -117,7 +127,7 @@ jobs:
                   "description": "The type of version change."
                 }
               },
-              "required": ["description", "version"],
+              "required": ["summary", "description", "version"],
               "additionalProperties": false
             }
 
@@ -127,7 +137,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "Update OpenAI API specification"
-          title: "🤖 OpenAI API specification update detected"
+          title: ${{ fromJson(steps.release-notes.outputs.json).summary }}
           body: ${{ fromJson(steps.release-notes.outputs.json).description }}
           branch: update/openai
           delete-branch: true
