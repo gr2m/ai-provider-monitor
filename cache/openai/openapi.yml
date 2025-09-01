@@ -6077,7 +6077,7 @@ paths:
           object.
         path: create
         examples:
-          - title: Create a conversation
+          - title: Create a conversation.
             request:
               curl: |
                 curl https://api.openai.com/v1/conversations \
@@ -6205,7 +6205,7 @@ paths:
                 "created_at": 1741900000,
                 "metadata": {"topic": "demo"}
               }
-      description: Create a conversation with the given ID.
+      description: Create a conversation.
   /conversations/{conversation_id}:
     get:
       operationId: getConversation
@@ -6934,6 +6934,7 @@ paths:
           description: |
             Specify additional output data to include in the model response. Currently
             supported values are:
+            - `web_search_call.action.sources`: Include the sources of the web search tool call.
             - `code_interpreter_call.outputs`: Includes the outputs of python code execution
               in code interpreter tool call items.
             - `computer_call_output.output.image_url`: Include image urls from the computer call output.
@@ -31077,6 +31078,17 @@ components:
               type: boolean
               default: false
               nullable: true
+            max_tokens:
+              description: |
+                The maximum number of [tokens](/tokenizer) that can be generated in the
+                chat completion. This value can be used to control
+                [costs](https://openai.com/api/pricing/) for text generated via API.
+
+                This value is now deprecated in favor of `max_completion_tokens`, and is
+                not compatible with [o-series models](https://platform.openai.com/docs/guides/reasoning).
+              type: integer
+              nullable: true
+              deprecated: true
             'n':
               type: integer
               minimum: 1
@@ -33674,6 +33686,7 @@ components:
               description: |
                 Specify additional output data to include in the model response. Currently
                 supported values are:
+                - `web_search_call.action.sources`: Include the sources of the web search tool call.
                 - `code_interpreter_call.outputs`: Includes the outputs of python code execution
                   in code interpreter tool call items.
                 - `computer_call_output.output.image_url`: Include image urls from the computer call output.
@@ -38664,6 +38677,7 @@ components:
       description: |
         Specify additional output data to include in the model response. Currently
         supported values are:
+        - `web_search_call.action.sources`: Include the sources of the web search tool call.
         - `code_interpreter_call.outputs`: Includes the outputs of python code execution
           in code interpreter tool call items.
         - `computer_call_output.output.image_url`: Include image urls from the computer call output.
@@ -50304,13 +50318,14 @@ components:
       anyOf:
         - $ref: '#/components/schemas/FunctionTool'
         - $ref: '#/components/schemas/FileSearchTool'
-        - $ref: '#/components/schemas/WebSearchPreviewTool'
         - $ref: '#/components/schemas/ComputerUsePreviewTool'
+        - $ref: '#/components/schemas/WebSearchTool'
         - $ref: '#/components/schemas/MCPTool'
         - $ref: '#/components/schemas/CodeInterpreterTool'
         - $ref: '#/components/schemas/ImageGenTool'
         - $ref: '#/components/schemas/LocalShellTool'
         - $ref: '#/components/schemas/CustomTool'
+        - $ref: '#/components/schemas/WebSearchPreviewTool'
     ToolChoiceAllowed:
       type: object
       title: Allowed tools
@@ -52081,9 +52096,68 @@ components:
           type: string
           description: |
             The search query.
+        sources:
+          type: array
+          title: Web search sources
+          description: |
+            The sources used in the search.
+          items:
+            type: object
+            title: Web search source
+            description: |
+              A source used in the search.
+            properties:
+              type:
+                type: string
+                enum:
+                  - url
+                description: |
+                  The type of source. Always `url`.
+                x-stainless-const: true
+              url:
+                type: string
+                description: |
+                  The URL of the source.
+            required:
+              - type
+              - url
       required:
         - type
         - query
+    WebSearchApproximateLocation:
+      type: object
+      title: Web search approximate location
+      description: |
+        The approximate location of the user.
+      nullable: true
+      properties:
+        type:
+          type: string
+          enum:
+            - approximate
+          description: The type of location approximation. Always `approximate`.
+          default: approximate
+          x-stainless-const: true
+        country:
+          type: string
+          description: >-
+            The two-letter [ISO country code](https://en.wikipedia.org/wiki/ISO_3166-1) of the user, e.g.
+            `US`.
+          nullable: true
+        region:
+          type: string
+          description: Free text input for the region of the user, e.g. `California`.
+          nullable: true
+        city:
+          type: string
+          description: Free text input for the city of the user, e.g. `San Francisco`.
+          nullable: true
+        timezone:
+          type: string
+          description: >-
+            The [IANA timezone](https://timeapi.io/documentation/iana-timezones) of the user, e.g.
+            `America/Los_Angeles`.
+          nullable: true
     WebSearchContextSize:
       type: string
       description: |
@@ -52118,6 +52192,53 @@ components:
           description: |
             The [IANA timezone](https://timeapi.io/documentation/iana-timezones) 
             of the user, e.g. `America/Los_Angeles`.
+    WebSearchTool:
+      type: object
+      title: Web search
+      description: |
+        Search the Internet for sources related to the prompt. Learn more about the 
+        [web search tool](https://platform.openai.com/docs/guides/tools-web-search).
+      properties:
+        type:
+          type: string
+          enum:
+            - web_search
+            - web_search_2025_08_26
+          description: The type of the web search tool. One of `web_search` or `web_search_2025_08_26`.
+          default: web_search
+        filters:
+          type: object
+          description: |
+            Filters for the search.
+          nullable: true
+          properties:
+            allowed_domains:
+              type: array
+              title: Allowed domains for the search.
+              description: |
+                Allowed domains for the search. If not provided, all domains are allowed.
+                Subdomains of the provided domains are allowed as well.
+
+                Example: `["pubmed.ncbi.nlm.nih.gov"]`
+              items:
+                type: string
+                description: Allowed domain for the search.
+              default: []
+              nullable: true
+        user_location:
+          $ref: '#/components/schemas/WebSearchApproximateLocation'
+        search_context_size:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+          default: medium
+          description: >-
+            High level guidance for the amount of context window space to use for the search. One of `low`,
+            `medium`, or `high`. `medium` is the default.
+      required:
+        - type
     WebSearchToolCall:
       type: object
       title: Web search tool call
@@ -53861,6 +53982,40 @@ components:
       description: >-
         A tool that searches for relevant content from uploaded files. Learn more about the [file search
         tool](https://platform.openai.com/docs/guides/tools-file-search).
+    ComputerUsePreviewTool:
+      properties:
+        type:
+          type: string
+          enum:
+            - computer_use_preview
+          description: The type of the computer use tool. Always `computer_use_preview`.
+          default: computer_use_preview
+          x-stainless-const: true
+        environment:
+          type: string
+          enum:
+            - windows
+            - mac
+            - linux
+            - ubuntu
+            - browser
+          description: The type of computer environment to control.
+        display_width:
+          type: integer
+          description: The width of the computer display.
+        display_height:
+          type: integer
+          description: The height of the computer display.
+      type: object
+      required:
+        - type
+        - environment
+        - display_width
+        - display_height
+      title: Computer use preview
+      description: >-
+        A tool that controls a virtual computer. Learn more about the [computer
+        tool](https://platform.openai.com/docs/guides/tools-computer-use).
     ApproximateLocation:
       properties:
         type:
@@ -53928,40 +54083,6 @@ components:
       description: >-
         This tool searches the web for relevant results to use in a response. Learn more about the [web search
         tool](https://platform.openai.com/docs/guides/tools-web-search).
-    ComputerUsePreviewTool:
-      properties:
-        type:
-          type: string
-          enum:
-            - computer_use_preview
-          description: The type of the computer use tool. Always `computer_use_preview`.
-          default: computer_use_preview
-          x-stainless-const: true
-        environment:
-          type: string
-          enum:
-            - windows
-            - mac
-            - linux
-            - ubuntu
-            - browser
-          description: The type of computer environment to control.
-        display_width:
-          type: integer
-          description: The width of the computer display.
-        display_height:
-          type: integer
-          description: The height of the computer display.
-      type: object
-      required:
-        - type
-        - environment
-        - display_width
-        - display_height
-      title: Computer use preview
-      description: >-
-        A tool that controls a virtual computer. Learn more about the [computer
-        tool](https://platform.openai.com/docs/guides/tools-computer-use).
     ImageGenInputUsageDetails:
       properties:
         text_tokens:
