@@ -65,14 +65,16 @@ export async function run(event, core, octokit) {
   core.info(`Provider: ${provider}, Version type: ${versionType}`);
 
   // Get existing tags for this provider
-  const tags = await octokit.paginate('GET /repos/{owner}/{repo}/tags', {
-    owner: pullRequest.head.repo.owner.login,
-    repo: pullRequest.head.repo.name,
+  const owner = pullRequest.head.repo.owner.login;
+  const repo = pullRequest.head.repo.name;
+  const { data: tags } = await octokit.request('GET /repos/{owner}/{repo}/tags', {
+    owner,
+    repo,
     per_page: 100,
   });
 
   // Filter tags for this provider
-  const providerTags = tags
+  const providerTags = (Array.isArray(tags) ? tags : [])
     .filter(tag => tag.name.startsWith(`${provider}@`))
     .map(tag => {
       const version = tag.name.replace(`${provider}@`, '');
@@ -126,14 +128,12 @@ export async function run(event, core, octokit) {
   const newTag = `${provider}@${newVersion}`;
   core.info(`Creating new tag: ${newTag}`);
 
-  // Create the tag
-  await octokit.request('POST /repos/{owner}/{repo}/git/tags', {
+  // Create the tag reference
+  await octokit.request('POST /repos/{owner}/{repo}/git/refs', {
     owner,
     repo,
-    tag: newTag,
-    message: `Release ${newTag}`,
-    object: pullRequest.merge_commit_sha,
-    type: 'commit',
+    ref: `refs/tags/${newTag}`,
+    sha: pullRequest.merge_commit_sha,
   });
 
   core.info(`Tag ${newTag} created successfully`);
