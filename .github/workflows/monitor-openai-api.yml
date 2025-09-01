@@ -48,7 +48,7 @@ jobs:
         if: steps.detect-first-run.outputs.first_run == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
-          title: "feat!: add initial OpenAI API specification"
+          title: "feat: add initial OpenAI API specification"
           body: |
             This PR adds the initial OpenAI API specification file for monitoring changes.
             
@@ -58,7 +58,7 @@ jobs:
           labels: |
             provider:openai
             version:breaking
-          commit-message: "feat!: add initial OpenAI API specification"
+          commit-message: "feat: add initial OpenAI API specification"
 
       - name: Detect changes
         if: steps.download.outputs.first_run != 'true'
@@ -99,15 +99,27 @@ jobs:
             Do not list items in new features that are listed in breaking changes.
             Do not list items in fixes that are listed in breaking changes or new features.
 
-            Respond with a JSON object in the following format:
-            {
-              "description": "<description in markdown>",
-              "version": "<one of: breaking, feature, fix>"
-            }
-            Do not respond with anything else.
-
             Diff:
             ${{ steps.diff.outputs.text }}
+          schema: |
+            {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "title": "Change Description",
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "description": "Description of the change, in markdown format."
+                },
+                "version": {
+                  "type": "string",
+                  "enum": ["breaking", "feature", "fix"],
+                  "description": "The type of version change."
+                }
+              },
+              "required": ["description", "version"],
+              "additionalProperties": false
+            }
 
       - name: Create Pull Request
         if: steps.detect-changes.outputs.changes_detected == 'true'
@@ -116,11 +128,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "Update OpenAI API specification"
           title: "🤖 OpenAI API specification update detected"
-          body: ${{ fromJson(steps.release-notes.outputs.text).description }}
+          body: ${{ fromJson(steps.release-notes.outputs.json).description }}
           branch: update/openai
           delete-branch: true
           labels: |
-            version:${{ fromJson(steps.release-notes.outputs.text).version }}
+            version:${{ fromJson(steps.release-notes.outputs.json).version }}
             provider:openai
           assignees: ${{ github.repository_owner }}
 
