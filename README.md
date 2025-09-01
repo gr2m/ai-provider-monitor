@@ -10,6 +10,28 @@ The version follows [semantic versioning](https://semver.org/) in the form of `[
 - **feature version bump**: Something was added: a new API endpoint, a new parameter, or a new option for an existing parameter.
 - **fix version bump**: updates to documentation, or typos in the spec.
 
+## How it works
+
+### Monitoring Changes
+
+The repository uses GitHub Actions to monitor API specification changes from AI providers. When changes are detected, it automatically creates pull requests with:
+
+- `provider:<provider-id>` label (e.g., `provider:openai`)
+- `version:<type>` label where type is `breaking`, `feature`, or `fix`
+
+### Automated Releases
+
+When a pull request is merged, the automation:
+
+1. **Calculates the new version** based on existing tags and the version label:
+   - `breaking`: Increments major version (e.g., 1.2.3 → 2.0.0)
+   - `feature`: Increments minor version (e.g., 1.2.3 → 1.3.0) 
+   - `fix`: Increments patch version (e.g., 1.2.3 → 1.2.4)
+
+2. **Creates a git tag** in the format `<provider>@<version>` (e.g., `openai@1.2.3`)
+
+3. **Creates a GitHub release** using the tag name as the title and the pull request body as the description
+
 ## License
 
 [ISC](LICENSE)
