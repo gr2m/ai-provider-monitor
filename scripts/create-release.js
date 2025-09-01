@@ -150,8 +150,4 @@ export async function run(event, core, octokit) {
   });
 
   core.info(`Release ${newTag} created successfully: ${release.html_url}`);
-
-  // Set outputs for GitHub Actions
-  core.setOutput('tag', newTag);
-  core.setOutput('release_url', release.html_url);
 }
