@@ -67,7 +67,7 @@ export async function run(event, core, octokit) {
   // Get existing tags for this provider
   const owner = pullRequest.head.repo.owner.login;
   const repo = pullRequest.head.repo.name;
-  const { data: tags } = await octokit.request('GET /repos/{owner}/{repo}/tags', {
+  const tags = await octokit.paginate('GET /repos/{owner}/{repo}/tags', {
     owner,
     repo,
     per_page: 100,
