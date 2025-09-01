@@ -21,17 +21,16 @@ jobs:
       issues: write
     strategy:
       matrix:
-        provider: [cohere, mistral, openai, togetherai, xai]
-        include:
-          - provider: cohere
+        source:
+          - name: cohere
             openapi: https://raw.githubusercontent.com/cohere-ai/cohere-developer-experience/main/cohere-openapi.yaml
-          - provider: mistral
+          - name: mistral
             openapi_url: https://docs.mistral.ai/redocusaurus/plugin-redoc-0.yaml
-          - provider: openai
+          - name: openai
             openapi_url: https://app.stainless.com/api/spec/documented/openai/openapi.documented.yml
-          - provider: togetherai
+          - name: togetherai
             openapi_url: https://raw.githubusercontent.com/togethercomputer/openapi/refs/heads/main/openapi.yaml
-          - provider: xai
+          - name: xai
             openapi_url: https://docs.x.ai/openapi.json
     
     steps:
@@ -39,13 +38,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create cache directory
-        run: mkdir -p cache/${{ matrix.provider }}
+        run: mkdir -p cache/${{ matrix.source.name }}
 
       - name: Download API specification
         id: detect-first-run
         run: |
           # Check if this is the first run (no previous spec exists)
-          if [ ! -f "cache/${{ matrix.provider }}/openapi.yml" ]; then
+          if [ ! -f "cache/${{ matrix.source.name }}/openapi.yml" ]; then
             echo "first_run=true" >> $GITHUB_OUTPUT
             echo "New specification detected"
             exit 0
@@ -55,33 +54,33 @@ jobs:
         id: download
         run: |
           # Download the current OpenAI API spec
-          curl -s "${{ matrix.openapi_url }}" -o cache/${{ matrix.provider }}/openapi.yml
+          curl -s "${{ matrix.source.openapi_url }}" -o cache/${{ matrix.source.name }}/openapi.yml
 
       # If this is the first run, create PR with the initial spec
       - name: Create initial PR
         if: steps.detect-first-run.outputs.first_run == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
-          title: "feat: add initial ${{ matrix.provider }} API specification"
+          title: "feat: add initial ${{ matrix.source.name }} API specification"
           body: |
-            This PR adds the initial ${{ matrix.provider }} API specification file for monitoring changes.
+            This PR adds the initial ${{ matrix.source.name }} API specification file for monitoring changes.
             
-            This repository will now track changes to the ${{ matrix.provider }} API specification and create automated pull requests when changes are detected.
+            This repository will now track changes to the ${{ matrix.source.name }} API specification and create automated pull requests when changes are detected.
           branch: update/openai
           delete-branch: true
           labels: |
-            provider:${{ matrix.provider }}
+            provider:${{ matrix.source.name }}
             version:breaking
-          commit-message: "feat: add initial ${{ matrix.provider }} API specification"
+          commit-message: "feat: add initial ${{ matrix.source.name }} API specification"
 
       - name: Detect changes
         if: steps.download.outputs.first_run != 'true'
         id: detect-changes
         run: |
           # Compare with previous version using git
-          if ! git diff --quiet HEAD cache/${{ matrix.provider }}/openapi.yml; then
+          if ! git diff --quiet HEAD cache/${{ matrix.source.name }}/openapi.yml; then
             echo "changes_detected=true" >> $GITHUB_OUTPUT
-            echo "Changes detected in ${{ matrix.provider }} API specification"
+            echo "Changes detected in ${{ matrix.source.name }} API specification"
           else
             echo "changes_detected=false" >> $GITHUB_OUTPUT
             echo "No changes detected"
@@ -153,22 +152,22 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Update ${{ matrix.provider }} API specification"
+          commit-message: "Update ${{ matrix.source.name }} API specification"
           title: ${{ fromJson(steps.release-notes.outputs.json).summary }}
           body: ${{ fromJson(steps.release-notes.outputs.json).description }}
-          branch: update/${{ matrix.provider }}
+          branch: update/${{ matrix.source.name }}
           delete-branch: true
           labels: |
             version:${{ fromJson(steps.release-notes.outputs.json).version }}
-            provider:${{ matrix.provider }}
+            provider:${{ matrix.source.name }}
           assignees: ${{ github.repository_owner }}
 
       - name: Summary
         run: |
           if [ "${{ steps.download.outputs.first_run }}" = "true" ]; then
-            echo "✅ First run completed - ${{ matrix.provider }} API specification saved"
+            echo "✅ First run completed - ${{ matrix.source.name }} API specification saved"
           elif [ "${{ steps.detect-changes.outputs.changes_detected }}" = "true" ]; then
             echo "🔄 Changes detected - Pull request created: ${{ steps.create-pr.outputs.pull-request-url }}"
           else
-            echo "✅ No changes detected - ${{ matrix.provider }} API specification is up to date"
+            echo "✅ No changes detected - ${{ matrix.source.name }} API specification is up to date"
           fi
