@@ -1,9 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+
 import test from 'ava';
 import { MockAgent } from 'undici';
 import { Octokit } from 'octokit';
+
 import { run } from '../scripts/create-release.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
