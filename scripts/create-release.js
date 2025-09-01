@@ -1,35 +1,35 @@
 #!/usr/bin/env node
 
-import { Octokit } from ('@octokit/core');
+import { Octokit } from '@octokit/core';
+import * as core from '@actions/core';
 
 /**
  * Script to create tags and releases when pull requests are merged
  * Triggered by GitHub Actions workflow on pull request merge
  */
 async function main() {
-  // Get environment variables
-  const token = process.env.GITHUB_TOKEN;
-  const repository = process.env.GITHUB_REPOSITORY;
-  const prNumber = process.env.PR_NUMBER;
-  
-  if (!token) {
-    throw new Error('GITHUB_TOKEN environment variable is required');
-  }
-  
-  if (!repository) {
-    throw new Error('GITHUB_REPOSITORY environment variable is required');
-  }
-  
-  if (!prNumber) {
-    throw new Error('PR_NUMBER environment variable is required');
-  }
-  
-  const [owner, repo] = repository.split('/');
-  const octokit = new Octokit({ auth: token });
-  
-  console.log(`Processing merged PR #${prNumber} in ${repository}`);
-  
   try {
+    // Get environment variables
+    const token = process.env.GITHUB_TOKEN;
+    const repository = process.env.GITHUB_REPOSITORY;
+    const prNumber = process.env.PR_NUMBER;
+    
+    if (!token) {
+      throw new Error('GITHUB_TOKEN environment variable is required');
+    }
+    
+    if (!repository) {
+      throw new Error('GITHUB_REPOSITORY environment variable is required');
+    }
+    
+    if (!prNumber) {
+      throw new Error('PR_NUMBER environment variable is required');
+    }
+  
+    const [owner, repo] = repository.split('/');
+    const octokit = new Octokit({ auth: token });
+    
+    core.info(`Processing merged PR #${prNumber} in ${repository}`);
     // Get the merged pull request details
     const { data: pullRequest } = await octokit.request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
       owner,
@@ -38,32 +38,32 @@ async function main() {
     });
     
     if (!pullRequest.merged) {
-      console.log('Pull request is not merged, skipping release creation');
+      core.info('Pull request is not merged, skipping release creation');
       return;
     }
     
     // Extract labels
     const labels = pullRequest.labels.map(label => label.name);
-    console.log('Pull request labels:', labels);
+    core.info(`Pull request labels: ${labels.join(', ')}`);
     
     // Find provider and version labels
     const providerLabel = labels.find(label => label.startsWith('provider:'));
     const versionLabel = labels.find(label => label.startsWith('version:'));
     
     if (!providerLabel) {
-      console.log('No provider label found, skipping release creation');
+      core.info('No provider label found, skipping release creation');
       return;
     }
     
     if (!versionLabel) {
-      console.log('No version label found, skipping release creation');
+      core.info('No version label found, skipping release creation');
       return;
     }
     
     const provider = providerLabel.replace('provider:', '');
     const versionType = versionLabel.replace('version:', '');
     
-    console.log(`Provider: ${provider}, Version type: ${versionType}`);
+    core.info(`Provider: ${provider}, Version type: ${versionType}`);
     
     // Get existing tags for this provider
     const { data: tags } = await octokit.request('GET /repos/{owner}/{repo}/tags', {
@@ -93,7 +93,7 @@ async function main() {
         return b.patch - a.patch;
       });
     
-    console.log('Existing provider tags:', providerTags.map(t => t.tag));
+    core.info(`Existing provider tags: ${providerTags.map(t => t.tag).join(', ')}`);
     
     // Calculate new version
     let newVersion;
@@ -125,7 +125,7 @@ async function main() {
     }
     
     const newTag = `${provider}@${newVersion}`;
-    console.log(`Creating new tag: ${newTag}`);
+    core.info(`Creating new tag: ${newTag}`);
     
     // Create the tag
     const { data: commit } = await octokit.request('GET /repos/{owner}/{repo}/commits/{ref}', {
@@ -151,7 +151,7 @@ async function main() {
       sha: pullRequest.merge_commit_sha,
     });
     
-    console.log(`Tag ${newTag} created successfully`);
+    core.info(`Tag ${newTag} created successfully`);
     
     // Create the release
     const { data: release } = await octokit.request('POST /repos/{owner}/{repo}/releases', {
@@ -164,23 +164,24 @@ async function main() {
       prerelease: false,
     });
     
-    console.log(`Release ${newTag} created successfully: ${release.html_url}`);
+    core.info(`Release ${newTag} created successfully: ${release.html_url}`);
     
-    // Output for GitHub Actions
-    console.log(`::set-output name=tag::${newTag}`);
-    console.log(`::set-output name=release_url::${release.html_url}`);
+    // Set outputs for GitHub Actions
+    core.setOutput('tag', newTag);
+    core.setOutput('release_url', release.html_url);
     
   } catch (error) {
-    console.error('Error creating release:', error);
+    core.setFailed(`Error creating release: ${error.message}`);
     process.exit(1);
   }
 }
 
-if (require.main === module) {
+// Run the script if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(error => {
-    console.error('Unhandled error:', error);
+    core.setFailed(`Unhandled error: ${error.message}`);
     process.exit(1);
   });
 }
 
-module.exports = { main };
+export { main };
