@@ -30,10 +30,8 @@ jobs:
             openapi_url: "https://app.stainless.com/api/spec/documented/openai/openapi.documented.yml"
           - name: togetherai
             openapi_url: "https://raw.githubusercontent.com/togethercomputer/openapi/refs/heads/main/openapi.yaml"
-          # xAI has some bot protection which prevents us from downloading. the spec ...
-          # See https://github.com/gr2m/ai-provider-api-changes/pull/20/files for an example
-          # - name: xai
-          #   openapi_url: "https://docs.x.ai/openapi.json"
+          - name: xai
+            openapi_url: "https://api.x.ai/api-docs/openapi.json"
     
     steps:
       - name: Checkout repository
@@ -56,7 +54,17 @@ jobs:
         id: download
         run: |
           # Download the current OpenAPI API spec
-          curl -s "${{ matrix.source.openapi_url }}" -o cache/${{ matrix.source.name }}/openapi.yml
+          # Extract the file extension from the URL
+          url="${{ matrix.source.openapi_url }}"
+          extension="${url##*.}"
+          # Set the output file path
+          output_file="cache/${{ matrix.source.name }}/openapi.$extension"
+          # Download to cache with original extension
+          curl -s "$url" -o "$output_file"
+          # Set the file path as an output variablen
+          echo "file_path=$output_file" >> $GITHUB_OUTPUT
+          # Format the file
+          npx prettier --write "$output_file"
 
       # If this is the first run, create PR with the initial spec
       - name: Create initial PR
