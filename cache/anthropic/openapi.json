@@ -246,6 +246,17 @@
         "title": "Base64PDFSource",
         "type": "object"
       },
+      "BetaBashCodeExecutionToolResultErrorCode": {
+        "enum": [
+          "invalid_tool_input",
+          "unavailable",
+          "too_many_requests",
+          "execution_time_exceeded",
+          "output_file_too_large"
+        ],
+        "title": "BashCodeExecutionToolResultErrorCode",
+        "type": "string"
+      },
       "BetaBashTool_20241022": {
         "additionalProperties": false,
         "properties": {
@@ -508,6 +519,49 @@
         "title": "CodeExecutionTool_20250522",
         "type": "object"
       },
+      "BetaCodeExecutionTool_20250825": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "name": {
+            "const": "code_execution",
+            "description": "Name of the tool.\n\nThis is how the tool will be called by the model and in `tool_use` blocks.",
+            "enum": ["code_execution"],
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "code_execution_20250825",
+            "enum": ["code_execution_20250825"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["name", "type"],
+        "title": "CodeExecutionTool_20250825",
+        "type": "object"
+      },
       "BetaComputerUseTool_20241022": {
         "additionalProperties": false,
         "properties": {
@@ -666,6 +720,7 @@
       "BetaContentBlock": {
         "discriminator": {
           "mapping": {
+            "bash_code_execution_tool_result": "#/components/schemas/BetaResponseBashCodeExecutionToolResultBlock",
             "code_execution_tool_result": "#/components/schemas/BetaResponseCodeExecutionToolResultBlock",
             "container_upload": "#/components/schemas/BetaResponseContainerUploadBlock",
             "mcp_tool_result": "#/components/schemas/BetaResponseMCPToolResultBlock",
@@ -673,6 +728,7 @@
             "redacted_thinking": "#/components/schemas/BetaResponseRedactedThinkingBlock",
             "server_tool_use": "#/components/schemas/BetaResponseServerToolUseBlock",
             "text": "#/components/schemas/BetaResponseTextBlock",
+            "text_editor_code_execution_tool_result": "#/components/schemas/BetaResponseTextEditorCodeExecutionToolResultBlock",
             "thinking": "#/components/schemas/BetaResponseThinkingBlock",
             "tool_use": "#/components/schemas/BetaResponseToolUseBlock",
             "web_search_tool_result": "#/components/schemas/BetaResponseWebSearchToolResultBlock"
@@ -700,6 +756,12 @@
           },
           {
             "$ref": "#/components/schemas/BetaResponseCodeExecutionToolResultBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaResponseBashCodeExecutionToolResultBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaResponseTextEditorCodeExecutionToolResultBlock"
           },
           {
             "$ref": "#/components/schemas/BetaResponseMCPToolUseBlock"
@@ -809,6 +871,7 @@
           "content_block": {
             "discriminator": {
               "mapping": {
+                "bash_code_execution_tool_result": "#/components/schemas/BetaResponseBashCodeExecutionToolResultBlock",
                 "code_execution_tool_result": "#/components/schemas/BetaResponseCodeExecutionToolResultBlock",
                 "container_upload": "#/components/schemas/BetaResponseContainerUploadBlock",
                 "mcp_tool_result": "#/components/schemas/BetaResponseMCPToolResultBlock",
@@ -816,6 +879,7 @@
                 "redacted_thinking": "#/components/schemas/BetaResponseRedactedThinkingBlock",
                 "server_tool_use": "#/components/schemas/BetaResponseServerToolUseBlock",
                 "text": "#/components/schemas/BetaResponseTextBlock",
+                "text_editor_code_execution_tool_result": "#/components/schemas/BetaResponseTextEditorCodeExecutionToolResultBlock",
                 "thinking": "#/components/schemas/BetaResponseThinkingBlock",
                 "tool_use": "#/components/schemas/BetaResponseToolUseBlock",
                 "web_search_tool_result": "#/components/schemas/BetaResponseWebSearchToolResultBlock"
@@ -843,6 +907,12 @@
               },
               {
                 "$ref": "#/components/schemas/BetaResponseCodeExecutionToolResultBlock"
+              },
+              {
+                "$ref": "#/components/schemas/BetaResponseBashCodeExecutionToolResultBlock"
+              },
+              {
+                "$ref": "#/components/schemas/BetaResponseTextEditorCodeExecutionToolResultBlock"
               },
               {
                 "$ref": "#/components/schemas/BetaResponseMCPToolUseBlock"
@@ -914,7 +984,7 @@
             "type": "array"
           },
           "messages": {
-            "description": "Input messages.\n\nOur models are trained to operate on alternating `user` and `assistant` conversational turns. When creating a new `Message`, you specify the prior conversational turns with the `messages` parameter, and the model then generates the next `Message` in the conversation. Consecutive `user` or `assistant` turns in your request will be combined into a single turn.\n\nEach input message must be an object with a `role` and `content`. You can specify a single `user`-role message, or you can include multiple `user` and `assistant` messages.\n\nIf the final message uses the `assistant` role, the response content will continue immediately from the content in that message. This can be used to constrain part of the model's response.\n\nExample with a single `user` message:\n\n```json\n[{\"role\": \"user\", \"content\": \"Hello, Claude\"}]\n```\n\nExample with multiple conversational turns:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"Hello there.\"},\n  {\"role\": \"assistant\", \"content\": \"Hi, I'm Claude. How can I help you?\"},\n  {\"role\": \"user\", \"content\": \"Can you explain LLMs in plain English?\"},\n]\n```\n\nExample with a partially-filled response from Claude:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun\"},\n  {\"role\": \"assistant\", \"content\": \"The best answer is (\"},\n]\n```\n\nEach input message `content` may be either a single `string` or an array of content blocks, where each block has a specific `type`. Using a `string` for `content` is shorthand for an array of one content block of type `\"text\"`. The following input messages are equivalent:\n\n```json\n{\"role\": \"user\", \"content\": \"Hello, Claude\"}\n```\n\n```json\n{\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"Hello, Claude\"}]}\n```\n\nStarting with Claude 3 models, you can also send image content blocks:\n\n```json\n{\"role\": \"user\", \"content\": [\n  {\n    \"type\": \"image\",\n    \"source\": {\n      \"type\": \"base64\",\n      \"media_type\": \"image/jpeg\",\n      \"data\": \"/9j/4AAQSkZJRg...\",\n    }\n  },\n  {\"type\": \"text\", \"text\": \"What is in this image?\"}\n]}\n```\n\nWe currently support the `base64` source type for images, and the `image/jpeg`, `image/png`, `image/gif`, and `image/webp` media types.\n\nSee [examples](https://docs.anthropic.com/en/api/messages-examples#vision) for more input examples.\n\nNote that if you want to include a [system prompt](https://docs.anthropic.com/en/docs/system-prompts), you can use the top-level `system` parameter — there is no `\"system\"` role for input messages in the Messages API.\n\nThere is a limit of 100,000 messages in a single request.",
+            "description": "Input messages.\n\nOur models are trained to operate on alternating `user` and `assistant` conversational turns. When creating a new `Message`, you specify the prior conversational turns with the `messages` parameter, and the model then generates the next `Message` in the conversation. Consecutive `user` or `assistant` turns in your request will be combined into a single turn.\n\nEach input message must be an object with a `role` and `content`. You can specify a single `user`-role message, or you can include multiple `user` and `assistant` messages.\n\nIf the final message uses the `assistant` role, the response content will continue immediately from the content in that message. This can be used to constrain part of the model's response.\n\nExample with a single `user` message:\n\n```json\n[{\"role\": \"user\", \"content\": \"Hello, Claude\"}]\n```\n\nExample with multiple conversational turns:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"Hello there.\"},\n  {\"role\": \"assistant\", \"content\": \"Hi, I'm Claude. How can I help you?\"},\n  {\"role\": \"user\", \"content\": \"Can you explain LLMs in plain English?\"},\n]\n```\n\nExample with a partially-filled response from Claude:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun\"},\n  {\"role\": \"assistant\", \"content\": \"The best answer is (\"},\n]\n```\n\nEach input message `content` may be either a single `string` or an array of content blocks, where each block has a specific `type`. Using a `string` for `content` is shorthand for an array of one content block of type `\"text\"`. The following input messages are equivalent:\n\n```json\n{\"role\": \"user\", \"content\": \"Hello, Claude\"}\n```\n\n```json\n{\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"Hello, Claude\"}]}\n```\n\nSee [input examples](https://docs.anthropic.com/en/api/messages-examples).\n\nNote that if you want to include a [system prompt](https://docs.anthropic.com/en/docs/system-prompts), you can use the top-level `system` parameter — there is no `\"system\"` role for input messages in the Messages API.\n\nThere is a limit of 100,000 messages in a single request.",
             "items": {
               "$ref": "#/components/schemas/BetaInputMessage"
             },
@@ -989,6 +1059,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/BetaCodeExecutionTool_20250522"
+                },
+                {
+                  "$ref": "#/components/schemas/BetaCodeExecutionTool_20250825"
                 },
                 {
                   "$ref": "#/components/schemas/BetaComputerUseTool_20241022"
@@ -1099,7 +1172,7 @@
             "type": "array"
           },
           "messages": {
-            "description": "Input messages.\n\nOur models are trained to operate on alternating `user` and `assistant` conversational turns. When creating a new `Message`, you specify the prior conversational turns with the `messages` parameter, and the model then generates the next `Message` in the conversation. Consecutive `user` or `assistant` turns in your request will be combined into a single turn.\n\nEach input message must be an object with a `role` and `content`. You can specify a single `user`-role message, or you can include multiple `user` and `assistant` messages.\n\nIf the final message uses the `assistant` role, the response content will continue immediately from the content in that message. This can be used to constrain part of the model's response.\n\nExample with a single `user` message:\n\n```json\n[{\"role\": \"user\", \"content\": \"Hello, Claude\"}]\n```\n\nExample with multiple conversational turns:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"Hello there.\"},\n  {\"role\": \"assistant\", \"content\": \"Hi, I'm Claude. How can I help you?\"},\n  {\"role\": \"user\", \"content\": \"Can you explain LLMs in plain English?\"},\n]\n```\n\nExample with a partially-filled response from Claude:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun\"},\n  {\"role\": \"assistant\", \"content\": \"The best answer is (\"},\n]\n```\n\nEach input message `content` may be either a single `string` or an array of content blocks, where each block has a specific `type`. Using a `string` for `content` is shorthand for an array of one content block of type `\"text\"`. The following input messages are equivalent:\n\n```json\n{\"role\": \"user\", \"content\": \"Hello, Claude\"}\n```\n\n```json\n{\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"Hello, Claude\"}]}\n```\n\nStarting with Claude 3 models, you can also send image content blocks:\n\n```json\n{\"role\": \"user\", \"content\": [\n  {\n    \"type\": \"image\",\n    \"source\": {\n      \"type\": \"base64\",\n      \"media_type\": \"image/jpeg\",\n      \"data\": \"/9j/4AAQSkZJRg...\",\n    }\n  },\n  {\"type\": \"text\", \"text\": \"What is in this image?\"}\n]}\n```\n\nWe currently support the `base64` source type for images, and the `image/jpeg`, `image/png`, `image/gif`, and `image/webp` media types.\n\nSee [examples](https://docs.anthropic.com/en/api/messages-examples#vision) for more input examples.\n\nNote that if you want to include a [system prompt](https://docs.anthropic.com/en/docs/system-prompts), you can use the top-level `system` parameter — there is no `\"system\"` role for input messages in the Messages API.\n\nThere is a limit of 100,000 messages in a single request.",
+            "description": "Input messages.\n\nOur models are trained to operate on alternating `user` and `assistant` conversational turns. When creating a new `Message`, you specify the prior conversational turns with the `messages` parameter, and the model then generates the next `Message` in the conversation. Consecutive `user` or `assistant` turns in your request will be combined into a single turn.\n\nEach input message must be an object with a `role` and `content`. You can specify a single `user`-role message, or you can include multiple `user` and `assistant` messages.\n\nIf the final message uses the `assistant` role, the response content will continue immediately from the content in that message. This can be used to constrain part of the model's response.\n\nExample with a single `user` message:\n\n```json\n[{\"role\": \"user\", \"content\": \"Hello, Claude\"}]\n```\n\nExample with multiple conversational turns:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"Hello there.\"},\n  {\"role\": \"assistant\", \"content\": \"Hi, I'm Claude. How can I help you?\"},\n  {\"role\": \"user\", \"content\": \"Can you explain LLMs in plain English?\"},\n]\n```\n\nExample with a partially-filled response from Claude:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun\"},\n  {\"role\": \"assistant\", \"content\": \"The best answer is (\"},\n]\n```\n\nEach input message `content` may be either a single `string` or an array of content blocks, where each block has a specific `type`. Using a `string` for `content` is shorthand for an array of one content block of type `\"text\"`. The following input messages are equivalent:\n\n```json\n{\"role\": \"user\", \"content\": \"Hello, Claude\"}\n```\n\n```json\n{\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"Hello, Claude\"}]}\n```\n\nSee [input examples](https://docs.anthropic.com/en/api/messages-examples).\n\nNote that if you want to include a [system prompt](https://docs.anthropic.com/en/docs/system-prompts), you can use the top-level `system` parameter — there is no `\"system\"` role for input messages in the Messages API.\n\nThere is a limit of 100,000 messages in a single request.",
             "items": {
               "$ref": "#/components/schemas/BetaInputMessage"
             },
@@ -1206,6 +1279,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/BetaCodeExecutionTool_20250522"
+                },
+                {
+                  "$ref": "#/components/schemas/BetaCodeExecutionTool_20250825"
                 },
                 {
                   "$ref": "#/components/schemas/BetaComputerUseTool_20241022"
@@ -1322,6 +1398,18 @@
             ],
             "title": "Error"
           },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Id"
+          },
           "type": {
             "const": "error",
             "default": "error",
@@ -1330,7 +1418,7 @@
             "type": "string"
           }
         },
-        "required": ["error", "type"],
+        "required": ["error", "request_id", "type"],
         "title": "ErrorResponse",
         "type": "object"
       },
@@ -1546,6 +1634,7 @@
       "BetaInputContentBlock": {
         "discriminator": {
           "mapping": {
+            "bash_code_execution_tool_result": "#/components/schemas/BetaRequestBashCodeExecutionToolResultBlock",
             "code_execution_tool_result": "#/components/schemas/BetaRequestCodeExecutionToolResultBlock",
             "container_upload": "#/components/schemas/BetaRequestContainerUploadBlock",
             "document": "#/components/schemas/BetaRequestDocumentBlock",
@@ -1556,6 +1645,7 @@
             "search_result": "#/components/schemas/BetaRequestSearchResultBlock",
             "server_tool_use": "#/components/schemas/BetaRequestServerToolUseBlock",
             "text": "#/components/schemas/BetaRequestTextBlock",
+            "text_editor_code_execution_tool_result": "#/components/schemas/BetaRequestTextEditorCodeExecutionToolResultBlock",
             "thinking": "#/components/schemas/BetaRequestThinkingBlock",
             "tool_result": "#/components/schemas/BetaRequestToolResultBlock",
             "tool_use": "#/components/schemas/BetaRequestToolUseBlock",
@@ -1604,6 +1694,12 @@
           },
           {
             "$ref": "#/components/schemas/BetaRequestCodeExecutionToolResultBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestBashCodeExecutionToolResultBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestTextEditorCodeExecutionToolResultBlock"
           },
           {
             "$ref": "#/components/schemas/BetaRequestMCPToolUseBlock"
@@ -2484,6 +2580,126 @@
         },
         "required": ["message", "type"],
         "title": "RateLimitError",
+        "type": "object"
+      },
+      "BetaRequestBashCodeExecutionOutputBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "file_id": {
+            "title": "File Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "bash_code_execution_output",
+            "enum": ["bash_code_execution_output"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "type"],
+        "title": "RequestBashCodeExecutionOutputBlock",
+        "type": "object"
+      },
+      "BetaRequestBashCodeExecutionResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/BetaRequestBashCodeExecutionOutputBlock"
+            },
+            "title": "Content",
+            "type": "array"
+          },
+          "return_code": {
+            "title": "Return Code",
+            "type": "integer"
+          },
+          "stderr": {
+            "title": "Stderr",
+            "type": "string"
+          },
+          "stdout": {
+            "title": "Stdout",
+            "type": "string"
+          },
+          "type": {
+            "const": "bash_code_execution_result",
+            "enum": ["bash_code_execution_result"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["content", "return_code", "stderr", "stdout", "type"],
+        "title": "RequestBashCodeExecutionResultBlock",
+        "type": "object"
+      },
+      "BetaRequestBashCodeExecutionToolResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaRequestBashCodeExecutionToolResultError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRequestBashCodeExecutionResultBlock"
+              }
+            ],
+            "title": "Content"
+          },
+          "tool_use_id": {
+            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
+            "title": "Tool Use Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "bash_code_execution_tool_result",
+            "enum": ["bash_code_execution_tool_result"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["content", "tool_use_id", "type"],
+        "title": "RequestBashCodeExecutionToolResultBlock",
+        "type": "object"
+      },
+      "BetaRequestBashCodeExecutionToolResultError": {
+        "additionalProperties": false,
+        "properties": {
+          "error_code": {
+            "$ref": "#/components/schemas/BetaBashCodeExecutionToolResultErrorCode"
+          },
+          "type": {
+            "const": "bash_code_execution_tool_result_error",
+            "enum": ["bash_code_execution_tool_result_error"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["error_code", "type"],
+        "title": "RequestBashCodeExecutionToolResultError",
         "type": "object"
       },
       "BetaRequestCharLocationCitation": {
@@ -3371,7 +3587,12 @@
             "type": "object"
           },
           "name": {
-            "enum": ["web_search", "code_execution"],
+            "enum": [
+              "web_search",
+              "code_execution",
+              "bash_code_execution",
+              "text_editor_code_execution"
+            ],
             "title": "Name",
             "type": "string"
           },
@@ -3465,6 +3686,238 @@
         },
         "required": ["text", "type"],
         "title": "RequestTextBlock",
+        "type": "object"
+      },
+      "BetaRequestTextEditorCodeExecutionCreateResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "is_file_update": {
+            "title": "Is File Update",
+            "type": "boolean"
+          },
+          "type": {
+            "const": "text_editor_code_execution_create_result",
+            "enum": ["text_editor_code_execution_create_result"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["is_file_update", "type"],
+        "title": "RequestTextEditorCodeExecutionCreateResultBlock",
+        "type": "object"
+      },
+      "BetaRequestTextEditorCodeExecutionStrReplaceResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "lines": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lines"
+          },
+          "new_lines": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Lines"
+          },
+          "new_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Start"
+          },
+          "old_lines": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old Lines"
+          },
+          "old_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Old Start"
+          },
+          "type": {
+            "const": "text_editor_code_execution_str_replace_result",
+            "enum": ["text_editor_code_execution_str_replace_result"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["type"],
+        "title": "RequestTextEditorCodeExecutionStrReplaceResultBlock",
+        "type": "object"
+      },
+      "BetaRequestTextEditorCodeExecutionToolResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaRequestTextEditorCodeExecutionToolResultError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRequestTextEditorCodeExecutionViewResultBlock"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRequestTextEditorCodeExecutionCreateResultBlock"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRequestTextEditorCodeExecutionStrReplaceResultBlock"
+              }
+            ],
+            "title": "Content"
+          },
+          "tool_use_id": {
+            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
+            "title": "Tool Use Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "text_editor_code_execution_tool_result",
+            "enum": ["text_editor_code_execution_tool_result"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["content", "tool_use_id", "type"],
+        "title": "RequestTextEditorCodeExecutionToolResultBlock",
+        "type": "object"
+      },
+      "BetaRequestTextEditorCodeExecutionToolResultError": {
+        "additionalProperties": false,
+        "properties": {
+          "error_code": {
+            "$ref": "#/components/schemas/BetaTextEditorCodeExecutionToolResultErrorCode"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "type": {
+            "const": "text_editor_code_execution_tool_result_error",
+            "enum": ["text_editor_code_execution_tool_result_error"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["error_code", "type"],
+        "title": "RequestTextEditorCodeExecutionToolResultError",
+        "type": "object"
+      },
+      "BetaRequestTextEditorCodeExecutionViewResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "file_type": {
+            "enum": ["text", "image", "pdf"],
+            "title": "File Type",
+            "type": "string"
+          },
+          "num_lines": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Lines"
+          },
+          "start_line": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Line"
+          },
+          "total_lines": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Lines"
+          },
+          "type": {
+            "const": "text_editor_code_execution_view_result",
+            "enum": ["text_editor_code_execution_view_result"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["content", "file_type", "type"],
+        "title": "RequestTextEditorCodeExecutionViewResultBlock",
         "type": "object"
       },
       "BetaRequestThinkingBlock": {
@@ -3781,6 +4234,104 @@
         },
         "required": ["error_code", "type"],
         "title": "Error",
+        "type": "object"
+      },
+      "BetaResponseBashCodeExecutionOutputBlock": {
+        "properties": {
+          "file_id": {
+            "title": "File Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "bash_code_execution_output",
+            "default": "bash_code_execution_output",
+            "enum": ["bash_code_execution_output"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["file_id", "type"],
+        "title": "ResponseBashCodeExecutionOutputBlock",
+        "type": "object"
+      },
+      "BetaResponseBashCodeExecutionResultBlock": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/BetaResponseBashCodeExecutionOutputBlock"
+            },
+            "title": "Content",
+            "type": "array"
+          },
+          "return_code": {
+            "title": "Return Code",
+            "type": "integer"
+          },
+          "stderr": {
+            "title": "Stderr",
+            "type": "string"
+          },
+          "stdout": {
+            "title": "Stdout",
+            "type": "string"
+          },
+          "type": {
+            "const": "bash_code_execution_result",
+            "default": "bash_code_execution_result",
+            "enum": ["bash_code_execution_result"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["content", "return_code", "stderr", "stdout", "type"],
+        "title": "ResponseBashCodeExecutionResultBlock",
+        "type": "object"
+      },
+      "BetaResponseBashCodeExecutionToolResultBlock": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaResponseBashCodeExecutionToolResultError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaResponseBashCodeExecutionResultBlock"
+              }
+            ],
+            "title": "Content"
+          },
+          "tool_use_id": {
+            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
+            "title": "Tool Use Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "bash_code_execution_tool_result",
+            "default": "bash_code_execution_tool_result",
+            "enum": ["bash_code_execution_tool_result"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["content", "tool_use_id", "type"],
+        "title": "ResponseBashCodeExecutionToolResultBlock",
+        "type": "object"
+      },
+      "BetaResponseBashCodeExecutionToolResultError": {
+        "properties": {
+          "error_code": {
+            "$ref": "#/components/schemas/BetaBashCodeExecutionToolResultErrorCode"
+          },
+          "type": {
+            "const": "bash_code_execution_tool_result_error",
+            "default": "bash_code_execution_tool_result_error",
+            "enum": ["bash_code_execution_tool_result_error"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["error_code", "type"],
+        "title": "ResponseBashCodeExecutionToolResultError",
         "type": "object"
       },
       "BetaResponseCharLocationCitation": {
@@ -4247,7 +4798,12 @@
             "type": "object"
           },
           "name": {
-            "enum": ["web_search", "code_execution"],
+            "enum": [
+              "web_search",
+              "code_execution",
+              "bash_code_execution",
+              "text_editor_code_execution"
+            ],
             "title": "Name",
             "type": "string"
           },
@@ -4323,6 +4879,239 @@
         },
         "required": ["citations", "text", "type"],
         "title": "ResponseTextBlock",
+        "type": "object"
+      },
+      "BetaResponseTextEditorCodeExecutionCreateResultBlock": {
+        "properties": {
+          "is_file_update": {
+            "title": "Is File Update",
+            "type": "boolean"
+          },
+          "type": {
+            "const": "text_editor_code_execution_create_result",
+            "default": "text_editor_code_execution_create_result",
+            "enum": ["text_editor_code_execution_create_result"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["is_file_update", "type"],
+        "title": "ResponseTextEditorCodeExecutionCreateResultBlock",
+        "type": "object"
+      },
+      "BetaResponseTextEditorCodeExecutionStrReplaceResultBlock": {
+        "properties": {
+          "lines": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Lines"
+          },
+          "new_lines": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "New Lines"
+          },
+          "new_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "New Start"
+          },
+          "old_lines": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Old Lines"
+          },
+          "old_start": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Old Start"
+          },
+          "type": {
+            "const": "text_editor_code_execution_str_replace_result",
+            "default": "text_editor_code_execution_str_replace_result",
+            "enum": ["text_editor_code_execution_str_replace_result"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "lines",
+          "new_lines",
+          "new_start",
+          "old_lines",
+          "old_start",
+          "type"
+        ],
+        "title": "ResponseTextEditorCodeExecutionStrReplaceResultBlock",
+        "type": "object"
+      },
+      "BetaResponseTextEditorCodeExecutionToolResultBlock": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaResponseTextEditorCodeExecutionToolResultError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaResponseTextEditorCodeExecutionViewResultBlock"
+              },
+              {
+                "$ref": "#/components/schemas/BetaResponseTextEditorCodeExecutionCreateResultBlock"
+              },
+              {
+                "$ref": "#/components/schemas/BetaResponseTextEditorCodeExecutionStrReplaceResultBlock"
+              }
+            ],
+            "title": "Content"
+          },
+          "tool_use_id": {
+            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
+            "title": "Tool Use Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "text_editor_code_execution_tool_result",
+            "default": "text_editor_code_execution_tool_result",
+            "enum": ["text_editor_code_execution_tool_result"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["content", "tool_use_id", "type"],
+        "title": "ResponseTextEditorCodeExecutionToolResultBlock",
+        "type": "object"
+      },
+      "BetaResponseTextEditorCodeExecutionToolResultError": {
+        "properties": {
+          "error_code": {
+            "$ref": "#/components/schemas/BetaTextEditorCodeExecutionToolResultErrorCode"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error Message"
+          },
+          "type": {
+            "const": "text_editor_code_execution_tool_result_error",
+            "default": "text_editor_code_execution_tool_result_error",
+            "enum": ["text_editor_code_execution_tool_result_error"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["error_code", "error_message", "type"],
+        "title": "ResponseTextEditorCodeExecutionToolResultError",
+        "type": "object"
+      },
+      "BetaResponseTextEditorCodeExecutionViewResultBlock": {
+        "properties": {
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "file_type": {
+            "enum": ["text", "image", "pdf"],
+            "title": "File Type",
+            "type": "string"
+          },
+          "num_lines": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Num Lines"
+          },
+          "start_line": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Start Line"
+          },
+          "total_lines": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total Lines"
+          },
+          "type": {
+            "const": "text_editor_code_execution_view_result",
+            "default": "text_editor_code_execution_view_result",
+            "enum": ["text_editor_code_execution_view_result"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "file_type",
+          "num_lines",
+          "start_line",
+          "total_lines",
+          "type"
+        ],
+        "title": "ResponseTextEditorCodeExecutionViewResultBlock",
         "type": "object"
       },
       "BetaResponseThinkingBlock": {
@@ -4579,6 +5368,17 @@
         "required": ["text", "type"],
         "title": "TextContentBlockDelta",
         "type": "object"
+      },
+      "BetaTextEditorCodeExecutionToolResultErrorCode": {
+        "enum": [
+          "invalid_tool_input",
+          "unavailable",
+          "too_many_requests",
+          "execution_time_exceeded",
+          "file_not_found"
+        ],
+        "title": "TextEditorCodeExecutionToolResultErrorCode",
+        "type": "string"
       },
       "BetaTextEditor_20241022": {
         "additionalProperties": false,
@@ -5806,7 +6606,7 @@
         ],
         "properties": {
           "messages": {
-            "description": "Input messages.\n\nOur models are trained to operate on alternating `user` and `assistant` conversational turns. When creating a new `Message`, you specify the prior conversational turns with the `messages` parameter, and the model then generates the next `Message` in the conversation. Consecutive `user` or `assistant` turns in your request will be combined into a single turn.\n\nEach input message must be an object with a `role` and `content`. You can specify a single `user`-role message, or you can include multiple `user` and `assistant` messages.\n\nIf the final message uses the `assistant` role, the response content will continue immediately from the content in that message. This can be used to constrain part of the model's response.\n\nExample with a single `user` message:\n\n```json\n[{\"role\": \"user\", \"content\": \"Hello, Claude\"}]\n```\n\nExample with multiple conversational turns:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"Hello there.\"},\n  {\"role\": \"assistant\", \"content\": \"Hi, I'm Claude. How can I help you?\"},\n  {\"role\": \"user\", \"content\": \"Can you explain LLMs in plain English?\"},\n]\n```\n\nExample with a partially-filled response from Claude:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun\"},\n  {\"role\": \"assistant\", \"content\": \"The best answer is (\"},\n]\n```\n\nEach input message `content` may be either a single `string` or an array of content blocks, where each block has a specific `type`. Using a `string` for `content` is shorthand for an array of one content block of type `\"text\"`. The following input messages are equivalent:\n\n```json\n{\"role\": \"user\", \"content\": \"Hello, Claude\"}\n```\n\n```json\n{\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"Hello, Claude\"}]}\n```\n\nStarting with Claude 3 models, you can also send image content blocks:\n\n```json\n{\"role\": \"user\", \"content\": [\n  {\n    \"type\": \"image\",\n    \"source\": {\n      \"type\": \"base64\",\n      \"media_type\": \"image/jpeg\",\n      \"data\": \"/9j/4AAQSkZJRg...\",\n    }\n  },\n  {\"type\": \"text\", \"text\": \"What is in this image?\"}\n]}\n```\n\nWe currently support the `base64` source type for images, and the `image/jpeg`, `image/png`, `image/gif`, and `image/webp` media types.\n\nSee [examples](https://docs.anthropic.com/en/api/messages-examples#vision) for more input examples.\n\nNote that if you want to include a [system prompt](https://docs.anthropic.com/en/docs/system-prompts), you can use the top-level `system` parameter — there is no `\"system\"` role for input messages in the Messages API.\n\nThere is a limit of 100,000 messages in a single request.",
+            "description": "Input messages.\n\nOur models are trained to operate on alternating `user` and `assistant` conversational turns. When creating a new `Message`, you specify the prior conversational turns with the `messages` parameter, and the model then generates the next `Message` in the conversation. Consecutive `user` or `assistant` turns in your request will be combined into a single turn.\n\nEach input message must be an object with a `role` and `content`. You can specify a single `user`-role message, or you can include multiple `user` and `assistant` messages.\n\nIf the final message uses the `assistant` role, the response content will continue immediately from the content in that message. This can be used to constrain part of the model's response.\n\nExample with a single `user` message:\n\n```json\n[{\"role\": \"user\", \"content\": \"Hello, Claude\"}]\n```\n\nExample with multiple conversational turns:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"Hello there.\"},\n  {\"role\": \"assistant\", \"content\": \"Hi, I'm Claude. How can I help you?\"},\n  {\"role\": \"user\", \"content\": \"Can you explain LLMs in plain English?\"},\n]\n```\n\nExample with a partially-filled response from Claude:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun\"},\n  {\"role\": \"assistant\", \"content\": \"The best answer is (\"},\n]\n```\n\nEach input message `content` may be either a single `string` or an array of content blocks, where each block has a specific `type`. Using a `string` for `content` is shorthand for an array of one content block of type `\"text\"`. The following input messages are equivalent:\n\n```json\n{\"role\": \"user\", \"content\": \"Hello, Claude\"}\n```\n\n```json\n{\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"Hello, Claude\"}]}\n```\n\nSee [input examples](https://docs.anthropic.com/en/api/messages-examples).\n\nNote that if you want to include a [system prompt](https://docs.anthropic.com/en/docs/system-prompts), you can use the top-level `system` parameter — there is no `\"system\"` role for input messages in the Messages API.\n\nThere is a limit of 100,000 messages in a single request.",
             "items": {
               "$ref": "#/components/schemas/InputMessage"
             },
@@ -5955,7 +6755,7 @@
             "type": "integer"
           },
           "messages": {
-            "description": "Input messages.\n\nOur models are trained to operate on alternating `user` and `assistant` conversational turns. When creating a new `Message`, you specify the prior conversational turns with the `messages` parameter, and the model then generates the next `Message` in the conversation. Consecutive `user` or `assistant` turns in your request will be combined into a single turn.\n\nEach input message must be an object with a `role` and `content`. You can specify a single `user`-role message, or you can include multiple `user` and `assistant` messages.\n\nIf the final message uses the `assistant` role, the response content will continue immediately from the content in that message. This can be used to constrain part of the model's response.\n\nExample with a single `user` message:\n\n```json\n[{\"role\": \"user\", \"content\": \"Hello, Claude\"}]\n```\n\nExample with multiple conversational turns:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"Hello there.\"},\n  {\"role\": \"assistant\", \"content\": \"Hi, I'm Claude. How can I help you?\"},\n  {\"role\": \"user\", \"content\": \"Can you explain LLMs in plain English?\"},\n]\n```\n\nExample with a partially-filled response from Claude:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun\"},\n  {\"role\": \"assistant\", \"content\": \"The best answer is (\"},\n]\n```\n\nEach input message `content` may be either a single `string` or an array of content blocks, where each block has a specific `type`. Using a `string` for `content` is shorthand for an array of one content block of type `\"text\"`. The following input messages are equivalent:\n\n```json\n{\"role\": \"user\", \"content\": \"Hello, Claude\"}\n```\n\n```json\n{\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"Hello, Claude\"}]}\n```\n\nStarting with Claude 3 models, you can also send image content blocks:\n\n```json\n{\"role\": \"user\", \"content\": [\n  {\n    \"type\": \"image\",\n    \"source\": {\n      \"type\": \"base64\",\n      \"media_type\": \"image/jpeg\",\n      \"data\": \"/9j/4AAQSkZJRg...\",\n    }\n  },\n  {\"type\": \"text\", \"text\": \"What is in this image?\"}\n]}\n```\n\nWe currently support the `base64` source type for images, and the `image/jpeg`, `image/png`, `image/gif`, and `image/webp` media types.\n\nSee [examples](https://docs.anthropic.com/en/api/messages-examples#vision) for more input examples.\n\nNote that if you want to include a [system prompt](https://docs.anthropic.com/en/docs/system-prompts), you can use the top-level `system` parameter — there is no `\"system\"` role for input messages in the Messages API.\n\nThere is a limit of 100,000 messages in a single request.",
+            "description": "Input messages.\n\nOur models are trained to operate on alternating `user` and `assistant` conversational turns. When creating a new `Message`, you specify the prior conversational turns with the `messages` parameter, and the model then generates the next `Message` in the conversation. Consecutive `user` or `assistant` turns in your request will be combined into a single turn.\n\nEach input message must be an object with a `role` and `content`. You can specify a single `user`-role message, or you can include multiple `user` and `assistant` messages.\n\nIf the final message uses the `assistant` role, the response content will continue immediately from the content in that message. This can be used to constrain part of the model's response.\n\nExample with a single `user` message:\n\n```json\n[{\"role\": \"user\", \"content\": \"Hello, Claude\"}]\n```\n\nExample with multiple conversational turns:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"Hello there.\"},\n  {\"role\": \"assistant\", \"content\": \"Hi, I'm Claude. How can I help you?\"},\n  {\"role\": \"user\", \"content\": \"Can you explain LLMs in plain English?\"},\n]\n```\n\nExample with a partially-filled response from Claude:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun\"},\n  {\"role\": \"assistant\", \"content\": \"The best answer is (\"},\n]\n```\n\nEach input message `content` may be either a single `string` or an array of content blocks, where each block has a specific `type`. Using a `string` for `content` is shorthand for an array of one content block of type `\"text\"`. The following input messages are equivalent:\n\n```json\n{\"role\": \"user\", \"content\": \"Hello, Claude\"}\n```\n\n```json\n{\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"Hello, Claude\"}]}\n```\n\nSee [input examples](https://docs.anthropic.com/en/api/messages-examples).\n\nNote that if you want to include a [system prompt](https://docs.anthropic.com/en/docs/system-prompts), you can use the top-level `system` parameter — there is no `\"system\"` role for input messages in the Messages API.\n\nThere is a limit of 100,000 messages in a single request.",
             "items": {
               "$ref": "#/components/schemas/InputMessage"
             },
@@ -6115,7 +6915,7 @@
             "type": "integer"
           },
           "messages": {
-            "description": "Input messages.\n\nOur models are trained to operate on alternating `user` and `assistant` conversational turns. When creating a new `Message`, you specify the prior conversational turns with the `messages` parameter, and the model then generates the next `Message` in the conversation. Consecutive `user` or `assistant` turns in your request will be combined into a single turn.\n\nEach input message must be an object with a `role` and `content`. You can specify a single `user`-role message, or you can include multiple `user` and `assistant` messages.\n\nIf the final message uses the `assistant` role, the response content will continue immediately from the content in that message. This can be used to constrain part of the model's response.\n\nExample with a single `user` message:\n\n```json\n[{\"role\": \"user\", \"content\": \"Hello, Claude\"}]\n```\n\nExample with multiple conversational turns:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"Hello there.\"},\n  {\"role\": \"assistant\", \"content\": \"Hi, I'm Claude. How can I help you?\"},\n  {\"role\": \"user\", \"content\": \"Can you explain LLMs in plain English?\"},\n]\n```\n\nExample with a partially-filled response from Claude:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun\"},\n  {\"role\": \"assistant\", \"content\": \"The best answer is (\"},\n]\n```\n\nEach input message `content` may be either a single `string` or an array of content blocks, where each block has a specific `type`. Using a `string` for `content` is shorthand for an array of one content block of type `\"text\"`. The following input messages are equivalent:\n\n```json\n{\"role\": \"user\", \"content\": \"Hello, Claude\"}\n```\n\n```json\n{\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"Hello, Claude\"}]}\n```\n\nStarting with Claude 3 models, you can also send image content blocks:\n\n```json\n{\"role\": \"user\", \"content\": [\n  {\n    \"type\": \"image\",\n    \"source\": {\n      \"type\": \"base64\",\n      \"media_type\": \"image/jpeg\",\n      \"data\": \"/9j/4AAQSkZJRg...\",\n    }\n  },\n  {\"type\": \"text\", \"text\": \"What is in this image?\"}\n]}\n```\n\nWe currently support the `base64` source type for images, and the `image/jpeg`, `image/png`, `image/gif`, and `image/webp` media types.\n\nSee [examples](https://docs.anthropic.com/en/api/messages-examples#vision) for more input examples.\n\nNote that if you want to include a [system prompt](https://docs.anthropic.com/en/docs/system-prompts), you can use the top-level `system` parameter — there is no `\"system\"` role for input messages in the Messages API.\n\nThere is a limit of 100,000 messages in a single request.",
+            "description": "Input messages.\n\nOur models are trained to operate on alternating `user` and `assistant` conversational turns. When creating a new `Message`, you specify the prior conversational turns with the `messages` parameter, and the model then generates the next `Message` in the conversation. Consecutive `user` or `assistant` turns in your request will be combined into a single turn.\n\nEach input message must be an object with a `role` and `content`. You can specify a single `user`-role message, or you can include multiple `user` and `assistant` messages.\n\nIf the final message uses the `assistant` role, the response content will continue immediately from the content in that message. This can be used to constrain part of the model's response.\n\nExample with a single `user` message:\n\n```json\n[{\"role\": \"user\", \"content\": \"Hello, Claude\"}]\n```\n\nExample with multiple conversational turns:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"Hello there.\"},\n  {\"role\": \"assistant\", \"content\": \"Hi, I'm Claude. How can I help you?\"},\n  {\"role\": \"user\", \"content\": \"Can you explain LLMs in plain English?\"},\n]\n```\n\nExample with a partially-filled response from Claude:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun\"},\n  {\"role\": \"assistant\", \"content\": \"The best answer is (\"},\n]\n```\n\nEach input message `content` may be either a single `string` or an array of content blocks, where each block has a specific `type`. Using a `string` for `content` is shorthand for an array of one content block of type `\"text\"`. The following input messages are equivalent:\n\n```json\n{\"role\": \"user\", \"content\": \"Hello, Claude\"}\n```\n\n```json\n{\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"Hello, Claude\"}]}\n```\n\nSee [input examples](https://docs.anthropic.com/en/api/messages-examples).\n\nNote that if you want to include a [system prompt](https://docs.anthropic.com/en/docs/system-prompts), you can use the top-level `system` parameter — there is no `\"system\"` role for input messages in the Messages API.\n\nThere is a limit of 100,000 messages in a single request.",
             "items": {
               "$ref": "#/components/schemas/InputMessage"
             },
@@ -6317,6 +7117,18 @@
             ],
             "title": "Error"
           },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Id"
+          },
           "type": {
             "const": "error",
             "default": "error",
@@ -6325,7 +7137,7 @@
             "type": "string"
           }
         },
-        "required": ["error", "type"],
+        "required": ["error", "request_id", "type"],
         "title": "ErrorResponse",
         "type": "object"
       },
@@ -9784,7 +10596,7 @@
   },
   "info": {
     "title": "Anthropic API",
-    "version": "135"
+    "version": "137"
   },
   "openapi": "3.1.0",
   "paths": {
