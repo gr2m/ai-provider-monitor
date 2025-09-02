@@ -69,8 +69,21 @@ jobs:
           curl -s "${{ matrix.source.openapi_url }}" -o "$output_file"
           # Set the file path as an output variable
           echo "file_path=$output_file" >> $GITHUB_OUTPUT
+
+      - name: Sort keys in OpenAPI specification
+        id: fetch-url
+        run: |
+          # install yq
+          wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          chmod +x /usr/local/bin/yq
+          
+          # sort keys in the file
+          yq -i -P 'sort_keys(..)' ${{ steps.download.outputs.file_path }}
+
+      - name: Format specification
+        run: |
           # Format the file
-          npx prettier --write "$output_file"
+          npx prettier --write "${{ steps.download.outputs.file_path }}"
 
       # If this is the first run, create PR with the initial spec
       - name: Create initial PR
