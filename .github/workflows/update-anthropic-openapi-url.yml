@@ -1,0 +1,108 @@
+name: Update Anthropic OpenAPI URL
+
+on:
+  # Run 30 minutes past every hour
+  schedule:
+    - cron: '30 * * * *'
+  # Allow manual triggering
+  workflow_dispatch:
+  # Run when the workflow file is changed
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/update-anthropic-openapi-url.yml'
+
+jobs:
+  update-anthropic-url:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+        
+      - name: Fetch latest Anthropic OpenAPI URL
+        id: fetch-url
+        run: |
+          # Download the .stats.yml file
+          curl -s "https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/.stats.yml" -o temp-stats.yml
+          
+          # Extract the openapi_spec_url using yq (YAML processor)
+          # First install yq
+          wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          chmod +x /usr/local/bin/yq
+          
+          # Extract the URL
+          NEW_OPENAPI_URL=$(yq '.openapi_spec_url' temp-stats.yml)
+          echo "new_url=$NEW_OPENAPI_URL" >> $GITHUB_OUTPUT
+          echo "Found new URL: $NEW_OPENAPI_URL"
+          
+          # Clean up
+          rm temp-stats.yml
+          
+      - name: Check current URL and detect changes
+        id: check-changes
+        run: |
+          # Extract current Anthropic URL from the workflow file
+          CURRENT_URL=$(yq '.jobs.check.strategy.matrix.source[] | select(.name == "anthropic") | .openapi_url' .github/workflows/check-for-changes.yml)
+          echo "current_url=$CURRENT_URL" >> $GITHUB_OUTPUT
+          echo "Current URL: $CURRENT_URL"
+          echo "New URL: ${{ steps.fetch-url.outputs.new_url }}"
+          
+          # Compare URLs
+          if [ "$CURRENT_URL" != "${{ steps.fetch-url.outputs.new_url }}" ]; then
+            echo "changes_detected=true" >> $GITHUB_OUTPUT
+            echo "✅ URL change detected!"
+          else
+            echo "changes_detected=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No URL change detected"
+          fi
+          
+      - name: Update workflow file
+        if: steps.check-changes.outputs.changes_detected == 'true'
+        run: |
+          # Update the Anthropic openapi_url in the check-for-changes.yml file
+          yq eval '(.jobs.check.strategy.matrix.source[] | select(.name == "anthropic") | .openapi_url) = "${{ steps.fetch-url.outputs.new_url }}"' -i .github/workflows/check-for-changes.yml
+          
+          echo "✅ Updated Anthropic OpenAPI URL in check-for-changes.yml"
+          
+      - name: Commit and push changes
+        if: steps.check-changes.outputs.changes_detected == 'true'
+        run: |
+          # Configure git
+          git config --local user.email "gr2m[bot]@users.noreply.github.com"
+          git config --local user.name "gr2m[bot]"
+          
+          # Add and commit changes
+          git add .github/workflows/check-for-changes.yml
+          git commit -m "build: update Anthropic OpenAPI URL
+          
+          Previous URL: ${{ steps.check-changes.outputs.current_url }}
+          New URL: ${{ steps.fetch-url.outputs.new_url }}
+          
+          Auto-updated by update-anthropic-openapi-url workflow"
+          
+          # Push to a debug branch to test the functionality
+          git push origin debug-anthropic-url-update
+          
+          echo "✅ Changes committed and pushed to main branch"
+          
+      - name: Summary
+        run: |
+          if [ "${{ steps.check-changes.outputs.changes_detected }}" = "true" ]; then
+            echo "🔄 Anthropic OpenAPI URL updated successfully"
+            echo "   Previous: ${{ steps.check-changes.outputs.current_url }}"
+            echo "   New: ${{ steps.fetch-url.outputs.new_url }}"
+          else
+            echo "✅ Anthropic OpenAPI URL is up to date"
+            echo "   Current URL: ${{ steps.check-changes.outputs.current_url }}"
+          fi
