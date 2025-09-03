@@ -10,6 +10,13 @@ The version follows [semantic versioning](https://semver.org/) in the form of `[
 - **feature version bump**: Something was added: a new API endpoint, a new parameter, or a new option for an existing parameter.
 - **fix version bump**: updates to documentation, or typos in the spec.
 
+## Get notified
+
+You can "subscribe" to new releases
+
+1. Install the [ai-provider-api-changes-notifier](https://github.com/apps/ai-provider-api-changes-notifier) app in your repository
+2. Add a GitHub Action workflow to do something useful with it, such as creating an issue. Minimal example: [.github/workflows/notify-test.yml](.github/workflows/notify-test.yml)
+
 ## How it works
 
 ### Monitoring Changes
