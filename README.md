@@ -2,7 +2,7 @@
 
 A GitHub Actions-powered service that monitors API specification changes from major AI providers and automatically creates pull requests when changes are detected. As pull requests are merged, releases are created with use full release notes based on the pull request description.
 
-Additionally, if you want to get notified about some or all new releases, you can install the [ai-provider-api-changes](https://github.com/apps/ai-provider-api-changes) app on any repository, which will create repository dispatch event named `ai-provider-api-change/[provider slug]/[version]`, e.g. `ai-provider-api-change/openai/1.2.3`.
+Additionally, if you want to get notified about some or all new releases, you can install the [ai-provider-monitor](https://github.com/apps/ai-provider-monitor) app on any repository, which will create repository dispatch event named `ai-provider-api-change/[provider slug]/[version]`, e.g. `ai-provider-api-change/openai/1.2.3`.
 
 The version follows [semantic versioning](https://semver.org/) in the form of `[breaking version].[feature version].[fix version]`. In most cases that means
 
@@ -14,7 +14,7 @@ The version follows [semantic versioning](https://semver.org/) in the form of `[
 
 You can "subscribe" to new releases
 
-1. Install the [ai-provider-api-changes-notifier](https://github.com/apps/ai-provider-api-changes-notifier) app in your repository
+1. Install the [ai-provider-monitor-notifier](https://github.com/apps/ai-provider-monitor-notifier) app in your repository
 2. Add a GitHub Action workflow to do something useful with it, such as creating an issue. Minimal example: [.github/workflows/notify-test.yml](.github/workflows/notify-test.yml)
 
 ## How it works

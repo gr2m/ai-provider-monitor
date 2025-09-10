@@ -77,23 +77,23 @@ function setupMocks(t, existingTags = []) {
 
   // Mock tags endpoint - ensure it returns an array
   mockPool
-    .intercept({ path: '/repos/gr2m/ai-provider-api-changes/tags?per_page=100', method: 'GET' })
+    .intercept({ path: '/repos/gr2m/ai-provider-monitor/tags?per_page=100', method: 'GET' })
     .reply(200, Array.isArray(existingTags) ? existingTags : [], { headers: { 'Content-Type': 'application/json' } })
     .persist(); // Make this intercept reusable
 
   // Mock tag creation
   mockPool
-    .intercept({ path: '/repos/gr2m/ai-provider-api-changes/git/refs', method: 'POST' })
+    .intercept({ path: '/repos/gr2m/ai-provider-monitor/git/refs', method: 'POST' })
     .reply(201, { ref: 'refs/tags/test', sha: 'abc123' }, { headers: { 'Content-Type': 'application/json' } });
 
   // Mock release creation
   mockPool
-    .intercept({ path: '/repos/gr2m/ai-provider-api-changes/releases', method: 'POST' })
+    .intercept({ path: '/repos/gr2m/ai-provider-monitor/releases', method: 'POST' })
     .reply(201, {
       id: 123456,
       tag_name: 'test@1.0.0',
       name: 'test@1.0.0',
-      html_url: 'https://github.com/gr2m/ai-provider-api-changes/releases/tag/test@1.0.0',
+      html_url: 'https://github.com/gr2m/ai-provider-monitor/releases/tag/test@1.0.0',
       body: 'Test release body',
       draft: false,
       prerelease: false,
