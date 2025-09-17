@@ -111,13 +111,6 @@ components:
         - $ref: "#/components/schemas/FilePath"
       discriminator:
         propertyName: type
-    Annotation-2:
-      anyOf:
-        - $ref: "#/components/schemas/FileCitationBody-2"
-        - $ref: "#/components/schemas/UrlCitationBody-2"
-        - $ref: "#/components/schemas/ContainerFileCitationBody-2"
-      discriminator:
-        propertyName: type
     ApiKeyList:
       properties:
         data:
@@ -2938,12 +2931,8 @@ components:
           $ref: "#/components/schemas/ComputerScreenshotImage"
         status:
           anyOf:
-            - description: The status of the message input. One of `in_progress`, `completed`, or `incomplete`. Populated when input items are returned via API.
-              enum:
-                - in_progress
-                - completed
-                - incomplete
-              type: string
+            - $ref: "#/components/schemas/FunctionCallItemStatus"
+              description: The status of the message input. One of `in_progress`, `completed`, or `incomplete`. Populated when input items are returned via API.
             - type: "null"
         type:
           default: computer_call_output
@@ -2977,7 +2966,16 @@ components:
       required:
         - id
       type: object
+    ComputerEnvironment1:
+      enum:
+        - windows
+        - mac
+        - linux
+        - ubuntu
+        - browser
+      type: string
     ComputerScreenshotContent:
+      description: A screenshot of a computer.
       properties:
         file_id:
           anyOf:
@@ -3145,14 +3143,8 @@ components:
           description: The width of the computer display.
           type: integer
         environment:
+          $ref: "#/components/schemas/ComputerEnvironment1"
           description: The type of computer environment to control.
-          enum:
-            - windows
-            - mac
-            - linux
-            - ubuntu
-            - browser
-          type: string
         type:
           default: computer_use_preview
           description: The type of the computer use tool. Always `computer_use_preview`.
@@ -3169,39 +3161,6 @@ components:
       type: object
     ContainerFileCitationBody:
       description: A citation for a container file used to generate a model response.
-      properties:
-        container_id:
-          description: The ID of the container file.
-          type: string
-        end_index:
-          description: The index of the last character of the container file citation in the message.
-          type: integer
-        file_id:
-          description: The ID of the file.
-          type: string
-        filename:
-          description: The filename of the container file cited.
-          type: string
-        start_index:
-          description: The index of the first character of the container file citation in the message.
-          type: integer
-        type:
-          default: container_file_citation
-          description: The type of the container file citation. Always `container_file_citation`.
-          enum:
-            - container_file_citation
-          type: string
-          x-stainless-const: true
-      required:
-        - type
-        - container_id
-        - file_id
-        - start_index
-        - end_index
-        - filename
-      title: Container file citation
-      type: object
-    ContainerFileCitationBody-2:
       properties:
         container_id:
           description: The ID of the container file.
@@ -4768,6 +4727,8 @@ components:
             max_completion_tokens:
               description: The maximum number of tokens in the generated output.
               type: integer
+            reasoning_effort:
+              $ref: "#/components/schemas/ReasoningEffort"
             response_format:
               anyOf:
                 - $ref: "#/components/schemas/ResponseFormatText"
@@ -5122,6 +5083,8 @@ components:
             max_completion_tokens:
               description: The maximum number of tokens in the generated output.
               type: integer
+            reasoning_effort:
+              $ref: "#/components/schemas/ReasoningEffort"
             seed:
               default: 42
               description: A seed value to initialize the randomness, during sampling.
@@ -7692,6 +7655,12 @@ components:
         - deleted
         - id
       type: object
+    DetailEnum:
+      enum:
+        - low
+        - high
+        - auto
+      type: string
     DoneEvent:
       description: Occurs when a stream ends.
       properties:
@@ -8888,11 +8857,9 @@ components:
           type: string
           x-stainless-const: true
         results:
-          description: A list of results from the evaluation run.
+          description: A list of grader results for this output item.
           items:
-            additionalProperties: true
-            description: A result object.
-            type: object
+            $ref: "#/components/schemas/EvalRunOutputItemResult"
           type: array
         run_id:
           description: The identifier of the evaluation run associated with this output item.
@@ -9152,6 +9119,35 @@ components:
           }
         group: evals
         name: The eval run output item list object
+    EvalRunOutputItemResult:
+      additionalProperties: true
+      description: |
+        A single grader result for an evaluation run output item.
+      properties:
+        name:
+          description: The name of the grader.
+          type: string
+        passed:
+          description: Whether the grader considered the output a pass.
+          type: boolean
+        sample:
+          anyOf:
+            - additionalProperties: true
+              type: object
+            - type: "null"
+          description: Optional sample or intermediate data produced by the grader.
+        score:
+          description: The numeric score produced by the grader.
+          type: number
+        type:
+          description: The grader type (for example, "string-check-grader").
+          type: string
+      required:
+        - name
+        - score
+        - passed
+      title: EvalRunOutputItemResult
+      type: object
     EvalStoredCompletionsDataSourceConfig:
       deprecated: true
       description: |
@@ -9252,31 +9248,6 @@ components:
         name: The stored completions data source object used to configure an individual run
     FileCitationBody:
       description: A citation to a file.
-      properties:
-        file_id:
-          description: The ID of the file.
-          type: string
-        filename:
-          description: The filename of the file cited.
-          type: string
-        index:
-          description: The index of the file in the list of files.
-          type: integer
-        type:
-          default: file_citation
-          description: The type of the file citation. Always `file_citation`.
-          enum:
-            - file_citation
-          type: string
-          x-stainless-const: true
-      required:
-        - type
-        - file_id
-        - index
-        - filename
-      title: File citation
-      type: object
-    FileCitationBody-2:
       properties:
         file_id:
           description: The ID of the file.
@@ -10316,6 +10287,12 @@ components:
             "type": "message"
           }
         name: The fine-tuning job event object
+    FunctionCallItemStatus:
+      enum:
+        - in_progress
+        - completed
+        - incomplete
+      type: string
     FunctionCallOutputItemParam:
       description: The output of a function tool call.
       properties:
@@ -10335,12 +10312,8 @@ components:
           type: string
         status:
           anyOf:
-            - description: The status of the item. One of `in_progress`, `completed`, or `incomplete`. Populated when items are returned via API.
-              enum:
-                - in_progress
-                - completed
-                - incomplete
-              type: string
+            - $ref: "#/components/schemas/FunctionCallItemStatus"
+              description: The status of the item. One of `in_progress`, `completed`, or `incomplete`. Populated when items are returned via API.
             - type: "null"
         type:
           default: function_call_output
@@ -10714,6 +10687,36 @@ components:
           type: array
         sampling_params:
           description: The sampling parameters for the model.
+          properties:
+            max_completions_tokens:
+              anyOf:
+                - description: |
+                    The maximum number of tokens the grader model may generate in its response.
+                  minimum: 1
+                  type: integer
+                - type: "null"
+            reasoning_effort:
+              $ref: "#/components/schemas/ReasoningEffort"
+            seed:
+              anyOf:
+                - description: |
+                    A seed value to initialize the randomness, during sampling.
+                  type: integer
+                - type: "null"
+            temperature:
+              anyOf:
+                - description: |
+                    A higher temperature increases randomness in the outputs.
+                  type: number
+                - type: "null"
+            top_p:
+              anyOf:
+                - default: 1
+                  description: |
+                    An alternative to temperature for nucleus sampling; 1.0 includes all tokens.
+                  example: 1
+                  type: number
+                - type: "null"
           type: object
         type:
           description: The object type, which is always `score_model`.
@@ -10744,11 +10747,13 @@ components:
                       ),
                   }
               ],
-              "model": "gpt-4o-2024-08-06",
+              "model": "o4-mini-2025-04-16",
               "sampling_params": {
                   "temperature": 1,
                   "top_p": 1,
                   "seed": 42,
+                  "max_completions_tokens": 32768,
+                  "reasoning_effort": "medium"
               },
           }
         group: graders
@@ -10866,6 +10871,12 @@ components:
           description: When using `dall-e-2` or `dall-e-3`, the URL of the generated image if `response_format` is set to `url` (default value). Unsupported for `gpt-image-1`.
           type: string
       type: object
+    ImageDetail:
+      enum:
+        - low
+        - high
+        - auto
+      type: string
     ImageEditCompletedEvent:
       description: |
         Emitted when image editing has completed and the final image is available.
@@ -11590,41 +11601,12 @@ components:
         - type
       title: Input file
       type: object
-    InputFileContent-2:
-      properties:
-        file_id:
-          anyOf:
-            - description: The ID of the file to be sent to the model.
-              type: string
-            - type: "null"
-        file_url:
-          description: The URL of the file to be sent to the model.
-          type: string
-        filename:
-          description: The name of the file to be sent to the model.
-          type: string
-        type:
-          default: input_file
-          description: The type of the input item. Always `input_file`.
-          enum:
-            - input_file
-          type: string
-          x-stainless-const: true
-      required:
-        - type
-        - file_id
-      title: Input file
-      type: object
     InputImageContent:
       description: An image input to the model. Learn about [image inputs](https://platform.openai.com/docs/guides/vision).
       properties:
         detail:
+          $ref: "#/components/schemas/ImageDetail"
           description: The detail level of the image to be sent to the model. One of `high`, `low`, or `auto`. Defaults to `auto`.
-          enum:
-            - low
-            - high
-            - auto
-          type: string
         file_id:
           anyOf:
             - description: The ID of the file to be sent to the model.
@@ -11644,39 +11626,6 @@ components:
           x-stainless-const: true
       required:
         - type
-        - detail
-      title: Input image
-      type: object
-    InputImageContent-2:
-      properties:
-        detail:
-          description: The detail level of the image to be sent to the model. One of `high`, `low`, or `auto`. Defaults to `auto`.
-          enum:
-            - low
-            - high
-            - auto
-          type: string
-        file_id:
-          anyOf:
-            - description: The ID of the file to be sent to the model.
-              type: string
-            - type: "null"
-        image_url:
-          anyOf:
-            - description: The URL of the image to be sent to the model. A fully qualified URL or base64 encoded image in a data URL.
-              type: string
-            - type: "null"
-        type:
-          default: input_image
-          description: The type of the input item. Always `input_image`.
-          enum:
-            - input_image
-          type: string
-          x-stainless-const: true
-      required:
-        - type
-        - image_url
-        - file_id
         - detail
       title: Input image
       type: object
@@ -11749,23 +11698,6 @@ components:
           type: object
     InputTextContent:
       description: A text input to the model.
-      properties:
-        text:
-          description: The text input to the model.
-          type: string
-        type:
-          default: input_text
-          description: The type of the input item. Always `input_text`.
-          enum:
-            - input_text
-          type: string
-          x-stainless-const: true
-      required:
-        - type
-        - text
-      title: Input text
-      type: object
-    InputTextContent-2:
       properties:
         text:
           description: The text input to the model.
@@ -12590,27 +12522,6 @@ components:
         - top_logprobs
       title: Log probability
       type: object
-    LogProb-2:
-      properties:
-        bytes:
-          items:
-            type: integer
-          type: array
-        logprob:
-          type: number
-        token:
-          type: string
-        top_logprobs:
-          items:
-            $ref: "#/components/schemas/TopLogProb-2"
-          type: array
-      required:
-        - token
-        - logprob
-        - bytes
-        - top_logprobs
-      title: Log probability
-      type: object
     LogProbProperties:
       description: |
         A log probability object.
@@ -12988,19 +12899,20 @@ components:
       title: MCP tool filter
       type: object
     Message:
+      description: A message to or from the model.
       properties:
         content:
           description: The content of the message
           items:
             anyOf:
-              - $ref: "#/components/schemas/InputTextContent-2"
-              - $ref: "#/components/schemas/OutputTextContent-2"
+              - $ref: "#/components/schemas/InputTextContent"
+              - $ref: "#/components/schemas/OutputTextContent"
               - $ref: "#/components/schemas/TextContent"
               - $ref: "#/components/schemas/SummaryTextContent"
-              - $ref: "#/components/schemas/RefusalContent-2"
-              - $ref: "#/components/schemas/InputImageContent-2"
+              - $ref: "#/components/schemas/RefusalContent"
+              - $ref: "#/components/schemas/InputImageContent"
               - $ref: "#/components/schemas/ComputerScreenshotContent"
-              - $ref: "#/components/schemas/InputFileContent-2"
+              - $ref: "#/components/schemas/InputFileContent"
             discriminator:
               propertyName: type
           type: array
@@ -13008,24 +12920,11 @@ components:
           description: The unique ID of the message.
           type: string
         role:
+          $ref: "#/components/schemas/MessageRole"
           description: The role of the message. One of `unknown`, `user`, `assistant`, `system`, `critic`, `discriminator`, `developer`, or `tool`.
-          enum:
-            - unknown
-            - user
-            - assistant
-            - system
-            - critic
-            - discriminator
-            - developer
-            - tool
-          type: string
         status:
+          $ref: "#/components/schemas/MessageStatus"
           description: The status of item. One of `in_progress`, `completed`, or `incomplete`. Populated when items are returned via API.
-          enum:
-            - in_progress
-            - completed
-            - incomplete
-          type: string
         type:
           default: message
           description: The type of the message. Always set to `message`.
@@ -13606,6 +13505,23 @@ components:
         - text
       title: Text
       type: object
+    MessageRole:
+      enum:
+        - unknown
+        - user
+        - assistant
+        - system
+        - critic
+        - discriminator
+        - developer
+        - tool
+      type: string
+    MessageStatus:
+      enum:
+        - in_progress
+        - completed
+        - incomplete
+      type: string
     MessageStreamEvent:
       anyOf:
         - description: Occurs when a [message](https://platform.openai.com/docs/api-reference/messages/object) is created.
@@ -13703,6 +13619,9 @@ components:
       additionalProperties:
         maxLength: 512
         type: string
+      description: |-
+        Set of 16 key-value pairs that can be attached to an object. This can be         useful for storing additional information about the object in a structured         format, and querying for objects via API or the dashboard.
+                Keys are strings with a maximum length of 64 characters. Values are strings         with a maximum length of 512 characters.
       maxProperties: 16
       type: object
     Model:
@@ -14237,33 +14156,6 @@ components:
         logprobs:
           items:
             $ref: "#/components/schemas/LogProb"
-          type: array
-        text:
-          description: The text output from the model.
-          type: string
-        type:
-          default: output_text
-          description: The type of the output text. Always `output_text`.
-          enum:
-            - output_text
-          type: string
-          x-stainless-const: true
-      required:
-        - type
-        - text
-        - annotations
-      title: Output text
-      type: object
-    OutputTextContent-2:
-      properties:
-        annotations:
-          description: The annotations of the text output.
-          items:
-            $ref: "#/components/schemas/Annotation-2"
-          type: array
-        logprobs:
-          items:
-            $ref: "#/components/schemas/LogProb-2"
           type: array
         text:
           description: The text output from the model.
@@ -14896,14 +14788,16 @@ components:
             - id
           type: object
         - type: "null"
+    RankerVersionType:
+      enum:
+        - auto
+        - default-2024-11-15
+      type: string
     RankingOptions:
       properties:
         ranker:
+          $ref: "#/components/schemas/RankerVersionType"
           description: The ranker to use for the file search.
-          enum:
-            - auto
-            - default-2024-11-15
-          type: string
         score_threshold:
           description: The score threshold for the file search, a number between 0 and 1. Numbers closer to 1 will attempt to return only the most relevant results, but may return fewer results.
           type: number
@@ -22675,23 +22569,6 @@ components:
         - refusal
       title: Refusal
       type: object
-    RefusalContent-2:
-      properties:
-        refusal:
-          description: The refusal explanation from the model.
-          type: string
-        type:
-          default: refusal
-          description: The type of the refusal. Always `refusal`.
-          enum:
-            - refusal
-          type: string
-          x-stainless-const: true
-      required:
-        - type
-        - refusal
-      title: Refusal
-      type: object
     Response:
       allOf:
         - $ref: "#/components/schemas/ModelResponseProperties"
@@ -26974,6 +26851,12 @@ components:
         - scroll_y
       title: Scroll
       type: object
+    SearchContextSize:
+      enum:
+        - low
+        - medium
+        - high
+      type: string
     ServiceTier:
       anyOf:
         - default: auto
@@ -27176,6 +27059,7 @@ components:
         - tool_outputs
       type: object
     SummaryTextContent:
+      description: A summary text from the model.
       properties:
         text:
           type: string
@@ -27203,6 +27087,7 @@ components:
       discriminator:
         propertyName: type
     TextContent:
+      description: A text content.
       properties:
         text:
           type: string
@@ -27532,22 +27417,6 @@ components:
       type: object
     TopLogProb:
       description: The top log probability of a token.
-      properties:
-        bytes:
-          items:
-            type: integer
-          type: array
-        logprob:
-          type: number
-        token:
-          type: string
-      required:
-        - token
-        - logprob
-        - bytes
-      title: Top log probability
-      type: object
-    TopLogProb-2:
       properties:
         bytes:
           items:
@@ -28002,35 +27871,6 @@ components:
         name: The upload part object
     UrlCitationBody:
       description: A citation for a web resource used to generate a model response.
-      properties:
-        end_index:
-          description: The index of the last character of the URL citation in the message.
-          type: integer
-        start_index:
-          description: The index of the first character of the URL citation in the message.
-          type: integer
-        title:
-          description: The title of the web resource.
-          type: string
-        type:
-          default: url_citation
-          description: The type of the URL citation. Always `url_citation`.
-          enum:
-            - url_citation
-          type: string
-          x-stainless-const: true
-        url:
-          description: The URL of the web resource.
-          type: string
-      required:
-        - type
-        - url
-        - start_index
-        - end_index
-        - title
-      title: URL citation
-      type: object
-    UrlCitationBody-2:
       properties:
         end_index:
           description: The index of the last character of the URL citation in the message.
@@ -29325,12 +29165,8 @@ components:
       description: This tool searches the web for relevant results to use in a response. Learn more about the [web search tool](https://platform.openai.com/docs/guides/tools-web-search).
       properties:
         search_context_size:
+          $ref: "#/components/schemas/SearchContextSize"
           description: High level guidance for the amount of context window space to use for the search. One of `low`, `medium`, or `high`. `medium` is the default.
-          enum:
-            - low
-            - medium
-            - high
-          type: string
         type:
           default: web_search_preview
           description: The type of the web search tool. One of `web_search_preview` or `web_search_preview_2025_03_11`.
