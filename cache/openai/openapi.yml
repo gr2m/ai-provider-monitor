@@ -2925,6 +2925,7 @@ components:
         id:
           anyOf:
             - description: The ID of the computer tool call output.
+              example: cuo_123
               type: string
             - type: "null"
         output:
@@ -3439,6 +3440,7 @@ components:
       properties:
         id:
           description: The unique ID of the conversation.
+          example: conv_123
           type: string
       required:
         - id
@@ -10304,12 +10306,14 @@ components:
         id:
           anyOf:
             - description: The unique ID of the function tool call output. Populated when this item is returned via API.
+              example: fc_123
               type: string
             - type: "null"
         output:
-          description: A JSON string of the output of the function tool call.
-          maxLength: 10485760
-          type: string
+          anyOf:
+            - description: A JSON string of the output of the function tool call.
+              maxLength: 10485760
+              type: string
         status:
           anyOf:
             - $ref: "#/components/schemas/FunctionCallItemStatus"
@@ -12909,6 +12913,7 @@ components:
               - $ref: "#/components/schemas/OutputTextContent"
               - $ref: "#/components/schemas/TextContent"
               - $ref: "#/components/schemas/SummaryTextContent"
+              - $ref: "#/components/schemas/ReasoningTextContent"
               - $ref: "#/components/schemas/RefusalContent"
               - $ref: "#/components/schemas/InputImageContent"
               - $ref: "#/components/schemas/ComputerScreenshotContent"
@@ -14080,6 +14085,7 @@ components:
       anyOf:
         - $ref: "#/components/schemas/OutputTextContent"
         - $ref: "#/components/schemas/RefusalContent"
+        - $ref: "#/components/schemas/ReasoningTextContent"
       discriminator:
         propertyName: type
     OutputItem:
@@ -14107,7 +14113,7 @@ components:
           description: |
             The content of the output message.
           items:
-            $ref: "#/components/schemas/OutputContent"
+            $ref: "#/components/schemas/OutputMessageContent"
           type: array
         id:
           description: |
@@ -14145,6 +14151,12 @@ components:
         - status
       title: Output message
       type: object
+    OutputMessageContent:
+      anyOf:
+        - $ref: "#/components/schemas/OutputTextContent"
+        - $ref: "#/components/schemas/RefusalContent"
+      discriminator:
+        propertyName: type
     OutputTextContent:
       description: A text output from the model.
       properties:
@@ -22480,22 +22492,7 @@ components:
           description: |
             Reasoning text content.
           items:
-            properties:
-              text:
-                description: |
-                  Reasoning text output from the model.
-                type: string
-              type:
-                description: |
-                  The type of the object. Always `reasoning_text`.
-                enum:
-                  - reasoning_text
-                type: string
-                x-stainless-const: true
-            required:
-              - type
-              - text
-            type: object
+            $ref: "#/components/schemas/ReasoningTextContent"
           type: array
         encrypted_content:
           anyOf:
@@ -22521,22 +22518,7 @@ components:
           description: |
             Reasoning summary content.
           items:
-            properties:
-              text:
-                description: |
-                  A summary of the reasoning output from the model so far.
-                type: string
-              type:
-                description: |
-                  The type of the object. Always `summary_text`.
-                enum:
-                  - summary_text
-                type: string
-                x-stainless-const: true
-            required:
-              - type
-              - text
-            type: object
+            $ref: "#/components/schemas/Summary"
           type: array
         type:
           description: |
@@ -22550,6 +22532,24 @@ components:
         - summary
         - type
       title: Reasoning
+      type: object
+    ReasoningTextContent:
+      description: Reasoning text from the model.
+      properties:
+        text:
+          description: The reasoning text from the model.
+          type: string
+        type:
+          default: reasoning_text
+          description: The type of the reasoning text. Always `reasoning_text`.
+          enum:
+            - reasoning_text
+          type: string
+          x-stainless-const: true
+      required:
+        - type
+        - text
+      title: Reasoning text
       type: object
     RefusalContent:
       description: A refusal from the model.
@@ -27058,13 +27058,33 @@ components:
       required:
         - tool_outputs
       type: object
+    Summary:
+      description: A summary text from the model.
+      properties:
+        text:
+          description: A summary of the reasoning output from the model so far.
+          type: string
+        type:
+          default: summary_text
+          description: The type of the object. Always `summary_text`.
+          enum:
+            - summary_text
+          type: string
+          x-stainless-const: true
+      required:
+        - type
+        - text
+      title: Summary text
+      type: object
     SummaryTextContent:
       description: A summary text from the model.
       properties:
         text:
+          description: A summary of the reasoning output from the model so far.
           type: string
         type:
           default: summary_text
+          description: The type of the object. Always `summary_text`.
           enum:
             - summary_text
           type: string
@@ -40001,7 +40021,8 @@ paths:
                     "input": [
                       {
                         "role": "user",
-                        "content": "Score how close the reference answer is to the model answer. Score 1.0 if they are the same and 0.0 if they are different. Return just a floating point score\n\nReference answer: {{item.reference_answer}}\n\nModel answer: {{sample.output_text}}"
+                        "content": "Score how close the reference answer is to the model
+              answer. Score 1.0 if they are the same and 0.0 if they are different. Return just a floating point score\n\nReference answer: {{item.reference_answer}}\n\nModel answer: {{sample.output_text}}"
                       }
                     ],
                     "model": "gpt-4o-2024-08-06",
