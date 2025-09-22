@@ -119,7 +119,7 @@
             "type": ["boolean", "null"]
           },
           "max_completion_tokens": {
-            "description": "An upper bound for the number of tokens that can be generated for a completion, including both visible output tokens and reasoning tokens. Defaults to None, meaning the model will generate as many tokens as needed up until the model's maximum context length.",
+            "description": "An upper bound for the number of tokens that can be generated for a completion, only applies to visible output tokens (i.e. does not apply to tokens used for reasoning or function calls). Defaults to None, meaning the model will generate as many tokens as needed up until the model's maximum context length.",
             "example": 8192,
             "format": "int32",
             "type": ["integer", "null"]
@@ -787,6 +787,20 @@
             "type": ["array", "null"]
           }
         },
+        "type": "object"
+      },
+      "DocumentsSource": {
+        "description": "DocumentsSource defines the source of documents to search over.",
+        "properties": {
+          "collection_ids": {
+            "description": "The collection IDs to search in.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["collection_ids"],
         "type": "object"
       },
       "EditImageRequest": {
@@ -3232,6 +3246,43 @@
         "required": ["id", "object", "created", "model", "choices"],
         "type": "object"
       },
+      "SearchMatch": {
+        "description": "SearchMatch defines a single match from a search request.",
+        "properties": {
+          "chunk_content": {
+            "description": "The chunk content.",
+            "type": "string"
+          },
+          "chunk_id": {
+            "description": "The chunk ID.",
+            "type": "string"
+          },
+          "collection_ids": {
+            "description": "The collection ID(s).",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "file_id": {
+            "description": "The document ID.",
+            "type": "string"
+          },
+          "score": {
+            "description": "The relevance score.",
+            "format": "float",
+            "type": "number"
+          }
+        },
+        "required": [
+          "file_id",
+          "chunk_id",
+          "chunk_content",
+          "score",
+          "collection_ids"
+        ],
+        "type": "object"
+      },
       "SearchParameters": {
         "description": "Parameters to control realtime data.",
         "properties": {
@@ -3274,6 +3325,44 @@
             "type": ["string", "null"]
           }
         },
+        "type": "object"
+      },
+      "SearchRequest": {
+        "description": "SearchRequest defines the request to search for documents.",
+        "properties": {
+          "limit": {
+            "description": "The number of chunks to return.\nWill always return the top matching chunks.\nOptional, defaults to 10",
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "query": {
+            "description": "The query to search for which will be embedded using the\nsame embedding model as the one used for the source to query.",
+            "type": "string"
+          },
+          "ranking_metric": {
+            "description": "The ranking metric to use for the search. Defaults to COSINE_SIMILARITY.",
+            "type": ["string", "null"]
+          },
+          "source": {
+            "$ref": "#/components/schemas/DocumentsSource",
+            "description": "The source to query."
+          }
+        },
+        "required": ["query", "source"],
+        "type": "object"
+      },
+      "SearchResponse": {
+        "description": "SearchResponse defines the response to a search request.",
+        "properties": {
+          "matches": {
+            "description": "The search matches.",
+            "items": {
+              "$ref": "#/components/schemas/SearchMatch"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["matches"],
         "type": "object"
       },
       "SearchSource": {
@@ -4068,6 +4157,64 @@
           }
         ],
         "summary": "(Legacy - Not supported by reasoning models) Create a text completion response for a given prompt. Replaced by /v1/chat/completions.",
+        "tags": ["v1"]
+      }
+    },
+    "/v1/documents/search": {
+      "post": {
+        "operationId": "handle_document_search_request_v2",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "query": "What is the revenue in the last quarter?",
+                "source": {
+                  "collection_ids": [
+                    "collection_80100614-300c-4609-959b-a138fa90f542"
+                  ]
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "matches": [
+                    {
+                      "chunk_content": ", deferred revenue related to such customer payments amounted to $2.10 billion and $1.77 billion, respectively, mainly due to contractual payment terms. Revenue recognized from the deferred revenue balances as of December 31, 2024 and 2023 was $944 million and $873 million for the six months ended June 30, 2025 and 2024, respectively. We have elected the practical expedient to omit disclosure of the amount of the transaction price allocated to remaining performance obligations for contracts with an original expected contract length of one year or less. As of June 30, 2025, total transaction price allocated to performance obligations that were unsatisfied or partially unsatisfied for contracts with an original expected length of more than one year was $10.38 billion. Of this amount, we expect to recognize $5.47 billion in the next 12 months and the rest over the remaining performance obligation period. Changes in government and economic incentives or tariffs may impact the transaction price or our ability to e",
+                      "chunk_id": "0199717c-511b-7a80-bab3-dfe9a27f82ab",
+                      "collection_ids": [
+                        "collection_80100614-300c-4609-959b-a138fa90f542"
+                      ],
+                      "file_id": "file_ac3c5728-7399-41fc-bd62-0fef0042de9c",
+                      "score": 1.1447691
+                    }
+                  ]
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            },
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad request. The request is invalid or an invalid API key is provided."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Search for content related to the query within the given collections.",
         "tags": ["v1"]
       }
     },
