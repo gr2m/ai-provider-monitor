@@ -2967,7 +2967,7 @@ components:
       required:
         - id
       type: object
-    ComputerEnvironment1:
+    ComputerEnvironment:
       enum:
         - windows
         - mac
@@ -3144,7 +3144,7 @@ components:
           description: The width of the computer display.
           type: integer
         environment:
-          $ref: "#/components/schemas/ComputerEnvironment1"
+          $ref: "#/components/schemas/ComputerEnvironment"
           description: The type of computer environment to control.
         type:
           default: computer_use_preview
@@ -3400,9 +3400,6 @@ components:
       discriminator:
         propertyName: type
       title: Conversation item
-      x-oaiMeta:
-        group: conversations
-        name: The item object
     ConversationItemList:
       description: A list of Conversation items.
       properties:
@@ -4551,24 +4548,23 @@ components:
           type: string
       required: []
       type: object
-    CreateConversationRequest:
-      description: Create a conversation
+    CreateConversationBody:
       properties:
         items:
           anyOf:
-            - description: |
-                Initial items to include in the conversation context.
-                You may add up to 20 items at a time.
+            - description: Initial items to include in the conversation context. You may add up to 20 items at a time.
               items:
                 $ref: "#/components/schemas/InputItem"
               maxItems: 20
               type: array
             - type: "null"
         metadata:
-          $ref: "#/components/schemas/Metadata"
-          description: |
-            Set of 16 key-value pairs that can be attached to an object. Useful for
-            storing additional information about the object in a structured format.
+          anyOf:
+            - $ref: "#/components/schemas/Metadata"
+              description: |-
+                Set of 16 key-value pairs that can be attached to an object. This can be         useful for storing additional information about the object in a structured         format, and querying for objects via API or the dashboard.
+                        Keys are strings with a maximum length of 64 characters. Values are strings         with a maximum length of 512 characters.
+            - type: "null"
       required: []
       type: object
     CreateEmbeddingRequest:
@@ -13620,15 +13616,6 @@ components:
           type: object
           x-oaiTypeLabel: map
         - type: "null"
-    MetadataParam:
-      additionalProperties:
-        maxLength: 512
-        type: string
-      description: |-
-        Set of 16 key-value pairs that can be attached to an object. This can be         useful for storing additional information about the object in a structured         format, and querying for objects via API or the dashboard.
-                Keys are strings with a maximum length of 64 characters. Values are strings         with a maximum length of 512 characters.
-      maxProperties: 16
-      type: object
     Model:
       description: Describes an OpenAI model offering that can be used with the API.
       properties:
@@ -27739,7 +27726,7 @@ components:
     UpdateConversationBody:
       properties:
         metadata:
-          $ref: "#/components/schemas/MetadataParam"
+          $ref: "#/components/schemas/Metadata"
           description: |-
             Set of 16 key-value pairs that can be attached to an object. This can be         useful for storing additional information about the object in a structured         format, and querying for objects via API or the dashboard.
                     Keys are strings with a maximum length of 64 characters. Values are strings         with a maximum length of 512 characters.
@@ -35831,19 +35818,19 @@ paths:
     post:
       description: Create a conversation.
       operationId: createConversation
+      parameters: []
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateConversationRequest"
-        required: true
+              $ref: "#/components/schemas/CreateConversationBody"
       responses:
         "200":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ConversationResource"
-          description: OK
+          description: Success
       summary: Create a conversation
       tags:
         - Conversations
@@ -35984,7 +35971,7 @@ paths:
           Returns a [Conversation](https://platform.openai.com/docs/api-reference/conversations/object) object.
   /conversations/{conversation_id}:
     delete:
-      description: Delete a conversation with the given ID.
+      description: Delete a conversation. Items in the conversation will not be deleted.
       operationId: deleteConversation
       parameters:
         - description: The ID of the conversation to delete.
@@ -36000,7 +35987,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DeletedConversationResource"
-          description: OK
+          description: Success
       summary: Delete a conversation
       tags:
         - Conversations
@@ -36105,7 +36092,7 @@ paths:
         returns: |
           A success message.
     get:
-      description: Get a conversation with the given ID.
+      description: Get a conversation
       operationId: getConversation
       parameters:
         - description: The ID of the conversation to retrieve.
@@ -36121,7 +36108,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ConversationResource"
-          description: OK
+          description: Success
       summary: Retrieve a conversation
       tags:
         - Conversations
@@ -36227,7 +36214,7 @@ paths:
         returns: |
           Returns a [Conversation](https://platform.openai.com/docs/api-reference/conversations/object) object.
     post:
-      description: Update a conversation's metadata with the given ID.
+      description: Update a conversation
       operationId: updateConversation
       parameters:
         - description: The ID of the conversation to update.
@@ -36242,14 +36229,13 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/UpdateConversationBody"
-        required: true
       responses:
         "200":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ConversationResource"
-          description: OK
+          description: Success
       summary: Update a conversation
       tags:
         - Conversations
@@ -36293,6 +36279,7 @@ paths:
                   "github.com/openai/openai-go"
                   "github.com/openai/openai-go/conversations"
                   "github.com/openai/openai-go/option"
+                  "github.com/openai/openai-go/shared"
                 )
 
                 func main() {
@@ -36303,7 +36290,7 @@ paths:
                     context.TODO(),
                     "conv_123",
                     conversations.ConversationUpdateParams{
-                      Metadata: map[string]string{
+                      Metadata: shared.Metadata{
                       "foo": "string",
                       },
                     },
@@ -36718,6 +36705,7 @@ paths:
                             OfString: openai.String("string"),
                           },
                           Role: responses.EasyInputMessageRoleUser,
+                          Type: responses.EasyInputMessageTypeMessage,
                         },
                       }},
                     },
@@ -36747,6 +36735,7 @@ paths:
                             .addItem(EasyInputMessage.builder()
                                 .content("string")
                                 .role(EasyInputMessage.Role.USER)
+                                .type(EasyInputMessage.Type.MESSAGE)
                                 .build())
                             .build();
                         ConversationItemList conversationItemList = client.conversations().items().create(params);
@@ -36782,7 +36771,7 @@ paths:
                 });
 
                 const conversationItemList = await client.conversations.items.create('conv_123', {
-                  items: [{ content: 'string', role: 'user' }],
+                  items: [{ content: 'string', role: 'user', type: 'message' }],
                 });
 
                 console.log(conversationItemList.first_id);
@@ -36797,6 +36786,7 @@ paths:
                     items=[{
                         "content": "string",
                         "role": "user",
+                        "type": "message",
                     }],
                 )
                 print(conversation_item_list.first_id)
@@ -36805,7 +36795,7 @@ paths:
 
                 openai = OpenAI::Client.new(api_key: "My API Key")
 
-                conversation_item_list = openai.conversations.items.create("conv_123", items: [{content: "string", role: :user}])
+                conversation_item_list = openai.conversations.items.create("conv_123", items: [{content: "string", role: :user, type: :message}])
 
                 puts(conversation_item_list)
             response: |
