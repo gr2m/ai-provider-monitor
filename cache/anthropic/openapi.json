@@ -466,6 +466,98 @@
         "title": "CitationsDelta",
         "type": "object"
       },
+      "BetaClearToolUses20250919": {
+        "additionalProperties": false,
+        "properties": {
+          "clear_at_least": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaInputTokensClearAtLeast"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Minimum number of tokens that must be cleared when triggered. Context will only be modified if at least this many tokens can be removed."
+          },
+          "clear_tool_inputs": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether to clear all tool inputs (bool) or specific tool inputs to clear (list)",
+            "title": "Clear Tool Inputs"
+          },
+          "exclude_tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tool names whose uses are preserved from clearing",
+            "title": "Exclude Tools"
+          },
+          "keep": {
+            "description": "Number of tool uses to retain in the conversation",
+            "discriminator": {
+              "mapping": {
+                "tool_uses": "#/components/schemas/BetaToolUsesKeep"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaToolUsesKeep"
+              }
+            ],
+            "title": "Keep"
+          },
+          "trigger": {
+            "description": "Condition that triggers the context management strategy",
+            "discriminator": {
+              "mapping": {
+                "input_tokens": "#/components/schemas/BetaInputTokensTrigger",
+                "tool_uses": "#/components/schemas/BetaToolUsesTrigger"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaInputTokensTrigger"
+              },
+              {
+                "$ref": "#/components/schemas/BetaToolUsesTrigger"
+              }
+            ],
+            "title": "Trigger"
+          },
+          "type": {
+            "const": "clear_tool_uses_20250919",
+            "enum": ["clear_tool_uses_20250919"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["type"],
+        "title": "ClearToolUses20250919",
+        "type": "object"
+      },
       "BetaCodeExecutionToolResultErrorCode": {
         "enum": [
           "invalid_tool_input",
@@ -968,6 +1060,45 @@
         "title": "ContentBlockStopEvent",
         "type": "object"
       },
+      "BetaContextManagementConfig": {
+        "additionalProperties": false,
+        "description": "Configuration for context management operations.",
+        "properties": {
+          "edits": {
+            "description": "List of context management edits to apply",
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "clear_tool_uses_20250919": "#/components/schemas/BetaClearToolUses20250919"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/BetaClearToolUses20250919"
+                }
+              ]
+            },
+            "minItems": 0,
+            "title": "Edits",
+            "type": "array"
+          }
+        },
+        "title": "ContextManagementConfig",
+        "type": "object"
+      },
+      "BetaContextManagementResponse": {
+        "properties": {
+          "original_input_tokens": {
+            "description": "The original token count before context management was applied",
+            "title": "Original Input Tokens",
+            "type": "integer"
+          }
+        },
+        "required": ["original_input_tokens"],
+        "title": "ContextManagementResponse",
+        "type": "object"
+      },
       "BetaCountMessageTokensParams": {
         "additionalProperties": false,
         "examples": [
@@ -982,6 +1113,17 @@
           }
         ],
         "properties": {
+          "context_management": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaContextManagementConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Context management configuration.\n\nThis allows you to control how Claude manages context across multiple requests, such as whether to clear function results or not."
+          },
           "mcp_servers": {
             "description": "MCP servers to be utilized in this request",
             "items": {
@@ -1075,6 +1217,9 @@
                   "$ref": "#/components/schemas/BetaComputerUseTool_20241022"
                 },
                 {
+                  "$ref": "#/components/schemas/BetaMemoryTool_20250818"
+                },
+                {
                   "$ref": "#/components/schemas/BetaComputerUseTool_20250124"
                 },
                 {
@@ -1112,6 +1257,17 @@
           }
         ],
         "properties": {
+          "context_management": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaContextManagementResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Information about context management applied to the message."
+          },
           "input_tokens": {
             "description": "The total number of tokens across the provided list of messages, system prompt, and tools.",
             "examples": [2095],
@@ -1119,7 +1275,7 @@
             "type": "integer"
           }
         },
-        "required": ["input_tokens"],
+        "required": ["context_management", "input_tokens"],
         "title": "CountMessageTokensResponse",
         "type": "object"
       },
@@ -1165,6 +1321,17 @@
             ],
             "description": "Container identifier for reuse across requests.",
             "title": "Container"
+          },
+          "context_management": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaContextManagementConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Context management configuration.\n\nThis allows you to control how Claude manages context across multiple requests, such as whether to clear function results or not."
           },
           "max_tokens": {
             "description": "The maximum number of tokens to generate before stopping.\n\nNote that our models may stop _before_ reaching this maximum. This parameter only specifies the absolute maximum number of tokens to generate.\n\nDifferent models have different maximum values for this parameter.  See [models](https://docs.anthropic.com/en/docs/models-overview) for details.",
@@ -1296,6 +1463,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/BetaComputerUseTool_20241022"
+                },
+                {
+                  "$ref": "#/components/schemas/BetaMemoryTool_20250818"
                 },
                 {
                   "$ref": "#/components/schemas/BetaComputerUseTool_20250124"
@@ -1827,6 +1997,44 @@
         "title": "InputSchema",
         "type": "object"
       },
+      "BetaInputTokensClearAtLeast": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "input_tokens",
+            "enum": ["input_tokens"],
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "minimum": 0,
+            "title": "Value",
+            "type": "integer"
+          }
+        },
+        "required": ["type", "value"],
+        "title": "InputTokensClearAtLeast",
+        "type": "object"
+      },
+      "BetaInputTokensTrigger": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "input_tokens",
+            "enum": ["input_tokens"],
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "minimum": 1,
+            "title": "Value",
+            "type": "integer"
+          }
+        },
+        "required": ["type", "value"],
+        "title": "InputTokensTrigger",
+        "type": "object"
+      },
       "BetaInvalidRequestError": {
         "properties": {
           "message": {
@@ -1932,6 +2140,231 @@
         "title": "ListResponse[ModelInfo]",
         "type": "object"
       },
+      "BetaMemoryTool_20250818": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "name": {
+            "const": "memory",
+            "description": "Name of the tool.\n\nThis is how the tool will be called by the model and in `tool_use` blocks.",
+            "enum": ["memory"],
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "memory_20250818",
+            "enum": ["memory_20250818"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["name", "type"],
+        "title": "MemoryTool_20250818",
+        "type": "object"
+      },
+      "BetaMemoryTool_20250818_Command": {
+        "discriminator": {
+          "mapping": {
+            "create": "#/components/schemas/BetaMemoryTool_20250818_CreateCommand",
+            "delete": "#/components/schemas/BetaMemoryTool_20250818_DeleteCommand",
+            "insert": "#/components/schemas/BetaMemoryTool_20250818_InsertCommand",
+            "rename": "#/components/schemas/BetaMemoryTool_20250818_RenameCommand",
+            "str_replace": "#/components/schemas/BetaMemoryTool_20250818_StrReplaceCommand",
+            "view": "#/components/schemas/BetaMemoryTool_20250818_ViewCommand"
+          },
+          "propertyName": "command"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaMemoryTool_20250818_ViewCommand"
+          },
+          {
+            "$ref": "#/components/schemas/BetaMemoryTool_20250818_CreateCommand"
+          },
+          {
+            "$ref": "#/components/schemas/BetaMemoryTool_20250818_StrReplaceCommand"
+          },
+          {
+            "$ref": "#/components/schemas/BetaMemoryTool_20250818_InsertCommand"
+          },
+          {
+            "$ref": "#/components/schemas/BetaMemoryTool_20250818_DeleteCommand"
+          },
+          {
+            "$ref": "#/components/schemas/BetaMemoryTool_20250818_RenameCommand"
+          }
+        ]
+      },
+      "BetaMemoryTool_20250818_CreateCommand": {
+        "properties": {
+          "command": {
+            "const": "create",
+            "default": "create",
+            "description": "Command type identifier",
+            "enum": ["create"],
+            "type": "string"
+          },
+          "file_text": {
+            "description": "Content to write to the file",
+            "example": "Meeting notes:\n- Discussed project timeline\n- Next steps defined\n",
+            "type": "string"
+          },
+          "path": {
+            "description": "Path where the file should be created",
+            "example": "/memories/notes.txt",
+            "type": "string"
+          }
+        },
+        "required": ["command", "path", "file_text"],
+        "type": "object"
+      },
+      "BetaMemoryTool_20250818_DeleteCommand": {
+        "properties": {
+          "command": {
+            "const": "delete",
+            "default": "delete",
+            "description": "Command type identifier",
+            "enum": ["delete"],
+            "type": "string"
+          },
+          "path": {
+            "description": "Path to the file or directory to delete",
+            "example": "/memories/old_file.txt",
+            "type": "string"
+          }
+        },
+        "required": ["command", "path"],
+        "type": "object"
+      },
+      "BetaMemoryTool_20250818_InsertCommand": {
+        "properties": {
+          "command": {
+            "const": "insert",
+            "default": "insert",
+            "description": "Command type identifier",
+            "enum": ["insert"],
+            "type": "string"
+          },
+          "insert_line": {
+            "description": "Line number where text should be inserted",
+            "example": 2,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "insert_text": {
+            "description": "Text to insert at the specified line",
+            "example": "- Review memory tool documentation\n",
+            "type": "string"
+          },
+          "path": {
+            "description": "Path to the file where text should be inserted",
+            "example": "/memories/todo.txt",
+            "type": "string"
+          }
+        },
+        "required": ["command", "path", "insert_line", "insert_text"],
+        "type": "object"
+      },
+      "BetaMemoryTool_20250818_RenameCommand": {
+        "properties": {
+          "command": {
+            "const": "rename",
+            "default": "rename",
+            "description": "Command type identifier",
+            "enum": ["rename"],
+            "type": "string"
+          },
+          "new_path": {
+            "description": "New path for the file or directory",
+            "example": "/memories/final.txt",
+            "type": "string"
+          },
+          "old_path": {
+            "description": "Current path of the file or directory",
+            "example": "/memories/draft.txt",
+            "type": "string"
+          }
+        },
+        "required": ["command", "old_path", "new_path"],
+        "type": "object"
+      },
+      "BetaMemoryTool_20250818_StrReplaceCommand": {
+        "properties": {
+          "command": {
+            "const": "str_replace",
+            "default": "str_replace",
+            "description": "Command type identifier",
+            "enum": ["str_replace"],
+            "type": "string"
+          },
+          "new_str": {
+            "description": "Text to replace with",
+            "example": "Favorite color: green",
+            "type": "string"
+          },
+          "old_str": {
+            "description": "Text to search for and replace",
+            "example": "Favorite color: blue",
+            "type": "string"
+          },
+          "path": {
+            "description": "Path to the file where text should be replaced",
+            "example": "/memories/preferences.txt",
+            "type": "string"
+          }
+        },
+        "required": ["command", "path", "old_str", "new_str"],
+        "type": "object"
+      },
+      "BetaMemoryTool_20250818_ViewCommand": {
+        "properties": {
+          "command": {
+            "const": "view",
+            "default": "view",
+            "description": "Command type identifier",
+            "enum": ["view"],
+            "type": "string"
+          },
+          "path": {
+            "description": "Path to directory or file to view",
+            "example": "/memories",
+            "type": "string"
+          },
+          "view_range": {
+            "description": "Optional line range for viewing specific lines",
+            "example": [1, 10],
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "type": "array"
+          }
+        },
+        "required": ["command", "path"],
+        "type": "object"
+      },
       "BetaMessage": {
         "examples": [
           {
@@ -1983,6 +2416,18 @@
             },
             "title": "Content",
             "type": "array"
+          },
+          "context_management": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaResponseContextManagement"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Information about context management strategies applied during the request"
           },
           "id": {
             "description": "Unique object identifier.\n\nThe format and length of IDs may change over time.",
@@ -2054,6 +2499,7 @@
           "stop_reason",
           "stop_sequence",
           "usage",
+          "context_management",
           "container"
         ],
         "title": "Message",
@@ -2282,6 +2728,18 @@
       },
       "BetaMessageDeltaEvent": {
         "properties": {
+          "context_management": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaResponseContextManagement"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Information about context management strategies applied during the request"
+          },
           "delta": {
             "$ref": "#/components/schemas/BetaMessageDelta"
           },
@@ -2302,7 +2760,7 @@
             ]
           }
         },
-        "required": ["delta", "type", "usage"],
+        "required": ["context_management", "delta", "type", "usage"],
         "title": "MessageDeltaEvent",
         "type": "object"
       },
@@ -4544,6 +5002,34 @@
         "title": "ResponseCitationsConfig",
         "type": "object"
       },
+      "BetaResponseClearToolUses20250919Edit": {
+        "description": "Results for clear_tool_uses_20250919 edit.",
+        "properties": {
+          "cleared_input_tokens": {
+            "description": "Number of input tokens cleared by this edit.",
+            "minimum": 0,
+            "title": "Cleared Input Tokens",
+            "type": "integer"
+          },
+          "cleared_tool_uses": {
+            "description": "Number of tool uses that were cleared.",
+            "minimum": 0,
+            "title": "Cleared Tool Uses",
+            "type": "integer"
+          },
+          "type": {
+            "const": "clear_tool_uses_20250919",
+            "default": "clear_tool_uses_20250919",
+            "description": "The type of context management edit applied.",
+            "enum": ["clear_tool_uses_20250919"],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["cleared_input_tokens", "cleared_tool_uses", "type"],
+        "title": "ResponseClearToolUses20250919Edit",
+        "type": "object"
+      },
       "BetaResponseCodeExecutionOutputBlock": {
         "properties": {
           "file_id": {
@@ -4722,6 +5208,22 @@
           "type"
         ],
         "title": "ResponseContentBlockLocationCitation",
+        "type": "object"
+      },
+      "BetaResponseContextManagement": {
+        "description": "Information about context management operations applied during the request.",
+        "properties": {
+          "applied_edits": {
+            "description": "List of context management edits that were applied.",
+            "items": {
+              "$ref": "#/components/schemas/BetaResponseClearToolUses20250919Edit"
+            },
+            "title": "Applied Edits",
+            "type": "array"
+          }
+        },
+        "required": ["applied_edits"],
+        "title": "ResponseContextManagement",
         "type": "object"
       },
       "BetaResponseDocumentBlock": {
@@ -5625,7 +6127,8 @@
           "stop_sequence",
           "tool_use",
           "pause_turn",
-          "refusal"
+          "refusal",
+          "model_context_window_exceeded"
         ],
         "type": "string"
       },
@@ -6115,6 +6618,44 @@
         },
         "required": ["name", "type"],
         "title": "ToolChoiceTool",
+        "type": "object"
+      },
+      "BetaToolUsesKeep": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "tool_uses",
+            "enum": ["tool_uses"],
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "minimum": 0,
+            "title": "Value",
+            "type": "integer"
+          }
+        },
+        "required": ["type", "value"],
+        "title": "ToolUsesKeep",
+        "type": "object"
+      },
+      "BetaToolUsesTrigger": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "tool_uses",
+            "enum": ["tool_uses"],
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "minimum": 1,
+            "title": "Value",
+            "type": "integer"
+          }
+        },
+        "required": ["type", "value"],
+        "title": "ToolUsesTrigger",
         "type": "object"
       },
       "BetaURLImageSource": {
@@ -8573,6 +9114,16 @@
             "x-stainless-nominal": false
           },
           {
+            "const": "claude-sonnet-4-5",
+            "description": "Our best model for real-world agents and coding",
+            "x-stainless-nominal": false
+          },
+          {
+            "const": "claude-sonnet-4-5-20250929",
+            "description": "Our best model for real-world agents and coding",
+            "x-stainless-nominal": false
+          },
+          {
             "const": "claude-3-5-sonnet-latest",
             "description": "Our previous most intelligent model",
             "x-stainless-nominal": false
@@ -10274,7 +10825,8 @@
           "stop_sequence",
           "tool_use",
           "pause_turn",
-          "refusal"
+          "refusal",
+          "model_context_window_exceeded"
         ],
         "type": "string"
       },
@@ -11032,7 +11584,7 @@
   },
   "info": {
     "title": "Anthropic API",
-    "version": "147"
+    "version": "158"
   },
   "openapi": "3.1.0",
   "paths": {
