@@ -13,7 +13,7 @@ if (!provider) {
 }
 
 try {
-  for await (const filePath of glob(`cache/${provider}/*`)) {
+  for await (const filePath of glob(`cache/${provider}/openai.{json,yaml,yml}`)) {
     const fileContents = await readFile(filePath, "utf8");
     const schema = filePath.endsWith(".json")
       ? JSON.parse(fileContents)
