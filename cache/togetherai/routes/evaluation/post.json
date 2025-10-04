@@ -1,0 +1,592 @@
+{
+  "description": "Creates a new evaluation job for classify, score, or compare tasks",
+  "operationId": "evaluation-create",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "examples": {
+          "classify": {
+            "summary": "Classify evaluation example",
+            "value": {
+              "parameters": {
+                "input_data_file_path": "file-abcd-1234",
+                "judge": {
+                  "model_name": "meta-llama/Llama-3-70B-Instruct-Turbo",
+                  "system_template": "You are a helpful assistant that classifies text."
+                },
+                "labels": [
+                  "Toxic",
+                  "Non-Toxic"
+                ],
+                "model_to_evaluate": "output_column",
+                "pass_labels": [
+                  "Non-Toxic"
+                ]
+              },
+              "type": "classify"
+            }
+          },
+          "compare": {
+            "summary": "Compare evaluation example",
+            "value": {
+              "parameters": {
+                "input_data_file_path": "file-1234-abcd",
+                "judge": {
+                  "model_name": "meta-llama/Llama-3-70B-Instruct-Turbo",
+                  "system_template": "You are a helpful assistant that compares responses."
+                },
+                "model_a": "response_a",
+                "model_b": "response_b"
+              },
+              "type": "compare"
+            }
+          },
+          "score": {
+            "summary": "Score evaluation example",
+            "value": {
+              "parameters": {
+                "input_data_file_path": "file-1234-abcd",
+                "judge": {
+                  "model_name": "meta-llama/Llama-3-70B-Instruct-Turbo",
+                  "system_template": "You are a helpful assistant that scores responses."
+                },
+                "max_score": 10,
+                "min_score": 0,
+                "model_to_evaluate": {
+                  "input_template": "Classify: {prompt}",
+                  "max_tokens": 512,
+                  "model_name": "meta-llama/Llama-3-8B-Instruct-Turbo",
+                  "system_template": "You are a helpful assistant.",
+                  "temperature": 0.7
+                },
+                "pass_threshold": 7
+              },
+              "type": "score"
+            }
+          }
+        },
+        "schema": {
+          "properties": {
+            "parameters": {
+              "description": "Type-specific parameters for the evaluation",
+              "oneOf": [
+                {
+                  "properties": {
+                    "input_data_file_path": {
+                      "description": "Data file ID",
+                      "example": "file-1234-aefd",
+                      "type": "string"
+                    },
+                    "judge": {
+                      "properties": {
+                        "model_name": {
+                          "description": "Name of the judge model",
+                          "example": "meta-llama/Llama-3-70B-Instruct-Turbo",
+                          "type": "string"
+                        },
+                        "system_template": {
+                          "description": "System prompt template for the judge",
+                          "example": "Imagine you are a helpful assistant",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "model_name",
+                        "system_template"
+                      ],
+                      "type": "object"
+                    },
+                    "labels": {
+                      "description": "List of possible classification labels",
+                      "example": [
+                        "yes",
+                        "no"
+                      ],
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 2,
+                      "type": "array"
+                    },
+                    "model_to_evaluate": {
+                      "oneOf": [
+                        {
+                          "description": "Field name in the input data",
+                          "type": "string"
+                        },
+                        {
+                          "properties": {
+                            "input_template": {
+                              "description": "Input prompt template",
+                              "example": "Please classify {{prompt}} based on the labels below",
+                              "type": "string"
+                            },
+                            "max_tokens": {
+                              "description": "Maximum number of tokens to generate",
+                              "example": 512,
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "model_name": {
+                              "description": "Name of the model to evaluate",
+                              "example": "meta-llama/Llama-3-70B-Instruct-Turbo",
+                              "type": "string"
+                            },
+                            "system_template": {
+                              "description": "System prompt template",
+                              "example": "Imagine you are helpful assistant",
+                              "type": "string"
+                            },
+                            "temperature": {
+                              "description": "Sampling temperature",
+                              "example": 0.7,
+                              "format": "float",
+                              "maximum": 2,
+                              "minimum": 0,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "model_name",
+                            "max_tokens",
+                            "temperature",
+                            "system_template",
+                            "input_template"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "pass_labels": {
+                      "description": "List of labels that are considered passing",
+                      "example": [
+                        "yes"
+                      ],
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 1,
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "judge",
+                    "labels",
+                    "pass_labels",
+                    "input_data_file_path"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "properties": {
+                    "input_data_file_path": {
+                      "description": "Data file ID",
+                      "example": "file-01234567890123456789",
+                      "type": "string"
+                    },
+                    "judge": {
+                      "properties": {
+                        "model_name": {
+                          "description": "Name of the judge model",
+                          "example": "meta-llama/Llama-3-70B-Instruct-Turbo",
+                          "type": "string"
+                        },
+                        "system_template": {
+                          "description": "System prompt template for the judge",
+                          "example": "Imagine you are a helpful assistant",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "model_name",
+                        "system_template"
+                      ],
+                      "type": "object"
+                    },
+                    "max_score": {
+                      "description": "Maximum possible score",
+                      "example": 10,
+                      "format": "float",
+                      "type": "number"
+                    },
+                    "min_score": {
+                      "description": "Minimum possible score",
+                      "example": 0,
+                      "format": "float",
+                      "type": "number"
+                    },
+                    "model_to_evaluate": {
+                      "oneOf": [
+                        {
+                          "description": "Field name in the input data",
+                          "type": "string"
+                        },
+                        {
+                          "properties": {
+                            "input_template": {
+                              "description": "Input prompt template",
+                              "example": "Please classify {{prompt}} based on the labels below",
+                              "type": "string"
+                            },
+                            "max_tokens": {
+                              "description": "Maximum number of tokens to generate",
+                              "example": 512,
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "model_name": {
+                              "description": "Name of the model to evaluate",
+                              "example": "meta-llama/Llama-3-70B-Instruct-Turbo",
+                              "type": "string"
+                            },
+                            "system_template": {
+                              "description": "System prompt template",
+                              "example": "Imagine you are helpful assistant",
+                              "type": "string"
+                            },
+                            "temperature": {
+                              "description": "Sampling temperature",
+                              "example": 0.7,
+                              "format": "float",
+                              "maximum": 2,
+                              "minimum": 0,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "model_name",
+                            "max_tokens",
+                            "temperature",
+                            "system_template",
+                            "input_template"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "pass_threshold": {
+                      "description": "Score threshold for passing",
+                      "example": 7,
+                      "format": "float",
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "judge",
+                    "min_score",
+                    "max_score",
+                    "pass_threshold",
+                    "input_data_file_path"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "properties": {
+                    "input_data_file_path": {
+                      "description": "Data file name",
+                      "type": "string"
+                    },
+                    "judge": {
+                      "properties": {
+                        "model_name": {
+                          "description": "Name of the judge model",
+                          "example": "meta-llama/Llama-3-70B-Instruct-Turbo",
+                          "type": "string"
+                        },
+                        "system_template": {
+                          "description": "System prompt template for the judge",
+                          "example": "Imagine you are a helpful assistant",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "model_name",
+                        "system_template"
+                      ],
+                      "type": "object"
+                    },
+                    "model_a": {
+                      "oneOf": [
+                        {
+                          "description": "Field name in the input data",
+                          "type": "string"
+                        },
+                        {
+                          "properties": {
+                            "input_template": {
+                              "description": "Input prompt template",
+                              "example": "Please classify {{prompt}} based on the labels below",
+                              "type": "string"
+                            },
+                            "max_tokens": {
+                              "description": "Maximum number of tokens to generate",
+                              "example": 512,
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "model_name": {
+                              "description": "Name of the model to evaluate",
+                              "example": "meta-llama/Llama-3-70B-Instruct-Turbo",
+                              "type": "string"
+                            },
+                            "system_template": {
+                              "description": "System prompt template",
+                              "example": "Imagine you are helpful assistant",
+                              "type": "string"
+                            },
+                            "temperature": {
+                              "description": "Sampling temperature",
+                              "example": 0.7,
+                              "format": "float",
+                              "maximum": 2,
+                              "minimum": 0,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "model_name",
+                            "max_tokens",
+                            "temperature",
+                            "system_template",
+                            "input_template"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "model_b": {
+                      "oneOf": [
+                        {
+                          "description": "Field name in the input data",
+                          "type": "string"
+                        },
+                        {
+                          "properties": {
+                            "input_template": {
+                              "description": "Input prompt template",
+                              "example": "Please classify {{prompt}} based on the labels below",
+                              "type": "string"
+                            },
+                            "max_tokens": {
+                              "description": "Maximum number of tokens to generate",
+                              "example": 512,
+                              "minimum": 1,
+                              "type": "integer"
+                            },
+                            "model_name": {
+                              "description": "Name of the model to evaluate",
+                              "example": "meta-llama/Llama-3-70B-Instruct-Turbo",
+                              "type": "string"
+                            },
+                            "system_template": {
+                              "description": "System prompt template",
+                              "example": "Imagine you are helpful assistant",
+                              "type": "string"
+                            },
+                            "temperature": {
+                              "description": "Sampling temperature",
+                              "example": 0.7,
+                              "format": "float",
+                              "maximum": 2,
+                              "minimum": 0,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "model_name",
+                            "max_tokens",
+                            "temperature",
+                            "system_template",
+                            "input_template"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "judge",
+                    "input_data_file_path"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "type": {
+              "description": "The type of evaluation to perform",
+              "enum": [
+                "classify",
+                "score",
+                "compare"
+              ],
+              "example": "classify",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "parameters"
+          ],
+          "type": "object"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "status": {
+                "description": "Initial status of the job",
+                "enum": [
+                  "pending"
+                ],
+                "type": "string"
+              },
+              "workflow_id": {
+                "description": "The ID of the created evaluation job",
+                "example": "eval-1234-1244513",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "description": "Successful response"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "code": {
+                    "default": null,
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "message": {
+                    "nullable": false,
+                    "type": "string"
+                  },
+                  "param": {
+                    "default": null,
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "type": {
+                    "nullable": false,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Bad request"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "code": {
+                    "default": null,
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "message": {
+                    "nullable": false,
+                    "type": "string"
+                  },
+                  "param": {
+                    "default": null,
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "type": {
+                    "nullable": false,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "File not found"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "code": {
+                    "default": null,
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "message": {
+                    "nullable": false,
+                    "type": "string"
+                  },
+                  "param": {
+                    "default": null,
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "type": {
+                    "nullable": false,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Internal server error"
+    }
+  },
+  "summary": "Create a new evaluation job",
+  "tags": [
+    "Evaluations"
+  ]
+}

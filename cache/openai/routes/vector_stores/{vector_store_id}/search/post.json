@@ -1,0 +1,350 @@
+{
+  "description": "Search a vector store for relevant chunks based on a query and file attributes filter.",
+  "operationId": "searchVectorStore",
+  "parameters": [
+    {
+      "description": "The ID of the vector store to search.",
+      "in": "path",
+      "name": "vector_store_id",
+      "required": true,
+      "schema": {
+        "example": "vs_abc123",
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "additionalProperties": false,
+          "properties": {
+            "filters": {
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "description": "A filter used to compare a specified attribute key to a given value using a defined comparison operation.\n",
+                  "properties": {
+                    "key": {
+                      "description": "The key to compare against the value.",
+                      "type": "string"
+                    },
+                    "type": {
+                      "default": "eq",
+                      "description": "Specifies the comparison operator: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`.\n- `eq`: equals\n- `ne`: not equal\n- `gt`: greater than\n- `gte`: greater than or equal\n- `lt`: less than\n- `lte`: less than or equal\n",
+                      "enum": [
+                        "eq",
+                        "ne",
+                        "gt",
+                        "gte",
+                        "lt",
+                        "lte"
+                      ],
+                      "type": "string"
+                    },
+                    "value": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "boolean"
+                        }
+                      ],
+                      "description": "The value to compare against the attribute key; supports string, number, or boolean types."
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "key",
+                    "value"
+                  ],
+                  "title": "Comparison Filter",
+                  "type": "object"
+                },
+                {
+                  "$recursiveAnchor": true,
+                  "additionalProperties": false,
+                  "description": "Combine multiple filters using `and` or `or`.",
+                  "properties": {
+                    "filters": {
+                      "description": "Array of filters to combine. Items can be `ComparisonFilter` or `CompoundFilter`.",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "description": "A filter used to compare a specified attribute key to a given value using a defined comparison operation.\n",
+                            "properties": {
+                              "key": {
+                                "description": "The key to compare against the value.",
+                                "type": "string"
+                              },
+                              "type": {
+                                "default": "eq",
+                                "description": "Specifies the comparison operator: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`.\n- `eq`: equals\n- `ne`: not equal\n- `gt`: greater than\n- `gte`: greater than or equal\n- `lt`: less than\n- `lte`: less than or equal\n",
+                                "enum": [
+                                  "eq",
+                                  "ne",
+                                  "gt",
+                                  "gte",
+                                  "lt",
+                                  "lte"
+                                ],
+                                "type": "string"
+                              },
+                              "value": {
+                                "anyOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "boolean"
+                                  }
+                                ],
+                                "description": "The value to compare against the attribute key; supports string, number, or boolean types."
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "key",
+                              "value"
+                            ],
+                            "title": "Comparison Filter",
+                            "type": "object"
+                          },
+                          {
+                            "$recursiveRef": "#"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "type": {
+                      "description": "Type of operation: `and` or `or`.",
+                      "enum": [
+                        "and",
+                        "or"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "filters"
+                  ],
+                  "title": "Compound Filter",
+                  "type": "object"
+                }
+              ],
+              "description": "A filter to apply based on file attributes."
+            },
+            "max_num_results": {
+              "default": 10,
+              "description": "The maximum number of results to return. This number should be between 1 and 50 inclusive.",
+              "maximum": 50,
+              "minimum": 1,
+              "type": "integer"
+            },
+            "query": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "items": {
+                    "description": "A list of queries to search for.",
+                    "minItems": 1,
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              ],
+              "description": "A query string for a search"
+            },
+            "ranking_options": {
+              "additionalProperties": false,
+              "description": "Ranking options for search.",
+              "properties": {
+                "ranker": {
+                  "default": "auto",
+                  "description": "Enable re-ranking; set to `none` to disable, which can help reduce latency.",
+                  "enum": [
+                    "none",
+                    "auto",
+                    "default-2024-11-15"
+                  ],
+                  "type": "string"
+                },
+                "score_threshold": {
+                  "default": 0,
+                  "maximum": 1,
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "type": "object"
+            },
+            "rewrite_query": {
+              "default": false,
+              "description": "Whether to rewrite the natural language query for vector search.",
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "type": "object"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "description": "The list of search result items.",
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "attributes": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "maxLength": 512,
+                                "type": "string"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "boolean"
+                              }
+                            ]
+                          },
+                          "description": "Set of 16 key-value pairs that can be attached to an object. This can be\nuseful for storing additional information about the object in a structured\nformat, and querying for objects via API or the dashboard. Keys are strings\nwith a maximum length of 64 characters. Values are strings with a maximum\nlength of 512 characters, booleans, or numbers.\n",
+                          "maxProperties": 16,
+                          "propertyNames": {
+                            "maxLength": 64,
+                            "type": "string"
+                          },
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "content": {
+                      "description": "Content chunks from the file.",
+                      "items": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "text": {
+                            "description": "The text content returned from search.",
+                            "type": "string"
+                          },
+                          "type": {
+                            "description": "The type of content.",
+                            "enum": [
+                              "text"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "text"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "file_id": {
+                      "description": "The ID of the vector store file.",
+                      "type": "string"
+                    },
+                    "filename": {
+                      "description": "The name of the vector store file.",
+                      "type": "string"
+                    },
+                    "score": {
+                      "description": "The similarity score for the result.",
+                      "maximum": 1,
+                      "minimum": 0,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "file_id",
+                    "filename",
+                    "score",
+                    "attributes",
+                    "content"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "has_more": {
+                "description": "Indicates if there are more results to fetch.",
+                "type": "boolean"
+              },
+              "next_page": {
+                "anyOf": [
+                  {
+                    "description": "The token for the next page, if any.",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "object": {
+                "description": "The object type, which is always `vector_store.search_results.page`",
+                "enum": [
+                  "vector_store.search_results.page"
+                ],
+                "type": "string"
+              },
+              "search_query": {
+                "items": {
+                  "description": "The query used for this search.",
+                  "minItems": 1,
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "object",
+              "search_query",
+              "data",
+              "has_more",
+              "next_page"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "OK"
+    }
+  },
+  "summary": "Search vector store",
+  "tags": [
+    "Vector stores"
+  ]
+}

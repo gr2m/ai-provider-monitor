@@ -1,0 +1,57 @@
+import { writeFile, readFile, mkdir, glob } from "node:fs/promises";
+import { dirname } from "node:path";
+
+import yaml from "js-yaml";
+import $RefParser from "@apidevtools/json-schema-ref-parser";
+
+console.log("");
+
+try {
+  for await (const filePath of glob("cache/*/*")) {
+    const fileContents = await readFile(filePath, "utf8");
+    const schema = filePath.endsWith(".json")
+      ? JSON.parse(fileContents)
+      : yaml.load(fileContents);
+
+    console.log("\n");
+    console.log(filePath);
+
+    removeXPrefix(schema);
+
+    await $RefParser.dereference(schema);
+    for (const [path, operations] of Object.entries(schema.paths)) {
+      for (const [method, operation] of Object.entries(operations)) {
+
+        const routeFilePath = `${dirname(filePath)}/routes${path}`;
+        console.log(routeFilePath, method);
+        await mkdir(routeFilePath, { recursive: true });
+        await writeFile(
+          `${routeFilePath}/${method}.json`,
+          JSON.stringify(operation, null, 2) + "\n"
+        );
+      }
+    }
+  }
+} catch (err) {
+  console.error(err);
+}
+
+function removeXPrefix(obj) {
+  if (obj === null || typeof obj !== 'object') {
+    return;
+  }
+  
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      removeXPrefix(item);
+    }
+  } else {
+    for (const [key, value] of Object.entries(obj)) {
+      if (key.startsWith("x-")) {
+        delete obj[key];
+      } else {
+        removeXPrefix(value);
+      }
+    }
+  }
+};

@@ -1,0 +1,346 @@
+{
+  "operationId": "audio_api_v1_transcriptions_post_stream",
+  "requestBody": {
+    "content": {
+      "multipart/form-data": {
+        "schema": {
+          "properties": {
+            "file": {
+              "anyOf": [
+                {
+                  "description": "The File object (not file name) to be uploaded.\n To upload a file and specify a custom file name you should format your request as such:\n ```bash\n file=@path/to/your/file.jsonl;filename=custom_name.jsonl\n ```\n Otherwise, you can just keep the original file name:\n ```bash\n file=@path/to/your/file.jsonl\n ```",
+                  "format": "binary",
+                  "title": "File",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "File"
+            },
+            "file_id": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "ID of a file uploaded to /v1/files",
+              "title": "File Id"
+            },
+            "file_url": {
+              "anyOf": [
+                {
+                  "format": "uri",
+                  "maxLength": 2083,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Url of a file to be transcribed",
+              "title": "File Url"
+            },
+            "language": {
+              "anyOf": [
+                {
+                  "pattern": "^\\w{2}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "description": "Language of the audio, e.g. 'en'. Providing the language can boost accuracy.",
+              "title": "Language"
+            },
+            "model": {
+              "title": "Model",
+              "type": "string"
+            },
+            "stream": {
+              "const": true,
+              "default": true,
+              "title": "Stream",
+              "type": "boolean"
+            },
+            "temperature": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Temperature"
+            },
+            "timestamp_granularities": {
+              "description": "Granularities of timestamps to include in the response.",
+              "items": {
+                "enum": [
+                  "segment"
+                ],
+                "title": "TimestampGranularity",
+                "type": "string"
+              },
+              "title": "Timestamp Granularities",
+              "type": "array"
+            }
+          },
+          "required": [
+            "model"
+          ],
+          "title": "AudioTranscriptionRequestStream",
+          "type": "object"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "text/event-stream": {
+          "schema": {
+            "additionalProperties": false,
+            "properties": {
+              "data": {
+                "discriminator": {
+                  "mapping": {
+                    "transcription.done": "#/components/schemas/TranscriptionStreamDone",
+                    "transcription.language": "#/components/schemas/TranscriptionStreamLanguage",
+                    "transcription.segment": "#/components/schemas/TranscriptionStreamSegmentDelta",
+                    "transcription.text.delta": "#/components/schemas/TranscriptionStreamTextDelta"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "text": {
+                        "title": "Text",
+                        "type": "string"
+                      },
+                      "type": {
+                        "default": "transcription.text.delta",
+                        "enum": [
+                          "transcription.text.delta"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "text"
+                    ],
+                    "title": "TranscriptionStreamTextDelta",
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "audio_language": {
+                        "pattern": "^\\w{2}$",
+                        "title": "Audio Language",
+                        "type": "string"
+                      },
+                      "type": {
+                        "default": "transcription.language",
+                        "enum": [
+                          "transcription.language"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "audio_language"
+                    ],
+                    "title": "TranscriptionStreamLanguage",
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "end": {
+                        "title": "End",
+                        "type": "number"
+                      },
+                      "start": {
+                        "title": "Start",
+                        "type": "number"
+                      },
+                      "text": {
+                        "title": "Text",
+                        "type": "string"
+                      },
+                      "type": {
+                        "default": "transcription.segment",
+                        "enum": [
+                          "transcription.segment"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "text",
+                      "start",
+                      "end"
+                    ],
+                    "title": "TranscriptionStreamSegmentDelta",
+                    "type": "object"
+                  },
+                  {
+                    "additionalProperties": false,
+                    "properties": {
+                      "language": {
+                        "anyOf": [
+                          {
+                            "pattern": "^\\w{2}$",
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "title": "Language"
+                      },
+                      "model": {
+                        "title": "Model",
+                        "type": "string"
+                      },
+                      "segments": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "end": {
+                              "title": "End",
+                              "type": "number"
+                            },
+                            "start": {
+                              "title": "Start",
+                              "type": "number"
+                            },
+                            "text": {
+                              "title": "Text",
+                              "type": "string"
+                            },
+                            "type": {
+                              "default": "transcription_segment",
+                              "enum": [
+                                "transcription_segment"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "text",
+                            "start",
+                            "end"
+                          ],
+                          "title": "TranscriptionSegmentChunk",
+                          "type": "object"
+                        },
+                        "title": "Segments",
+                        "type": "array"
+                      },
+                      "text": {
+                        "title": "Text",
+                        "type": "string"
+                      },
+                      "type": {
+                        "default": "transcription.done",
+                        "enum": [
+                          "transcription.done"
+                        ],
+                        "type": "string"
+                      },
+                      "usage": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "completion_tokens": {
+                            "default": 0,
+                            "title": "Completion Tokens",
+                            "type": "integer"
+                          },
+                          "prompt_audio_seconds": {
+                            "anyOf": [
+                              {
+                                "type": "integer"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ],
+                            "title": "Prompt Audio Seconds"
+                          },
+                          "prompt_tokens": {
+                            "default": 0,
+                            "title": "Prompt Tokens",
+                            "type": "integer"
+                          },
+                          "total_tokens": {
+                            "default": 0,
+                            "title": "Total Tokens",
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "prompt_tokens",
+                          "completion_tokens",
+                          "total_tokens"
+                        ],
+                        "title": "UsageInfo",
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "model",
+                      "text",
+                      "language",
+                      "usage"
+                    ],
+                    "title": "TranscriptionStreamDone",
+                    "type": "object"
+                  }
+                ],
+                "title": "Data"
+              },
+              "event": {
+                "enum": [
+                  "transcription.language",
+                  "transcription.segment",
+                  "transcription.text.delta",
+                  "transcription.done"
+                ],
+                "title": "TranscriptionStreamEventTypes",
+                "type": "string"
+              }
+            },
+            "required": [
+              "event",
+              "data"
+            ],
+            "title": "TranscriptionStreamEvents",
+            "type": "object"
+          }
+        }
+      },
+      "description": "Stream of transcription events"
+    }
+  },
+  "summary": "Create streaming transcription (SSE)",
+  "tags": [
+    "audio.transcriptions"
+  ]
+}
