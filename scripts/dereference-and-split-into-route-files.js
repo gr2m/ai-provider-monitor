@@ -6,8 +6,14 @@ import $RefParser from "@apidevtools/json-schema-ref-parser";
 
 console.log("");
 
+const provider = process.argv[2];
+if (!provider) {
+  console.error("Usage: node scripts/dereference-and-split-into-route-files.js <provider>");
+  process.exit(1);
+}
+
 try {
-  for await (const filePath of glob("cache/*/*")) {
+  for await (const filePath of glob(`cache/${provider}/*`)) {
     const fileContents = await readFile(filePath, "utf8");
     const schema = filePath.endsWith(".json")
       ? JSON.parse(fileContents)
