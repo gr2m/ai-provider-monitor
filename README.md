@@ -14,7 +14,7 @@ The version follows [semantic versioning](https://semver.org/) in the form of `[
 
 You can "subscribe" to new releases
 
-1. Install the [ai-provider-monitor-notifier](https://github.com/apps/ai-provider-monitor-notifier) app in your repository
+1. Install the [ai-provider-monitor](https://github.com/apps/ai-provider-monitor) app in your repository
 2. Add a GitHub Action workflow to do something useful with it, such as creating an issue. Minimal example: [.github/workflows/notify-test.yml](.github/workflows/notify-test.yml)
 
 ## How it works
