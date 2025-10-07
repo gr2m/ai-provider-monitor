@@ -148,10 +148,27 @@ jobs:
         if: steps.detect-changes.outputs.changes_detected == 'true'
         id: diff
         run: |
-          # Use --cached to show staged changes including new files
-          GIT_DIFF=$(git diff --cached HEAD cache/${{ matrix.source.name }}/routes/**) 
+          # Get file changes summary
+          FILE_CHANGES=$(git diff --cached --name-status HEAD cache/${{ matrix.source.name }}/routes/**)
+          
+          # Get detailed diff only for modified files (M)
+          MODIFIED_FILES=$(echo "$FILE_CHANGES" | grep "^M" | cut -f2)
+          
+          if [ -n "$MODIFIED_FILES" ]; then
+            MODIFIED_DIFF=$(git diff --cached HEAD $MODIFIED_FILES)
+          else
+            MODIFIED_DIFF=""
+          fi
+          
+          # Combine for GPT-5
           echo "text<<EOF" >> $GITHUB_OUTPUT
-          echo "$GIT_DIFF" >> $GITHUB_OUTPUT
+          echo "File changes:" >> $GITHUB_OUTPUT
+          echo "$FILE_CHANGES" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          if [ -n "$MODIFIED_DIFF" ]; then
+            echo "Modified files details:" >> $GITHUB_OUTPUT
+            echo "$MODIFIED_DIFF" >> $GITHUB_OUTPUT
+          fi
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Generate release notes
