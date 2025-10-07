@@ -151,21 +151,11 @@ jobs:
           # Get file changes summary
           FILE_CHANGES=$(git diff --cached --name-status HEAD cache/${{ matrix.source.name }}/routes/**)
           
-          # Debug: Show file changes
-          echo "FILE_CHANGES:"
-          echo "$FILE_CHANGES"
-          echo ""
-          
           # Get detailed diff only for modified files (M)
           MODIFIED_FILES=$(echo "$FILE_CHANGES" | grep "^M" | cut -f2)
           
           if [ -n "$MODIFIED_FILES" ]; then
             MODIFIED_DIFF=$(git diff --cached HEAD $MODIFIED_FILES)
-            
-            # Debug: Show modified diff
-            echo "MODIFIED_DIFF:"
-            echo "$MODIFIED_DIFF"
-            echo ""
           else
             MODIFIED_DIFF=""
           fi
@@ -180,6 +170,20 @@ jobs:
             echo "$MODIFIED_DIFF" >> $GITHUB_OUTPUT
           fi
           echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Debug diff
+        if: steps.detect-changes.outputs.changes_detected == 'true'
+        run: |
+          echo "FILE_CHANGES:"
+          git diff --cached --name-status HEAD cache/${{ matrix.source.name }}/routes/**
+          echo ""
+          
+          MODIFIED_FILES=$(git diff --cached --name-status HEAD cache/${{ matrix.source.name }}/routes/** | grep "^M" | cut -f2)
+          if [ -n "$MODIFIED_FILES" ]; then
+            echo "MODIFIED_DIFF:"
+            git diff --cached HEAD $MODIFIED_FILES
+            echo ""
+          fi
 
       - name: Generate release notes
         if: steps.detect-changes.outputs.changes_detected == 'true'
