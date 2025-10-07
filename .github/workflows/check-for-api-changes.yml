@@ -125,12 +125,18 @@ jobs:
             version:breaking
           commit-message: "feat: add initial ${{ matrix.source.name }} API specification"
 
+      - name: Stage changes
+        if: steps.detect-first-run.outputs.first_run != 'true'
+        run: |
+          # Stage all changes including new files
+          git add cache/${{ matrix.source.name }}/
+
       - name: Detect changes
         if: steps.detect-first-run.outputs.first_run != 'true'
         id: detect-changes
         run: |
-          # Compare with previous version using git
-          if ! git diff --quiet HEAD cache/${{ matrix.source.name }}/routes/**; then
+          # Compare with previous version using git (including staged changes)
+          if ! git diff --quiet --cached HEAD cache/${{ matrix.source.name }}/routes/**; then
             echo "changes_detected=true" >> $GITHUB_OUTPUT
             echo "Changes detected in ${{ matrix.source.name }} API specification"
           else
@@ -138,15 +144,12 @@ jobs:
             echo "No changes detected"
           fi
 
-      - name: Diff debug
-        if: steps.detect-changes.outputs.changes_detected == 'true'
-        run: git diff HEAD cache/${{ matrix.source.name }}/routes/**
-
       - name: Diff
         if: steps.detect-changes.outputs.changes_detected == 'true'
         id: diff
         run: |
-          GIT_DIFF=$(git diff cache/*/routes/**) 
+          # Use --cached to show staged changes including new files
+          GIT_DIFF=$(git diff --cached HEAD cache/${{ matrix.source.name }}/routes/**) 
           echo "text<<EOF" >> $GITHUB_OUTPUT
           echo "$GIT_DIFF" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
