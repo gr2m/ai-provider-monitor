@@ -1,5 +1,7 @@
 # AI Provider API Changes
 
+[![Check for API Changes](https://github.com/gr2m/ai-provider-monitor/actions/workflows/check-for-api-changes.yml/badge.svg)](https://github.com/gr2m/ai-provider-monitor/actions/workflows/check-for-api-changes.yml)
+
 A GitHub Actions-powered service that monitors API specification changes from major AI providers and automatically creates pull requests when changes are detected. As pull requests are merged, releases are created with use full release notes based on the pull request description.
 
 Additionally, if you want to get notified about some or all new releases, you can install the [ai-provider-monitor](https://github.com/apps/ai-provider-monitor) app on any repository, which will create repository dispatch event named `ai-provider-api-change/[provider slug]/[version]`, e.g. `ai-provider-api-change/openai/1.2.3`.
