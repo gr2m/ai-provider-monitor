@@ -125,12 +125,18 @@ jobs:
             version:breaking
           commit-message: "feat: add initial ${{ matrix.source.name }} API specification"
 
+      - name: Stage changes
+        if: steps.detect-first-run.outputs.first_run != 'true'
+        run: |
+          # Stage all changes including new files
+          git add cache/${{ matrix.source.name }}/
+
       - name: Detect changes
         if: steps.detect-first-run.outputs.first_run != 'true'
         id: detect-changes
         run: |
-          # Compare with previous version using git
-          if ! git diff --quiet HEAD cache/${{ matrix.source.name }}/routes/**; then
+          # Compare with previous version using git (including staged changes)
+          if ! git diff --quiet --cached HEAD cache/${{ matrix.source.name }}/routes/**; then
             echo "changes_detected=true" >> $GITHUB_OUTPUT
             echo "Changes detected in ${{ matrix.source.name }} API specification"
           else
@@ -138,18 +144,46 @@ jobs:
             echo "No changes detected"
           fi
 
-      - name: Diff debug
-        if: steps.detect-changes.outputs.changes_detected == 'true'
-        run: git diff HEAD cache/${{ matrix.source.name }}/routes/**
-
       - name: Diff
         if: steps.detect-changes.outputs.changes_detected == 'true'
         id: diff
         run: |
-          GIT_DIFF=$(git diff cache/*/routes/**) 
+          # Get file changes summary
+          FILE_CHANGES=$(git diff --cached --name-status HEAD cache/${{ matrix.source.name }}/routes/**)
+          
+          # Get detailed diff only for modified files (M)
+          MODIFIED_FILES=$(echo "$FILE_CHANGES" | grep "^M" | cut -f2)
+          
+          if [ -n "$MODIFIED_FILES" ]; then
+            MODIFIED_DIFF=$(git diff --cached HEAD $MODIFIED_FILES)
+          else
+            MODIFIED_DIFF=""
+          fi
+          
+          # Combine for LLM
           echo "text<<EOF" >> $GITHUB_OUTPUT
-          echo "$GIT_DIFF" >> $GITHUB_OUTPUT
+          echo "File changes:" >> $GITHUB_OUTPUT
+          echo "$FILE_CHANGES" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          if [ -n "$MODIFIED_DIFF" ]; then
+            echo "Modified files details:" >> $GITHUB_OUTPUT
+            echo "$MODIFIED_DIFF" >> $GITHUB_OUTPUT
+          fi
           echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Debug diff
+        if: steps.detect-changes.outputs.changes_detected == 'true'
+        run: |
+          echo "FILE_CHANGES:"
+          git diff --cached --name-status HEAD cache/${{ matrix.source.name }}/routes/**
+          echo ""
+          
+          MODIFIED_FILES=$(git diff --cached --name-status HEAD cache/${{ matrix.source.name }}/routes/** | grep "^M" | cut -f2)
+          if [ -n "$MODIFIED_FILES" ]; then
+            echo "MODIFIED_DIFF:"
+            git diff --cached HEAD $MODIFIED_FILES
+            echo ""
+          fi
 
       - name: Generate release notes
         if: steps.detect-changes.outputs.changes_detected == 'true'
