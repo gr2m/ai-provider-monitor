@@ -10323,42 +10323,6 @@ components:
         - seconds
       title: File expiration policy
       type: object
-    FilePartResource:
-      description: Metadata for a non-image file uploaded through ChatKit.
-      properties:
-        id:
-          description: Unique identifier for the uploaded file.
-          type: string
-        mime_type:
-          anyOf:
-            - description: MIME type reported for the uploaded file. Defaults to null when unknown.
-              type: string
-            - type: "null"
-        name:
-          anyOf:
-            - description: Original filename supplied by the uploader. Defaults to null when unnamed.
-              type: string
-            - type: "null"
-        type:
-          default: file
-          description: Type discriminator that is always `file`.
-          enum:
-            - file
-          type: string
-          x-stainless-const: true
-        upload_url:
-          anyOf:
-            - description: Signed URL for downloading the uploaded file. Defaults to null when no download link is available.
-              type: string
-            - type: "null"
-      required:
-        - id
-        - type
-        - name
-        - mime_type
-        - upload_url
-      title: Uploaded file
-      type: object
     FilePath:
       description: |
         A path to a file.
@@ -12542,44 +12506,6 @@ components:
             - low
           type: string
         - type: "null"
-    ImagePartResource:
-      description: Metadata for an image uploaded through ChatKit.
-      properties:
-        id:
-          description: Unique identifier for the uploaded image.
-          type: string
-        mime_type:
-          description: MIME type of the uploaded image.
-          type: string
-        name:
-          anyOf:
-            - description: Original filename for the uploaded image. Defaults to null when unnamed.
-              type: string
-            - type: "null"
-        preview_url:
-          description: Preview URL that can be rendered inline for the image.
-          type: string
-        type:
-          default: image
-          description: Type discriminator that is always `image`.
-          enum:
-            - image
-          type: string
-          x-stainless-const: true
-        upload_url:
-          anyOf:
-            - description: Signed URL for downloading the uploaded image. Defaults to null when no download link is available.
-              type: string
-            - type: "null"
-      required:
-        - id
-        - type
-        - mime_type
-        - name
-        - preview_url
-        - upload_url
-      title: Uploaded image
-      type: object
     ImagesResponse:
       description: The response from the image generation endpoint.
       properties:
@@ -29632,17 +29558,6 @@ components:
       required:
         - content
       type: object
-    UploadFileBody:
-      description: Parameters for uploading an attachment to the active ChatKit session.
-      properties:
-        file:
-          description: Binary file contents to store with the ChatKit session. Supports PDFs and PNG, JPG, JPEG, GIF, or WEBP images.
-          format: binary
-          type: string
-      required:
-        - file
-      title: Upload file request
-      type: object
     UploadPart:
       description: |
         The upload Part represents a chunk of bytes we can add to an Upload object.
@@ -29920,6 +29835,11 @@ components:
             - description: When `group_by=project_id`, this field provides the project ID of the grouped usage result.
               type: string
             - type: "null"
+        service_tier:
+          anyOf:
+            - description: When `group_by=service_tier`, this field provides the service tier of the grouped usage result.
+              type: string
+            - type: "null"
         user_id:
           anyOf:
             - description: When `group_by=user_id`, this field provides the user ID of the grouped usage result.
@@ -29945,7 +29865,8 @@ components:
               "user_id": "user-abc",
               "api_key_id": "key_abc",
               "model": "gpt-4o-mini-2024-07-18",
-              "batch": false
+              "batch": false,
+              "service_tier": "default"
           }
         name: Completions usage object
     UsageEmbeddingsResult:
@@ -36815,138 +36736,6 @@ paths:
         group: chat
         name: Get chat messages
         returns: A list of [messages](https://platform.openai.com/docs/api-reference/chat/message-list) for the specified chat completion.
-  /chatkit/files:
-    post:
-      description: Upload a ChatKit file
-      operationId: UploadFileMethod
-      parameters: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UploadFileBody"
-          multipart/form-data:
-            schema:
-              $ref: "#/components/schemas/UploadFileBody"
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                anyOf:
-                  - $ref: "#/components/schemas/FilePartResource"
-                  - $ref: "#/components/schemas/ImagePartResource"
-                description: Represents either a file or image attachment.
-                discriminator:
-                  propertyName: type
-          description: Success
-      summary: Upload file to ChatKit
-      x-oaiMeta:
-        beta: true
-        examples:
-          - request:
-              curl: |
-                curl https://api.openai.com/v1/chatkit/files \
-                  -H "Authorization: Bearer $OPENAI_API_KEY" \
-                  -H "OpenAI-Beta: chatkit_beta=v1" \
-                  -F "file=@transcript.pdf" \
-                  -F "fileId=file-abc123"
-              go: |
-                package main
-
-                import (
-                  "bytes"
-                  "context"
-                  "fmt"
-                  "io"
-
-                  "github.com/openai/openai-go"
-                  "github.com/openai/openai-go/option"
-                )
-
-                func main() {
-                  client := openai.NewClient(
-                    option.WithAPIKey("My API Key"),
-                  )
-                  response, err := client.Beta.ChatKit.UploadFile(context.TODO(), openai.BetaChatKitUploadFileParams{
-                    File: io.Reader(bytes.NewBuffer([]byte("some file contents"))),
-                  })
-                  if err != nil {
-                    panic(err.Error())
-                  }
-                  fmt.Printf("%+v\n", response)
-                }
-              java: |-
-                package com.openai.example;
-
-                import com.openai.client.OpenAIClient;
-                import com.openai.client.okhttp.OpenAIOkHttpClient;
-                import com.openai.models.beta.chatkit.ChatKitUploadFileParams;
-                import com.openai.models.beta.chatkit.ChatKitUploadFileResponse;
-                import java.io.ByteArrayInputStream;
-
-                public final class Main {
-                    private Main() {}
-
-                    public static void main(String[] args) {
-                        OpenAIClient client = OpenAIOkHttpClient.fromEnv();
-
-                        ChatKitUploadFileParams params = ChatKitUploadFileParams.builder()
-                            .file(ByteArrayInputStream("some content".getBytes()))
-                            .build();
-                        ChatKitUploadFileResponse response = client.beta().chatkit().uploadFile(params);
-                    }
-                }
-              javascript: |
-                import OpenAI from 'openai';
-
-                const client = new OpenAI();
-
-                const response = await client.beta.chatkit.uploadFile({ file: fs.createReadStream('path/to/file') });
-
-                console.log(response);
-              node.js: |-
-                import OpenAI from 'openai';
-
-                const client = new OpenAI({
-                  apiKey: 'My API Key',
-                });
-
-                const response = await client.beta.chatkit.uploadFile({ file: fs.createReadStream('path/to/file') });
-
-                console.log(response);
-              python: |-
-                from openai import OpenAI
-
-                client = OpenAI(
-                    api_key="My API Key",
-                )
-                response = client.beta.chatkit.upload_file(
-                    file=b"raw file contents",
-                )
-                print(response)
-              ruby: |-
-                require "openai"
-
-                openai = OpenAI::Client.new(api_key: "My API Key")
-
-                response = openai.beta.chatkit.upload_file(file: Pathname(__FILE__))
-
-                puts(response)
-            response: |
-              {
-                "file": {
-                  "id": "file-abc123",
-                  "type": "file",
-                  "name": "transcript.pdf",
-                  "mimeType": "application/pdf"
-                }
-              }
-            title: Upload a PDF transcript
-        group: chatkit
-        name: Upload file to ChatKit
-        path: upload-file
-        returns: Returns metadata for the uploaded file part that can be attached to ChatKit threads.
   /chatkit/sessions:
     post:
       description: Create a ChatKit session
@@ -49720,7 +49509,7 @@ paths:
           required: false
           schema:
             type: boolean
-        - description: Group the usage data by the specified fields. Support fields include `project_id`, `user_id`, `api_key_id`, `model`, `batch` or any combination of them.
+        - description: Group the usage data by the specified fields. Support fields include `project_id`, `user_id`, `api_key_id`, `model`, `batch`, `service_tier` or any combination of them.
           in: query
           name: group_by
           required: false
@@ -49732,6 +49521,7 @@ paths:
                 - api_key_id
                 - model
                 - batch
+                - service_tier
               type: string
             type: array
         - description: |
@@ -49787,7 +49577,8 @@ paths:
                                 "user_id": null,
                                 "api_key_id": null,
                                 "model": null,
-                                "batch": null
+                                "batch": null,
+                                "service_tier": null
                             }
                         ]
                     }
@@ -61019,10 +60810,6 @@ x-oaiMeta:
         - beta: true
           key: CancelChatSessionMethod
           path: sessions/cancel
-          type: endpoint
-        - beta: true
-          key: UploadFileMethod
-          path: files/upload
           type: endpoint
         - beta: true
           key: ListThreadsMethod
