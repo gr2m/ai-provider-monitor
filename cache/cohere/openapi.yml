@@ -526,6 +526,7 @@ components:
         - BATCH_STATUS_COMPLETED
         - BATCH_STATUS_FAILED
         - BATCH_STATUS_CANCELED
+      readOnly: true
       type: string
       x-fern-sdk-group-name:
         - batches
@@ -5800,6 +5801,17 @@ components:
         - $ref: "#/components/schemas/ChatTextResponseFormatV2"
         - $ref: "#/components/schemas/JsonResponseFormatV2"
       x-fern-type-name: ResponseFormatV2
+    RetryBatchResponse:
+      description: Response to a request to retry a batch.
+      properties:
+        batch:
+          $ref: "#/components/schemas/Batch"
+          description: Information about the newly created retry batch.
+      required:
+        - batch
+      type: object
+      x-fern-sdk-group-name:
+        - batches
     Settings:
       deprecated: true
       description: The configuration used for fine-tuning.
@@ -14492,7 +14504,7 @@ paths:
 
                 # start an embed job
                 job = co.embed_jobs.create(
-                    dataset_id="my-dataset-id", input_type="search_document", model="embed-v4.0"
+                    dataset_id="my-dataset-id", input_type="search_document", model="embed-english-v3.0"
                 )
 
                 # poll the server until the job is complete
@@ -14513,7 +14525,7 @@ paths:
                     job = await co.embed_jobs.create(
                         dataset_id="my-dataset-id",
                         input_type="search_document",
-                        model="embed-v4.0",
+                        model="embed-english-v3.0",
                     )
 
                     # poll the server until the job is complete
@@ -18095,6 +18107,84 @@ paths:
         - public
       x-fern-sdk-group-name: batches
       x-fern-sdk-method-name: cancel
+  /v2/batches/{id}:retry:
+    post:
+      operationId: RetryBatch
+      parameters:
+        - description: The original batch ID to retry.
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/RequestSource"
+      responses:
+        "200":
+          content:
+            application/json:
+              example:
+                batch:
+                  created_at: 2025-03-05T14:59:25.438936Z
+                  creator_id: b5e1ffb9-49a1-4653-9927-94083316309d
+                  id: 9439e0e3-49a4-4336-93e3-485fc420bc18
+                  input_dataset_id: my-requests-dataset
+                  input_tokens: "0"
+                  model: batch-command
+                  name: my-batch
+                  num_failed_records: 0
+                  num_records: 5000
+                  num_successful_records: 8
+                  org_id: 62603116-1750-4c04-b1b6-9d5046764bc4
+                  output_dataset_id: my-batch-output-c2waz1
+                  output_tokens: "0"
+                  status: BATCH_STATUS_IN_PROGRESS
+                  updated_at: 2025-03-05T15:00:26.126572Z
+              schema:
+                $ref: "#/components/schemas/RetryBatchResponse"
+          description: A successful response.
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchError"
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchError"
+          description: Unauthorized
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchError"
+          description: Forbidden
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchError"
+          description: Not Found
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchError"
+          description: Internal Server Error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchError"
+          description: Status Service Unavailable
+      summary: Retries a batch by ID.
+      tags:
+        - /batches
+      x-fern-audiences:
+        - public
+      x-fern-sdk-group-name: batches
+      x-fern-sdk-method-name: retry
   /v2/chat:
     post:
       description: |
@@ -18183,6 +18273,16 @@ paths:
                     Used to reduce repetitiveness of generated tokens. Similar to `frequency_penalty`, except that this penalty is applied equally to all tokens that have already appeared, regardless of their exact frequencies.
                   format: float
                   type: number
+                  x-fern-audiences:
+                    - public
+                priority:
+                  default: 0
+                  description: |-
+                    The priority of the request (lower means earlier handling; default 0 highest priority).
+                    Higher priority requests are handled first, and dropped last when the system is under load.
+                  maximum: 999
+                  minimum: 0
+                  type: integer
                   x-fern-audiences:
                     - public
                 response_format:
@@ -22634,6 +22734,16 @@ paths:
                   type: integer
                   x-fern-audiences:
                     - public
+                priority:
+                  default: 0
+                  description: |-
+                    The priority of the request (lower means earlier handling; default 0 highest priority).
+                    Higher priority requests are handled first, and dropped last when the system is under load.
+                  maximum: 999
+                  minimum: 0
+                  type: integer
+                  x-fern-audiences:
+                    - public
                 texts:
                   description: An array of strings for the model to embed. Maximum number of texts per call is `96`.
                   items:
@@ -26180,6 +26290,16 @@ paths:
                 model:
                   description: The identifier of the model to use, eg `rerank-v3.5`.
                   type: string
+                  x-fern-audiences:
+                    - public
+                priority:
+                  default: 0
+                  description: |-
+                    The priority of the request (lower means earlier handling; default 0 highest priority).
+                    Higher priority requests are handled first, and dropped last when the system is under load.
+                  maximum: 999
+                  minimum: 0
+                  type: integer
                   x-fern-audiences:
                     - public
                 query:
