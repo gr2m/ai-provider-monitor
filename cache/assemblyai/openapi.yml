@@ -563,6 +563,39 @@ components:
       type: object
       x-fern-sdk-group-name: realtime
       x-label: Create Streaming STT temporary token parameters
+    CustomFormattingRequestBody:
+      properties:
+        custom_formatting:
+          properties:
+            date:
+              description: Date format pattern (e.g., `"mm/dd/yyyy"`)
+              type: string
+            email:
+              description: Email format pattern (e.g., `"username@domain.com"`)
+              type: string
+            format_utterances:
+              default: true
+              description: Whether to format utterances
+              type: boolean
+            phone_number:
+              description: Phone number format pattern (e.g., `"(xxx)xxx-xxxx"`)
+              type: string
+          type: object
+      required:
+        - custom_formatting
+      type: object
+    CustomFormattingResponse:
+      properties:
+        custom_formatting:
+          properties:
+            formatted_text:
+              type: string
+            mapping:
+              additionalProperties:
+                type: string
+              type: object
+          type: object
+      type: object
     Entity:
       additionalProperties: false
       description: A detected entity
@@ -828,6 +861,8 @@ components:
       additionalProperties: true
       example:
         error: format_text must be a Boolean
+      # Speech Understanding Request Schemas
+
       properties:
         error:
           description: Error message
@@ -2076,6 +2111,35 @@ components:
       type: object
       x-fern-sdk-group-name: transcripts
       x-label: Severity score summary
+    SpeakerIdentificationRequestBody:
+      properties:
+        speaker_identification:
+          properties:
+            known_values:
+              description: Required if speaker_type is "role"
+              items:
+                type: string
+              type: array
+            speaker_type:
+              description: Type of speaker identification
+              enum:
+                - role
+                - name
+              type: string
+          required:
+            - speaker_type
+          type: object
+      required:
+        - speaker_identification
+      type: object
+    SpeakerIdentificationResponse:
+      properties:
+        speaker_identification:
+          properties:
+            status:
+              type: string
+          type: object
+      type: object
     SpeechModel:
       description: The speech model to use for the transcription.
       enum:
@@ -2969,6 +3033,16 @@ components:
           x-go-type: TranscriptLanguageCode
           x-label: Language code
           x-ts-type: LiteralUnion<TranscriptLanguageCode, string>
+        language_codes:
+          description: |
+            The language codes of your audio file. Used for [Code switching](/docs/speech-to-text/pre-recorded-audio/code-switching)
+            One of the values specified must be `en`.
+          items:
+            $ref: "#/components/schemas/TranscriptLanguageCode"
+            x-label: Language code
+          type:
+            - array
+            - "null"
         language_confidence:
           description: The confidence score for the detected language, between 0.0 (low confidence) and 1.0 (high confidence)
           format: double
@@ -2990,7 +3064,7 @@ components:
             - "null"
           x-label: Language confidence threshold
         language_detection:
-          description: Whether [Automatic language detection](https://www.assemblyai.com/docs/models/speech-recognition#automatic-language-detection) is enabled, either true or false
+          description: Whether [Automatic language detection](/docs/pre-recorded-audio/automatic-language-detection) is enabled, either true or false
           type:
             - boolean
             - "null"
@@ -2999,6 +3073,20 @@ components:
           additionalProperties: false
           description: Specify options for Automatic Language Detection.
           properties:
+            code_switching:
+              default: "false"
+              description: |
+                Whether code switching should be detected.
+              type: boolean
+              x-label: Code switching
+            code_switching_confidence_threshold:
+              default: 0.3
+              description: |
+                The confidence threshold for code switching detection. If the code switching confidence is below this threshold, the transcript will be processed in the language with the highest `language_detection_confidence` score.
+              maximum: 1
+              minimum: 0
+              type: float
+              x-label: Code switching confidence threshold
             expected_languages:
               description: List of languages expected in the audio file. Defaults to `["all"]` when unspecified.
               objects:
@@ -3102,11 +3190,27 @@ components:
           x-label: Speakers expected
         speech_model:
           default: null
+          deprecated: True
           description: The speech model used for the transcription. When `null`, the `universal` model is used.
           oneOf:
             - $ref: "#/components/schemas/SpeechModel"
             - type: "null"
           x-label: Speech model
+        speech_model_used:
+          $ref: "#/components/schemas/SpeechModel"
+          description: The speech model that was actually used for the transcription.
+          type: string
+          x-label: Speech model used
+        speech_models:
+          description: |
+            List multiple speech models in priority order, allowing our system to automatically route your audio to the best available option.
+          items:
+            $ref: "#/components/schemas/SpeechModel"
+            x-label: Speech model
+          type:
+            - array
+            - "null"
+          x-label: Speech models
         speech_threshold:
           description: |
             Defaults to null. Reject audio files that contain less than this fraction of speech.
@@ -3118,6 +3222,23 @@ components:
             - number
             - "null"
           x-label: Speech threshold
+        speech_understanding:
+          description: Enable speech understanding tasks like translation, speaker identification, and custom formatting
+          properties:
+            request:
+              oneOf:
+                - $ref: "#/components/schemas/TranslationRequestBody"
+                - $ref: "#/components/schemas/SpeakerIdentificationRequestBody"
+                - $ref: "#/components/schemas/CustomFormattingRequestBody"
+            response:
+              oneOf:
+                - $ref: "#/components/schemas/TranslationResponse"
+                - $ref: "#/components/schemas/SpeakerIdentificationResponse"
+                - $ref: "#/components/schemas/CustomFormattingResponse"
+          required:
+            - request
+          type: object
+          x-label: Speech Understanding
         speed_boost:
           deprecated: true
           description: Whether speed boost is enabled
@@ -3166,12 +3287,22 @@ components:
             - "null"
           x-label: Throttled
         topics:
+          deprecated: true
           description: The list of custom topics provided if custom topics is enabled
           items:
             type: string
             x-label: Topic
           type: array
           x-label: Topics
+        translated_texts:
+          description: Translated text keyed by language code
+          properties:
+            language_code:
+              description: Translated text for this language code
+              type: string
+              x-label: Language code
+          # x-label: Translated text
+          type: object
         utterances:
           description: |
             When multichannel or speaker_labels is enabled, a list of turn-by-turn utterance objects.
@@ -3741,6 +3872,13 @@ components:
         speakers_expected: 2
         speech_model: null
         speech_threshold: 0.5
+        speech_understanding:
+          request:
+            translation:
+              formal: true
+              target_languages:
+                - es
+                - de
         summarization: true
         summary_model: informative
         summary_type: bullets
@@ -3844,6 +3982,16 @@ components:
           x-go-type: TranscriptLanguageCode
           x-label: Language code
           x-ts-type: LiteralUnion<TranscriptLanguageCode, string> | null
+        language_codes:
+          description: |
+            The language codes of your audio file. Used for [Code switching](/docs/speech-to-text/pre-recorded-audio/code-switching)
+            One of the values specified must be `en`.
+          items:
+            $ref: "#/components/schemas/TranscriptLanguageCode"
+            x-label: Language code
+          type:
+            - array
+            - "null"
         language_confidence_threshold:
           default: 0
           description: |
@@ -3864,6 +4012,20 @@ components:
           additionalProperties: false
           description: Specify options for Automatic Language Detection.
           properties:
+            code_switching:
+              default: "false"
+              description: |
+                Whether code switching should be detected.
+              type: boolean
+              x-label: Code switching
+            code_switching_confidence_threshold:
+              default: 0.3
+              description: |
+                The confidence threshold for code switching detection. If the code switching confidence is below this threshold, the transcript will be processed in the language with the highest `language_detection_confidence` score.
+              maximum: 1
+              minimum: 0
+              type: float
+              x-label: Code switching confidence threshold
             expected_languages:
               description: List of languages expected in the audio file. Defaults to `["all"]` when unspecified.
               objects:
@@ -3971,11 +4133,22 @@ components:
           x-label: Speakers expected
         speech_model:
           default: universal
+          deprecated: True
           description: The speech model to use for the transcription. When `null`, the `universal` model is used.
           oneOf:
             - $ref: "#/components/schemas/SpeechModel"
             - type: "null"
           x-label: Speech model
+        speech_models:
+          description: |
+            List multiple speech models in priority order, allowing our system to automatically route your audio to the best available option.
+          items:
+            $ref: "#/components/schemas/SpeechModel"
+            x-label: Speech model
+          type:
+            - array
+            - "null"
+          x-label: Speech models
         speech_threshold:
           default: 0
           description: |
@@ -3988,6 +4161,18 @@ components:
             - number
             - "null"
           x-label: Speech threshold
+        speech_understanding:
+          description: Enable speech understanding tasks like translation, speaker identification, and custom formatting
+          properties:
+            request:
+              oneOf:
+                - $ref: "#/components/schemas/TranslationRequestBody"
+                - $ref: "#/components/schemas/SpeakerIdentificationRequestBody"
+                - $ref: "#/components/schemas/CustomFormattingRequestBody"
+          required:
+            - request
+          type: object
+          x-label: Speech Understanding
         summarization:
           default: false
           description: Enable [Summarization](https://www.assemblyai.com/docs/models/summarization), can be true or false
@@ -4004,6 +4189,7 @@ components:
           description: The type of summary
           x-label: Summary type
         topics:
+          deprecated: true
           description: The list of custom topics
           items:
             type: string
@@ -4146,6 +4332,13 @@ components:
         speakers_expected: 2
         speech_model: null
         speech_threshold: 0.5
+        speech_understanding:
+          request:
+            translation:
+              formal: true
+              target_languages:
+                - es
+                - de
         summarization: true
         summary_model: informative
         summary_type: bullets
@@ -4492,6 +4685,39 @@ components:
       type: object
       x-fern-sdk-group-name: transcripts
       x-label: Word
+    TranslationRequestBody:
+      properties:
+        translation:
+          properties:
+            formal:
+              default: true
+              # match_original_utterance:
+              #   type: boolean
+              #   description: Get translated utterances (if speaker_labels was enabled)
+              #   default: false
+
+              description: Use formal language style
+              type: boolean
+            target_languages:
+              description: List of target language codes (e.g., `["es", "de"]`)
+              items:
+                type: string
+              type: array
+          required:
+            - target_languages
+          type: object
+      required:
+        - translation
+      type: object
+      x-label: Translation request body
+    TranslationResponse:
+      properties:
+        translation:
+          properties:
+            status:
+              type: string
+          type: object
+      type: object
     UploadedFile:
       additionalProperties: false
       example:
@@ -4660,356 +4886,6 @@ info:
   version: 1.3.4
 openapi: 3.1.0
 paths:
-  /lemur/v3/generate/question-answer:
-    post:
-      description: |
-        <Note>To use our EU server with LeMUR, replace `api.assemblyai.com` with `api.eu.assemblyai.com`.</Note>
-        Question & Answer allows you to ask free-form questions about a single transcript or a group of transcripts.
-        The questions can be any whose answers you find useful, such as judging whether a caller is likely to become a customer or whether all items on a meeting's agenda were covered.
-      operationId: lemurQuestionAnswer
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LemurQuestionAnswerParams"
-        description: Params to ask questions about the transcripts
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LemurQuestionAnswerResponse"
-          description: LeMUR question & answer response
-          headers:
-            X-RateLimit-Limit:
-              description: Maximum number of allowed requests in a 60 second window.
-              schema:
-                type: integer
-            X-RateLimit-Remaining:
-              description: Number of remaining requests in the current time window.
-              schema:
-                type: integer
-            X-RateLimit-Reset:
-              description: Number of seconds until the remaining requests resets to the value of X-RateLimit-Limit.
-              schema:
-                type: integer
-          links:
-            PurgeLemurRequestDataById:
-              $ref: "#/components/links/PurgeLemurRequestDataById"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-        "503":
-          $ref: "#/components/responses/ServiceUnavailable"
-        "504":
-          $ref: "#/components/responses/GatewayTimeout"
-      summary: Ask questions using LeMUR
-      tags:
-        - LeMUR
-      x-fern-request-name: LemurQuestionAnswerParams
-      x-fern-sdk-group-name: lemur
-      x-fern-sdk-method-name: questionAnswer
-  /lemur/v3/generate/summary:
-    post:
-      description: |
-        <Note>To use our EU server with LeMUR, replace `api.assemblyai.com` with `api.eu.assemblyai.com`.</Note>
-        Custom Summary allows you to distill a piece of audio into a few impactful sentences.
-        You can give the model context to obtain more targeted results while outputting the results in a variety of formats described in human language.
-      operationId: lemurSummary
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LemurSummaryParams"
-        description: Params to generate the summary
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LemurSummaryResponse"
-          description: LeMUR summary response
-          headers:
-            X-RateLimit-Limit:
-              description: Maximum number of allowed requests in a 60 second window.
-              schema:
-                type: integer
-            X-RateLimit-Remaining:
-              description: Number of remaining requests in the current time window.
-              schema:
-                type: integer
-            X-RateLimit-Reset:
-              description: Number of seconds until the remaining requests resets to the value of X-RateLimit-Limit.
-              schema:
-                type: integer
-          links:
-            PurgeLemurRequestDataById:
-              $ref: "#/components/links/PurgeLemurRequestDataById"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-        "503":
-          $ref: "#/components/responses/ServiceUnavailable"
-        "504":
-          $ref: "#/components/responses/GatewayTimeout"
-      summary: Summarize a transcript using LeMUR
-      tags:
-        - LeMUR
-      x-fern-request-name: LemurSummaryParams
-      x-fern-sdk-group-name: lemur
-      x-fern-sdk-method-name: summary
-  # /v2/realtime/token:
-  #   post:
-  #     tags:
-  #       - streaming
-  #     summary: Create temporary authentication token for Streaming STT
-  #     description: |
-  #       <Warning>Streaming Speech-to-Text is currently not available on the EU endpoint.</Warning>
-  #       <Note>Any usage associated with a temporary token will be attributed to the API key that generated it.</Note>
-  #       Create a temporary authentication token for Streaming Speech-to-Text
-  #     operationId: createTemporaryToken
-  #     x-fern-sdk-group-name: realtime
-  #     x-fern-sdk-method-name: createTemporaryToken
-  #     x-fern-request-name: CreateRealtimeTemporaryTokenParams
-  #     requestBody:
-  #       description: Params to create a temporary authentication token
-  #       required: true
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: "#/components/schemas/CreateRealtimeTemporaryTokenParams"
-  #     responses:
-  #       "200":
-  #         description: Temporary authentication token generated
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/RealtimeTemporaryTokenResponse"
-  #       "400":
-  #         $ref: "#/components/responses/BadRequest"
-  #       "401":
-  #         $ref: "#/components/responses/Unauthorized"
-  #       "404":
-  #         $ref: "#/components/responses/NotFound"
-  #       "429":
-  #         $ref: "#/components/responses/TooManyRequests"
-  #       "500":
-  #         $ref: "#/components/responses/InternalServerError"
-  #       "503":
-  #         $ref: "#/components/responses/ServiceUnavailable"
-  #       "504":
-  #         $ref: "#/components/responses/GatewayTimeout"
-  /lemur/v3/generate/task:
-    post:
-      description: |
-        <Note>To use our EU server with LeMUR, replace `api.assemblyai.com` with `api.eu.assemblyai.com`.</Note>
-        Use the LeMUR task endpoint to input your own LLM prompt.
-      operationId: lemurTask
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LemurTaskParams"
-        description: Params to run the task
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LemurTaskResponse"
-          description: LeMUR task response
-          headers:
-            X-RateLimit-Limit:
-              description: Maximum number of allowed requests in a 60 second window.
-              schema:
-                type: integer
-            X-RateLimit-Remaining:
-              description: Number of remaining requests in the current time window.
-              schema:
-                type: integer
-            X-RateLimit-Reset:
-              description: Number of seconds until the remaining requests resets to the value of X-RateLimit-Limit.
-              schema:
-                type: integer
-          links:
-            PurgeLemurRequestDataById:
-              $ref: "#/components/links/PurgeLemurRequestDataById"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-        "503":
-          $ref: "#/components/responses/ServiceUnavailable"
-        "504":
-          $ref: "#/components/responses/GatewayTimeout"
-      summary: Run a task using LeMUR
-      tags:
-        - LeMUR
-      x-fern-request-name: LemurTaskParams
-      x-fern-sdk-group-name: lemur
-      x-fern-sdk-method-name: task
-  # /lemur/v3/generate/action-items:
-  #   post:
-  #     tags:
-  #       - LeMUR
-  #     summary: Extract action items
-  #     operationId: lemurActionItems
-  #     x-label: Extract action items using LeMUR
-  #     x-fern-sdk-group-name: lemur
-  #     x-fern-sdk-method-name: actionItems
-  #     x-fern-request-name: LemurActionItemsParams
-  #     description: Use LeMUR to generate a list of action items from a transcript
-  #     requestBody:
-  #       description: Params to generate action items from transcripts
-  #       required: true
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: "#/components/schemas/LemurActionItemsParams"
-  #     responses:
-  #       "200":
-  #         description: LeMUR action items response
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: "#/components/schemas/LemurActionItemsResponse"
-  #         headers:
-  #           X-RateLimit-Limit:
-  #             schema:
-  #               type: integer
-  #             description: Maximum number of allowed requests in a 60 second window.
-  #           X-RateLimit-Remaining:
-  #             schema:
-  #               type: integer
-  #             description: Number of remaining requests in the current time window.
-  #           X-RateLimit-Reset:
-  #             schema:
-  #               type: integer
-  #             description: Number of seconds until the remaining requests resets to the value of X-RateLimit-Limit.
-  #         links:
-  #           PurgeLemurRequestDataById:
-  #             $ref: "#/components/links/PurgeLemurRequestDataById"
-  #       "400":
-  #         $ref: "#/components/responses/BadRequest"
-  #       "401":
-  #         $ref: "#/components/responses/Unauthorized"
-  #       "404":
-  #         $ref: "#/components/responses/NotFound"
-  #       "429":
-  #         $ref: "#/components/responses/TooManyRequests"
-  #       "500":
-  #         $ref: "#/components/responses/InternalServerError"
-  #       "503":
-  #         $ref: "#/components/responses/ServiceUnavailable"
-  #       "504":
-  #         $ref: "#/components/responses/GatewayTimeout"
-  /lemur/v3/{request_id}:
-    delete:
-      description: |
-        <Note>To use our EU server with LeMUR, replace `api.assemblyai.com` with `api.eu.assemblyai.com`.</Note>
-        Delete the data for a previously submitted LeMUR request.
-        The LLM response data, as well as any context provided in the original request will be removed.
-      operationId: purgeLemurRequestData
-      parameters:
-        - description: The ID of the LeMUR request whose data you want to delete. This would be found in the response of the original request.
-          in: path
-          name: request_id
-          required: true
-          schema:
-            type: string
-          x-label: LeMUR request ID
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PurgeLemurRequestDataResponse"
-          description: LeMUR request data deleted
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-        "503":
-          $ref: "#/components/responses/ServiceUnavailable"
-        "504":
-          $ref: "#/components/responses/GatewayTimeout"
-      summary: Purge LeMUR request data
-      tags:
-        - LeMUR
-      x-fern-request-name: PurgeLemurRequestDataParams
-      x-fern-sdk-group-name: lemur
-      x-fern-sdk-method-name: purgeRequestData
-    get:
-      description: |
-        <Note>To use our EU server with LeMUR, replace `api.assemblyai.com` with `api.eu.assemblyai.com`.</Note>
-        Retrieve a LeMUR response that was previously generated.
-      operationId: getLemurResponse
-      parameters:
-        - description: |
-            The ID of the LeMUR request you previously made.
-            This would be found in the response of the original request.
-          in: path
-          name: request_id
-          required: true
-          schema:
-            type: string
-          x-label: LeMUR request ID
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LemurResponse"
-          description: LeMUR response
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "429":
-          $ref: "#/components/responses/TooManyRequests"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-        "503":
-          $ref: "#/components/responses/ServiceUnavailable"
-        "504":
-          $ref: "#/components/responses/GatewayTimeout"
-      summary: Retrieve LeMUR response
-      tags:
-        - LeMUR
-      x-fern-request-name: GetLemurResponseParams
-      x-fern-sdk-group-name: lemur
-      x-fern-sdk-method-name: getResponse
   /v2/transcript:
     get:
       description: |
@@ -5346,6 +5222,361 @@ paths:
           $ref: "#/components/responses/ServiceUnavailable"
         "504":
           $ref: "#/components/responses/GatewayTimeout"
+          # /v2/realtime/token:
+          #   post:
+          #     tags:
+          #       - streaming
+          #     summary: Create temporary authentication token for Streaming STT
+          #     description: |
+          #       <Warning>Streaming Speech-to-Text is currently not available on the EU endpoint.</Warning>
+          #       <Note>Any usage associated with a temporary token will be attributed to the API key that generated it.</Note>
+          #       Create a temporary authentication token for Streaming Speech-to-Text
+          #     operationId: createTemporaryToken
+          #     x-fern-sdk-group-name: realtime
+          #     x-fern-sdk-method-name: createTemporaryToken
+          #     x-fern-request-name: CreateRealtimeTemporaryTokenParams
+          #     requestBody:
+          #       description: Params to create a temporary authentication token
+          #       required: true
+          #       content:
+          #         application/json:
+          #           schema:
+          #             $ref: "#/components/schemas/CreateRealtimeTemporaryTokenParams"
+          #     responses:
+          #       "200":
+          #         description: Temporary authentication token generated
+          #         content:
+          #           application/json:
+          #             schema:
+          #               $ref: "#/components/schemas/RealtimeTemporaryTokenResponse"
+          #       "400":
+          #         $ref: "#/components/responses/BadRequest"
+          #       "401":
+          #         $ref: "#/components/responses/Unauthorized"
+          #       "404":
+          #         $ref: "#/components/responses/NotFound"
+          #       "429":
+          #         $ref: "#/components/responses/TooManyRequests"
+          #       "500":
+          #         $ref: "#/components/responses/InternalServerError"
+          #       "503":
+          #         $ref: "#/components/responses/ServiceUnavailable"
+          #       "504":
+          #         $ref: "#/components/responses/GatewayTimeout"
+
+          # /lemur/v3/generate/task:
+          #   post:
+          #     tags:
+          #       - LeMUR
+          #     summary: Run a task using LeMUR
+          #     description: |
+          #       <Note>To use our EU server with LeMUR, replace `api.assemblyai.com` with `api.eu.assemblyai.com`.</Note>
+          #       Use the LeMUR task endpoint to input your own LLM prompt.
+          #     operationId: lemurTask
+          #     x-fern-sdk-group-name: lemur
+          #     x-fern-sdk-method-name: task
+          #     x-fern-request-name: LemurTaskParams
+          #     requestBody:
+          #       description: Params to run the task
+          #       required: true
+          #       content:
+          #         application/json:
+          #           schema:
+          #             $ref: "#/components/schemas/LemurTaskParams"
+          #     responses:
+          #       "200":
+          #         description: LeMUR task response
+          #         content:
+          #           application/json:
+          #             schema:
+          #               $ref: "#/components/schemas/LemurTaskResponse"
+          #         headers:
+          #           X-RateLimit-Limit:
+          #             schema:
+          #               type: integer
+          #             description: Maximum number of allowed requests in a 60 second window.
+          #           X-RateLimit-Remaining:
+          #             schema:
+          #               type: integer
+          #             description: Number of remaining requests in the current time window.
+          #           X-RateLimit-Reset:
+          #             schema:
+          #               type: integer
+          #             description: Number of seconds until the remaining requests resets to the value of X-RateLimit-Limit.
+          #         links:
+          #           PurgeLemurRequestDataById:
+          #             $ref: "#/components/links/PurgeLemurRequestDataById"
+          #       "400":
+          #         $ref: "#/components/responses/BadRequest"
+          #       "401":
+          #         $ref: "#/components/responses/Unauthorized"
+          #       "404":
+          #         $ref: "#/components/responses/NotFound"
+          #       "429":
+          #         $ref: "#/components/responses/TooManyRequests"
+          #       "500":
+          #         $ref: "#/components/responses/InternalServerError"
+          #       "503":
+          #         $ref: "#/components/responses/ServiceUnavailable"
+          #       "504":
+          #         $ref: "#/components/responses/GatewayTimeout"
+
+          # /lemur/v3/generate/summary:
+          #   post:
+          #     tags:
+          #       - LeMUR
+          #     summary: Summarize a transcript using LeMUR
+          #     description: |
+          #       <Note>To use our EU server with LeMUR, replace `api.assemblyai.com` with `api.eu.assemblyai.com`.</Note>
+          #       Custom Summary allows you to distill a piece of audio into a few impactful sentences.
+          #       You can give the model context to obtain more targeted results while outputting the results in a variety of formats described in human language.
+          #     operationId: lemurSummary
+          #     x-fern-sdk-group-name: lemur
+          #     x-fern-sdk-method-name: summary
+          #     x-fern-request-name: LemurSummaryParams
+          #     requestBody:
+          #       description: Params to generate the summary
+          #       required: true
+          #       content:
+          #         application/json:
+          #           schema:
+          #             $ref: "#/components/schemas/LemurSummaryParams"
+          #     responses:
+          #       "200":
+          #         description: LeMUR summary response
+          #         content:
+          #           application/json:
+          #             schema:
+          #               $ref: "#/components/schemas/LemurSummaryResponse"
+          #         headers:
+          #           X-RateLimit-Limit:
+          #             schema:
+          #               type: integer
+          #             description: Maximum number of allowed requests in a 60 second window.
+          #           X-RateLimit-Remaining:
+          #             schema:
+          #               type: integer
+          #             description: Number of remaining requests in the current time window.
+          #           X-RateLimit-Reset:
+          #             schema:
+          #               type: integer
+          #             description: Number of seconds until the remaining requests resets to the value of X-RateLimit-Limit.
+          #         links:
+          #           PurgeLemurRequestDataById:
+          #             $ref: "#/components/links/PurgeLemurRequestDataById"
+          #       "400":
+          #         $ref: "#/components/responses/BadRequest"
+          #       "401":
+          #         $ref: "#/components/responses/Unauthorized"
+          #       "404":
+          #         $ref: "#/components/responses/NotFound"
+          #       "429":
+          #         $ref: "#/components/responses/TooManyRequests"
+          #       "500":
+          #         $ref: "#/components/responses/InternalServerError"
+          #       "503":
+          #         $ref: "#/components/responses/ServiceUnavailable"
+          #       "504":
+          #         $ref: "#/components/responses/GatewayTimeout"
+
+          # /lemur/v3/generate/question-answer:
+          #   post:
+          #     tags:
+          #       - LeMUR
+          #     summary: Ask questions using LeMUR
+          #     description: |
+          #       <Note>To use our EU server with LeMUR, replace `api.assemblyai.com` with `api.eu.assemblyai.com`.</Note>
+          #       Question & Answer allows you to ask free-form questions about a single transcript or a group of transcripts.
+          #       The questions can be any whose answers you find useful, such as judging whether a caller is likely to become a customer or whether all items on a meeting's agenda were covered.
+          #     operationId: lemurQuestionAnswer
+          #     x-fern-sdk-group-name: lemur
+          #     x-fern-sdk-method-name: questionAnswer
+          #     x-fern-request-name: LemurQuestionAnswerParams
+          #     requestBody:
+          #       description: Params to ask questions about the transcripts
+          #       required: true
+          #       content:
+          #         application/json:
+          #           schema:
+          #             $ref: "#/components/schemas/LemurQuestionAnswerParams"
+          #     responses:
+          #       "200":
+          #         description: LeMUR question & answer response
+          #         content:
+          #           application/json:
+          #             schema:
+          #               $ref: "#/components/schemas/LemurQuestionAnswerResponse"
+          #         headers:
+          #           X-RateLimit-Limit:
+          #             schema:
+          #               type: integer
+          #             description: Maximum number of allowed requests in a 60 second window.
+          #           X-RateLimit-Remaining:
+          #             schema:
+          #               type: integer
+          #             description: Number of remaining requests in the current time window.
+          #           X-RateLimit-Reset:
+          #             schema:
+          #               type: integer
+          #             description: Number of seconds until the remaining requests resets to the value of X-RateLimit-Limit.
+          #         links:
+          #           PurgeLemurRequestDataById:
+          #             $ref: "#/components/links/PurgeLemurRequestDataById"
+          #       "400":
+          #         $ref: "#/components/responses/BadRequest"
+          #       "401":
+          #         $ref: "#/components/responses/Unauthorized"
+          #       "404":
+          #         $ref: "#/components/responses/NotFound"
+          #       "429":
+          #         $ref: "#/components/responses/TooManyRequests"
+          #       "500":
+          #         $ref: "#/components/responses/InternalServerError"
+          #       "503":
+          #         $ref: "#/components/responses/ServiceUnavailable"
+          #       "504":
+          #         $ref: "#/components/responses/GatewayTimeout"
+
+          # /lemur/v3/generate/action-items:
+          #   post:
+          #     tags:
+          #       - LeMUR
+          #     summary: Extract action items
+          #     operationId: lemurActionItems
+          #     x-label: Extract action items using LeMUR
+          #     x-fern-sdk-group-name: lemur
+          #     x-fern-sdk-method-name: actionItems
+          #     x-fern-request-name: LemurActionItemsParams
+          #     description: Use LeMUR to generate a list of action items from a transcript
+          #     requestBody:
+          #       description: Params to generate action items from transcripts
+          #       required: true
+          #       content:
+          #         application/json:
+          #           schema:
+          #             $ref: "#/components/schemas/LemurActionItemsParams"
+          #     responses:
+          #       "200":
+          #         description: LeMUR action items response
+          #         content:
+          #           application/json:
+          #             schema:
+          #               $ref: "#/components/schemas/LemurActionItemsResponse"
+          #         headers:
+          #           X-RateLimit-Limit:
+          #             schema:
+          #               type: integer
+          #             description: Maximum number of allowed requests in a 60 second window.
+          #           X-RateLimit-Remaining:
+          #             schema:
+          #               type: integer
+          #             description: Number of remaining requests in the current time window.
+          #           X-RateLimit-Reset:
+          #             schema:
+          #               type: integer
+          #             description: Number of seconds until the remaining requests resets to the value of X-RateLimit-Limit.
+          #         links:
+          #           PurgeLemurRequestDataById:
+          #             $ref: "#/components/links/PurgeLemurRequestDataById"
+          #       "400":
+          #         $ref: "#/components/responses/BadRequest"
+          #       "401":
+          #         $ref: "#/components/responses/Unauthorized"
+          #       "404":
+          #         $ref: "#/components/responses/NotFound"
+          #       "429":
+          #         $ref: "#/components/responses/TooManyRequests"
+          #       "500":
+          #         $ref: "#/components/responses/InternalServerError"
+          #       "503":
+          #         $ref: "#/components/responses/ServiceUnavailable"
+          #       "504":
+          #         $ref: "#/components/responses/GatewayTimeout"
+
+          # /lemur/v3/{request_id}:
+          #   get:
+          #     tags:
+          #       - LeMUR
+          #     summary: Retrieve LeMUR response
+          #     description: |
+          #       <Note>To use our EU server with LeMUR, replace `api.assemblyai.com` with `api.eu.assemblyai.com`.</Note>
+          #       Retrieve a LeMUR response that was previously generated.
+          #     operationId: getLemurResponse
+          #     x-fern-sdk-group-name: lemur
+          #     x-fern-sdk-method-name: getResponse
+          #     x-fern-request-name: GetLemurResponseParams
+          #     parameters:
+          #       - name: request_id
+          #         x-label: LeMUR request ID
+          #         in: path
+          #         description: |
+          #           The ID of the LeMUR request you previously made.
+          #           This would be found in the response of the original request.
+          #         required: true
+          #         schema:
+          #           type: string
+          #     responses:
+          #       "200":
+          #         description: LeMUR response
+          #         content:
+          #           application/json:
+          #             schema:
+          #               $ref: "#/components/schemas/LemurResponse"
+          #       "400":
+          #         $ref: "#/components/responses/BadRequest"
+          #       "401":
+          #         $ref: "#/components/responses/Unauthorized"
+          #       "404":
+          #         $ref: "#/components/responses/NotFound"
+          #       "429":
+          #         $ref: "#/components/responses/TooManyRequests"
+          #       "500":
+          #         $ref: "#/components/responses/InternalServerError"
+          #       "503":
+          #         $ref: "#/components/responses/ServiceUnavailable"
+          #       "504":
+          #         $ref: "#/components/responses/GatewayTimeout"
+          #   delete:
+          #     tags:
+          #       - LeMUR
+          #     summary: Purge LeMUR request data
+          #     description: |
+          #       <Note>To use our EU server with LeMUR, replace `api.assemblyai.com` with `api.eu.assemblyai.com`.</Note>
+          #       Delete the data for a previously submitted LeMUR request.
+          #       The LLM response data, as well as any context provided in the original request will be removed.
+          #     operationId: purgeLemurRequestData
+          #     x-fern-sdk-group-name: lemur
+          #     x-fern-sdk-method-name: purgeRequestData
+          #     x-fern-request-name: PurgeLemurRequestDataParams
+          #     parameters:
+          #       - name: request_id
+          #         x-label: LeMUR request ID
+          #         in: path
+          #         description: The ID of the LeMUR request whose data you want to delete. This would be found in the response of the original request.
+          #         required: true
+          #         schema:
+          #           type: string
+          #     responses:
+          #       "200":
+          #         description: LeMUR request data deleted
+          #         content:
+          #           application/json:
+          #             schema:
+          #               $ref: "#/components/schemas/PurgeLemurRequestDataResponse"
+          #       "400":
+          #         $ref: "#/components/responses/BadRequest"
+          #       "401":
+          #         $ref: "#/components/responses/Unauthorized"
+          #       "404":
+          #         $ref: "#/components/responses/NotFound"
+          #       "429":
+          #         $ref: "#/components/responses/TooManyRequests"
+          #       "500":
+          #         $ref: "#/components/responses/InternalServerError"
+          #       "503":
+          #         $ref: "#/components/responses/ServiceUnavailable"
+          #       "504":
+          #         $ref: "#/components/responses/GatewayTimeout"
       summary: Get redacted audio
       tags:
         - transcript
@@ -5563,10 +5794,10 @@ tags:
     externalDocs:
       url: https://www.assemblyai.com/docs/guides/transcribing-an-audio-file
     name: transcript
-  - description: LeMUR related operations
-    externalDocs:
-      url: https://www.assemblyai.com/docs/guides/processing-audio-with-llms-using-lemur
-    name: LeMUR
+  # - name: LeMUR
+  #   description: LeMUR related operations
+  #   externalDocs:
+  #     url: https://www.assemblyai.com/docs/guides/processing-audio-with-llms-using-lemur
   - description: Streaming Speech-to-Text
     externalDocs:
       url: https://www.assemblyai.com/docs/speech-to-text/streaming
