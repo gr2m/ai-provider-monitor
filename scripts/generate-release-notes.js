@@ -1,5 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
+import * as core from '@actions/core';
 
 const require = createRequire(import.meta.url);
 
@@ -19,7 +20,7 @@ async function callOpenAI(prompt) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "gpt-4-turbo",
+      model: "gpt-5",
       messages: [
         {
           role: "user",
@@ -237,7 +238,7 @@ async function main() {
     console.log('\nDescription:');
     console.log(result.description);
     
-    // Write outputs for GitHub Actions to consume
+    // Always write JSON for local debugging/testing
     const outputs = {
       summary: result.summary,
       description: result.description,
@@ -245,10 +246,21 @@ async function main() {
     };
     
     await writeFile('release-notes-output.json', JSON.stringify(outputs, null, 2));
+    
+    // If running in GitHub Actions, also set outputs
+    if (process.env.GITHUB_OUTPUT) {
+      core.setOutput('summary', result.summary);
+      core.setOutput('description', result.description);
+      core.setOutput('version', result.version);
+    }
+    
     console.log('\n✓ Release notes generated successfully');
     
   } catch (error) {
     console.error('Error generating release notes:', error.message);
+    if (process.env.GITHUB_OUTPUT) {
+      core.setFailed(error.message);
+    }
     process.exit(1);
   }
 }
