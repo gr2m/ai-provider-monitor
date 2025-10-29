@@ -1,0 +1,41 @@
+{
+  "description": "Establishes a WebSocket connection for real-time audio transcription. This endpoint uses WebSocket protocol (wss://api.together.ai/v1/realtime) for bidirectional streaming communication.\n\n**Connection Setup:**\n- Protocol: WebSocket (wss://)\n- Authentication: Pass API key as Bearer token in Authorization header\n- Parameters: Sent as query parameters (model, input_audio_format)\n\n**Client Events:**\n- `input_audio_buffer.append`: Send audio chunks as base64-encoded data\n  ```json\n  {\n    \"type\": \"input_audio_buffer.append\",\n    \"audio\": \"<base64_encoded_audio_chunk>\"\n  }\n  ```\n- `input_audio_buffer.commit`: Signal end of audio stream\n  ```json\n  {\n    \"type\": \"input_audio_buffer.commit\"\n  }\n  ```\n\n**Server Events:**\n- `session.created`: Initial session confirmation (sent first)\n  ```json\n  {\n    \"type\": \"session.created\",\n    \"session\": {\n      \"id\": \"session-id\",\n      \"object\": \"realtime.session\",\n      \"modalities\": [\"audio\"],\n      \"model\": \"openai/whisper-large-v3\"\n    }\n  }\n  ```\n- `conversation.item.input_audio_transcription.delta`: Partial transcription results\n  ```json\n  {\n    \"type\": \"conversation.item.input_audio_transcription.delta\",\n    \"delta\": \"The quick brown\"\n  }\n  ```\n- `conversation.item.input_audio_transcription.completed`: Final transcription\n  ```json\n  {\n    \"type\": \"conversation.item.input_audio_transcription.completed\",\n    \"transcript\": \"The quick brown fox jumps over the lazy dog\"\n  }\n  ```\n- `conversation.item.input_audio_transcription.failed`: Error occurred\n  ```json\n  {\n    \"type\": \"conversation.item.input_audio_transcription.failed\",\n    \"error\": {\n      \"message\": \"Error description\",\n      \"type\": \"invalid_request_error\",\n      \"param\": null,\n      \"code\": \"invalid_api_key\"\n    }\n  }\n  ```\n\n**Error Codes:**\n- `invalid_api_key`: Invalid API key provided (401)\n- `missing_api_key`: Authorization header missing (401)\n- `model_not_available`: Invalid or unavailable model (400)\n- Unsupported audio format errors (400)\n",
+  "operationId": "realtime-transcription",
+  "parameters": [
+    {
+      "description": "The Whisper model to use for transcription",
+      "in": "query",
+      "name": "model",
+      "required": true,
+      "schema": {
+        "default": "openai/whisper-large-v3",
+        "enum": [
+          "openai/whisper-large-v3"
+        ],
+        "type": "string"
+      }
+    },
+    {
+      "description": "Audio format specification. Currently supports 16-bit PCM at 16kHz sample rate.",
+      "in": "query",
+      "name": "input_audio_format",
+      "required": true,
+      "schema": {
+        "default": "pcm_s16le_16000",
+        "enum": [
+          "pcm_s16le_16000"
+        ],
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "101": {
+      "description": "Switching Protocols - WebSocket connection established successfully.\n\nError message format:\n```json\n{\n  \"type\": \"conversation.item.input_audio_transcription.failed\",\n  \"error\": {\n    \"message\": \"Error description\",\n    \"type\": \"invalid_request_error\",\n    \"param\": null,\n    \"code\": \"error_code\"\n  }\n}\n```\n"
+    }
+  },
+  "summary": "Real-time audio transcription via WebSocket",
+  "tags": [
+    "Audio"
+  ]
+}
