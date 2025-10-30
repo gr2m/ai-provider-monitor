@@ -1,0 +1,49 @@
+{
+  "description": "Establishes a WebSocket connection for real-time text-to-speech generation. This endpoint uses WebSocket protocol (wss://api.together.ai/v1/audio/speech/websocket) for bidirectional streaming communication.\n\n**Connection Setup:**\n- Protocol: WebSocket (wss://)\n- Authentication: Pass API key as Bearer token in Authorization header\n- Parameters: Sent as query parameters (model, voice, max_partial_length)\n\n**Client Events:**\n- `tts_session.updated`: Update session parameters like voice\n  ```json\n  {\n    \"type\": \"tts_session.updated\",\n    \"session\": {\n      \"voice\": \"tara\"\n    }\n  }\n  ```\n- `input_text_buffer.append`: Send text chunks for TTS generation\n  ```json\n  {\n    \"type\": \"input_text_buffer.append\",\n    \"text\": \"Hello, this is a test.\"\n  }\n  ```\n- `input_text_buffer.clear`: Clear the buffered text\n  ```json\n  {\n    \"type\": \"input_text_buffer.clear\"\n  }\n  ```\n- `input_text_buffer.commit`: Signal end of text input and process remaining text\n  ```json\n  {\n    \"type\": \"input_text_buffer.commit\"\n  }\n  ```\n\n**Server Events:**\n- `session.created`: Initial session confirmation (sent first)\n  ```json\n  {\n    \"event_id\": \"evt_123456\",\n    \"type\": \"session.created\",\n    \"session\": {\n      \"id\": \"session-id\",\n      \"object\": \"realtime.tts.session\",\n      \"modalities\": [\"text\", \"audio\"],\n      \"model\": \"hexgrad/Kokoro-82M\",\n      \"voice\": \"tara\"\n    }\n  }\n  ```\n- `conversation.item.input_text.received`: Acknowledgment that text was received\n  ```json\n  {\n    \"type\": \"conversation.item.input_text.received\",\n    \"text\": \"Hello, this is a test.\"\n  }\n  ```\n- `conversation.item.audio_output.delta`: Audio chunks as base64-encoded data\n  ```json\n  {\n    \"type\": \"conversation.item.audio_output.delta\",\n    \"item_id\": \"tts_1\",\n    \"delta\": \"<base64_encoded_audio_chunk>\"\n  }\n  ```\n- `conversation.item.audio_output.done`: Audio generation complete for an item\n  ```json\n  {\n    \"type\": \"conversation.item.audio_output.done\",\n    \"item_id\": \"tts_1\"\n  }\n  ```\n- `conversation.item.tts.failed`: Error occurred\n  ```json\n  {\n    \"type\": \"conversation.item.tts.failed\",\n    \"error\": {\n      \"message\": \"Error description\",\n      \"type\": \"invalid_request_error\",\n      \"param\": null,\n      \"code\": \"invalid_api_key\"\n    }\n  }\n  ```\n\n**Text Processing:**\n- Partial text (no sentence ending) is held in buffer until:\n  - We believe that the text is complete enough to be processed for TTS generation\n  - The partial text exceeds `max_partial_length` characters (default: 250)\n  - The `input_text_buffer.commit` event is received\n\n**Audio Format:**\n- Format: WAV (PCM s16le)\n- Sample Rate: 24000 Hz\n- Encoding: Base64\n- Delivered via `conversation.item.audio_output.delta` events\n\n**Error Codes:**\n- `invalid_api_key`: Invalid API key provided (401)\n- `missing_api_key`: Authorization header missing (401)\n- `model_not_available`: Invalid or unavailable model (400)\n- Invalid text format errors (400)\n",
+  "operationId": "realtime-tts",
+  "parameters": [
+    {
+      "description": "The TTS model to use for speech generation. Can also be set via `tts_session.updated` event.",
+      "in": "query",
+      "name": "model",
+      "required": false,
+      "schema": {
+        "default": "hexgrad/Kokoro-82M",
+        "enum": [
+          "hexgrad/Kokoro-82M",
+          "cartesia/sonic-english"
+        ],
+        "type": "string"
+      }
+    },
+    {
+      "description": "The voice to use for speech generation. Default is 'tara'. \nAvailable voices vary by model. Can also be updated via `tts_session.updated` event.\n",
+      "in": "query",
+      "name": "voice",
+      "required": false,
+      "schema": {
+        "default": "tara",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Maximum number of characters in partial text before forcing TTS generation \neven without a sentence ending. Helps reduce latency for long text without punctuation.\n",
+      "in": "query",
+      "name": "max_partial_length",
+      "required": false,
+      "schema": {
+        "default": 250,
+        "type": "integer"
+      }
+    }
+  ],
+  "responses": {
+    "101": {
+      "description": "Switching Protocols - WebSocket connection established successfully.\n\nError message format:\n```json\n{\n  \"type\": \"conversation.item.tts.failed\",\n  \"error\": {\n    \"message\": \"Error description\",\n    \"type\": \"invalid_request_error\",\n    \"param\": null,\n    \"code\": \"error_code\"\n  }\n}\n```\n"
+    }
+  },
+  "summary": "Real-time text-to-speech via WebSocket",
+  "tags": [
+    "Audio"
+  ]
+}

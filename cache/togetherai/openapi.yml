@@ -15,7 +15,7 @@ components:
           type: string
         language:
           default: en
-          description: Language of input text
+          description: Language of input text.
           enum:
             - en
             - de
@@ -37,11 +37,13 @@ components:
           anyOf:
             - enum:
                 - cartesia/sonic
+                - hexgrad/Kokoro-82M
+                - canopylabs/orpheus-3b-0.1-ft
               type: string
             - type: string
           description: |
-            The name of the model to query.<br> <br> [See all of Together AI's chat models](https://docs.together.ai/docs/serverless-models#audio-models)
-          example: cartesia/sonic
+            The name of the model to query.<br> <br> [See all of Together AI's chat models](https://docs.together.ai/docs/serverless-models#audio-models) The current supported tts models are: - cartesia/sonic - hexgrad/Kokoro-82M - canopylabs/orpheus-3b-0.1-ft
+          example: canopylabs/orpheus-3b-0.1-ft
         response_encoding:
           default: pcm_f32le
           description: Audio encoding of response
@@ -53,7 +55,7 @@ components:
           type: string
         response_format:
           default: wav
-          description: The format of audio output
+          description: The format of audio output. Supported formats are mp3, wav, raw if streaming is false. If streaming is true, the only supported format is raw.
           enum:
             - mp3
             - wav
@@ -61,22 +63,16 @@ components:
           type: string
         sample_rate:
           default: 44100
-          description: Sampling rate to use for the output audio
+          description: Sampling rate to use for the output audio. The default sampling rate for canopylabs/orpheus-3b-0.1-ft and hexgrad/Kokoro-82M is 24000 and for cartesia/sonic is 44100.
           type: number
         stream:
           default: false
           description: "If true, output is streamed for several characters at a time instead of waiting for the full response. The stream terminates with `data: [DONE]`. If false, return the encoded audio as octet stream"
           type: boolean
         voice:
-          anyOf:
-            - enum:
-                - laidback woman
-                - polite man
-                - storyteller lady
-                - friendly sidekick
-              type: string
-            - type: string
-          description: The voice to use for generating the audio. [View all supported voices here](https://docs.together.ai/docs/text-to-speech#voices-available).
+          description: |
+            The voice to use for generating the audio. The voices supported are different for each model. For eg - for canopylabs/orpheus-3b-0.1-ft, one of the voices supported is tara, for hexgrad/Kokoro-82M, one of the voices supported is af_alloy and for cartesia/sonic, one of the voices supported is "friendly sidekick". <br> <br> You can view the voices supported for each model using the /v1/voices endpoint sending the model name as the query parameter. [View all supported voices here](https://docs.together.ai/docs/text-to-speech#voices-available).
+          type: string
       required:
         - model
         - input
@@ -121,6 +117,23 @@ components:
       type: object
     AudioTranscriptionRequest:
       properties:
+        diarize:
+          default: false
+          description: |
+            Whether to enable speaker diarization. When enabled, you will get the speaker id for each word in the transcription. In the response, in the words array, you will get the speaker id for each word. In addition, we also return the speaker_segments array which contains the speaker id for each speaker segment along with the start and end time of the segment along with all the words in the segment. <br> <br> For eg - ... "speaker_segments": [
+              "speaker_id": "SPEAKER_00",
+              "start": 0,
+              "end": 30.02,
+              "words": [
+                {
+                  "id": 0,
+                  "word": "Tijana",
+                  "start": 0,
+                  "end": 11.475,
+                  "speaker_id": "SPEAKER_00"
+                },
+                ...
+          type: boolean
         file:
           description: Audio file upload or public HTTP/HTTPS URL. Supported formats .wav, .mp3, .m4a, .webm, .flac.
           oneOf:
@@ -207,6 +220,43 @@ components:
         - end
         - text
       type: object
+    AudioTranscriptionSpeakerSegment:
+      properties:
+        end:
+          description: End time of the speaker segment in seconds
+          example: 30.02
+          format: float
+          type: number
+        id:
+          description: Unique identifier for the speaker segment
+          example: 1
+          type: integer
+        speaker_id:
+          description: The speaker identifier
+          example: SPEAKER_00
+          type: string
+        start:
+          description: Start time of the speaker segment in seconds
+          example: 0.0
+          format: float
+          type: number
+        text:
+          description: The full text spoken by this speaker in this segment
+          example: Hello, how are you doing today?
+          type: string
+        words:
+          description: Array of words spoken by this speaker in this segment
+          items:
+            $ref: "#/components/schemas/AudioTranscriptionWord"
+          type: array
+      required:
+        - speaker_id
+        - start
+        - end
+        - words
+        - text
+        - id
+      type: object
     AudioTranscriptionVerboseJsonResponse:
       properties:
         duration:
@@ -222,6 +272,11 @@ components:
           description: Array of transcription segments
           items:
             $ref: "#/components/schemas/AudioTranscriptionSegment"
+          type: array
+        speaker_segments:
+          description: Array of transcription speaker segments (only when diarize is enabled)
+          items:
+            $ref: "#/components/schemas/AudioTranscriptionSpeakerSegment"
           type: array
         task:
           description: The task performed
@@ -253,6 +308,10 @@ components:
           example: 0.5
           format: float
           type: number
+        speaker_id:
+          description: The speaker id for the word (only when diarize is enabled)
+          example: SPEAKER_00
+          type: string
         start:
           description: Start time of the word in seconds
           example: 0.0
@@ -3912,6 +3971,166 @@ paths:
                    "voice": "laidback woman"
                  }' \
                  --output audio.wav
+  /audio/speech/websocket:
+    get:
+      description: |
+        Establishes a WebSocket connection for real-time text-to-speech generation. This endpoint uses WebSocket protocol (wss://api.together.ai/v1/audio/speech/websocket) for bidirectional streaming communication.
+
+        **Connection Setup:**
+        - Protocol: WebSocket (wss://)
+        - Authentication: Pass API key as Bearer token in Authorization header
+        - Parameters: Sent as query parameters (model, voice, max_partial_length)
+
+        **Client Events:**
+        - `tts_session.updated`: Update session parameters like voice
+          ```json
+          {
+            "type": "tts_session.updated",
+            "session": {
+              "voice": "tara"
+            }
+          }
+          ```
+        - `input_text_buffer.append`: Send text chunks for TTS generation
+          ```json
+          {
+            "type": "input_text_buffer.append",
+            "text": "Hello, this is a test."
+          }
+          ```
+        - `input_text_buffer.clear`: Clear the buffered text
+          ```json
+          {
+            "type": "input_text_buffer.clear"
+          }
+          ```
+        - `input_text_buffer.commit`: Signal end of text input and process remaining text
+          ```json
+          {
+            "type": "input_text_buffer.commit"
+          }
+          ```
+
+        **Server Events:**
+        - `session.created`: Initial session confirmation (sent first)
+          ```json
+          {
+            "event_id": "evt_123456",
+            "type": "session.created",
+            "session": {
+              "id": "session-id",
+              "object": "realtime.tts.session",
+              "modalities": ["text", "audio"],
+              "model": "hexgrad/Kokoro-82M",
+              "voice": "tara"
+            }
+          }
+          ```
+        - `conversation.item.input_text.received`: Acknowledgment that text was received
+          ```json
+          {
+            "type": "conversation.item.input_text.received",
+            "text": "Hello, this is a test."
+          }
+          ```
+        - `conversation.item.audio_output.delta`: Audio chunks as base64-encoded data
+          ```json
+          {
+            "type": "conversation.item.audio_output.delta",
+            "item_id": "tts_1",
+            "delta": "<base64_encoded_audio_chunk>"
+          }
+          ```
+        - `conversation.item.audio_output.done`: Audio generation complete for an item
+          ```json
+          {
+            "type": "conversation.item.audio_output.done",
+            "item_id": "tts_1"
+          }
+          ```
+        - `conversation.item.tts.failed`: Error occurred
+          ```json
+          {
+            "type": "conversation.item.tts.failed",
+            "error": {
+              "message": "Error description",
+              "type": "invalid_request_error",
+              "param": null,
+              "code": "invalid_api_key"
+            }
+          }
+          ```
+
+        **Text Processing:**
+        - Partial text (no sentence ending) is held in buffer until:
+          - We believe that the text is complete enough to be processed for TTS generation
+          - The partial text exceeds `max_partial_length` characters (default: 250)
+          - The `input_text_buffer.commit` event is received
+
+        **Audio Format:**
+        - Format: WAV (PCM s16le)
+        - Sample Rate: 24000 Hz
+        - Encoding: Base64
+        - Delivered via `conversation.item.audio_output.delta` events
+
+        **Error Codes:**
+        - `invalid_api_key`: Invalid API key provided (401)
+        - `missing_api_key`: Authorization header missing (401)
+        - `model_not_available`: Invalid or unavailable model (400)
+        - Invalid text format errors (400)
+      operationId: realtime-tts
+      parameters:
+        - description: The TTS model to use for speech generation. Can also be set via `tts_session.updated` event.
+          in: query
+          name: model
+          required: false
+          schema:
+            default: hexgrad/Kokoro-82M
+            enum:
+              - hexgrad/Kokoro-82M
+              - cartesia/sonic-english
+            type: string
+        - description: "The voice to use for speech generation. Default is 'tara'. \nAvailable voices vary by model. Can also be updated via `tts_session.updated` event.\n"
+          in: query
+          name: voice
+          required: false
+          schema:
+            default: tara
+            type: string
+        - description: "Maximum number of characters in partial text before forcing TTS generation \neven without a sentence ending. Helps reduce latency for long text without punctuation.\n"
+          in: query
+          name: max_partial_length
+          required: false
+          schema:
+            default: 250
+            type: integer
+      responses:
+        "101":
+          description: |
+            Switching Protocols - WebSocket connection established successfully.
+
+            Error message format:
+            ```json
+            {
+              "type": "conversation.item.tts.failed",
+              "error": {
+                "message": "Error description",
+                "type": "invalid_request_error",
+                "param": null,
+                "code": "error_code"
+              }
+            }
+            ```
+      summary: Real-time text-to-speech via WebSocket
+      tags:
+        - Audio
+      x-codeSamples:
+        - label: Python WebSocket Client
+          lang: Python
+          source: "import asyncio\nimport websockets\nimport json\nimport base64\nimport os\n\nasync def generate_speech():\n    api_key = os.environ.get(\"TOGETHER_API_KEY\")\n    url = \"wss://api.together.ai/v1/audio/speech/websocket?model=hexgrad/Kokoro-82M&voice=tara\"\n\n    headers = {\n        \"Authorization\": f\"Bearer {api_key}\"\n    }\n\n    async with websockets.connect(url, additional_headers=headers) as ws:\n        # Wait for session created\n        session_msg = await ws.recv()\n        session_data = json.loads(session_msg)\n        print(f\"Session created: {session_data['session']['id']}\")\n\n        # Send text for TTS\n        text_chunks = [\n            \"Hello, this is a test.\",\n            \"This is the second sentence.\",\n            \"And this is the final one.\"\n        ]\n\n        async def send_text():\n            for chunk in text_chunks:\n                await ws.send(json.dumps({\n                    \"type\": \"input_text_buffer.append\",\n                    \"text\": chunk\n                }))\n                await asyncio.sleep(0.5)  # Simulate typing\n\n            # Commit to process any remaining text\n            await ws.send(json.dumps({\n                \"type\": \"input_text_buffer.commit\"\n            }))\n\n        async def receive_audio():\n            audio_data = bytearray()\n            async for message in ws:\n                data = json.loads(message)\n                \n                if data[\"type\"] == \"conversation.item.input_text.received\":\n                    print(f\"Text received: {data['text']}\")\n                elif data[\"type\"] == \"conversation.item.audio_output.delta\":\n                    # Decode base64 audio chunk\n                    audio_chunk = base64.b64decode(data['delta'])\n                    audio_data.extend(audio_chunk)\n                    print(f\"Received audio chunk for item {data['item_id']}\")\n                elif data[\"type\"] == \"conversation.item.audio_output.done\":\n                    print(f\"Audio generation complete for item {data['item_id']}\")\n                elif data[\"type\"] == \"conversation.item.tts.failed\":\n                    error = data.get(\"error\", {})\n                    print(f\"Error: {error.get('message')}\")\n                    break\n\n            # Save the audio to a file\n            with open(\"output.wav\", \"wb\") as f:\n                f.write(audio_data)\n            print(\"Audio saved to output.wav\")\n\n        # Run send and receive concurrently\n        await asyncio.gather(send_text(), receive_audio())\n\nasyncio.run(generate_speech())\n"
+        - label: Node.js WebSocket Client
+          lang: JavaScript
+          source: "import WebSocket from 'ws';\nimport fs from 'fs';\n\nconst apiKey = process.env.TOGETHER_API_KEY;\nconst url = 'wss://api.together.ai/v1/audio/speech/websocket?model=hexgrad/Kokoro-82M&voice=tara';\n\nconst ws = new WebSocket(url, {\n  headers: {\n    'Authorization': `Bearer ${apiKey}`\n  }\n});\n\nconst audioData = [];\n\nws.on('open', () => {\n  console.log('WebSocket connection established!');\n});\n\nws.on('message', (data) => {\n  const message = JSON.parse(data.toString());\n\n  if (message.type === 'session.created') {\n    console.log(`Session created: ${message.session.id}`);\n    \n    // Send text chunks\n    const textChunks = [\n      \"Hello, this is a test.\",\n      \"This is the second sentence.\",\n      \"And this is the final one.\"\n    ];\n\n    textChunks.forEach((text, index) => {\n      setTimeout(() => {\n        ws.send(JSON.stringify({\n          type: 'input_text_buffer.append',\n          text: text\n        }));\n      }, index * 500);\n    });\n\n    // Commit after all chunks\n    setTimeout(() => {\n      ws.send(JSON.stringify({\n        type: 'input_text_buffer.commit'\n      }));\n    }, textChunks.length * 500 + 100);\n\n  } else if (message.type === 'conversation.item.input_text.received') {\n    console.log(`Text received: ${message.text}`);\n  } else if (message.type === 'conversation.item.audio_output.delta') {\n    // Decode base64 audio chunk\n    const audioChunk = Buffer.from(message.delta, 'base64');\n    audioData.push(audioChunk);\n    console.log(`Received audio chunk for item ${message.item_id}`);\n  } else if (message.type === 'conversation.item.audio_output.done') {\n    console.log(`Audio generation complete for item ${message.item_id}`);\n  } else if (message.type === 'conversation.item.tts.failed') {\n    const errorMessage = message.error?.message ?? 'Unknown error';\n    console.error(`Error: ${errorMessage}`);\n    ws.close();\n  }\n});\n\nws.on('close', () => {\n  // Save the audio to a file\n  if (audioData.length > 0) {\n    const completeAudio = Buffer.concat(audioData);\n    fs.writeFileSync('output.wav', completeAudio);\n    console.log('Audio saved to output.wav');\n  }\n});\n\nws.on('error', (error) => {\n  console.error('WebSocket error:', error);\n});\n"
   /audio/transcriptions:
     post:
       description: Transcribes audio into text
