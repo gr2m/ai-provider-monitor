@@ -1314,6 +1314,18 @@
             "description": "Number of tokens in the generated completion.",
             "type": "integer"
           },
+          "completion_tokens_details": {
+            "description": "Breakdown of tokens in the completion.",
+            "nullable": true,
+            "properties": {
+              "reasoning_tokens": {
+                "description": "Number of tokens used for reasoning (for reasoning models).",
+                "type": "integer"
+              }
+            },
+            "required": ["reasoning_tokens"],
+            "type": "object"
+          },
           "prompt_time": {
             "description": "Time spent processing input tokens",
             "type": "number"
@@ -1321,6 +1333,18 @@
           "prompt_tokens": {
             "description": "Number of tokens in the prompt.",
             "type": "integer"
+          },
+          "prompt_tokens_details": {
+            "description": "Breakdown of tokens in the prompt.",
+            "nullable": true,
+            "properties": {
+              "cached_tokens": {
+                "description": "Number of tokens that were cached and reused.",
+                "type": "integer"
+              }
+            },
+            "required": ["cached_tokens"],
+            "type": "object"
           },
           "queue_time": {
             "description": "Time the requests was spent queued",
@@ -1776,6 +1800,53 @@
             "description": "A unique identifier for the chat completion.",
             "type": "string"
           },
+          "mcp_list_tools": {
+            "description": "List of discovered MCP tools from connected servers.",
+            "items": {
+              "properties": {
+                "id": {
+                  "description": "Unique identifier for this tool list response.",
+                  "type": "string"
+                },
+                "server_label": {
+                  "description": "Human-readable label for the MCP server.",
+                  "type": "string"
+                },
+                "tools": {
+                  "description": "Array of discovered tools from the server.",
+                  "items": {
+                    "properties": {
+                      "annotations": {
+                        "description": "Additional metadata for the tool."
+                      },
+                      "description": {
+                        "description": "Description of what the tool does.",
+                        "type": "string"
+                      },
+                      "input_schema": {
+                        "additionalProperties": true,
+                        "description": "JSON Schema describing the tool's input parameters.",
+                        "type": "object"
+                      },
+                      "name": {
+                        "description": "The name of the tool.",
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "type": {
+                  "description": "The type identifier.",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "nullable": true,
+            "type": "array"
+          },
           "model": {
             "description": "The model used for the chat completion.",
             "type": "string"
@@ -1783,6 +1854,12 @@
           "object": {
             "description": "The object type, which is always `chat.completion`.",
             "enum": ["chat.completion"],
+            "type": "string"
+          },
+          "service_tier": {
+            "description": "The service tier used for the request.",
+            "enum": ["auto", "on_demand", "flex", "performance", null],
+            "nullable": true,
             "type": "string"
           },
           "system_fingerprint": {
@@ -1794,6 +1871,9 @@
           },
           "usage_breakdown": {
             "$ref": "#/components/schemas/ChatCompletionUsageBreakdown"
+          },
+          "x_groq": {
+            "$ref": "#/components/schemas/XGroqNonStreaming"
           }
         },
         "required": ["choices", "created", "id", "model", "object"],
@@ -2700,6 +2780,40 @@
           }
         },
         "required": ["language", "duration", "text"],
+        "type": "object"
+      },
+      "DebugData": {
+        "description": "Debug information including input and output token IDs and strings. Only present when debug=true in the request.",
+        "properties": {
+          "input_token_ids": {
+            "description": "Token IDs for the input.",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "input_tokens": {
+            "description": "Token strings for the input.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "output_token_ids": {
+            "description": "Token IDs for the output.",
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "output_tokens": {
+            "description": "Token strings for the output.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
         "type": "object"
       },
       "DeleteFileResponse": {
@@ -3901,22 +4015,79 @@
         "type": "object"
       },
       "XGroq": {
+        "description": "Groq-specific metadata for streaming responses. Different fields appear in different chunks.",
         "properties": {
+          "debug": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DebugData"
+              }
+            ],
+            "nullable": true
+          },
           "error": {
-            "description": "An error string indicating why a stream was stopped early",
+            "description": "An error string indicating why a stream was stopped early.",
+            "nullable": true,
             "type": "string"
           },
           "id": {
-            "description": "A groq request ID which can be used by to refer to a specific request to groq support\nOnly sent with the first chunk\n",
+            "description": "A groq request ID which can be used to refer to a specific request to groq support.\nSent only in the first and final chunk.\n",
+            "nullable": true,
             "type": "string"
           },
           "usage": {
-            "$ref": "#/components/schemas/CompletionUsage"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CompletionUsage"
+              }
+            ],
+            "description": "Usage information for the stream. Only sent in the final chunk.",
+            "nullable": true
           },
           "usage_breakdown": {
-            "$ref": "#/components/schemas/ChatCompletionUsageBreakdown"
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompletionUsageBreakdown"
+              }
+            ],
+            "description": "Detailed usage breakdown by model when multiple models are used in the request for compound AI systems. Only sent in the final chunk.",
+            "nullable": true
           }
         },
+        "type": "object"
+      },
+      "XGroqNonStreaming": {
+        "description": "Groq-specific metadata for non-streaming chat completion responses.",
+        "properties": {
+          "debug": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DebugData"
+              }
+            ],
+            "nullable": true
+          },
+          "id": {
+            "description": "A groq request ID which can be used to refer to a specific request to groq support.",
+            "type": "string"
+          },
+          "usage": {
+            "description": "Additional Groq-specific usage metrics (hardware cache statistics).",
+            "nullable": true,
+            "properties": {
+              "dram_cached_tokens": {
+                "description": "Number of tokens served from DRAM cache.",
+                "type": "integer"
+              },
+              "sram_cached_tokens": {
+                "description": "Number of tokens served from SRAM cache.",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": ["id"],
         "type": "object"
       }
     },
@@ -4736,7 +4907,7 @@
           "examples": [
             {
               "request": {
-                "curl": "curl https://api.groq.com/openai/v1/responses -s \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer $GROQ_API_KEY\" \\\n-d '{\n  \"model\": \"gpt-oss\",\n  \"input\": \"Tell me a three sentence bedtime story about a unicorn.\"\n}'\n"
+                "curl": "curl https://api.groq.com/openai/v1/responses -s \\\n-H \"Content-Type: application/json\" \\\n-H \"Authorization: Bearer $GROQ_API_KEY\" \\\n-d '{\n  \"model\": \"openai/gpt-oss-120b\",\n  \"input\": \"Tell me a three sentence bedtime story about a unicorn.\"\n}'\n"
               },
               "response": "{\n  \"id\": \"resp_01k1x6w9ane6d8rfxm05cb45yk\",\n  \"object\": \"response\",\n  \"status\": \"completed\",\n  \"created_at\": 1754400695,\n  \"output\": [\n    {\n      \"type\": \"message\",\n      \"id\": \"msg_01k1x6w9ane6eb0650crhawwyy\",\n      \"status\": \"completed\",\n      \"role\": \"assistant\",\n      \"content\": [\n        {\n          \"type\": \"output_text\",\n          \"text\": \"When the stars blinked awake, Luna the unicorn curled her mane and whispered wishes to the sleeping pine trees. She galloped through a field of moonlit daisies, gathering dew like tiny silver pearls. With a gentle sigh, she tucked her hooves beneath a silver cloud so the world slept softly, dreaming of her gentle hooves until the morning.\",\n          \"annotations\": []\n        }\n      ]\n    }\n  ],\n  \"previous_response_id\": null,\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"reasoning\": {\n    \"effort\": null,\n    \"summary\": null\n  },\n  \"max_output_tokens\": null,\n  \"instructions\": null,\n  \"text\": {\n    \"format\": {\n      \"type\": \"text\"\n    }\n  },\n  \"tools\": [],\n  \"tool_choice\": \"auto\",\n  \"truncation\": \"disabled\",\n  \"metadata\": {},\n  \"temperature\": 1,\n  \"top_p\": 1,\n  \"user\": null,\n  \"service_tier\": \"default\",\n  \"error\": null,\n  \"incomplete_details\": null,\n  \"usage\": {\n    \"input_tokens\": 82,\n    \"input_tokens_details\": {\n      \"cached_tokens\": 0\n    },\n    \"output_tokens\": 266,\n    \"output_tokens_details\": {\n      \"reasoning_tokens\": 0\n    },\n    \"total_tokens\": 348\n  },\n  \"parallel_tool_calls\": true,\n  \"store\": false\n}\n",
               "title": "Default"
