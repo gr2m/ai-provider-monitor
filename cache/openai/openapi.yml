@@ -296,6 +296,7 @@ components:
         - id
         - call_id
         - status
+        - operation
       title: Apply patch tool call
       type: object
     ApplyPatchToolCallItemParam:
@@ -364,7 +365,6 @@ components:
         - id
         - call_id
         - status
-        - output
       title: Apply patch tool call output
       type: object
     ApplyPatchToolCallOutputItemParam:
@@ -382,9 +382,11 @@ components:
               type: string
             - type: "null"
         output:
-          description: Optional human-readable log text from the apply patch tool (e.g., patch results or errors).
-          maxLength: 10485760
-          type: string
+          anyOf:
+            - description: Optional human-readable log text from the apply patch tool (e.g., patch results or errors).
+              maxLength: 10485760
+              type: string
+            - type: "null"
         status:
           $ref: "#/components/schemas/ApplyPatchCallOutputStatusParam"
           description: The status of the apply patch tool call output. One of `completed` or `failed`.
@@ -492,6 +494,73 @@ components:
           x-stainless-const: true
       required:
         - type
+      type: object
+    AssignedRoleDetails:
+      description: Detailed information about a role assignment entry returned when listing assignments.
+      properties:
+        created_at:
+          anyOf:
+            - format: int64
+              type: integer
+            - type: "null"
+          description: When the role was created.
+        created_by:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Identifier of the actor who created the role.
+        created_by_user_obj:
+          anyOf:
+            - additionalProperties: true
+              type: object
+            - type: "null"
+          description: User details for the actor that created the role, when available.
+        description:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Description of the role.
+        id:
+          description: Identifier for the role.
+          type: string
+        metadata:
+          anyOf:
+            - additionalProperties: true
+              type: object
+            - type: "null"
+          description: Arbitrary metadata stored on the role.
+        name:
+          description: Name of the role.
+          type: string
+        permissions:
+          description: Permissions associated with the role.
+          items:
+            type: string
+          type: array
+        predefined_role:
+          description: Whether the role is predefined by OpenAI.
+          type: boolean
+        resource_type:
+          description: Resource type the role applies to.
+          type: string
+        updated_at:
+          anyOf:
+            - format: int64
+              type: integer
+            - type: "null"
+          description: When the role was last updated.
+      required:
+        - id
+        - name
+        - permissions
+        - resource_type
+        - predefined_role
+        - description
+        - created_at
+        - updated_at
+        - created_by
+        - created_by_user_obj
+        - metadata
       type: object
     AssistantMessageItem:
       description: Assistant-authored message within a thread.
@@ -6477,6 +6546,36 @@ components:
         - model
         - training_file
       type: object
+    CreateGroupBody:
+      description: Request payload for creating a new group in the organization.
+      properties:
+        name:
+          description: Human readable name for the group.
+          maxLength: 255
+          minLength: 1
+          type: string
+      required:
+        - name
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "name": "Support Team"
+          }
+    CreateGroupUserBody:
+      description: Request payload for adding a user to a group.
+      properties:
+        user_id:
+          description: Identifier of the user to add to the group.
+          type: string
+      required:
+        - user_id
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "user_id": "user_abc123"
+          }
     CreateImageEditRequest:
       properties:
         background:
@@ -8863,6 +8962,26 @@ components:
         - deleted
         - id
       type: object
+    DeletedRoleAssignmentResource:
+      description: Confirmation payload returned after unassigning a role.
+      properties:
+        deleted:
+          description: Whether the assignment was removed.
+          type: boolean
+        object:
+          description: Identifier for the deleted assignment, such as `group.role.deleted` or `user.role.deleted`.
+          type: string
+      required:
+        - object
+        - deleted
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "group.role.deleted",
+              "deleted": true
+          }
+        name: Role assignment deletion confirmation
     DeletedThreadResource:
       description: Confirmation payload returned after deleting a thread.
       properties:
@@ -12561,6 +12680,277 @@ components:
         - lark
         - regex
       type: string
+    Group:
+      description: Summary information about a group returned in role assignment responses.
+      properties:
+        created_at:
+          description: Unix timestamp (in seconds) when the group was created.
+          format: int64
+          type: integer
+        id:
+          description: Identifier for the group.
+          type: string
+        name:
+          description: Display name of the group.
+          type: string
+        object:
+          description: Always `group`.
+          enum:
+            - group
+          type: string
+          x-stainless-const: true
+        scim_managed:
+          description: Whether the group is managed through SCIM.
+          type: boolean
+      required:
+        - object
+        - id
+        - name
+        - created_at
+        - scim_managed
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "group",
+              "id": "group_01J1F8ABCDXYZ",
+              "name": "Support Team",
+              "created_at": 1711471533,
+              "scim_managed": false
+          }
+        name: The group object
+    GroupDeletedResource:
+      description: Confirmation payload returned after deleting a group.
+      properties:
+        deleted:
+          description: Whether the group was deleted.
+          type: boolean
+        id:
+          description: Identifier of the deleted group.
+          type: string
+        object:
+          description: Always `group.deleted`.
+          enum:
+            - group.deleted
+          type: string
+          x-stainless-const: true
+      required:
+        - object
+        - id
+        - deleted
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "group.deleted",
+              "id": "group_01J1F8ABCDXYZ",
+              "deleted": true
+          }
+    GroupListResource:
+      description: Paginated list of organization groups.
+      properties:
+        data:
+          description: Groups returned in the current page.
+          items:
+            $ref: "#/components/schemas/GroupResponse"
+          type: array
+        has_more:
+          description: Whether additional groups are available when paginating.
+          type: boolean
+        next:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Cursor to fetch the next page of results, or `null` if there are no more results.
+        object:
+          description: Always `list`.
+          enum:
+            - list
+          type: string
+          x-stainless-const: true
+      required:
+        - object
+        - data
+        - has_more
+        - next
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "list",
+              "data": [
+                  {
+                      "id": "group_01J1F8ABCDXYZ",
+                      "name": "Support Team",
+                      "created_at": 1711471533,
+                      "is_scim_managed": false
+                  },
+                  {
+                      "id": "group_01J1F8PQRMNO",
+                      "name": "Sales",
+                      "created_at": 1711472599,
+                      "is_scim_managed": true
+                  }
+              ],
+              "has_more": false,
+              "next": null
+          }
+        name: Group list
+    GroupResourceWithSuccess:
+      description: Response returned after updating a group.
+      properties:
+        created_at:
+          description: Unix timestamp (in seconds) when the group was created.
+          format: int64
+          type: integer
+        id:
+          description: Identifier for the group.
+          type: string
+        is_scim_managed:
+          description: Whether the group is managed through SCIM and controlled by your identity provider.
+          type: boolean
+        name:
+          description: Updated display name for the group.
+          type: string
+      required:
+        - id
+        - name
+        - created_at
+        - is_scim_managed
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "id": "group_01J1F8ABCDXYZ",
+              "name": "Escalations",
+              "created_at": 1711471533,
+              "is_scim_managed": false
+          }
+    GroupResponse:
+      description: Details about an organization group.
+      properties:
+        created_at:
+          description: Unix timestamp (in seconds) when the group was created.
+          format: int64
+          type: integer
+        id:
+          description: Identifier for the group.
+          type: string
+        is_scim_managed:
+          description: Whether the group is managed through SCIM and controlled by your identity provider.
+          type: boolean
+        name:
+          description: Display name of the group.
+          type: string
+      required:
+        - id
+        - name
+        - created_at
+        - is_scim_managed
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "id": "group_01J1F8ABCDXYZ",
+              "name": "Support Team",
+              "created_at": 1711471533,
+              "is_scim_managed": false
+          }
+        name: Group
+    GroupRoleAssignment:
+      description: Role assignment linking a group to a role.
+      properties:
+        group:
+          $ref: "#/components/schemas/Group"
+        object:
+          description: Always `group.role`.
+          enum:
+            - group.role
+          type: string
+          x-stainless-const: true
+        role:
+          $ref: "#/components/schemas/Role"
+      required:
+        - object
+        - group
+        - role
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "group.role",
+              "group": {
+                  "object": "group",
+                  "id": "group_01J1F8ABCDXYZ",
+                  "name": "Support Team",
+                  "created_at": 1711471533,
+                  "scim_managed": false
+              },
+              "role": {
+                  "object": "role",
+                  "id": "role_01J1F8ROLE01",
+                  "name": "API Group Manager",
+                  "description": "Allows managing organization groups",
+                  "permissions": [
+                      "api.groups.read",
+                      "api.groups.write"
+                  ],
+                  "resource_type": "api.organization",
+                  "predefined_role": false
+              }
+          }
+        name: The group role object
+    GroupUserAssignment:
+      description: Confirmation payload returned after adding a user to a group.
+      properties:
+        group_id:
+          description: Identifier of the group the user was added to.
+          type: string
+        object:
+          description: Always `group.user`.
+          enum:
+            - group.user
+          type: string
+          x-stainless-const: true
+        user_id:
+          description: Identifier of the user that was added.
+          type: string
+      required:
+        - object
+        - user_id
+        - group_id
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "group.user",
+              "user_id": "user_abc123",
+              "group_id": "group_01J1F8ABCDXYZ"
+          }
+        name: The group user object
+    GroupUserDeletedResource:
+      description: Confirmation payload returned after removing a user from a group.
+      properties:
+        deleted:
+          description: Whether the group membership was removed.
+          type: boolean
+        object:
+          description: Always `group.user.deleted`.
+          enum:
+            - group.user.deleted
+          type: string
+          x-stainless-const: true
+      required:
+        - object
+        - deleted
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "group.user.deleted",
+              "deleted": true
+          }
+        name: Group user deletion confirmation
     HistoryParam:
       description: Controls how much historical context is retained for the session.
       properties:
@@ -13692,6 +14082,25 @@ components:
         - object
         - data
       type: object
+    InviteProjectGroupBody:
+      description: Request payload for granting a group access to a project.
+      properties:
+        group_id:
+          description: Identifier of the group to add to the project.
+          type: string
+        role:
+          description: Identifier of the project role to grant to the group.
+          type: string
+      required:
+        - group_id
+        - role
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "group_id": "group_01J1F8ABCDXYZ",
+              "role": "role_01J1F8PROJ"
+          }
     InviteRequest:
       properties:
         email:
@@ -16322,6 +16731,113 @@ components:
       required:
         - name
       type: object
+    ProjectGroup:
+      description: Details about a group's membership in a project.
+      properties:
+        created_at:
+          description: Unix timestamp (in seconds) when the group was granted project access.
+          format: int64
+          type: integer
+        group_id:
+          description: Identifier of the group that has access to the project.
+          type: string
+        group_name:
+          description: Display name of the group.
+          type: string
+        object:
+          description: Always `project.group`.
+          enum:
+            - project.group
+          type: string
+          x-stainless-const: true
+        project_id:
+          description: Identifier of the project.
+          type: string
+      required:
+        - object
+        - project_id
+        - group_id
+        - group_name
+        - created_at
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "project.group",
+              "project_id": "proj_abc123",
+              "group_id": "group_01J1F8ABCDXYZ",
+              "group_name": "Support Team",
+              "created_at": 1711471533
+          }
+        name: The project group object
+    ProjectGroupDeletedResource:
+      description: Confirmation payload returned after removing a group from a project.
+      properties:
+        deleted:
+          description: Whether the group membership in the project was removed.
+          type: boolean
+        object:
+          description: Always `project.group.deleted`.
+          enum:
+            - project.group.deleted
+          type: string
+          x-stainless-const: true
+      required:
+        - object
+        - deleted
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "project.group.deleted",
+              "deleted": true
+          }
+        name: Project group deletion confirmation
+    ProjectGroupListResource:
+      description: Paginated list of groups that have access to a project.
+      properties:
+        data:
+          description: Project group memberships returned in the current page.
+          items:
+            $ref: "#/components/schemas/ProjectGroup"
+          type: array
+        has_more:
+          description: Whether additional project group memberships are available.
+          type: boolean
+        next:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Cursor to fetch the next page of results, or `null` when there are no more results.
+        object:
+          description: Always `list`.
+          enum:
+            - list
+          type: string
+          x-stainless-const: true
+      required:
+        - object
+        - data
+        - has_more
+        - next
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "list",
+              "data": [
+                  {
+                      "object": "project.group",
+                      "project_id": "proj_abc123",
+                      "group_id": "group_01J1F8ABCDXYZ",
+                      "group_name": "Support Team",
+                      "created_at": 1711471533
+                  }
+              ],
+              "has_more": false,
+              "next": null
+          }
+        name: Project group list
     ProjectListResponse:
       properties:
         data:
@@ -16720,6 +17236,131 @@ components:
             - id
           type: object
         - type: "null"
+    PublicAssignOrganizationGroupRoleBody:
+      description: Request payload for assigning a role to a group or user.
+      properties:
+        role_id:
+          description: Identifier of the role to assign.
+          type: string
+      required:
+        - role_id
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "role_id": "role_01J1F8ROLE01"
+          }
+    PublicCreateOrganizationRoleBody:
+      description: Request payload for creating a custom role.
+      properties:
+        description:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Optional description of the role.
+        permissions:
+          description: Permissions to grant to the role.
+          items:
+            type: string
+          type: array
+        role_name:
+          description: Unique name for the role.
+          type: string
+      required:
+        - role_name
+        - permissions
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "role_name": "API Group Manager",
+              "permissions": [
+                  "api.groups.read",
+                  "api.groups.write"
+              ],
+              "description": "Allows managing organization groups"
+          }
+    PublicRoleListResource:
+      description: Paginated list of roles available on an organization or project.
+      properties:
+        data:
+          description: Roles returned in the current page.
+          items:
+            $ref: "#/components/schemas/Role"
+          type: array
+        has_more:
+          description: Whether more roles are available when paginating.
+          type: boolean
+        next:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Cursor to fetch the next page of results, or `null` when there are no additional roles.
+        object:
+          description: Always `list`.
+          enum:
+            - list
+          type: string
+          x-stainless-const: true
+      required:
+        - object
+        - data
+        - has_more
+        - next
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "list",
+              "data": [
+                  {
+                      "object": "role",
+                      "id": "role_01J1F8ROLE01",
+                      "name": "API Group Manager",
+                      "description": "Allows managing organization groups",
+                      "permissions": [
+                          "api.groups.read",
+                          "api.groups.write"
+                      ],
+                      "resource_type": "api.organization",
+                      "predefined_role": false
+                  }
+              ],
+              "has_more": false,
+              "next": null
+          }
+        name: Role list
+    PublicUpdateOrganizationRoleBody:
+      description: Request payload for updating an existing role.
+      properties:
+        description:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: New description for the role.
+        permissions:
+          anyOf:
+            - items:
+                type: string
+              type: array
+            - type: "null"
+          description: Updated set of permissions for the role.
+        role_name:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: New name for the role.
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "role_name": "API Group Manager",
+              "permissions": [
+                  "api.groups.read",
+                  "api.groups.write"
+              ],
+              "description": "Allows managing organization groups"
+          }
     RankerVersionType:
       enum:
         - auto
@@ -27502,6 +28143,147 @@ components:
           }
         group: responses
         name: response.web_search_call.searching
+    Role:
+      description: Details about a role that can be assigned through the public Roles API.
+      properties:
+        description:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Optional description of the role.
+        id:
+          description: Identifier for the role.
+          type: string
+        name:
+          description: Unique name for the role.
+          type: string
+        object:
+          description: Always `role`.
+          enum:
+            - role
+          type: string
+          x-stainless-const: true
+        permissions:
+          description: Permissions granted by the role.
+          items:
+            type: string
+          type: array
+        predefined_role:
+          description: Whether the role is predefined and managed by OpenAI.
+          type: boolean
+        resource_type:
+          description: Resource type the role is bound to (for example `api.organization` or `api.project`).
+          type: string
+      required:
+        - object
+        - id
+        - name
+        - description
+        - permissions
+        - resource_type
+        - predefined_role
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "role",
+              "id": "role_01J1F8ROLE01",
+              "name": "API Group Manager",
+              "description": "Allows managing organization groups",
+              "permissions": [
+                  "api.groups.read",
+                  "api.groups.write"
+              ],
+              "resource_type": "api.organization",
+              "predefined_role": false
+          }
+        name: The role object
+    RoleDeletedResource:
+      description: Confirmation payload returned after deleting a role.
+      properties:
+        deleted:
+          description: Whether the role was deleted.
+          type: boolean
+        id:
+          description: Identifier of the deleted role.
+          type: string
+        object:
+          description: Always `role.deleted`.
+          enum:
+            - role.deleted
+          type: string
+          x-stainless-const: true
+      required:
+        - object
+        - id
+        - deleted
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "role.deleted",
+              "id": "role_01J1F8ROLE01",
+              "deleted": true
+          }
+        name: Role deletion confirmation
+    RoleListResource:
+      description: Paginated list of roles assigned to a principal.
+      properties:
+        data:
+          description: Role assignments returned in the current page.
+          items:
+            $ref: "#/components/schemas/AssignedRoleDetails"
+          type: array
+        has_more:
+          description: Whether additional assignments are available when paginating.
+          type: boolean
+        next:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Cursor to fetch the next page of results, or `null` when there are no more assignments.
+        object:
+          description: Always `list`.
+          enum:
+            - list
+          type: string
+          x-stainless-const: true
+      required:
+        - object
+        - data
+        - has_more
+        - next
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "list",
+              "data": [
+                  {
+                      "id": "role_01J1F8ROLE01",
+                      "name": "API Group Manager",
+                      "permissions": [
+                          "api.groups.read",
+                          "api.groups.write"
+                      ],
+                      "resource_type": "api.organization",
+                      "predefined_role": false,
+                      "description": "Allows managing organization groups",
+                      "created_at": 1711471533,
+                      "updated_at": 1711472599,
+                      "created_by": "user_abc123",
+                      "created_by_user_obj": {
+                          "id": "user_abc123",
+                          "name": "Ada Lovelace",
+                          "email": "ada@example.com"
+                      },
+                      "metadata": {}
+                  }
+              ],
+              "has_more": false,
+              "next": null
+          }
+        name: Assigned role list
     RunCompletionUsage:
       anyOf:
         - description: Usage statistics related to the run. This value will be `null` if the run is not in a terminal state (i.e. `in_progress`, `queued`, etc.).
@@ -30249,6 +31031,22 @@ components:
       required:
         - metadata
       type: object
+    UpdateGroupBody:
+      description: Request payload for updating the details of an existing group.
+      properties:
+        name:
+          description: New display name for the group.
+          maxLength: 255
+          minLength: 1
+          type: string
+      required:
+        - name
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "name": "Escalations"
+          }
     UpdateVectorStoreFileAttributesRequest:
       additionalProperties: false
       properties:
@@ -30976,6 +31774,52 @@ components:
         - id
         - deleted
       type: object
+    UserListResource:
+      description: Paginated list of user objects returned when inspecting group membership.
+      properties:
+        data:
+          description: Users in the current page.
+          items:
+            $ref: "#/components/schemas/User"
+          type: array
+        has_more:
+          description: Whether more users are available when paginating.
+          type: boolean
+        next:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Cursor to fetch the next page of results, or `null` when no further users are available.
+        object:
+          description: Always `list`.
+          enum:
+            - list
+          type: string
+          x-stainless-const: true
+      required:
+        - object
+        - data
+        - has_more
+        - next
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "list",
+              "data": [
+                  {
+                      "object": "organization.user",
+                      "id": "user_abc123",
+                      "name": "Ada Lovelace",
+                      "email": "ada@example.com",
+                      "role": "owner",
+                      "added_at": 1711471533
+                  }
+              ],
+              "has_more": false,
+              "next": null
+          }
+        name: Group user list
     UserListResponse:
       properties:
         data:
@@ -31092,6 +31936,50 @@ components:
         - text
       title: User message quoted text
       type: object
+    UserRoleAssignment:
+      description: Role assignment linking a user to a role.
+      properties:
+        object:
+          description: Always `user.role`.
+          enum:
+            - user.role
+          type: string
+          x-stainless-const: true
+        role:
+          $ref: "#/components/schemas/Role"
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - object
+        - user
+        - role
+      type: object
+      x-oaiMeta:
+        example: |
+          {
+              "object": "user.role",
+              "user": {
+                  "object": "organization.user",
+                  "id": "user_abc123",
+                  "name": "Ada Lovelace",
+                  "email": "ada@example.com",
+                  "role": "owner",
+                  "added_at": 1711470000
+              },
+              "role": {
+                  "object": "role",
+                  "id": "role_01J1F8ROLE01",
+                  "name": "API Group Manager",
+                  "description": "Allows managing organization groups",
+                  "permissions": [
+                      "api.groups.read",
+                      "api.groups.write"
+                  ],
+                  "resource_type": "api.organization",
+                  "predefined_role": false
+              }
+          }
+        name: The user role object
     UserRoleUpdateRequest:
       properties:
         role:
@@ -48420,6 +49308,547 @@ paths:
         group: usage-costs
         name: Costs
         returns: A list of paginated, time bucketed [Costs](https://platform.openai.com/docs/api-reference/usage/costs_object) objects.
+  /organization/groups:
+    get:
+      description: Lists all groups in the organization.
+      operationId: list-groups
+      parameters:
+        - description: |
+            A limit on the number of groups to be returned. Limit can range between 0 and 1000, and the default is 100.
+          in: query
+          name: limit
+          required: false
+          schema:
+            default: 100
+            maximum: 1000
+            minimum: 0
+            type: integer
+        - description: |
+            A cursor for use in pagination. `after` is a group ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with group_abc, your subsequent call can include `after=group_abc` in order to fetch the next page of the list.
+          in: query
+          name: after
+          required: false
+          schema:
+            type: string
+        - description: Specifies the sort order of the returned groups.
+          in: query
+          name: order
+          required: false
+          schema:
+            default: asc
+            enum:
+              - asc
+              - desc
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupListResource"
+          description: Groups listed successfully.
+      summary: List groups
+      tags:
+        - Groups
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl https://api.openai.com/v1/organization/groups?limit=20&order=asc \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "list",
+                "data": [
+                    {
+                        "object": "group",
+                        "id": "group_01J1F8ABCDXYZ",
+                        "name": "Support Team",
+                        "created_at": 1711471533,
+                        "is_scim_managed": false
+                    }
+                ],
+                "has_more": false,
+                "next": null
+            }
+        group: administration
+        name: List groups
+        returns: A list of [group objects](https://platform.openai.com/docs/api-reference/groups/object).
+    post:
+      description: Creates a new group in the organization.
+      operationId: create-group
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGroupBody"
+        description: Parameters for the group you want to create.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupResponse"
+          description: Group created successfully.
+      summary: Create group
+      tags:
+        - Groups
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X POST https://api.openai.com/v1/organization/groups \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{
+                    "name": "Support Team"
+                }'
+          response: |
+            {
+                "object": "group",
+                "id": "group_01J1F8ABCDXYZ",
+                "name": "Support Team",
+                "created_at": 1711471533,
+                "is_scim_managed": false
+            }
+        group: administration
+        name: Create group
+        returns: The created [group object](https://platform.openai.com/docs/api-reference/groups/object).
+  /organization/groups/{group_id}:
+    delete:
+      description: Deletes a group from the organization.
+      operationId: delete-group
+      parameters:
+        - description: The ID of the group to delete.
+          in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupDeletedResource"
+          description: Group deleted successfully.
+      summary: Delete group
+      tags:
+        - Groups
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X DELETE https://api.openai.com/v1/organization/groups/group_01J1F8ABCDXYZ \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "group.deleted",
+                "id": "group_01J1F8ABCDXYZ",
+                "deleted": true
+            }
+        group: administration
+        name: Delete group
+        returns: Confirmation of the deleted group.
+    post:
+      description: Updates a group's information.
+      operationId: update-group
+      parameters:
+        - description: The ID of the group to update.
+          in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGroupBody"
+        description: New attributes to set on the group.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupResourceWithSuccess"
+          description: Group updated successfully.
+      summary: Update group
+      tags:
+        - Groups
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X POST https://api.openai.com/v1/organization/groups/group_01J1F8ABCDXYZ \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{
+                    "name": "Escalations"
+                }'
+          response: |
+            {
+                "id": "group_01J1F8ABCDXYZ",
+                "name": "Escalations",
+                "created_at": 1711471533,
+                "is_scim_managed": false
+            }
+        group: administration
+        name: Update group
+        returns: The updated [group object](https://platform.openai.com/docs/api-reference/groups/object).
+  /organization/groups/{group_id}/roles:
+    get:
+      description: Lists the organization roles assigned to a group within the organization.
+      operationId: list-group-role-assignments
+      parameters:
+        - description: The ID of the group whose organization role assignments you want to list.
+          in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+        - description: A limit on the number of organization role assignments to return.
+          in: query
+          name: limit
+          required: false
+          schema:
+            maximum: 1000
+            minimum: 0
+            type: integer
+        - description: Cursor for pagination. Provide the value from the previous response's `next` field to continue listing organization roles.
+          in: query
+          name: after
+          required: false
+          schema:
+            type: string
+        - description: Sort order for the returned organization roles.
+          in: query
+          name: order
+          required: false
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleListResource"
+          description: Group organization role assignments listed successfully.
+      summary: List group organization role assignments
+      tags:
+        - Group organization role assignments
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl https://api.openai.com/v1/organization/groups/group_01J1F8ABCDXYZ/roles \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "list",
+                "data": [
+                    {
+                        "id": "role_01J1F8ROLE01",
+                        "name": "API Group Manager",
+                        "permissions": [
+                            "api.groups.read",
+                            "api.groups.write"
+                        ],
+                        "resource_type": "api.organization",
+                        "predefined_role": false,
+                        "description": "Allows managing organization groups",
+                        "created_at": 1711471533,
+                        "updated_at": 1711472599,
+                        "created_by": "user_abc123",
+                        "created_by_user_obj": {
+                            "id": "user_abc123",
+                            "name": "Ada Lovelace",
+                            "email": "ada@example.com"
+                        },
+                        "metadata": {}
+                    }
+                ],
+                "has_more": false,
+                "next": null
+            }
+        group: administration
+        name: List group organization role assignments
+        returns: A list of [role objects](https://platform.openai.com/docs/api-reference/roles/object).
+    post:
+      description: Assigns an organization role to a group within the organization.
+      operationId: assign-group-role
+      parameters:
+        - description: The ID of the group that should receive the organization role.
+          in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicAssignOrganizationGroupRoleBody"
+        description: Identifies the organization role to assign to the group.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupRoleAssignment"
+          description: Organization role assigned to the group successfully.
+      summary: Assign organization role to group
+      tags:
+        - Group organization role assignments
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X POST https://api.openai.com/v1/organization/groups/group_01J1F8ABCDXYZ/roles \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{
+                    "role_id": "role_01J1F8ROLE01"
+                }'
+          response: |
+            {
+                "object": "group.role",
+                "group": {
+                    "object": "group",
+                    "id": "group_01J1F8ABCDXYZ",
+                    "name": "Support Team",
+                    "created_at": 1711471533,
+                    "scim_managed": false
+                },
+                "role": {
+                    "object": "role",
+                    "id": "role_01J1F8ROLE01",
+                    "name": "API Group Manager",
+                    "description": "Allows managing organization groups",
+                    "permissions": [
+                        "api.groups.read",
+                        "api.groups.write"
+                    ],
+                    "resource_type": "api.organization",
+                    "predefined_role": false
+                }
+            }
+        group: administration
+        name: Assign organization role to group
+        returns: The created [group role object](https://platform.openai.com/docs/api-reference/role-assignments/objects/group).
+  /organization/groups/{group_id}/roles/{role_id}:
+    delete:
+      description: Unassigns an organization role from a group within the organization.
+      operationId: unassign-group-role
+      parameters:
+        - description: The ID of the group to modify.
+          in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+        - description: The ID of the organization role to remove from the group.
+          in: path
+          name: role_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletedRoleAssignmentResource"
+          description: Organization role unassigned from the group successfully.
+      summary: Unassign organization role from group
+      tags:
+        - Group organization role assignments
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X DELETE https://api.openai.com/v1/organization/groups/group_01J1F8ABCDXYZ/roles/role_01J1F8ROLE01 \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "group.role.deleted",
+                "deleted": true
+            }
+        group: administration
+        name: Unassign organization role from group
+        returns: Confirmation of the deleted [group role object](https://platform.openai.com/docs/api-reference/role-assignments/objects/group).
+  /organization/groups/{group_id}/users:
+    get:
+      description: Lists the users assigned to a group.
+      operationId: list-group-users
+      parameters:
+        - description: The ID of the group to inspect.
+          in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+        - description: |
+            A limit on the number of users to be returned. Limit can range between 0 and 1000, and the default is 100.
+          in: query
+          name: limit
+          required: false
+          schema:
+            default: 100
+            maximum: 1000
+            minimum: 0
+            type: integer
+        - description: |
+            A cursor for use in pagination. Provide the ID of the last user from the previous list response to retrieve the next page.
+          in: query
+          name: after
+          required: false
+          schema:
+            type: string
+        - description: Specifies the sort order of users in the list.
+          in: query
+          name: order
+          required: false
+          schema:
+            default: desc
+            enum:
+              - asc
+              - desc
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserListResource"
+          description: Group users listed successfully.
+      summary: List group users
+      tags:
+        - Group users
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl https://api.openai.com/v1/organization/groups/group_01J1F8ABCDXYZ/users?limit=20 \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "list",
+                "data": [
+                    {
+                        "object": "organization.user",
+                        "id": "user_abc123",
+                        "name": "Ada Lovelace",
+                        "email": "ada@example.com",
+                        "role": "owner",
+                        "added_at": 1711471533
+                    }
+                ],
+                "has_more": false,
+                "next": null
+            }
+        group: administration
+        name: List group users
+        returns: A list of [user objects](https://platform.openai.com/docs/api-reference/users/object).
+    post:
+      description: Adds a user to a group.
+      operationId: add-group-user
+      parameters:
+        - description: The ID of the group to update.
+          in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGroupUserBody"
+        description: Identifies the user that should be added to the group.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupUserAssignment"
+          description: User added to the group successfully.
+      summary: Add group user
+      tags:
+        - Group users
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X POST https://api.openai.com/v1/organization/groups/group_01J1F8ABCDXYZ/users \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{
+                    "user_id": "user_abc123"
+                }'
+          response: |
+            {
+                "object": "group.user",
+                "user_id": "user_abc123",
+                "group_id": "group_01J1F8ABCDXYZ"
+            }
+        group: administration
+        name: Add group user
+        returns: The created [group user object](https://platform.openai.com/docs/api-reference/groups/users/assignment-object).
+  /organization/groups/{group_id}/users/{user_id}:
+    delete:
+      description: Removes a user from a group.
+      operationId: remove-group-user
+      parameters:
+        - description: The ID of the group to update.
+          in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+        - description: The ID of the user to remove from the group.
+          in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupUserDeletedResource"
+          description: User removed from the group successfully.
+      summary: Remove group user
+      tags:
+        - Group users
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X DELETE https://api.openai.com/v1/organization/groups/group_01J1F8ABCDXYZ/users/user_abc123 \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "group.user.deleted",
+                "deleted": true
+            }
+        group: administration
+        name: Remove group user
+        returns: Confirmation of the deleted [group user object](https://platform.openai.com/docs/api-reference/groups/users/assignment-object).
   /organization/invites:
     get:
       description: Returns a list of invites in the organization.
@@ -49250,6 +50679,168 @@ paths:
         group: administration
         name: Deactivate certificates for project
         returns: A list of [Certificate](https://platform.openai.com/docs/api-reference/certificates/object) objects that were deactivated.
+  /organization/projects/{project_id}/groups:
+    get:
+      description: Lists the groups that have access to a project.
+      operationId: list-project-groups
+      parameters:
+        - description: The ID of the project to inspect.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: A limit on the number of project groups to return. Defaults to 20.
+          in: query
+          name: limit
+          required: false
+          schema:
+            default: 20
+            maximum: 100
+            minimum: 0
+            type: integer
+        - description: Cursor for pagination. Provide the ID of the last group from the previous response to fetch the next page.
+          in: query
+          name: after
+          required: false
+          schema:
+            type: string
+        - description: Sort order for the returned groups.
+          in: query
+          name: order
+          required: false
+          schema:
+            default: asc
+            enum:
+              - asc
+              - desc
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectGroupListResource"
+          description: Project groups listed successfully.
+      summary: List project groups
+      tags:
+        - Project groups
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl https://api.openai.com/v1/organization/projects/proj_abc123/groups?limit=20 \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "list",
+                "data": [
+                    {
+                        "object": "project.group",
+                        "project_id": "proj_abc123",
+                        "group_id": "group_01J1F8ABCDXYZ",
+                        "group_name": "Support Team",
+                        "created_at": 1711471533
+                    }
+                ],
+                "has_more": false,
+                "next": null
+            }
+        group: administration
+        name: List project groups
+        returns: A list of [project group objects](https://platform.openai.com/docs/api-reference/project-groups/object).
+    post:
+      description: Grants a group access to a project.
+      operationId: add-project-group
+      parameters:
+        - description: The ID of the project to update.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteProjectGroupBody"
+        description: Identifies the group and role to assign to the project.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectGroup"
+          description: Group granted access to the project successfully.
+      summary: Add project group
+      tags:
+        - Project groups
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X POST https://api.openai.com/v1/organization/projects/proj_abc123/groups \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{
+                    "group_id": "group_01J1F8ABCDXYZ",
+                    "role": "role_01J1F8PROJ"
+                }'
+          response: |
+            {
+                "object": "project.group",
+                "project_id": "proj_abc123",
+                "group_id": "group_01J1F8ABCDXYZ",
+                "group_name": "Support Team",
+                "created_at": 1711471533
+            }
+        group: administration
+        name: Add project group
+        returns: The created [project group object](https://platform.openai.com/docs/api-reference/project-groups/object).
+  /organization/projects/{project_id}/groups/{group_id}:
+    delete:
+      description: Revokes a group's access to a project.
+      operationId: remove-project-group
+      parameters:
+        - description: The ID of the project to update.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: The ID of the group to remove from the project.
+          in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectGroupDeletedResource"
+          description: Group removed from the project successfully.
+      summary: Remove project group
+      tags:
+        - Project groups
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X DELETE https://api.openai.com/v1/organization/projects/proj_abc123/groups/group_01J1F8ABCDXYZ \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "project.group.deleted",
+                "deleted": true
+            }
+        group: administration
+        name: Remove project group
+        returns: Confirmation of the deleted project group.
   /organization/projects/{project_id}/rate_limits:
     get:
       description: Returns the rate limits per model for a project.
@@ -49887,6 +51478,222 @@ paths:
         group: administration
         name: Modify project user
         returns: The updated [ProjectUser](https://platform.openai.com/docs/api-reference/project-users/object) object.
+  /organization/roles:
+    get:
+      description: Lists the roles configured for the organization.
+      operationId: list-roles
+      parameters:
+        - description: A limit on the number of roles to return. Defaults to 1000.
+          in: query
+          name: limit
+          required: false
+          schema:
+            default: 1000
+            maximum: 1000
+            minimum: 0
+            type: integer
+        - description: Cursor for pagination. Provide the value from the previous response's `next` field to continue listing roles.
+          in: query
+          name: after
+          required: false
+          schema:
+            type: string
+        - description: Sort order for the returned roles.
+          in: query
+          name: order
+          required: false
+          schema:
+            default: asc
+            enum:
+              - asc
+              - desc
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicRoleListResource"
+          description: Roles listed successfully.
+      summary: List organization roles
+      tags:
+        - Roles
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl https://api.openai.com/v1/organization/roles?limit=20 \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "list",
+                "data": [
+                    {
+                        "object": "role",
+                        "id": "role_01J1F8ROLE01",
+                        "name": "API Group Manager",
+                        "description": "Allows managing organization groups",
+                        "permissions": [
+                            "api.groups.read",
+                            "api.groups.write"
+                        ],
+                        "resource_type": "api.organization",
+                        "predefined_role": false
+                    }
+                ],
+                "has_more": false,
+                "next": null
+            }
+        group: administration
+        name: List organization roles
+        returns: A list of [role objects](https://platform.openai.com/docs/api-reference/roles/object).
+    post:
+      description: Creates a custom role for the organization.
+      operationId: create-role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicCreateOrganizationRoleBody"
+        description: Parameters for the role you want to create.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Role"
+          description: Role created successfully.
+      summary: Create organization role
+      tags:
+        - Roles
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X POST https://api.openai.com/v1/organization/roles \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{
+                    "role_name": "API Group Manager",
+                    "permissions": [
+                        "api.groups.read",
+                        "api.groups.write"
+                    ],
+                    "description": "Allows managing organization groups"
+                }'
+          response: |
+            {
+                "object": "role",
+                "id": "role_01J1F8ROLE01",
+                "name": "API Group Manager",
+                "description": "Allows managing organization groups",
+                "permissions": [
+                    "api.groups.read",
+                    "api.groups.write"
+                ],
+                "resource_type": "api.organization",
+                "predefined_role": false
+            }
+        group: administration
+        name: Create organization role
+        returns: The created [role object](https://platform.openai.com/docs/api-reference/roles/object).
+  /organization/roles/{role_id}:
+    delete:
+      description: Deletes a custom role from the organization.
+      operationId: delete-role
+      parameters:
+        - description: The ID of the role to delete.
+          in: path
+          name: role_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleDeletedResource"
+          description: Role deleted successfully.
+      summary: Delete organization role
+      tags:
+        - Roles
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X DELETE https://api.openai.com/v1/organization/roles/role_01J1F8ROLE01 \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "role.deleted",
+                "id": "role_01J1F8ROLE01",
+                "deleted": true
+            }
+        group: administration
+        name: Delete organization role
+        returns: Confirmation of the deleted role.
+    post:
+      description: Updates an existing organization role.
+      operationId: update-role
+      parameters:
+        - description: The ID of the role to update.
+          in: path
+          name: role_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicUpdateOrganizationRoleBody"
+        description: Fields to update on the role.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Role"
+          description: Role updated successfully.
+      summary: Update organization role
+      tags:
+        - Roles
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X POST https://api.openai.com/v1/organization/roles/role_01J1F8ROLE01 \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{
+                    "role_name": "API Group Manager",
+                    "permissions": [
+                        "api.groups.read",
+                        "api.groups.write"
+                    ],
+                    "description": "Allows managing organization groups"
+                }'
+          response: |
+            {
+                "object": "role",
+                "id": "role_01J1F8ROLE01",
+                "name": "API Group Manager",
+                "description": "Allows managing organization groups",
+                "permissions": [
+                    "api.groups.read",
+                    "api.groups.write"
+                ],
+                "resource_type": "api.organization",
+                "predefined_role": false
+            }
+        group: administration
+        name: Update organization role
+        returns: The updated [role object](https://platform.openai.com/docs/api-reference/roles/object).
   /organization/usage/audio_speeches:
     get:
       description: Get audio speeches usage details for the organization.
@@ -51116,6 +52923,846 @@ paths:
         group: administration
         name: Modify user
         returns: The updated [User](https://platform.openai.com/docs/api-reference/users/object) object.
+  /organization/users/{user_id}/roles:
+    get:
+      description: Lists the organization roles assigned to a user within the organization.
+      operationId: list-user-role-assignments
+      parameters:
+        - description: The ID of the user to inspect.
+          in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+        - description: A limit on the number of organization role assignments to return.
+          in: query
+          name: limit
+          required: false
+          schema:
+            maximum: 1000
+            minimum: 0
+            type: integer
+        - description: Cursor for pagination. Provide the value from the previous response's `next` field to continue listing organization roles.
+          in: query
+          name: after
+          required: false
+          schema:
+            type: string
+        - description: Sort order for the returned organization roles.
+          in: query
+          name: order
+          required: false
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleListResource"
+          description: User organization role assignments listed successfully.
+      summary: List user organization role assignments
+      tags:
+        - User organization role assignments
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl https://api.openai.com/v1/organization/users/user_abc123/roles \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "list",
+                "data": [
+                    {
+                        "id": "role_01J1F8ROLE01",
+                        "name": "API Group Manager",
+                        "permissions": [
+                            "api.groups.read",
+                            "api.groups.write"
+                        ],
+                        "resource_type": "api.organization",
+                        "predefined_role": false,
+                        "description": "Allows managing organization groups",
+                        "created_at": 1711471533,
+                        "updated_at": 1711472599,
+                        "created_by": "user_abc123",
+                        "created_by_user_obj": {
+                            "id": "user_abc123",
+                            "name": "Ada Lovelace",
+                            "email": "ada@example.com"
+                        },
+                        "metadata": {}
+                    }
+                ],
+                "has_more": false,
+                "next": null
+            }
+        group: administration
+        name: List user organization role assignments
+        returns: A list of [role objects](https://platform.openai.com/docs/api-reference/roles/object).
+    post:
+      description: Assigns an organization role to a user within the organization.
+      operationId: assign-user-role
+      parameters:
+        - description: The ID of the user that should receive the organization role.
+          in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicAssignOrganizationGroupRoleBody"
+        description: Identifies the organization role to assign to the user.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserRoleAssignment"
+          description: Organization role assigned to the user successfully.
+      summary: Assign organization role to user
+      tags:
+        - User organization role assignments
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X POST https://api.openai.com/v1/organization/users/user_abc123/roles \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{
+                    "role_id": "role_01J1F8ROLE01"
+                }'
+          response: |
+            {
+                "object": "user.role",
+                "user": {
+                    "object": "organization.user",
+                    "id": "user_abc123",
+                    "name": "Ada Lovelace",
+                    "email": "ada@example.com",
+                    "role": "owner",
+                    "added_at": 1711470000
+                },
+                "role": {
+                    "object": "role",
+                    "id": "role_01J1F8ROLE01",
+                    "name": "API Group Manager",
+                    "description": "Allows managing organization groups",
+                    "permissions": [
+                        "api.groups.read",
+                        "api.groups.write"
+                    ],
+                    "resource_type": "api.organization",
+                    "predefined_role": false
+                }
+            }
+        group: administration
+        name: Assign organization role to user
+        returns: The created [user role object](https://platform.openai.com/docs/api-reference/role-assignments/objects/user).
+  /organization/users/{user_id}/roles/{role_id}:
+    delete:
+      description: Unassigns an organization role from a user within the organization.
+      operationId: unassign-user-role
+      parameters:
+        - description: The ID of the user to modify.
+          in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+        - description: The ID of the organization role to remove from the user.
+          in: path
+          name: role_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletedRoleAssignmentResource"
+          description: Organization role unassigned from the user successfully.
+      summary: Unassign organization role from user
+      tags:
+        - User organization role assignments
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X DELETE https://api.openai.com/v1/organization/users/user_abc123/roles/role_01J1F8ROLE01 \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "user.role.deleted",
+                "deleted": true
+            }
+        group: administration
+        name: Unassign organization role from user
+        returns: Confirmation of the deleted [user role object](https://platform.openai.com/docs/api-reference/role-assignments/objects/user).
+  /projects/{project_id}/groups/{group_id}/roles:
+    get:
+      description: Lists the project roles assigned to a group within a project.
+      operationId: list-project-group-role-assignments
+      parameters:
+        - description: The ID of the project to inspect.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: The ID of the group to inspect.
+          in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+        - description: A limit on the number of project role assignments to return.
+          in: query
+          name: limit
+          required: false
+          schema:
+            maximum: 1000
+            minimum: 0
+            type: integer
+        - description: Cursor for pagination. Provide the value from the previous response's `next` field to continue listing project roles.
+          in: query
+          name: after
+          required: false
+          schema:
+            type: string
+        - description: Sort order for the returned project roles.
+          in: query
+          name: order
+          required: false
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleListResource"
+          description: Project group role assignments listed successfully.
+      summary: List project group role assignments
+      tags:
+        - Project group role assignments
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl https://api.openai.com/v1/projects/proj_abc123/groups/group_01J1F8ABCDXYZ/roles \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "list",
+                "data": [
+                    {
+                        "id": "role_01J1F8PROJ",
+                        "name": "API Project Key Manager",
+                        "permissions": [
+                            "api.organization.projects.api_keys.read",
+                            "api.organization.projects.api_keys.write"
+                        ],
+                        "resource_type": "api.project",
+                        "predefined_role": false,
+                        "description": "Allows managing API keys for the project",
+                        "created_at": 1711471533,
+                        "updated_at": 1711472599,
+                        "created_by": "user_abc123",
+                        "created_by_user_obj": {
+                            "id": "user_abc123",
+                            "name": "Ada Lovelace",
+                            "email": "ada@example.com"
+                        },
+                        "metadata": {}
+                    }
+                ],
+                "has_more": false,
+                "next": null
+            }
+        group: administration
+        name: List project group role assignments
+        returns: A list of [role objects](https://platform.openai.com/docs/api-reference/roles/object).
+    post:
+      description: Assigns a project role to a group within a project.
+      operationId: assign-project-group-role
+      parameters:
+        - description: The ID of the project to update.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: The ID of the group that should receive the project role.
+          in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicAssignOrganizationGroupRoleBody"
+        description: Identifies the project role to assign to the group.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupRoleAssignment"
+          description: Project role assigned to the group successfully.
+      summary: Assign project role to group
+      tags:
+        - Project group role assignments
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X POST https://api.openai.com/v1/projects/proj_abc123/groups/group_01J1F8ABCDXYZ/roles \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{
+                    "role_id": "role_01J1F8PROJ"
+                }'
+          response: |
+            {
+                "object": "group.role",
+                "group": {
+                    "object": "group",
+                    "id": "group_01J1F8ABCDXYZ",
+                    "name": "Support Team",
+                    "created_at": 1711471533,
+                    "scim_managed": false
+                },
+                "role": {
+                    "object": "role",
+                    "id": "role_01J1F8PROJ",
+                    "name": "API Project Key Manager",
+                    "description": "Allows managing API keys for the project",
+                    "permissions": [
+                        "api.organization.projects.api_keys.read",
+                        "api.organization.projects.api_keys.write"
+                    ],
+                    "resource_type": "api.project",
+                    "predefined_role": false
+                }
+            }
+        group: administration
+        name: Assign project role to group
+        returns: The created [group role object](https://platform.openai.com/docs/api-reference/role-assignments/objects/group).
+  /projects/{project_id}/groups/{group_id}/roles/{role_id}:
+    delete:
+      description: Unassigns a project role from a group within a project.
+      operationId: unassign-project-group-role
+      parameters:
+        - description: The ID of the project to modify.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: The ID of the group whose project role assignment should be removed.
+          in: path
+          name: group_id
+          required: true
+          schema:
+            type: string
+        - description: The ID of the project role to remove from the group.
+          in: path
+          name: role_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletedRoleAssignmentResource"
+          description: Project role unassigned from the group successfully.
+      summary: Unassign project role from group
+      tags:
+        - Project group role assignments
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X DELETE https://api.openai.com/v1/projects/proj_abc123/groups/group_01J1F8ABCDXYZ/roles/role_01J1F8PROJ \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "group.role.deleted",
+                "deleted": true
+            }
+        group: administration
+        name: Unassign project role from group
+        returns: Confirmation of the deleted [group role object](https://platform.openai.com/docs/api-reference/role-assignments/objects/group).
+  /projects/{project_id}/roles:
+    get:
+      description: Lists the roles configured for a project.
+      operationId: list-project-roles
+      parameters:
+        - description: The ID of the project to inspect.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: A limit on the number of roles to return. Defaults to 1000.
+          in: query
+          name: limit
+          required: false
+          schema:
+            default: 1000
+            maximum: 1000
+            minimum: 0
+            type: integer
+        - description: Cursor for pagination. Provide the value from the previous response's `next` field to continue listing roles.
+          in: query
+          name: after
+          required: false
+          schema:
+            type: string
+        - description: Sort order for the returned roles.
+          in: query
+          name: order
+          required: false
+          schema:
+            default: asc
+            enum:
+              - asc
+              - desc
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicRoleListResource"
+          description: Project roles listed successfully.
+      summary: List project roles
+      tags:
+        - Roles
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl https://api.openai.com/v1/projects/proj_abc123/roles?limit=20 \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "list",
+                "data": [
+                    {
+                        "object": "role",
+                        "id": "role_01J1F8PROJ",
+                        "name": "API Project Key Manager",
+                        "description": "Allows managing API keys for the project",
+                        "permissions": [
+                            "api.organization.projects.api_keys.read",
+                            "api.organization.projects.api_keys.write"
+                        ],
+                        "resource_type": "api.project",
+                        "predefined_role": false
+                    }
+                ],
+                "has_more": false,
+                "next": null
+            }
+        group: administration
+        name: List project roles
+        returns: A list of [role objects](https://platform.openai.com/docs/api-reference/roles/object) configured on the project.
+    post:
+      description: Creates a custom role for a project.
+      operationId: create-project-role
+      parameters:
+        - description: The ID of the project to update.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicCreateOrganizationRoleBody"
+        description: Parameters for the project role you want to create.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Role"
+          description: Project role created successfully.
+      summary: Create project role
+      tags:
+        - Roles
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X POST https://api.openai.com/v1/projects/proj_abc123/roles \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{
+                    "role_name": "API Project Key Manager",
+                    "permissions": [
+                        "api.organization.projects.api_keys.read",
+                        "api.organization.projects.api_keys.write"
+                    ],
+                    "description": "Allows managing API keys for the project"
+                }'
+          response: |
+            {
+                "object": "role",
+                "id": "role_01J1F8PROJ",
+                "name": "API Project Key Manager",
+                "description": "Allows managing API keys for the project",
+                "permissions": [
+                    "api.organization.projects.api_keys.read",
+                    "api.organization.projects.api_keys.write"
+                ],
+                "resource_type": "api.project",
+                "predefined_role": false
+            }
+        group: administration
+        name: Create project role
+        returns: The created [role object](https://platform.openai.com/docs/api-reference/roles/object).
+  /projects/{project_id}/roles/{role_id}:
+    delete:
+      description: Deletes a custom role from a project.
+      operationId: delete-project-role
+      parameters:
+        - description: The ID of the project to update.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: The ID of the role to delete.
+          in: path
+          name: role_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleDeletedResource"
+          description: Project role deleted successfully.
+      summary: Delete project role
+      tags:
+        - Roles
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X DELETE https://api.openai.com/v1/projects/proj_abc123/roles/role_01J1F8PROJ \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "role.deleted",
+                "id": "role_01J1F8PROJ",
+                "deleted": true
+            }
+        group: administration
+        name: Delete project role
+        returns: Confirmation of the deleted role.
+    post:
+      description: Updates an existing project role.
+      operationId: update-project-role
+      parameters:
+        - description: The ID of the project to update.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: The ID of the role to update.
+          in: path
+          name: role_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicUpdateOrganizationRoleBody"
+        description: Fields to update on the project role.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Role"
+          description: Project role updated successfully.
+      summary: Update project role
+      tags:
+        - Roles
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X POST https://api.openai.com/v1/projects/proj_abc123/roles/role_01J1F8PROJ \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{
+                    "role_name": "API Project Key Manager",
+                    "permissions": [
+                        "api.organization.projects.api_keys.read",
+                        "api.organization.projects.api_keys.write"
+                    ],
+                    "description": "Allows managing API keys for the project"
+                }'
+          response: |
+            {
+                "object": "role",
+                "id": "role_01J1F8PROJ",
+                "name": "API Project Key Manager",
+                "description": "Allows managing API keys for the project",
+                "permissions": [
+                    "api.organization.projects.api_keys.read",
+                    "api.organization.projects.api_keys.write"
+                ],
+                "resource_type": "api.project",
+                "predefined_role": false
+            }
+        group: administration
+        name: Update project role
+        returns: The updated [role object](https://platform.openai.com/docs/api-reference/roles/object).
+  /projects/{project_id}/users/{user_id}/roles:
+    get:
+      description: Lists the project roles assigned to a user within a project.
+      operationId: list-project-user-role-assignments
+      parameters:
+        - description: The ID of the project to inspect.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: The ID of the user to inspect.
+          in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+        - description: A limit on the number of project role assignments to return.
+          in: query
+          name: limit
+          required: false
+          schema:
+            maximum: 1000
+            minimum: 0
+            type: integer
+        - description: Cursor for pagination. Provide the value from the previous response's `next` field to continue listing project roles.
+          in: query
+          name: after
+          required: false
+          schema:
+            type: string
+        - description: Sort order for the returned project roles.
+          in: query
+          name: order
+          required: false
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleListResource"
+          description: Project user role assignments listed successfully.
+      summary: List project user role assignments
+      tags:
+        - Project user role assignments
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl https://api.openai.com/v1/projects/proj_abc123/users/user_abc123/roles \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "list",
+                "data": [
+                    {
+                        "id": "role_01J1F8PROJ",
+                        "name": "API Project Key Manager",
+                        "permissions": [
+                            "api.organization.projects.api_keys.read",
+                            "api.organization.projects.api_keys.write"
+                        ],
+                        "resource_type": "api.project",
+                        "predefined_role": false,
+                        "description": "Allows managing API keys for the project",
+                        "created_at": 1711471533,
+                        "updated_at": 1711472599,
+                        "created_by": "user_abc123",
+                        "created_by_user_obj": {
+                            "id": "user_abc123",
+                            "name": "Ada Lovelace",
+                            "email": "ada@example.com"
+                        },
+                        "metadata": {}
+                    }
+                ],
+                "has_more": false,
+                "next": null
+            }
+        group: administration
+        name: List project user role assignments
+        returns: A list of [role objects](https://platform.openai.com/docs/api-reference/roles/object).
+    post:
+      description: Assigns a project role to a user within a project.
+      operationId: assign-project-user-role
+      parameters:
+        - description: The ID of the project to update.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: The ID of the user that should receive the project role.
+          in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicAssignOrganizationGroupRoleBody"
+        description: Identifies the project role to assign to the user.
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserRoleAssignment"
+          description: Project role assigned to the user successfully.
+      summary: Assign project role to user
+      tags:
+        - Project user role assignments
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X POST https://api.openai.com/v1/projects/proj_abc123/users/user_abc123/roles \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{
+                    "role_id": "role_01J1F8PROJ"
+                }'
+          response: |
+            {
+                "object": "user.role",
+                "user": {
+                    "object": "organization.user",
+                    "id": "user_abc123",
+                    "name": "Ada Lovelace",
+                    "email": "ada@example.com",
+                    "role": "owner",
+                    "added_at": 1711470000
+                },
+                "role": {
+                    "object": "role",
+                    "id": "role_01J1F8PROJ",
+                    "name": "API Project Key Manager",
+                    "description": "Allows managing API keys for the project",
+                    "permissions": [
+                        "api.organization.projects.api_keys.read",
+                        "api.organization.projects.api_keys.write"
+                    ],
+                    "resource_type": "api.project",
+                    "predefined_role": false
+                }
+            }
+        group: administration
+        name: Assign project role to user
+        returns: The created [user role object](https://platform.openai.com/docs/api-reference/role-assignments/objects/user).
+  /projects/{project_id}/users/{user_id}/roles/{role_id}:
+    delete:
+      description: Unassigns a project role from a user within a project.
+      operationId: unassign-project-user-role
+      parameters:
+        - description: The ID of the project to modify.
+          in: path
+          name: project_id
+          required: true
+          schema:
+            type: string
+        - description: The ID of the user whose project role assignment should be removed.
+          in: path
+          name: user_id
+          required: true
+          schema:
+            type: string
+        - description: The ID of the project role to remove from the user.
+          in: path
+          name: role_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletedRoleAssignmentResource"
+          description: Project role unassigned from the user successfully.
+      summary: Unassign project role from user
+      tags:
+        - Project user role assignments
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl -X DELETE https://api.openai.com/v1/projects/proj_abc123/users/user_abc123/roles/role_01J1F8PROJ \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json"
+          response: |
+            {
+                "object": "user.role.deleted",
+                "deleted": true
+            }
+        group: administration
+        name: Unassign project role from user
+        returns: Confirmation of the deleted [user role object](https://platform.openai.com/docs/api-reference/role-assignments/objects/user).
   /realtime/calls:
     post:
       description: |-
@@ -62670,6 +65317,120 @@ x-oaiMeta:
           type: object
       title: Users
     - description: |
+        Manage reusable collections of users for organization-wide access control and maintain their membership.
+      id: groups
+      navigationGroup: administration
+      sections:
+        - key: list-groups
+          path: list
+          type: endpoint
+        - key: create-group
+          path: create
+          type: endpoint
+        - key: update-group
+          path: update
+          type: endpoint
+        - key: delete-group
+          path: delete
+          type: endpoint
+        - key: list-group-users
+          path: users/list
+          type: endpoint
+        - key: add-group-user
+          path: users/add
+          type: endpoint
+        - key: remove-group-user
+          path: users/delete
+          type: endpoint
+        - key: GroupUserAssignment
+          path: users/assignment-object
+          type: object
+        - key: Group
+          path: object
+          type: object
+      title: Groups
+    - description: |
+        Create and manage custom roles that can be assigned to groups and users at the organization or project level.
+      id: roles
+      navigationGroup: administration
+      sections:
+        - key: list-roles
+          path: list
+          type: endpoint
+        - key: create-role
+          path: create
+          type: endpoint
+        - key: update-role
+          path: update
+          type: endpoint
+        - key: delete-role
+          path: delete
+          type: endpoint
+        - key: list-project-roles
+          path: project/list
+          type: endpoint
+        - key: create-project-role
+          path: project/create
+          type: endpoint
+        - key: update-project-role
+          path: project/update
+          type: endpoint
+        - key: delete-project-role
+          path: project/delete
+          type: endpoint
+        - key: Role
+          path: object
+          type: object
+      title: Roles
+    - description: |
+        Assign and remove roles for users and groups at the organization or project level.
+      id: role-assignments
+      navigationGroup: administration
+      sections:
+        - key: list-group-role-assignments
+          path: organization/groups/list
+          type: endpoint
+        - key: assign-group-role
+          path: organization/groups/assign
+          type: endpoint
+        - key: unassign-group-role
+          path: organization/groups/delete
+          type: endpoint
+        - key: list-user-role-assignments
+          path: organization/users/list
+          type: endpoint
+        - key: assign-user-role
+          path: organization/users/assign
+          type: endpoint
+        - key: unassign-user-role
+          path: organization/users/delete
+          type: endpoint
+        - key: list-project-group-role-assignments
+          path: projects/groups/list
+          type: endpoint
+        - key: assign-project-group-role
+          path: projects/groups/assign
+          type: endpoint
+        - key: unassign-project-group-role
+          path: projects/groups/delete
+          type: endpoint
+        - key: list-project-user-role-assignments
+          path: projects/users/list
+          type: endpoint
+        - key: assign-project-user-role
+          path: projects/users/assign
+          type: endpoint
+        - key: unassign-project-user-role
+          path: projects/users/delete
+          type: endpoint
+        - key: GroupRoleAssignment
+          path: objects/group
+          type: object
+        - key: UserRoleAssignment
+          path: objects/user
+          type: object
+      title: Role assignments
+    - description: |
         Manage the projects within an orgnanization includes creation, updating, and archiving or projects.
         The Default project cannot be archived.
       id: projects
@@ -62718,6 +65479,24 @@ x-oaiMeta:
           path: object
           type: object
       title: Project users
+    - description: |
+        Manage which groups have access to a project and the role they receive.
+      id: project-groups
+      navigationGroup: administration
+      sections:
+        - key: list-project-groups
+          path: list
+          type: endpoint
+        - key: add-project-group
+          path: add
+          type: endpoint
+        - key: remove-project-group
+          path: delete
+          type: endpoint
+        - key: ProjectGroup
+          path: object
+          type: object
+      title: Project groups
     - description: |
         Manage service accounts within a project. A service account is a bot user that is not associated with a user.
         If a user leaves an organization, their keys and membership in projects will no longer work. Service accounts
