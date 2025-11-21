@@ -188,55 +188,11 @@ jobs:
       - name: Generate release notes
         if: steps.detect-changes.outputs.changes_detected == 'true'
         id: release-notes
-        uses: vercel/ai-action@v2
-        with:
-          model: "openai/gpt5"
-          api-key: ${{ secrets.AI_GATEWAY_API_KEY }}
-          prompt: |
-            Analyze the following OpenAPI specification diff and calculate these three things
-
-            1. Summary of changes as conventional commit messages (max. 100 characters)
-            2. A detailed description of the changes, in markdown format
-            3. The type of version change: "breaking", "feature", or "fix"
-
-            For the markdown description, create three sections, each with its own level 3 header:
-
-            1. Breaking changes (removed endpoints, parameters, or changed behavior)
-            2. New features (new endpoints, parameters, or options)
-            3. Fixes (documentation updates, typo corrections)
-
-            For each section, group changes by their routes. Derive the route from the file path in the diff. For example, changes in `cache/cohere/routes/v2/chat/post.json` belong to the `POST /v2/chat` route.
-
-            If a section has no content, omit it from the release notes.
-
-            Do not list items in new features that are listed in breaking changes.
-            Do not list items in fixes that are listed in breaking changes or new features.
-
-            Diff:
-            ${{ steps.diff.outputs.text }}
-          schema: |
-            {
-              "$schema": "http://json-schema.org/draft-07/schema#",
-              "title": "Change Description",
-              "type": "object",
-              "properties": {
-                "summary": {
-                  "type": "string",
-                  "description": "Summary of changes as conventional commit messages (max. 100 characters)."
-                },
-                "description": {
-                  "type": "string",
-                  "description": "Description of the change, in markdown format."
-                },
-                "version": {
-                  "type": "string",
-                  "enum": ["breaking", "feature", "fix"],
-                  "description": "The type of version change."
-                }
-              },
-              "required": ["summary", "description", "version"],
-              "additionalProperties": false
-            }
+        env:
+          OPENAI_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+        run: |
+          # Generate release notes using custom script
+          node scripts/generate-release-notes.js "${{ steps.diff.outputs.text }}" "${{ matrix.source.name }}"
 
       - name: Create Pull Request
         id: create-pr
@@ -245,12 +201,12 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "Update ${{ matrix.source.name }} API specification"
-          title: ${{ fromJson(steps.release-notes.outputs.json).summary }}
-          body: ${{ fromJson(steps.release-notes.outputs.json).description }}
+          title: ${{ steps.release-notes.outputs.summary }}
+          body: ${{ steps.release-notes.outputs.description }}
           branch: update/${{ matrix.source.name }}
           delete-branch: true
           labels: |
-            version:${{ fromJson(steps.release-notes.outputs.json).version }}
+            version:${{ steps.release-notes.outputs.version }}
             provider:${{ matrix.source.name }}
           assignees: ${{ github.repository_owner }}
 
