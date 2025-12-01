@@ -22,7 +22,7 @@
               ]
             },
             "limit": {
-              "description": "The number of chunks to return.\nWill always return the top matching chunks.\nOptional, defaults to 10",
+              "description": "The number of chunks to return.\nWill always return the top matching chunks.\nOptional, defaults to 10.",
               "format": "int32",
               "type": [
                 "integer",
@@ -39,118 +39,256 @@
                   "type": "null"
                 },
                 {
-                  "description": "The ranking metric to use for the search ('RANKING_METRIC_COSINE_SIMILARITY', 'RANKING_METRIC_L2_DISTANCE').\nDefaults to `RANKING_METRIC_COSINE_SIMILARITY`.",
+                  "description": "Deprecated: Metric now comes from collection creation.",
                   "enum": [
-                    "RANKING_METRIC_UNSPECIFIED",
-                    "RANKING_METRIC_COSINE_SIMILARITY",
-                    "RANKING_METRIC_L2_DISTANCE"
+                    "RANKING_METRIC_UNKNOWN",
+                    "RANKING_METRIC_L2_DISTANCE",
+                    "RANKING_METRIC_COSINE_SIMILARITY"
                   ],
                   "type": "string"
                 }
               ]
             },
-            "reranker": {
+            "retrieval_mode": {
               "oneOf": [
                 {
                   "type": "null"
                 },
                 {
-                  "description": "Optional reranker to apply to search results. Supported values:\n'RECIPROCAL_RANK_FUSION', 'RERANKER_MODEL'.",
+                  "description": "How to perform the document search. Defaults to hybrid retrieval.",
                   "oneOf": [
                     {
-                      "properties": {
-                        "config": {
+                      "allOf": [
+                        {
+                          "description": "Hybrid search combining keyword and semantic search.",
                           "properties": {
-                            "k": {
+                            "reranker": {
+                              "oneOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "description": "Which reranker to use to limit results to the desired value.",
+                                  "oneOf": [
+                                    {
+                                      "allOf": [
+                                        {
+                                          "description": "Use a reranker model to perform the reranking.",
+                                          "properties": {
+                                            "instructions": {
+                                              "description": "Instructions for the reranking model. Defaults to generic reranking instructions.",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
+                                            },
+                                            "model": {
+                                              "description": "The model to use for reranking. Defaults to standard reranker model.",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
+                                            }
+                                          },
+                                          "type": "object"
+                                        },
+                                        {
+                                          "properties": {
+                                            "type": {
+                                              "enum": [
+                                                "reranker_model"
+                                              ],
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "type"
+                                          ],
+                                          "type": "object"
+                                        }
+                                      ],
+                                      "description": "Use a reranker model to perform the reranking."
+                                    },
+                                    {
+                                      "allOf": [
+                                        {
+                                          "description": "Use RRF to perform the reranking.",
+                                          "properties": {
+                                            "embedding_weight": {
+                                              "description": "Weight for embedding (dense) search results. Should be between 0 and 1. Defaults to 0.5.",
+                                              "format": "float",
+                                              "type": "number"
+                                            },
+                                            "k": {
+                                              "description": "The RRF constant k used in the reciprocal rank fusion formula. Defaults to 60.",
+                                              "format": "int32",
+                                              "type": [
+                                                "integer",
+                                                "null"
+                                              ]
+                                            },
+                                            "text_weight": {
+                                              "description": "Weight for keyword (sparse) search results. Should be between 0 and 1. Defaults to 0.5.",
+                                              "format": "float",
+                                              "type": "number"
+                                            }
+                                          },
+                                          "type": "object"
+                                        },
+                                        {
+                                          "properties": {
+                                            "type": {
+                                              "enum": [
+                                                "reciprocal_rank_fusion"
+                                              ],
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "type"
+                                          ],
+                                          "type": "object"
+                                        }
+                                      ],
+                                      "description": "Use RRF to perform the reranking."
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            "search_multiplier": {
+                              "description": "Additional multiplier to requested search limit.\nValid range is [1, 100]. Defaults to 1 when unset.",
                               "format": "int32",
                               "type": [
                                 "integer",
                                 "null"
                               ]
-                            },
-                            "weights": {
-                              "items": {
-                                "format": "float",
-                                "type": "number"
-                              },
-                              "type": [
-                                "array",
-                                "null"
-                              ]
                             }
                           },
                           "type": "object"
                         },
-                        "type": {
-                          "enum": [
-                            "RECIPROCAL_RANK_FUSION"
+                        {
+                          "properties": {
+                            "type": {
+                              "enum": [
+                                "hybrid"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type"
                           ],
-                          "type": "string"
+                          "type": "object"
                         }
-                      },
-                      "required": [
-                        "config",
-                        "type"
                       ],
-                      "type": "object"
+                      "description": "Hybrid search combining keyword and semantic search."
                     },
                     {
-                      "properties": {
-                        "config": {
+                      "allOf": [
+                        {
+                          "description": "Semantic search using dense embeddings.",
                           "properties": {
-                            "instructions": {
-                              "type": [
-                                "string",
-                                "null"
-                              ]
-                            },
-                            "model": {
-                              "type": [
-                                "string",
-                                "null"
+                            "reranker": {
+                              "oneOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "description": "Optional, but always used when doing search across multiple collections.",
+                                  "properties": {
+                                    "instructions": {
+                                      "description": "Instructions for the reranking model. Defaults to generic reranking instructions.",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "model": {
+                                      "description": "The model to use for reranking. Defaults to standard reranker model.",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "type": "object"
+                                }
                               ]
                             }
                           },
                           "type": "object"
                         },
-                        "type": {
-                          "enum": [
-                            "RERANKER_MODEL"
+                        {
+                          "properties": {
+                            "type": {
+                              "enum": [
+                                "semantic"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type"
                           ],
-                          "type": "string"
+                          "type": "object"
                         }
-                      },
-                      "required": [
-                        "config",
-                        "type"
                       ],
-                      "type": "object"
+                      "description": "Semantic search using dense embeddings."
+                    },
+                    {
+                      "allOf": [
+                        {
+                          "description": "Keyword search using sparse embeddings.",
+                          "properties": {
+                            "reranker": {
+                              "oneOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "description": "Optional, but always used when doing search across multiple collections.",
+                                  "properties": {
+                                    "instructions": {
+                                      "description": "Instructions for the reranking model. Defaults to generic reranking instructions.",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "model": {
+                                      "description": "The model to use for reranking. Defaults to standard reranker model.",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "type": "object"
+                                }
+                              ]
+                            }
+                          },
+                          "type": "object"
+                        },
+                        {
+                          "properties": {
+                            "type": {
+                              "enum": [
+                                "keyword"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ],
+                          "type": "object"
+                        }
+                      ],
+                      "description": "Keyword search using sparse embeddings."
                     }
                   ]
-                }
-              ]
-            },
-            "search_multiplier": {
-              "description": "Additional multiplier for HYBRID search only. Valid range is [1, 100].\nDefaults to 1 when unset. Ignored for non-HYBRID search types.",
-              "format": "int32",
-              "type": [
-                "integer",
-                "null"
-              ]
-            },
-            "search_type": {
-              "oneOf": [
-                {
-                  "type": "null"
-                },
-                {
-                  "description": "The search algorithm to use.\nIf omitted, the server treats it as 'SEARCH_TYPE_SEMANTIC'.",
-                  "enum": [
-                    "SEARCH_TYPE_SEMANTIC",
-                    "SEARCH_TYPE_KEYWORD",
-                    "SEARCH_TYPE_HYBRID"
-                  ],
-                  "type": "string"
                 }
               ]
             },
