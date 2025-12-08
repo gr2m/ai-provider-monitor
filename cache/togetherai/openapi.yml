@@ -7067,6 +7067,80 @@ paths:
                    "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Reference",
                    "training_file": "file-id"
                  }'
+  /fine-tunes/estimate-price:
+    post:
+      description: Estimate the price of a fine-tuning job.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                model:
+                  description: Name of the base model to run fine-tune job on
+                  type: string
+                n_epochs:
+                  default: 1
+                  description: Number of complete passes through the training dataset (higher values may improve results but increase cost and risk of overfitting)
+                  type: integer
+                n_evals:
+                  default: 0
+                  description: Number of evaluations to be run on a given validation set during training
+                  type: integer
+                training_file:
+                  description: File-ID of a training file uploaded to the Together API
+                  type: string
+                training_method:
+                  description: The training method to use. 'sft' for Supervised Fine-Tuning or 'dpo' for Direct Preference Optimization.
+                  oneOf:
+                    - $ref: "#/components/schemas/TrainingMethodSFT"
+                    - $ref: "#/components/schemas/TrainingMethodDPO"
+                  type: object
+                training_type:
+                  oneOf:
+                    - $ref: "#/components/schemas/FullTrainingType"
+                    - $ref: "#/components/schemas/LoRATrainingType"
+                  type: object
+                validation_file:
+                  description: File-ID of a validation file uploaded to the Together API
+                  type: string
+              required:
+                - training_file
+                - model
+              type: object
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  allowed_to_proceed:
+                    description: Whether the user is allowed to proceed with the fine-tuning job
+                    example: true
+                    type: boolean
+                  estimated_eval_token_count:
+                    description: The estimated number of tokens for evaluation
+                    type: number
+                  estimated_total_price:
+                    description: The price of the fine-tuning job
+                    type: number
+                  estimated_train_token_count:
+                    description: The estimated number of tokens to be trained
+                    type: number
+                  user_limit:
+                    description: The user's credit limit in dollars
+                    type: number
+                type: object
+          description: Price estimated successfully
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Internal Server Error
+      summary: Estimate price
+      tags:
+        - Fine-tuning
   /fine-tunes/{id}:
     delete:
       description: Delete a fine-tuning job.
