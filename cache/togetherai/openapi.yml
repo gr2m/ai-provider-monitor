@@ -2471,6 +2471,19 @@ components:
         - training_offset
         - hash
       type: object
+    FineTuneProgress:
+      description: Progress information for a fine-tuning job
+      properties:
+        estimate_available:
+          description: Whether time estimate is available
+          type: boolean
+        seconds_remaining:
+          description: Estimated time remaining in seconds for the fine-tuning job to next state
+          type: integer
+      required:
+        - estimate_available
+        - seconds_remaining
+      type: object
     FinetuneDeleteResponse:
       properties:
         message:
@@ -2597,6 +2610,8 @@ components:
           type: integer
         param_count:
           type: integer
+        progress:
+          $ref: "#/components/schemas/FineTuneProgress"
         queue_depth:
           type: integer
         status:
@@ -2715,6 +2730,9 @@ components:
         owner_address:
           description: Owner address information
           type: string
+        progress:
+          $ref: "#/components/schemas/FineTuneProgress"
+          description: Progress information for the fine-tuning job
         status:
           $ref: "#/components/schemas/FinetuneJobStatus"
         suffix:
@@ -4146,14 +4164,18 @@ paths:
               - hexgrad/Kokoro-82M
               - cartesia/sonic-english
             type: string
-        - description: "The voice to use for speech generation. Default is 'tara'. \nAvailable voices vary by model. Can also be updated via `tts_session.updated` event.\n"
+        - description: |
+            The voice to use for speech generation. Default is 'tara'.
+            Available voices vary by model. Can also be updated via `tts_session.updated` event.
           in: query
           name: voice
           required: false
           schema:
             default: tara
             type: string
-        - description: "Maximum number of characters in partial text before forcing TTS generation \neven without a sentence ending. Helps reduce latency for long text without punctuation.\n"
+        - description: |
+            Maximum number of characters in partial text before forcing TTS generation
+            even without a sentence ending. Helps reduce latency for long text without punctuation.
           in: query
           name: max_partial_length
           required: false
@@ -4183,10 +4205,153 @@ paths:
       x-codeSamples:
         - label: Python WebSocket Client
           lang: Python
-          source: "import asyncio\nimport websockets\nimport json\nimport base64\nimport os\n\nasync def generate_speech():\n    api_key = os.environ.get(\"TOGETHER_API_KEY\")\n    url = \"wss://api.together.ai/v1/audio/speech/websocket?model=hexgrad/Kokoro-82M&voice=tara\"\n\n    headers = {\n        \"Authorization\": f\"Bearer {api_key}\"\n    }\n\n    async with websockets.connect(url, additional_headers=headers) as ws:\n        # Wait for session created\n        session_msg = await ws.recv()\n        session_data = json.loads(session_msg)\n        print(f\"Session created: {session_data['session']['id']}\")\n\n        # Send text for TTS\n        text_chunks = [\n            \"Hello, this is a test.\",\n            \"This is the second sentence.\",\n            \"And this is the final one.\"\n        ]\n\n        async def send_text():\n            for chunk in text_chunks:\n                await ws.send(json.dumps({\n                    \"type\": \"input_text_buffer.append\",\n                    \"text\": chunk\n                }))\n                await asyncio.sleep(0.5)  # Simulate typing\n\n            # Commit to process any remaining text\n            await ws.send(json.dumps({\n                \"type\": \"input_text_buffer.commit\"\n            }))\n\n        async def receive_audio():\n            audio_data = bytearray()\n            async for message in ws:\n                data = json.loads(message)\n                \n                if data[\"type\"] == \"conversation.item.input_text.received\":\n                    print(f\"Text received: {data['text']}\")\n                elif data[\"type\"] == \"conversation.item.audio_output.delta\":\n                    # Decode base64 audio chunk\n                    audio_chunk = base64.b64decode(data['delta'])\n                    audio_data.extend(audio_chunk)\n                    print(f\"Received audio chunk for item {data['item_id']}\")\n                elif data[\"type\"] == \"conversation.item.audio_output.done\":\n                    print(f\"Audio generation complete for item {data['item_id']}\")\n                elif data[\"type\"] == \"conversation.item.tts.failed\":\n                    error = data.get(\"error\", {})\n                    print(f\"Error: {error.get('message')}\")\n                    break\n\n            # Save the audio to a file\n            with open(\"output.wav\", \"wb\") as f:\n                f.write(audio_data)\n            print(\"Audio saved to output.wav\")\n\n        # Run send and receive concurrently\n        await asyncio.gather(send_text(), receive_audio())\n\nasyncio.run(generate_speech())\n"
+          source: |
+            import asyncio
+            import websockets
+            import json
+            import base64
+            import os
+
+            async def generate_speech():
+                api_key = os.environ.get("TOGETHER_API_KEY")
+                url = "wss://api.together.ai/v1/audio/speech/websocket?model=hexgrad/Kokoro-82M&voice=tara"
+
+                headers = {
+                    "Authorization": f"Bearer {api_key}"
+                }
+
+                async with websockets.connect(url, additional_headers=headers) as ws:
+                    # Wait for session created
+                    session_msg = await ws.recv()
+                    session_data = json.loads(session_msg)
+                    print(f"Session created: {session_data['session']['id']}")
+
+                    # Send text for TTS
+                    text_chunks = [
+                        "Hello, this is a test.",
+                        "This is the second sentence.",
+                        "And this is the final one."
+                    ]
+
+                    async def send_text():
+                        for chunk in text_chunks:
+                            await ws.send(json.dumps({
+                                "type": "input_text_buffer.append",
+                                "text": chunk
+                            }))
+                            await asyncio.sleep(0.5)  # Simulate typing
+
+                        # Commit to process any remaining text
+                        await ws.send(json.dumps({
+                            "type": "input_text_buffer.commit"
+                        }))
+
+                    async def receive_audio():
+                        audio_data = bytearray()
+                        async for message in ws:
+                            data = json.loads(message)
+
+                            if data["type"] == "conversation.item.input_text.received":
+                                print(f"Text received: {data['text']}")
+                            elif data["type"] == "conversation.item.audio_output.delta":
+                                # Decode base64 audio chunk
+                                audio_chunk = base64.b64decode(data['delta'])
+                                audio_data.extend(audio_chunk)
+                                print(f"Received audio chunk for item {data['item_id']}")
+                            elif data["type"] == "conversation.item.audio_output.done":
+                                print(f"Audio generation complete for item {data['item_id']}")
+                            elif data["type"] == "conversation.item.tts.failed":
+                                error = data.get("error", {})
+                                print(f"Error: {error.get('message')}")
+                                break
+
+                        # Save the audio to a file
+                        with open("output.wav", "wb") as f:
+                            f.write(audio_data)
+                        print("Audio saved to output.wav")
+
+                    # Run send and receive concurrently
+                    await asyncio.gather(send_text(), receive_audio())
+
+            asyncio.run(generate_speech())
         - label: Node.js WebSocket Client
           lang: JavaScript
-          source: "import WebSocket from 'ws';\nimport fs from 'fs';\n\nconst apiKey = process.env.TOGETHER_API_KEY;\nconst url = 'wss://api.together.ai/v1/audio/speech/websocket?model=hexgrad/Kokoro-82M&voice=tara';\n\nconst ws = new WebSocket(url, {\n  headers: {\n    'Authorization': `Bearer ${apiKey}`\n  }\n});\n\nconst audioData = [];\n\nws.on('open', () => {\n  console.log('WebSocket connection established!');\n});\n\nws.on('message', (data) => {\n  const message = JSON.parse(data.toString());\n\n  if (message.type === 'session.created') {\n    console.log(`Session created: ${message.session.id}`);\n    \n    // Send text chunks\n    const textChunks = [\n      \"Hello, this is a test.\",\n      \"This is the second sentence.\",\n      \"And this is the final one.\"\n    ];\n\n    textChunks.forEach((text, index) => {\n      setTimeout(() => {\n        ws.send(JSON.stringify({\n          type: 'input_text_buffer.append',\n          text: text\n        }));\n      }, index * 500);\n    });\n\n    // Commit after all chunks\n    setTimeout(() => {\n      ws.send(JSON.stringify({\n        type: 'input_text_buffer.commit'\n      }));\n    }, textChunks.length * 500 + 100);\n\n  } else if (message.type === 'conversation.item.input_text.received') {\n    console.log(`Text received: ${message.text}`);\n  } else if (message.type === 'conversation.item.audio_output.delta') {\n    // Decode base64 audio chunk\n    const audioChunk = Buffer.from(message.delta, 'base64');\n    audioData.push(audioChunk);\n    console.log(`Received audio chunk for item ${message.item_id}`);\n  } else if (message.type === 'conversation.item.audio_output.done') {\n    console.log(`Audio generation complete for item ${message.item_id}`);\n  } else if (message.type === 'conversation.item.tts.failed') {\n    const errorMessage = message.error?.message ?? 'Unknown error';\n    console.error(`Error: ${errorMessage}`);\n    ws.close();\n  }\n});\n\nws.on('close', () => {\n  // Save the audio to a file\n  if (audioData.length > 0) {\n    const completeAudio = Buffer.concat(audioData);\n    fs.writeFileSync('output.wav', completeAudio);\n    console.log('Audio saved to output.wav');\n  }\n});\n\nws.on('error', (error) => {\n  console.error('WebSocket error:', error);\n});\n"
+          source: |
+            import WebSocket from 'ws';
+            import fs from 'fs';
+
+            const apiKey = process.env.TOGETHER_API_KEY;
+            const url = 'wss://api.together.ai/v1/audio/speech/websocket?model=hexgrad/Kokoro-82M&voice=tara';
+
+            const ws = new WebSocket(url, {
+              headers: {
+                'Authorization': `Bearer ${apiKey}`
+              }
+            });
+
+            const audioData = [];
+
+            ws.on('open', () => {
+              console.log('WebSocket connection established!');
+            });
+
+            ws.on('message', (data) => {
+              const message = JSON.parse(data.toString());
+
+              if (message.type === 'session.created') {
+                console.log(`Session created: ${message.session.id}`);
+
+                // Send text chunks
+                const textChunks = [
+                  "Hello, this is a test.",
+                  "This is the second sentence.",
+                  "And this is the final one."
+                ];
+
+                textChunks.forEach((text, index) => {
+                  setTimeout(() => {
+                    ws.send(JSON.stringify({
+                      type: 'input_text_buffer.append',
+                      text: text
+                    }));
+                  }, index * 500);
+                });
+
+                // Commit after all chunks
+                setTimeout(() => {
+                  ws.send(JSON.stringify({
+                    type: 'input_text_buffer.commit'
+                  }));
+                }, textChunks.length * 500 + 100);
+
+              } else if (message.type === 'conversation.item.input_text.received') {
+                console.log(`Text received: ${message.text}`);
+              } else if (message.type === 'conversation.item.audio_output.delta') {
+                // Decode base64 audio chunk
+                const audioChunk = Buffer.from(message.delta, 'base64');
+                audioData.push(audioChunk);
+                console.log(`Received audio chunk for item ${message.item_id}`);
+              } else if (message.type === 'conversation.item.audio_output.done') {
+                console.log(`Audio generation complete for item ${message.item_id}`);
+              } else if (message.type === 'conversation.item.tts.failed') {
+                const errorMessage = message.error?.message ?? 'Unknown error';
+                console.error(`Error: ${errorMessage}`);
+                ws.close();
+              }
+            });
+
+            ws.on('close', () => {
+              // Save the audio to a file
+              if (audioData.length > 0) {
+                const completeAudio = Buffer.concat(audioData);
+                fs.writeFileSync('output.wav', completeAudio);
+                console.log('Audio saved to output.wav');
+              }
+            });
+
+            ws.on('error', (error) => {
+              console.error('WebSocket error:', error);
+            });
   /audio/transcriptions:
     post:
       description: Transcribes audio into text
