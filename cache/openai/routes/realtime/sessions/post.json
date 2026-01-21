@@ -1,0 +1,802 @@
+{
+  "description": "Create an ephemeral API token for use in client-side applications with the\nRealtime API. Can be configured with the same session parameters as the\n`session.update` client event.\n\nIt responds with a session object, plus a `client_secret` key which contains\na usable ephemeral API token that can be used to authenticate browser clients\nfor the Realtime API.\n",
+  "operationId": "create-realtime-session",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "description": "A new Realtime session configuration, with an ephemeral key. Default TTL\nfor keys is one minute.\n",
+          "properties": {
+            "client_secret": {
+              "description": "Ephemeral key returned by the API.",
+              "properties": {
+                "expires_at": {
+                  "description": "Timestamp for when the token expires. Currently, all tokens expire\nafter one minute.\n",
+                  "type": "integer"
+                },
+                "value": {
+                  "description": "Ephemeral key usable in client environments to authenticate connections\nto the Realtime API. Use this in client-side environments rather than\na standard API token, which should only be used server-side.\n",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value",
+                "expires_at"
+              ],
+              "type": "object"
+            },
+            "input_audio_format": {
+              "description": "The format of input audio. Options are `pcm16`, `g711_ulaw`, or `g711_alaw`.\n",
+              "type": "string"
+            },
+            "input_audio_transcription": {
+              "description": "Configuration for input audio transcription, defaults to off and can be\nset to `null` to turn off once on. Input audio transcription is not native\nto the model, since the model consumes audio directly. Transcription runs\nasynchronously and should be treated as rough guidance\nrather than the representation understood by the model.\n",
+              "properties": {
+                "model": {
+                  "description": "The model to use for transcription.\n",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "instructions": {
+              "description": "The default system instructions (i.e. system message) prepended to model calls. This field allows the client to guide the model on desired responses. The model can be instructed on response content and format, (e.g. \"be extremely succinct\", \"act friendly\", \"here are examples of good responses\") and on audio behavior (e.g. \"talk quickly\", \"inject emotion into your voice\", \"laugh frequently\"). The instructions are not guaranteed to be followed by the model, but they provide guidance to the model on the desired behavior.\nNote that the server sets default instructions which will be used if this field is not set and are visible in the `session.created` event at the start of the session.\n",
+              "type": "string"
+            },
+            "max_response_output_tokens": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "enum": [
+                    "inf"
+                  ],
+                  "type": "string"
+                }
+              ],
+              "description": "Maximum number of output tokens for a single assistant response,\ninclusive of tool calls. Provide an integer between 1 and 4096 to\nlimit output tokens, or `inf` for the maximum available tokens for a\ngiven model. Defaults to `inf`.\n"
+            },
+            "modalities": {
+              "description": "The set of modalities the model can respond with. To disable audio,\nset this to [\"text\"].\n",
+              "items": {
+                "enum": [
+                  "text",
+                  "audio"
+                ],
+                "type": "string"
+              }
+            },
+            "output_audio_format": {
+              "description": "The format of output audio. Options are `pcm16`, `g711_ulaw`, or `g711_alaw`.\n",
+              "type": "string"
+            },
+            "prompt": {
+              "anyOf": [
+                {
+                  "description": "Reference to a prompt template and its variables.\n[Learn more](https://platform.openai.com/docs/guides/text?api-mode=responses#reusable-prompts).\n",
+                  "properties": {
+                    "id": {
+                      "description": "The unique identifier of the prompt template to use.",
+                      "type": "string"
+                    },
+                    "variables": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "description": "A text input to the model.",
+                                "properties": {
+                                  "text": {
+                                    "description": "The text input to the model.",
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "default": "input_text",
+                                    "description": "The type of the input item. Always `input_text`.",
+                                    "enum": [
+                                      "input_text"
+                                    ],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "text"
+                                ],
+                                "title": "Input text",
+                                "type": "object"
+                              },
+                              {
+                                "description": "An image input to the model. Learn about [image inputs](https://platform.openai.com/docs/guides/vision).",
+                                "properties": {
+                                  "detail": {
+                                    "description": "The detail level of the image to be sent to the model. One of `high`, `low`, or `auto`. Defaults to `auto`.",
+                                    "enum": [
+                                      "low",
+                                      "high",
+                                      "auto"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "file_id": {
+                                    "anyOf": [
+                                      {
+                                        "description": "The ID of the file to be sent to the model.",
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "image_url": {
+                                    "anyOf": [
+                                      {
+                                        "description": "The URL of the image to be sent to the model. A fully qualified URL or base64 encoded image in a data URL.",
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "type": {
+                                    "default": "input_image",
+                                    "description": "The type of the input item. Always `input_image`.",
+                                    "enum": [
+                                      "input_image"
+                                    ],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "type",
+                                  "detail"
+                                ],
+                                "title": "Input image",
+                                "type": "object"
+                              },
+                              {
+                                "description": "A file input to the model.",
+                                "properties": {
+                                  "file_data": {
+                                    "description": "The content of the file to be sent to the model.\n",
+                                    "type": "string"
+                                  },
+                                  "file_id": {
+                                    "anyOf": [
+                                      {
+                                        "description": "The ID of the file to be sent to the model.",
+                                        "type": "string"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "file_url": {
+                                    "description": "The URL of the file to be sent to the model.",
+                                    "type": "string"
+                                  },
+                                  "filename": {
+                                    "description": "The name of the file to be sent to the model.",
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "default": "input_file",
+                                    "description": "The type of the input item. Always `input_file`.",
+                                    "enum": [
+                                      "input_file"
+                                    ],
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "type"
+                                ],
+                                "title": "Input file",
+                                "type": "object"
+                              }
+                            ]
+                          },
+                          "description": "Optional map of values to substitute in for variables in your\nprompt. The substitution values can either be strings, or other\nResponse input types like images or files.\n",
+                          "title": "Prompt Variables",
+                          "type": "object"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "version": {
+                      "anyOf": [
+                        {
+                          "description": "Optional version of the prompt template.",
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "speed": {
+              "default": 1,
+              "description": "The speed of the model's spoken response. 1.0 is the default speed. 0.25 is\nthe minimum speed. 1.5 is the maximum speed. This value can only be changed\nin between model turns, not while a response is in progress.\n",
+              "maximum": 1.5,
+              "minimum": 0.25,
+              "type": "number"
+            },
+            "temperature": {
+              "description": "Sampling temperature for the model, limited to [0.6, 1.2]. Defaults to 0.8.\n",
+              "type": "number"
+            },
+            "tool_choice": {
+              "description": "How the model chooses tools. Options are `auto`, `none`, `required`, or\nspecify a function.\n",
+              "type": "string"
+            },
+            "tools": {
+              "description": "Tools (functions) available to the model.",
+              "items": {
+                "properties": {
+                  "description": {
+                    "description": "The description of the function, including guidance on when and how\nto call it, and guidance about what to tell the user when calling\n(if anything).\n",
+                    "type": "string"
+                  },
+                  "name": {
+                    "description": "The name of the function.",
+                    "type": "string"
+                  },
+                  "parameters": {
+                    "description": "Parameters of the function in JSON Schema.",
+                    "type": "object"
+                  },
+                  "type": {
+                    "description": "The type of the tool, i.e. `function`.",
+                    "enum": [
+                      "function"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "tracing": {
+              "anyOf": [
+                {
+                  "default": "auto",
+                  "description": "Default tracing mode for the session.\n",
+                  "enum": [
+                    "auto"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "description": "Granular configuration for tracing.\n",
+                  "properties": {
+                    "group_id": {
+                      "description": "The group id to attach to this trace to enable filtering and\ngrouping in the traces dashboard.\n",
+                      "type": "string"
+                    },
+                    "metadata": {
+                      "description": "The arbitrary metadata to attach to this trace to enable\nfiltering in the traces dashboard.\n",
+                      "type": "object"
+                    },
+                    "workflow_name": {
+                      "description": "The name of the workflow to attach to this trace. This is used to\nname the trace in the traces dashboard.\n",
+                      "type": "string"
+                    }
+                  },
+                  "title": "Tracing Configuration",
+                  "type": "object"
+                }
+              ],
+              "description": "Configuration options for tracing. Set to null to disable tracing. Once\ntracing is enabled for a session, the configuration cannot be modified.\n\n`auto` will create a trace for the session with default values for the\nworkflow name, group id, and metadata.\n",
+              "title": "Tracing Configuration"
+            },
+            "truncation": {
+              "anyOf": [
+                {
+                  "description": "The truncation strategy to use for the session. `auto` is the default truncation strategy. `disabled` will disable truncation and emit errors when the conversation exceeds the input token limit.",
+                  "enum": [
+                    "auto",
+                    "disabled"
+                  ],
+                  "title": "RealtimeTruncationStrategy",
+                  "type": "string"
+                },
+                {
+                  "description": "Retain a fraction of the conversation tokens when the conversation exceeds the input token limit. This allows you to amortize truncations across multiple turns, which can help improve cached token usage.",
+                  "properties": {
+                    "retention_ratio": {
+                      "description": "Fraction of post-instruction conversation tokens to retain (`0.0` - `1.0`) when the conversation exceeds the input token limit. Setting this to `0.8` means that messages will be dropped until 80% of the maximum allowed tokens are used. This helps reduce the frequency of truncations and improve cache rates.\n",
+                      "maximum": 1,
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "token_limits": {
+                      "description": "Optional custom token limits for this truncation strategy. If not provided, the model's default token limits will be used.",
+                      "properties": {
+                        "post_instructions": {
+                          "description": "Maximum tokens allowed in the conversation after instructions (which including tool definitions). For example, setting this to 5,000 would mean that truncation would occur when the conversation exceeds 5,000 tokens after instructions. This cannot be higher than the model's context window size minus the maximum output tokens.",
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "type": {
+                      "description": "Use retention ratio truncation.",
+                      "enum": [
+                        "retention_ratio"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "retention_ratio"
+                  ],
+                  "title": "Retention ratio truncation",
+                  "type": "object"
+                }
+              ],
+              "description": "When the number of tokens in a conversation exceeds the model's input token limit, the conversation be truncated, meaning messages (starting from the oldest) will not be included in the model's context. A 32k context model with 4,096 max output tokens can only include 28,224 tokens in the context before truncation occurs.\n\nClients can configure truncation behavior to truncate with a lower max token limit, which is an effective way to control token usage and cost.\n\nTruncation will reduce the number of cached tokens on the next turn (busting the cache), since messages are dropped from the beginning of the context. However, clients can also configure truncation to retain messages up to a fraction of the maximum context size, which will reduce the need for future truncations and thus improve the cache rate.\n\nTruncation can be disabled entirely, which means the server will never truncate but would instead return an error if the conversation exceeds the model's input token limit.\n",
+              "title": "Realtime Truncation Controls"
+            },
+            "turn_detection": {
+              "description": "Configuration for turn detection. Can be set to `null` to turn off. Server\nVAD means that the model will detect the start and end of speech based on\naudio volume and respond at the end of user speech.\n",
+              "properties": {
+                "prefix_padding_ms": {
+                  "description": "Amount of audio to include before the VAD detected speech (in\nmilliseconds). Defaults to 300ms.\n",
+                  "type": "integer"
+                },
+                "silence_duration_ms": {
+                  "description": "Duration of silence to detect speech stop (in milliseconds). Defaults\nto 500ms. With shorter values the model will respond more quickly,\nbut may jump in on short pauses from the user.\n",
+                  "type": "integer"
+                },
+                "threshold": {
+                  "description": "Activation threshold for VAD (0.0 to 1.0), this defaults to 0.5. A\nhigher threshold will require louder audio to activate the model, and\nthus might perform better in noisy environments.\n",
+                  "type": "number"
+                },
+                "type": {
+                  "description": "Type of turn detection, only `server_vad` is currently supported.\n",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "voice": {
+              "description": "The voice the model uses to respond. Supported built-in voices are `alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`, `marin`, and `cedar`. Voice cannot be changed during the session once the model has responded with audio at least once.",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "enum": [
+                    "alloy",
+                    "ash",
+                    "ballad",
+                    "coral",
+                    "echo",
+                    "sage",
+                    "shimmer",
+                    "verse",
+                    "marin",
+                    "cedar"
+                  ],
+                  "type": "string"
+                }
+              ],
+              "example": "ash"
+            }
+          },
+          "required": [
+            "client_secret"
+          ],
+          "type": "object"
+        }
+      }
+    },
+    "description": "Create an ephemeral API key with the given session configuration.",
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "description": "A Realtime session configuration object.\n",
+            "properties": {
+              "audio": {
+                "description": "Configuration for input and output audio for the session.\n",
+                "properties": {
+                  "input": {
+                    "properties": {
+                      "format": {
+                        "anyOf": [
+                          {
+                            "description": "The PCM audio format. Only a 24kHz sample rate is supported.",
+                            "properties": {
+                              "rate": {
+                                "description": "The sample rate of the audio. Always `24000`.",
+                                "enum": [
+                                  24000
+                                ],
+                                "type": "integer"
+                              },
+                              "type": {
+                                "description": "The audio format. Always `audio/pcm`.",
+                                "enum": [
+                                  "audio/pcm"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "title": "PCM audio format",
+                            "type": "object"
+                          },
+                          {
+                            "description": "The G.711 μ-law format.",
+                            "properties": {
+                              "type": {
+                                "description": "The audio format. Always `audio/pcmu`.",
+                                "enum": [
+                                  "audio/pcmu"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "title": "PCMU audio format",
+                            "type": "object"
+                          },
+                          {
+                            "description": "The G.711 A-law format.",
+                            "properties": {
+                              "type": {
+                                "description": "The audio format. Always `audio/pcma`.",
+                                "enum": [
+                                  "audio/pcma"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "title": "PCMA audio format",
+                            "type": "object"
+                          }
+                        ],
+                        "discriminator": {
+                          "propertyName": "type"
+                        }
+                      },
+                      "noise_reduction": {
+                        "description": "Configuration for input audio noise reduction.\n",
+                        "properties": {
+                          "type": {
+                            "description": "Type of noise reduction. `near_field` is for close-talking microphones such as headphones, `far_field` is for far-field microphones such as laptop or conference room microphones.\n",
+                            "enum": [
+                              "near_field",
+                              "far_field"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "transcription": {
+                        "properties": {
+                          "language": {
+                            "description": "The language of the input audio. Supplying the input language in\n[ISO-639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) (e.g. `en`) format\nwill improve accuracy and latency.\n",
+                            "type": "string"
+                          },
+                          "model": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "enum": [
+                                  "whisper-1",
+                                  "gpt-4o-mini-transcribe",
+                                  "gpt-4o-mini-transcribe-2025-12-15",
+                                  "gpt-4o-transcribe",
+                                  "gpt-4o-transcribe-diarize"
+                                ],
+                                "type": "string"
+                              }
+                            ],
+                            "description": "The model to use for transcription. Current options are `whisper-1`, `gpt-4o-mini-transcribe`, `gpt-4o-mini-transcribe-2025-12-15`, `gpt-4o-transcribe`, and `gpt-4o-transcribe-diarize`. Use `gpt-4o-transcribe-diarize` when you need diarization with speaker labels.\n"
+                          },
+                          "prompt": {
+                            "description": "An optional text to guide the model's style or continue a previous audio\nsegment.\nFor `whisper-1`, the [prompt is a list of keywords](https://platform.openai.com/docs/guides/speech-to-text#prompting).\nFor `gpt-4o-transcribe` models (excluding `gpt-4o-transcribe-diarize`), the prompt is a free text string, for example \"expect words related to technology\".\n",
+                            "type": "string"
+                          }
+                        },
+                        "type": "object",
+                        "description": "Configuration for input audio transcription.\n"
+                      },
+                      "turn_detection": {
+                        "description": "Configuration for turn detection.\n",
+                        "properties": {
+                          "prefix_padding_ms": {
+                            "type": "integer"
+                          },
+                          "silence_duration_ms": {
+                            "type": "integer"
+                          },
+                          "threshold": {
+                            "type": "number"
+                          },
+                          "type": {
+                            "description": "Type of turn detection, only `server_vad` is currently supported.\n",
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "output": {
+                    "properties": {
+                      "format": {
+                        "anyOf": [
+                          {
+                            "description": "The PCM audio format. Only a 24kHz sample rate is supported.",
+                            "properties": {
+                              "rate": {
+                                "description": "The sample rate of the audio. Always `24000`.",
+                                "enum": [
+                                  24000
+                                ],
+                                "type": "integer"
+                              },
+                              "type": {
+                                "description": "The audio format. Always `audio/pcm`.",
+                                "enum": [
+                                  "audio/pcm"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "title": "PCM audio format",
+                            "type": "object"
+                          },
+                          {
+                            "description": "The G.711 μ-law format.",
+                            "properties": {
+                              "type": {
+                                "description": "The audio format. Always `audio/pcmu`.",
+                                "enum": [
+                                  "audio/pcmu"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "title": "PCMU audio format",
+                            "type": "object"
+                          },
+                          {
+                            "description": "The G.711 A-law format.",
+                            "properties": {
+                              "type": {
+                                "description": "The audio format. Always `audio/pcma`.",
+                                "enum": [
+                                  "audio/pcma"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "title": "PCMA audio format",
+                            "type": "object"
+                          }
+                        ],
+                        "discriminator": {
+                          "propertyName": "type"
+                        }
+                      },
+                      "speed": {
+                        "type": "number"
+                      },
+                      "voice": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "enum": [
+                              "alloy",
+                              "ash",
+                              "ballad",
+                              "coral",
+                              "echo",
+                              "sage",
+                              "shimmer",
+                              "verse",
+                              "marin",
+                              "cedar"
+                            ],
+                            "type": "string"
+                          }
+                        ],
+                        "example": "ash"
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              },
+              "expires_at": {
+                "description": "Expiration timestamp for the session, in seconds since epoch.",
+                "type": "integer"
+              },
+              "id": {
+                "description": "Unique identifier for the session that looks like `sess_1234567890abcdef`.\n",
+                "type": "string"
+              },
+              "include": {
+                "description": "Additional fields to include in server outputs.\n- `item.input_audio_transcription.logprobs`: Include logprobs for input audio transcription.\n",
+                "items": {
+                  "enum": [
+                    "item.input_audio_transcription.logprobs"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "instructions": {
+                "description": "The default system instructions (i.e. system message) prepended to model\ncalls. This field allows the client to guide the model on desired\nresponses. The model can be instructed on response content and format,\n(e.g. \"be extremely succinct\", \"act friendly\", \"here are examples of good\nresponses\") and on audio behavior (e.g. \"talk quickly\", \"inject emotion\ninto your voice\", \"laugh frequently\"). The instructions are not guaranteed\nto be followed by the model, but they provide guidance to the model on the\ndesired behavior.\n\nNote that the server sets default instructions which will be used if this\nfield is not set and are visible in the `session.created` event at the\nstart of the session.\n",
+                "type": "string"
+              },
+              "max_output_tokens": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "enum": [
+                      "inf"
+                    ],
+                    "type": "string"
+                  }
+                ],
+                "description": "Maximum number of output tokens for a single assistant response,\ninclusive of tool calls. Provide an integer between 1 and 4096 to\nlimit output tokens, or `inf` for the maximum available tokens for a\ngiven model. Defaults to `inf`.\n"
+              },
+              "model": {
+                "description": "The Realtime model used for this session.",
+                "type": "string"
+              },
+              "object": {
+                "description": "The object type. Always `realtime.session`.",
+                "type": "string"
+              },
+              "output_modalities": {
+                "description": "The set of modalities the model can respond with. To disable audio,\nset this to [\"text\"].\n",
+                "items": {
+                  "enum": [
+                    "text",
+                    "audio"
+                  ],
+                  "type": "string"
+                }
+              },
+              "tool_choice": {
+                "description": "How the model chooses tools. Options are `auto`, `none`, `required`, or\nspecify a function.\n",
+                "type": "string"
+              },
+              "tools": {
+                "description": "Tools (functions) available to the model.",
+                "items": {
+                  "properties": {
+                    "description": {
+                      "description": "The description of the function, including guidance on when and how\nto call it, and guidance about what to tell the user when calling\n(if anything).\n",
+                      "type": "string"
+                    },
+                    "name": {
+                      "description": "The name of the function.",
+                      "type": "string"
+                    },
+                    "parameters": {
+                      "description": "Parameters of the function in JSON Schema.",
+                      "type": "object"
+                    },
+                    "type": {
+                      "description": "The type of the tool, i.e. `function`.",
+                      "enum": [
+                        "function"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "title": "Function tool",
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "tracing": {
+                "anyOf": [
+                  {
+                    "default": "auto",
+                    "description": "Default tracing mode for the session.\n",
+                    "enum": [
+                      "auto"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "description": "Granular configuration for tracing.\n",
+                    "properties": {
+                      "group_id": {
+                        "description": "The group id to attach to this trace to enable filtering and\ngrouping in the traces dashboard.\n",
+                        "type": "string"
+                      },
+                      "metadata": {
+                        "description": "The arbitrary metadata to attach to this trace to enable\nfiltering in the traces dashboard.\n",
+                        "type": "object"
+                      },
+                      "workflow_name": {
+                        "description": "The name of the workflow to attach to this trace. This is used to\nname the trace in the traces dashboard.\n",
+                        "type": "string"
+                      }
+                    },
+                    "title": "Tracing Configuration",
+                    "type": "object"
+                  }
+                ],
+                "description": "Configuration options for tracing. Set to null to disable tracing. Once\ntracing is enabled for a session, the configuration cannot be modified.\n\n`auto` will create a trace for the session with default values for the\nworkflow name, group id, and metadata.\n",
+                "title": "Tracing Configuration"
+              },
+              "turn_detection": {
+                "description": "Configuration for turn detection. Can be set to `null` to turn off. Server\nVAD means that the model will detect the start and end of speech based on\naudio volume and respond at the end of user speech.\n",
+                "properties": {
+                  "prefix_padding_ms": {
+                    "description": "Amount of audio to include before the VAD detected speech (in\nmilliseconds). Defaults to 300ms.\n",
+                    "type": "integer"
+                  },
+                  "silence_duration_ms": {
+                    "description": "Duration of silence to detect speech stop (in milliseconds). Defaults\nto 500ms. With shorter values the model will respond more quickly,\nbut may jump in on short pauses from the user.\n",
+                    "type": "integer"
+                  },
+                  "threshold": {
+                    "description": "Activation threshold for VAD (0.0 to 1.0), this defaults to 0.5. A\nhigher threshold will require louder audio to activate the model, and\nthus might perform better in noisy environments.\n",
+                    "type": "number"
+                  },
+                  "type": {
+                    "description": "Type of turn detection, only `server_vad` is currently supported.\n",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "title": "Realtime session configuration object",
+            "type": "object"
+          }
+        }
+      },
+      "description": "Session created successfully."
+    }
+  },
+  "summary": "Create session",
+  "tags": [
+    "Realtime"
+  ]
+}

@@ -1,0 +1,218 @@
+{
+  "description": "Create an ephemeral API token for use in client-side applications with the\nRealtime API specifically for realtime transcriptions. \nCan be configured with the same session parameters as the `transcription_session.update` client event.\n\nIt responds with a session object, plus a `client_secret` key which contains\na usable ephemeral API token that can be used to authenticate browser clients\nfor the Realtime API.\n",
+  "operationId": "create-realtime-transcription-session",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "description": "Realtime transcription session object configuration.",
+          "properties": {
+            "include": {
+              "description": "The set of items to include in the transcription. Current available items are:\n`item.input_audio_transcription.logprobs`\n",
+              "items": {
+                "enum": [
+                  "item.input_audio_transcription.logprobs"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "input_audio_format": {
+              "default": "pcm16",
+              "description": "The format of input audio. Options are `pcm16`, `g711_ulaw`, or `g711_alaw`.\nFor `pcm16`, input audio must be 16-bit PCM at a 24kHz sample rate,\nsingle channel (mono), and little-endian byte order.\n",
+              "enum": [
+                "pcm16",
+                "g711_ulaw",
+                "g711_alaw"
+              ],
+              "type": "string"
+            },
+            "input_audio_noise_reduction": {
+              "description": "Configuration for input audio noise reduction. This can be set to `null` to turn off.\nNoise reduction filters audio added to the input audio buffer before it is sent to VAD and the model.\nFiltering the audio can improve VAD and turn detection accuracy (reducing false positives) and model performance by improving perception of the input audio.\n",
+              "properties": {
+                "type": {
+                  "description": "Type of noise reduction. `near_field` is for close-talking microphones such as headphones, `far_field` is for far-field microphones such as laptop or conference room microphones.\n",
+                  "enum": [
+                    "near_field",
+                    "far_field"
+                  ],
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "input_audio_transcription": {
+              "description": "Configuration for input audio transcription. The client can optionally set the language and prompt for transcription, these offer additional guidance to the transcription service.\n",
+              "properties": {
+                "language": {
+                  "description": "The language of the input audio. Supplying the input language in\n[ISO-639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) (e.g. `en`) format\nwill improve accuracy and latency.\n",
+                  "type": "string"
+                },
+                "model": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "enum": [
+                        "whisper-1",
+                        "gpt-4o-mini-transcribe",
+                        "gpt-4o-mini-transcribe-2025-12-15",
+                        "gpt-4o-transcribe",
+                        "gpt-4o-transcribe-diarize"
+                      ],
+                      "type": "string"
+                    }
+                  ],
+                  "description": "The model to use for transcription. Current options are `whisper-1`, `gpt-4o-mini-transcribe`, `gpt-4o-mini-transcribe-2025-12-15`, `gpt-4o-transcribe`, and `gpt-4o-transcribe-diarize`. Use `gpt-4o-transcribe-diarize` when you need diarization with speaker labels.\n"
+                },
+                "prompt": {
+                  "description": "An optional text to guide the model's style or continue a previous audio\nsegment.\nFor `whisper-1`, the [prompt is a list of keywords](https://platform.openai.com/docs/guides/speech-to-text#prompting).\nFor `gpt-4o-transcribe` models (excluding `gpt-4o-transcribe-diarize`), the prompt is a free text string, for example \"expect words related to technology\".\n",
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "turn_detection": {
+              "description": "Configuration for turn detection. Can be set to `null` to turn off. Server VAD means that the model will detect the start and end of speech based on audio volume and respond at the end of user speech.\n",
+              "properties": {
+                "prefix_padding_ms": {
+                  "description": "Amount of audio to include before the VAD detected speech (in\nmilliseconds). Defaults to 300ms.\n",
+                  "type": "integer"
+                },
+                "silence_duration_ms": {
+                  "description": "Duration of silence to detect speech stop (in milliseconds). Defaults\nto 500ms. With shorter values the model will respond more quickly,\nbut may jump in on short pauses from the user.\n",
+                  "type": "integer"
+                },
+                "threshold": {
+                  "description": "Activation threshold for VAD (0.0 to 1.0), this defaults to 0.5. A\nhigher threshold will require louder audio to activate the model, and\nthus might perform better in noisy environments.\n",
+                  "type": "number"
+                },
+                "type": {
+                  "description": "Type of turn detection. Only `server_vad` is currently supported for transcription sessions.\n",
+                  "enum": [
+                    "server_vad"
+                  ],
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          },
+          "title": "Realtime transcription session configuration",
+          "type": "object"
+        }
+      }
+    },
+    "description": "Create an ephemeral API key with the given session configuration.",
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "description": "A new Realtime transcription session configuration.\n\nWhen a session is created on the server via REST API, the session object\nalso contains an ephemeral key. Default TTL for keys is 10 minutes. This\nproperty is not present when a session is updated via the WebSocket API.\n",
+            "properties": {
+              "client_secret": {
+                "description": "Ephemeral key returned by the API. Only present when the session is\ncreated on the server via REST API.\n",
+                "properties": {
+                  "expires_at": {
+                    "description": "Timestamp for when the token expires. Currently, all tokens expire\nafter one minute.\n",
+                    "type": "integer"
+                  },
+                  "value": {
+                    "description": "Ephemeral key usable in client environments to authenticate connections\nto the Realtime API. Use this in client-side environments rather than\na standard API token, which should only be used server-side.\n",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "value",
+                  "expires_at"
+                ],
+                "type": "object"
+              },
+              "input_audio_format": {
+                "description": "The format of input audio. Options are `pcm16`, `g711_ulaw`, or `g711_alaw`.\n",
+                "type": "string"
+              },
+              "input_audio_transcription": {
+                "properties": {
+                  "language": {
+                    "description": "The language of the input audio. Supplying the input language in\n[ISO-639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) (e.g. `en`) format\nwill improve accuracy and latency.\n",
+                    "type": "string"
+                  },
+                  "model": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "enum": [
+                          "whisper-1",
+                          "gpt-4o-mini-transcribe",
+                          "gpt-4o-mini-transcribe-2025-12-15",
+                          "gpt-4o-transcribe",
+                          "gpt-4o-transcribe-diarize"
+                        ],
+                        "type": "string"
+                      }
+                    ],
+                    "description": "The model to use for transcription. Current options are `whisper-1`, `gpt-4o-mini-transcribe`, `gpt-4o-mini-transcribe-2025-12-15`, `gpt-4o-transcribe`, and `gpt-4o-transcribe-diarize`. Use `gpt-4o-transcribe-diarize` when you need diarization with speaker labels.\n"
+                  },
+                  "prompt": {
+                    "description": "An optional text to guide the model's style or continue a previous audio\nsegment.\nFor `whisper-1`, the [prompt is a list of keywords](https://platform.openai.com/docs/guides/speech-to-text#prompting).\nFor `gpt-4o-transcribe` models (excluding `gpt-4o-transcribe-diarize`), the prompt is a free text string, for example \"expect words related to technology\".\n",
+                    "type": "string"
+                  }
+                },
+                "type": "object",
+                "description": "Configuration of the transcription model.\n"
+              },
+              "modalities": {
+                "description": "The set of modalities the model can respond with. To disable audio,\nset this to [\"text\"].\n",
+                "items": {
+                  "enum": [
+                    "text",
+                    "audio"
+                  ],
+                  "type": "string"
+                }
+              },
+              "turn_detection": {
+                "description": "Configuration for turn detection. Can be set to `null` to turn off. Server\nVAD means that the model will detect the start and end of speech based on\naudio volume and respond at the end of user speech.\n",
+                "properties": {
+                  "prefix_padding_ms": {
+                    "description": "Amount of audio to include before the VAD detected speech (in\nmilliseconds). Defaults to 300ms.\n",
+                    "type": "integer"
+                  },
+                  "silence_duration_ms": {
+                    "description": "Duration of silence to detect speech stop (in milliseconds). Defaults\nto 500ms. With shorter values the model will respond more quickly,\nbut may jump in on short pauses from the user.\n",
+                    "type": "integer"
+                  },
+                  "threshold": {
+                    "description": "Activation threshold for VAD (0.0 to 1.0), this defaults to 0.5. A\nhigher threshold will require louder audio to activate the model, and\nthus might perform better in noisy environments.\n",
+                    "type": "number"
+                  },
+                  "type": {
+                    "description": "Type of turn detection, only `server_vad` is currently supported.\n",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "required": [
+              "client_secret"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Session created successfully."
+    }
+  },
+  "summary": "Create transcription session",
+  "tags": [
+    "Realtime"
+  ]
+}
