@@ -17,26 +17,204 @@
       "application/json": {
         "schema": {
           "properties": {
-            "loss_fn": {
-              "description": "Loss function to use for gradient computation",
-              "example": "LOSS_FN_GRPO",
-              "default": "LOSS_FN_UNSPECIFIED",
-              "enum": [
-                "LOSS_FN_UNSPECIFIED",
-                "LOSS_FN_GRPO"
+            "loss": {
+              "description": "Loss function configuration",
+              "properties": {
+                "cross_entropy_params": {
+                  "description": "Cross-entropy loss parameters (currently empty).",
+                  "properties": {},
+                  "type": "object"
+                },
+                "grpo_params": {
+                  "properties": {
+                    "agg_type": {
+                      "description": "Aggregation type for loss computation",
+                      "example": "fixed_horizon",
+                      "type": "string"
+                    },
+                    "beta": {
+                      "description": "KL penalty coefficient",
+                      "example": 0.1,
+                      "type": "number"
+                    },
+                    "clip_high": {
+                      "description": "Upper clip bound for importance ratio",
+                      "example": 0.28,
+                      "type": "number"
+                    },
+                    "clip_low": {
+                      "description": "Lower clip bound for importance ratio",
+                      "example": 0.2,
+                      "type": "number"
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": {
+                  "description": "Type of loss function to use",
+                  "example": "LOSS_TYPE_GRPO",
+                  "default": "LOSS_TYPE_UNSPECIFIED",
+                  "enum": [
+                    "LOSS_TYPE_UNSPECIFIED",
+                    "LOSS_TYPE_CROSS_ENTROPY",
+                    "LOSS_TYPE_GRPO"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type"
               ],
-              "type": "string"
+              "type": "object"
             },
             "samples": {
               "description": "Batch of training samples to process",
               "items": {
                 "type": "object",
                 "properties": {
-                  "loss_fn_inputs": {
+                  "loss_inputs": {
                     "description": "Loss function inputs",
                     "properties": {
+                      "grpo_inputs": {
+                        "properties": {
+                          "advantages": {
+                            "description": "Per-token advantages for GRPO",
+                            "properties": {
+                              "data": {
+                                "description": "Float array of per-token advantages",
+                                "example": [
+                                  0.5,
+                                  0.5
+                                ],
+                                "items": {
+                                  "type": "number"
+                                },
+                                "type": "array"
+                              },
+                              "dtype": {
+                                "description": "Data type of the float array (D_TYPE_FLOAT32 or D_TYPE_BFLOAT16)",
+                                "example": "D_TYPE_FLOAT32",
+                                "default": "D_TYPE_UNSPECIFIED",
+                                "enum": [
+                                  "D_TYPE_UNSPECIFIED",
+                                  "D_TYPE_INT64",
+                                  "D_TYPE_FLOAT32",
+                                  "D_TYPE_BFLOAT16"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "data"
+                            ],
+                            "type": "object"
+                          },
+                          "generator_logprobs": {
+                            "description": "Generator log probabilities for GRPO",
+                            "properties": {
+                              "data": {
+                                "description": "Float array of per-token log probabilities",
+                                "example": [
+                                  -1.2,
+                                  -0.8
+                                ],
+                                "items": {
+                                  "type": "number"
+                                },
+                                "type": "array"
+                              },
+                              "dtype": {
+                                "description": "Data type of the float array (D_TYPE_FLOAT32 or D_TYPE_BFLOAT16)",
+                                "example": "D_TYPE_FLOAT32",
+                                "default": "D_TYPE_UNSPECIFIED",
+                                "enum": [
+                                  "D_TYPE_UNSPECIFIED",
+                                  "D_TYPE_INT64",
+                                  "D_TYPE_FLOAT32",
+                                  "D_TYPE_BFLOAT16"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "data"
+                            ],
+                            "type": "object"
+                          },
+                          "reference_logprobs": {
+                            "description": "Reference model log probabilities (required if beta > 0)",
+                            "properties": {
+                              "data": {
+                                "description": "Float array of per-token log probabilities",
+                                "example": [
+                                  -1.2,
+                                  -0.8
+                                ],
+                                "items": {
+                                  "type": "number"
+                                },
+                                "type": "array"
+                              },
+                              "dtype": {
+                                "description": "Data type of the float array (D_TYPE_FLOAT32 or D_TYPE_BFLOAT16)",
+                                "example": "D_TYPE_FLOAT32",
+                                "default": "D_TYPE_UNSPECIFIED",
+                                "enum": [
+                                  "D_TYPE_UNSPECIFIED",
+                                  "D_TYPE_INT64",
+                                  "D_TYPE_FLOAT32",
+                                  "D_TYPE_BFLOAT16"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "data"
+                            ],
+                            "type": "object"
+                          }
+                        },
+                        "required": [
+                          "advantages",
+                          "generator_logprobs"
+                        ],
+                        "type": "object"
+                      },
+                      "loss_mask": {
+                        "description": "Per-token loss mask (1=compute loss, 0=ignore)",
+                        "properties": {
+                          "data": {
+                            "description": "Integer array of per-token mask values (0s and 1s)",
+                            "example": [
+                              0,
+                              0,
+                              1
+                            ],
+                            "items": {
+                              "type": "integer"
+                            },
+                            "type": "array"
+                          },
+                          "dtype": {
+                            "description": "Data type of the integer array (must be D_TYPE_INT64)",
+                            "example": "D_TYPE_INT64",
+                            "default": "D_TYPE_UNSPECIFIED",
+                            "enum": [
+                              "D_TYPE_UNSPECIFIED",
+                              "D_TYPE_INT64",
+                              "D_TYPE_FLOAT32",
+                              "D_TYPE_BFLOAT16"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "data"
+                        ],
+                        "type": "object"
+                      },
                       "target_tokens": {
-                        "description": "Target tokens for loss computation",
+                        "description": "Target tokens for loss computation (optional, defaults to shifted input_ids)",
                         "properties": {
                           "data": {
                             "description": "Integer array of target tokens",
@@ -46,7 +224,7 @@
                               789
                             ],
                             "items": {
-                              "type": "number"
+                              "type": "integer"
                             },
                             "type": "array"
                           },
@@ -67,46 +245,8 @@
                           "data"
                         ],
                         "type": "object"
-                      },
-                      "weights": {
-                        "description": "Per-token weights",
-                        "properties": {
-                          "data": {
-                            "description": "Float array of per-token weights",
-                            "example": [
-                              0.1,
-                              0.2,
-                              0.3
-                            ],
-                            "items": {
-                              "format": "float",
-                              "type": "number"
-                            },
-                            "type": "array"
-                          },
-                          "dtype": {
-                            "description": "Data type of the float array",
-                            "example": "D_TYPE_FLOAT32",
-                            "default": "D_TYPE_UNSPECIFIED",
-                            "enum": [
-                              "D_TYPE_UNSPECIFIED",
-                              "D_TYPE_INT64",
-                              "D_TYPE_FLOAT32",
-                              "D_TYPE_BFLOAT16"
-                            ],
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "data"
-                        ],
-                        "type": "object"
                       }
                     },
-                    "required": [
-                      "weights",
-                      "target_tokens"
-                    ],
                     "type": "object"
                   },
                   "model_input": {
@@ -147,7 +287,7 @@
                 },
                 "required": [
                   "model_input",
-                  "loss_fn_inputs"
+                  "loss_inputs"
                 ]
               },
               "type": "array"
@@ -155,7 +295,7 @@
           },
           "required": [
             "samples",
-            "loss_fn"
+            "loss"
           ],
           "type": "object"
         }
@@ -175,6 +315,13 @@
                     "description": "Loss value",
                     "example": 2.345,
                     "type": "number"
+                  },
+                  "metrics": {
+                    "additionalProperties": {
+                      "type": "number"
+                    },
+                    "description": "Loss-specific metrics (e.g., KL divergence, clip fraction for GRPO)",
+                    "type": "object"
                   }
                 },
                 "type": "object"

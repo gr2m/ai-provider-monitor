@@ -4242,6 +4242,10 @@ components:
           description: Weight decay coefficient
           type: number
       type: object
+    RL.CrossEntropyLossParams:
+      description: Cross-entropy loss parameters (currently empty).
+      properties: {}
+      type: object
     RL.DType:
       default: D_TYPE_UNSPECIFIED
       enum:
@@ -4264,10 +4268,9 @@ components:
       type: object
     RL.ForwardBackwardBody:
       properties:
-        loss_fn:
-          $ref: "#/components/schemas/RL.LossFn"
-          description: Loss function to use for gradient computation
-          example: LOSS_FN_GRPO
+        loss:
+          $ref: "#/components/schemas/RL.LossConfig"
+          description: Loss function configuration
         samples:
           description: Batch of training samples to process
           items:
@@ -4276,7 +4279,7 @@ components:
           type: array
       required:
         - samples
-        - loss_fn
+        - loss
       type: object
     RL.ForwardBackwardOperation:
       properties:
@@ -4297,6 +4300,45 @@ components:
         loss:
           description: Loss value
           example: 2.345
+          type: number
+        metrics:
+          additionalProperties:
+            type: number
+          description: Loss-specific metrics (e.g., KL divergence, clip fraction for GRPO)
+          type: object
+      type: object
+    RL.GRPOLossInputs:
+      properties:
+        advantages:
+          $ref: "#/components/schemas/RL.LossAdvantages"
+          description: Per-token advantages for GRPO
+        generator_logprobs:
+          $ref: "#/components/schemas/RL.LossLogprobs"
+          description: Generator log probabilities for GRPO
+        reference_logprobs:
+          $ref: "#/components/schemas/RL.LossLogprobs"
+          description: Reference model log probabilities (required if beta > 0)
+      required:
+        - advantages
+        - generator_logprobs
+      type: object
+    RL.GRPOLossParams:
+      properties:
+        agg_type:
+          description: Aggregation type for loss computation
+          example: fixed_horizon
+          type: string
+        beta:
+          description: KL penalty coefficient
+          example: 0.1
+          type: number
+        clip_high:
+          description: Upper clip bound for importance ratio
+          example: 0.28
+          type: number
+        clip_low:
+          description: Lower clip bound for importance ratio
+          example: 0.2
           type: number
       type: object
     RL.InputChunk:
@@ -4320,25 +4362,84 @@ components:
           description: Rank of the LoRA adapter
           type: integer
       type: object
-    RL.LossFn:
-      default: LOSS_FN_UNSPECIFIED
-      enum:
-        - LOSS_FN_UNSPECIFIED
-        - LOSS_FN_GRPO
-      type: string
-    RL.LossFnInputs:
+    RL.LossAdvantages:
       properties:
-        target_tokens:
-          $ref: "#/components/schemas/RL.LossFnTargetTokens"
-          description: Target tokens for loss computation
-        weights:
-          $ref: "#/components/schemas/RL.LossFnWeights"
-          description: Per-token weights
+        data:
+          description: Float array of per-token advantages
+          example:
+            - 0.5
+            - 0.5
+          items:
+            type: number
+          type: array
+        dtype:
+          $ref: "#/components/schemas/RL.DType"
+          description: Data type of the float array (D_TYPE_FLOAT32 or D_TYPE_BFLOAT16)
+          example: D_TYPE_FLOAT32
       required:
-        - weights
-        - target_tokens
+        - data
       type: object
-    RL.LossFnTargetTokens:
+    RL.LossConfig:
+      properties:
+        cross_entropy_params:
+          $ref: "#/components/schemas/RL.CrossEntropyLossParams"
+        grpo_params:
+          $ref: "#/components/schemas/RL.GRPOLossParams"
+        type:
+          $ref: "#/components/schemas/RL.LossType"
+          description: Type of loss function to use
+          example: LOSS_TYPE_GRPO
+      required:
+        - type
+      type: object
+    RL.LossInputs:
+      properties:
+        grpo_inputs:
+          $ref: "#/components/schemas/RL.GRPOLossInputs"
+        loss_mask:
+          $ref: "#/components/schemas/RL.LossMask"
+          description: Per-token loss mask (1=compute loss, 0=ignore)
+        target_tokens:
+          $ref: "#/components/schemas/RL.LossTargetTokens"
+          description: Target tokens for loss computation (optional, defaults to shifted input_ids)
+      type: object
+    RL.LossLogprobs:
+      properties:
+        data:
+          description: Float array of per-token log probabilities
+          example:
+            - -1.2
+            - -0.8
+          items:
+            type: number
+          type: array
+        dtype:
+          $ref: "#/components/schemas/RL.DType"
+          description: Data type of the float array (D_TYPE_FLOAT32 or D_TYPE_BFLOAT16)
+          example: D_TYPE_FLOAT32
+      required:
+        - data
+      type: object
+    RL.LossMask:
+      description: Per-token loss mask (1=compute loss, 0=ignore)
+      properties:
+        data:
+          description: Integer array of per-token mask values (0s and 1s)
+          example:
+            - 0
+            - 0
+            - 1
+          items:
+            type: integer
+          type: array
+        dtype:
+          $ref: "#/components/schemas/RL.DType"
+          description: Data type of the integer array (must be D_TYPE_INT64)
+          example: D_TYPE_INT64
+      required:
+        - data
+      type: object
+    RL.LossTargetTokens:
       properties:
         data:
           description: Integer array of target tokens
@@ -4347,7 +4448,7 @@ components:
             - 456
             - 789
           items:
-            type: number
+            type: integer
           type: array
         dtype:
           $ref: "#/components/schemas/RL.DType"
@@ -4356,25 +4457,13 @@ components:
       required:
         - data
       type: object
-    RL.LossFnWeights:
-      properties:
-        data:
-          description: Float array of per-token weights
-          example:
-            - 0.1
-            - 0.2
-            - 0.3
-          items:
-            format: float
-            type: number
-          type: array
-        dtype:
-          $ref: "#/components/schemas/RL.DType"
-          description: Data type of the float array
-          example: D_TYPE_FLOAT32
-      required:
-        - data
-      type: object
+    RL.LossType:
+      default: LOSS_TYPE_UNSPECIFIED
+      enum:
+        - LOSS_TYPE_UNSPECIFIED
+        - LOSS_TYPE_CROSS_ENTROPY
+        - LOSS_TYPE_GRPO
+      type: string
     RL.ModelInput:
       properties:
         chunks:
@@ -4416,6 +4505,107 @@ components:
           example: 100
           type: integer
       type: object
+    RL.SampleBody:
+      properties:
+        num_samples:
+          default: 1
+          description: Number of completions to generate for this prompt
+          example: 1
+          type: integer
+        prompt:
+          $ref: "#/components/schemas/RL.ModelInput"
+          description: Input prompt as tokenized chunks
+        sampling_params:
+          $ref: "#/components/schemas/RL.SamplingParams"
+          description: Optional sampling parameters
+      required:
+        - prompt
+      type: object
+    RL.SampleOperation:
+      properties:
+        data:
+          $ref: "#/components/schemas/RL.SampleResult"
+        error:
+          $ref: "#/components/schemas/RL.TrainingOperationError"
+        operation_id:
+          description: Operation ID
+          example: 550e8400-e29b-41d4-a716-446655440000
+          type: string
+        status:
+          $ref: "#/components/schemas/RL.TrainingOperationStatus"
+          description: Operation status
+          example: TRAINING_OPERATION_STATUS_PENDING
+      type: object
+    RL.SampleResult:
+      properties:
+        sequences:
+          description: Generated completions
+          items:
+            $ref: "#/components/schemas/RL.SampleSequence"
+            type: object
+          type: array
+      type: object
+    RL.SampleSequence:
+      properties:
+        logprobs:
+          description: Log probabilities for each generated token
+          example:
+            - -0.5
+            - -1.2
+            - -0.3
+          items:
+            type: integer
+          type: array
+        stop_reason:
+          description: Reason for stopping generation
+          example: length
+          type: string
+        tokens:
+          description: Generated token IDs
+          example:
+            - 123
+            - 456
+            - 789
+          items:
+            type: integer
+          type: array
+      type: object
+    RL.SamplingParams:
+      properties:
+        max_tokens:
+          default: 100
+          description: Maximum number of tokens to generate per completion
+          example: 100
+          type: integer
+        seed:
+          description: Random seed for reproducibility
+          example: 42
+          type: integer
+        stop:
+          description: Generation stops when any of these strings is produced
+          example:
+            - |2+
+
+            - END
+          items:
+            type: string
+          type: array
+        temperature:
+          default: 1.0
+          description: Sampling temperature
+          example: 1
+          type: number
+        top_k:
+          default: -1
+          description: Top-k sampling limit
+          example: -1
+          type: integer
+        top_p:
+          default: 1.0
+          description: Nucleus sampling probability threshold
+          example: 1
+          type: number
+      type: object
     RL.StartTrainingSessionRequest:
       properties:
         base_model:
@@ -4453,15 +4643,15 @@ components:
       type: string
     RL.TrainingSample:
       properties:
-        loss_fn_inputs:
-          $ref: "#/components/schemas/RL.LossFnInputs"
+        loss_inputs:
+          $ref: "#/components/schemas/RL.LossInputs"
           description: Loss function inputs
         model_input:
           $ref: "#/components/schemas/RL.ModelInput"
           description: Model input
       required:
         - model_input
-        - loss_fn_inputs
+        - loss_inputs
       type: object
     RL.TrainingSession:
       properties:
@@ -12070,6 +12260,39 @@ paths:
       summary: Get optim-step operation
       tags:
         - RL
+  /rl/training-sessions/{session_id}/operations/sample/{operation_id}:
+    get:
+      description: Retrieves the current status and result of a sample operation.
+      operationId: GetSample
+      parameters:
+        - description: Training session ID
+          in: path
+          name: session_id
+          required: true
+          schema:
+            type: string
+        - description: Operation ID
+          in: path
+          name: operation_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RL.SampleOperation"
+          description: ""
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: An unexpected error response.
+      summary: Get sample operation
+      tags:
+        - RL
   /rl/training-sessions/{session_id}:forward-backward:
     post:
       description: Submits a forward-backward pass operation that will asynchronously compute gradients via backpropagation.
@@ -12134,6 +12357,39 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
           description: An unexpected error response.
       summary: Optimizer step
+      tags:
+        - RL
+  /rl/training-sessions/{session_id}:sample:
+    post:
+      description: Submits a sample operation that will asynchronously generate text completions with logprobs.
+      operationId: Sample
+      parameters:
+        - description: Training session ID
+          in: path
+          name: session_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RL.SampleBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RL.SampleOperation"
+          description: ""
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+          description: An unexpected error response.
+      summary: Sample
       tags:
         - RL
   /rl/training-sessions/{session_id}:stop:
