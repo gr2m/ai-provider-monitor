@@ -1,0 +1,432 @@
+{
+  "description": "Submits a forward-backward pass operation that will asynchronously compute gradients via backpropagation.",
+  "operationId": "forwardBackward",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+        "description": "Training session ID",
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "properties": {
+            "loss": {
+              "description": "Loss function configuration",
+              "properties": {
+                "cross_entropy_params": {
+                  "description": "Cross-entropy loss parameters (currently empty).",
+                  "properties": {},
+                  "type": "object"
+                },
+                "grpo_params": {
+                  "properties": {
+                    "agg_type": {
+                      "default": "GRPO_LOSS_AGGREGATION_TYPE_FIXED_HORIZON",
+                      "description": "Aggregation type for loss computation",
+                      "example": "GRPO_LOSS_AGGREGATION_TYPE_FIXED_HORIZON",
+                      "enum": [
+                        "GRPO_LOSS_AGGREGATION_TYPE_UNSPECIFIED",
+                        "GRPO_LOSS_AGGREGATION_TYPE_FIXED_HORIZON",
+                        "GRPO_LOSS_AGGREGATION_TYPE_PER_TOKEN"
+                      ],
+                      "type": "string"
+                    },
+                    "beta": {
+                      "default": "0.0",
+                      "description": "KL penalty coefficient",
+                      "example": 0.1,
+                      "format": "float",
+                      "type": "number"
+                    },
+                    "clip_high": {
+                      "default": "0.28",
+                      "description": "Upper clip bound for importance ratio",
+                      "example": 0.28,
+                      "format": "float",
+                      "type": "number"
+                    },
+                    "clip_low": {
+                      "default": "0.2",
+                      "description": "Lower clip bound for importance ratio",
+                      "example": 0.2,
+                      "format": "float",
+                      "type": "number"
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": {
+                  "description": "Type of loss function to use",
+                  "example": "LOSS_TYPE_GRPO",
+                  "default": "LOSS_TYPE_UNSPECIFIED",
+                  "enum": [
+                    "LOSS_TYPE_UNSPECIFIED",
+                    "LOSS_TYPE_CROSS_ENTROPY",
+                    "LOSS_TYPE_GRPO"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type"
+              ],
+              "type": "object"
+            },
+            "samples": {
+              "description": "Batch of training samples to process",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "loss_inputs": {
+                    "description": "Loss function inputs",
+                    "properties": {
+                      "grpo_inputs": {
+                        "properties": {
+                          "advantages": {
+                            "description": "Per-token advantages for GRPO",
+                            "properties": {
+                              "data": {
+                                "description": "Float array of per-token advantages",
+                                "example": [
+                                  0.5,
+                                  0.5
+                                ],
+                                "items": {
+                                  "format": "float",
+                                  "type": "number"
+                                },
+                                "type": "array"
+                              },
+                              "dtype": {
+                                "description": "Data type of the float array (D_TYPE_FLOAT32 or D_TYPE_BFLOAT16)",
+                                "example": "D_TYPE_FLOAT32",
+                                "default": "D_TYPE_UNSPECIFIED",
+                                "enum": [
+                                  "D_TYPE_UNSPECIFIED",
+                                  "D_TYPE_INT64",
+                                  "D_TYPE_FLOAT32",
+                                  "D_TYPE_BFLOAT16"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "data"
+                            ],
+                            "type": "object"
+                          },
+                          "generator_logprobs": {
+                            "description": "Generator log probabilities for GRPO",
+                            "properties": {
+                              "data": {
+                                "description": "Float array of per-token log probabilities",
+                                "example": [
+                                  -1.2,
+                                  -0.8
+                                ],
+                                "items": {
+                                  "format": "float",
+                                  "type": "number"
+                                },
+                                "type": "array"
+                              },
+                              "dtype": {
+                                "description": "Data type of the float array (D_TYPE_FLOAT32 or D_TYPE_BFLOAT16)",
+                                "example": "D_TYPE_FLOAT32",
+                                "default": "D_TYPE_UNSPECIFIED",
+                                "enum": [
+                                  "D_TYPE_UNSPECIFIED",
+                                  "D_TYPE_INT64",
+                                  "D_TYPE_FLOAT32",
+                                  "D_TYPE_BFLOAT16"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "data"
+                            ],
+                            "type": "object"
+                          },
+                          "reference_logprobs": {
+                            "description": "Reference model log probabilities (required if beta > 0)",
+                            "properties": {
+                              "data": {
+                                "description": "Float array of per-token log probabilities",
+                                "example": [
+                                  -1.2,
+                                  -0.8
+                                ],
+                                "items": {
+                                  "format": "float",
+                                  "type": "number"
+                                },
+                                "type": "array"
+                              },
+                              "dtype": {
+                                "description": "Data type of the float array (D_TYPE_FLOAT32 or D_TYPE_BFLOAT16)",
+                                "example": "D_TYPE_FLOAT32",
+                                "default": "D_TYPE_UNSPECIFIED",
+                                "enum": [
+                                  "D_TYPE_UNSPECIFIED",
+                                  "D_TYPE_INT64",
+                                  "D_TYPE_FLOAT32",
+                                  "D_TYPE_BFLOAT16"
+                                ],
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "data"
+                            ],
+                            "type": "object"
+                          }
+                        },
+                        "required": [
+                          "advantages",
+                          "generator_logprobs"
+                        ],
+                        "type": "object"
+                      },
+                      "loss_mask": {
+                        "description": "Per-token loss mask (1=compute loss, 0=ignore)",
+                        "properties": {
+                          "data": {
+                            "description": "Integer array of per-token mask values (0s and 1s)",
+                            "example": [
+                              0,
+                              0,
+                              1
+                            ],
+                            "items": {
+                              "format": "int64",
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "dtype": {
+                            "description": "Data type of the integer array (must be D_TYPE_INT64)",
+                            "example": "D_TYPE_INT64",
+                            "default": "D_TYPE_UNSPECIFIED",
+                            "enum": [
+                              "D_TYPE_UNSPECIFIED",
+                              "D_TYPE_INT64",
+                              "D_TYPE_FLOAT32",
+                              "D_TYPE_BFLOAT16"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "data"
+                        ],
+                        "type": "object"
+                      },
+                      "target_tokens": {
+                        "description": "Target tokens for loss computation (optional, defaults to shifted input_ids)",
+                        "properties": {
+                          "data": {
+                            "description": "Integer array of target tokens",
+                            "example": [
+                              123,
+                              456,
+                              789
+                            ],
+                            "items": {
+                              "format": "int64",
+                              "type": "string"
+                            },
+                            "type": "array"
+                          },
+                          "dtype": {
+                            "description": "Data type of the integer array",
+                            "example": "D_TYPE_INT64",
+                            "default": "D_TYPE_UNSPECIFIED",
+                            "enum": [
+                              "D_TYPE_UNSPECIFIED",
+                              "D_TYPE_INT64",
+                              "D_TYPE_FLOAT32",
+                              "D_TYPE_BFLOAT16"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "data"
+                        ],
+                        "type": "object"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "model_input": {
+                    "description": "Model input",
+                    "properties": {
+                      "chunks": {
+                        "description": "Input chunks for the model",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "encoded_text": {
+                              "properties": {
+                                "tokens": {
+                                  "description": "Pre-tokenized text input",
+                                  "example": [
+                                    123,
+                                    456,
+                                    789
+                                  ],
+                                  "items": {
+                                    "format": "int64",
+                                    "type": "string"
+                                  },
+                                  "type": "array"
+                                }
+                              },
+                              "type": "object"
+                            }
+                          }
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "chunks"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "model_input",
+                  "loss_inputs"
+                ]
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "samples",
+            "loss"
+          ],
+          "type": "object"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "code": {
+                    "description": "Application error code",
+                    "example": "TRAINING_OPERATION_ERROR_CODE_TIMEOUT",
+                    "default": "TRAINING_OPERATION_ERROR_CODE_UNSPECIFIED",
+                    "enum": [
+                      "TRAINING_OPERATION_ERROR_CODE_UNSPECIFIED",
+                      "TRAINING_OPERATION_ERROR_CODE_RESOURCE_EXHAUSTED",
+                      "TRAINING_OPERATION_ERROR_CODE_TIMEOUT",
+                      "TRAINING_OPERATION_ERROR_CODE_INTERNAL_ERROR",
+                      "TRAINING_OPERATION_ERROR_CODE_SESSION_NOT_ACTIVE"
+                    ],
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "example": "Operation timed out",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "id": {
+                "description": "Operation ID",
+                "example": "550e8400-e29b-41d4-a716-446655440000",
+                "type": "string"
+              },
+              "output": {
+                "properties": {
+                  "loss": {
+                    "description": "Loss value",
+                    "example": 2.345,
+                    "type": "number"
+                  },
+                  "metrics": {
+                    "additionalProperties": {
+                      "format": "double",
+                      "type": "number"
+                    },
+                    "description": "Loss-specific metrics (e.g., KL divergence, clip fraction for GRPO)",
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              },
+              "status": {
+                "description": "Operation status",
+                "example": "TRAINING_OPERATION_STATUS_PENDING",
+                "default": "TRAINING_OPERATION_STATUS_UNSPECIFIED",
+                "enum": [
+                  "TRAINING_OPERATION_STATUS_UNSPECIFIED",
+                  "TRAINING_OPERATION_STATUS_PENDING",
+                  "TRAINING_OPERATION_STATUS_RUNNING",
+                  "TRAINING_OPERATION_STATUS_COMPLETED",
+                  "TRAINING_OPERATION_STATUS_FAILED"
+                ],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "description": ""
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "code": {
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {},
+                  "properties": {
+                    "@type": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "array"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "description": "An unexpected error response."
+    }
+  },
+  "summary": "Forward-backward pass",
+  "tags": [
+    "RL"
+  ]
+}

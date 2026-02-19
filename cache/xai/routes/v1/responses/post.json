@@ -85,13 +85,6 @@
                                     {
                                       "description": "Image input. Note: Storing and fetching images is not fully supported at the moment.",
                                       "properties": {
-                                        "detail": {
-                                          "description": "Specifies the detail level of the image. One of `high`, `low` or `auto`. Defaults to `auto`.",
-                                          "type": [
-                                            "string",
-                                            "null"
-                                          ]
-                                        },
                                         "file_id": {
                                           "description": "Only included for compatibility.",
                                           "type": [
@@ -119,9 +112,33 @@
                                     {
                                       "description": "File input.",
                                       "properties": {
+                                        "file_data": {
+                                          "description": "Inline file bytes (base64 encoded).\n\nWhen set, the file content is provided directly in the request and does NOT need\nto be uploaded to the Files API first.\n\nExactly one of `file_id` or `file_data` should be set.",
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
                                         "file_id": {
-                                          "description": "The file ID from the Files API.",
-                                          "type": "string"
+                                          "description": "The file ID from the Files API.\n\nSet this to reference a previously-uploaded file.",
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "filename": {
+                                          "description": "Filename for inline uploads.\n\nRequired when `file_data` is set.",
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "mime_type": {
+                                          "description": "Optional MIME type for inline uploads (e.g. \"application/pdf\").",
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
                                         },
                                         "type": {
                                           "enum": [
@@ -131,7 +148,6 @@
                                         }
                                       },
                                       "required": [
-                                        "file_id",
                                         "type"
                                       ],
                                       "type": "object"
@@ -191,6 +207,29 @@
                                                           "description": "Citations.",
                                                           "items": {
                                                             "properties": {
+                                                              "end_index": {
+                                                                "description": "The end index of the annotation.",
+                                                                "format": "int32",
+                                                                "type": [
+                                                                  "integer",
+                                                                  "null"
+                                                                ]
+                                                              },
+                                                              "start_index": {
+                                                                "description": "The summary of the annotation.",
+                                                                "format": "int32",
+                                                                "type": [
+                                                                  "integer",
+                                                                  "null"
+                                                                ]
+                                                              },
+                                                              "title": {
+                                                                "description": "The title of the annotation.",
+                                                                "type": [
+                                                                  "string",
+                                                                  "null"
+                                                                ]
+                                                              },
                                                               "type": {
                                                                 "description": "The type of the annotation. Only supported type currently is `url_citation`.",
                                                                 "type": "string"
@@ -290,7 +329,6 @@
                                                       },
                                                       "required": [
                                                         "text",
-                                                        "annotations",
                                                         "type"
                                                       ],
                                                       "type": "object"
@@ -390,6 +428,27 @@
                                           {
                                             "description": "The reasoning done by the model.",
                                             "properties": {
+                                              "content": {
+                                                "description": "The reasoning text contents.",
+                                                "items": {
+                                                  "properties": {
+                                                    "text": {
+                                                      "description": "Reasoning done by the model.",
+                                                      "type": "string"
+                                                    },
+                                                    "type": {
+                                                      "description": "The type of the object, which is always `reasoning_text`.",
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "text",
+                                                    "type"
+                                                  ],
+                                                  "type": "object"
+                                                },
+                                                "type": "array"
+                                              },
                                               "encrypted_content": {
                                                 "description": "The enrypted reasoning. Returned when `reasoning.encrypted_content` is passed in `include`.",
                                                 "type": [
@@ -406,11 +465,11 @@
                                                 "type": "string"
                                               },
                                               "summary": {
-                                                "description": "The reasoning text contents.",
+                                                "description": "The summarized reasoning text contents.",
                                                 "items": {
                                                   "properties": {
                                                     "text": {
-                                                      "description": "Reasoning done by the model.",
+                                                      "description": "Summary of the reasoning done by the model.",
                                                       "type": "string"
                                                     },
                                                     "type": {
@@ -884,6 +943,13 @@
             },
             "previous_response_id": {
               "description": "The ID of the previous response from the model.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "prompt_cache_key": {
+              "description": "Plumbed to x-grok-conv-id for Open Responses compatibility, used for routing.",
               "type": [
                 "string",
                 "null"
@@ -1519,7 +1585,52 @@
                             ]
                           },
                           "user_location": {
-                            "description": "The user location to use for the search.\nFor OpenAI API compatibility ONLY. Request will be rejected if this field is set."
+                            "oneOf": [
+                              {
+                                "type": "null"
+                              },
+                              {
+                                "description": "The user location to use for the search.\nFor OpenAI API compatibility ONLY. Request will be rejected if this field is set.",
+                                "properties": {
+                                  "city": {
+                                    "description": "City of the user's location.",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "country": {
+                                    "description": "Two-letter ISO 3166-1 alpha-2 country code, like US, GB, etc.",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "region": {
+                                    "description": "Region of the user's location.",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "timezone": {
+                                    "description": "Timezone of the user's location, IANA timezone like America/Chicago, Europe/London, etc.",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "type": {
+                                    "description": "Type is always `\"approximate\"`.",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "type"
+                                ],
+                                "type": "object"
+                              }
+                            ]
                           }
                         },
                         "type": "object"
@@ -1865,9 +1976,14 @@
             "properties": {
               "background": {
                 "default": false,
-                "description": "Whether to process the response asynchronously in the background.",
+                "description": "OpenResponses compatibility fields.\nNot used at the moment. Just for OpenResponses compatibility.\nWhether to process the response asynchronously in the background.",
+                "type": "boolean"
+              },
+              "completed_at": {
+                "description": "The Unix timestamp (in seconds) for the response completion time. Only set when the response is completed.",
+                "format": "int64",
                 "type": [
-                  "boolean",
+                  "integer",
                   "null"
                 ]
               },
@@ -1876,100 +1992,13 @@
                 "format": "int64",
                 "type": "integer"
               },
-              "debug_output": {
-                "oneOf": [
-                  {
-                    "type": "null"
-                  },
-                  {
-                    "description": "Debug output. Only available to trusted testers.",
-                    "properties": {
-                      "attempts": {
-                        "description": "Number of attempts made to the model.",
-                        "format": "int32",
-                        "type": "integer"
-                      },
-                      "cache_read_count": {
-                        "description": "Number of cache reads",
-                        "format": "int32",
-                        "minimum": 0,
-                        "type": "integer"
-                      },
-                      "cache_read_input_bytes": {
-                        "description": "Size of cache read",
-                        "format": "int64",
-                        "minimum": 0,
-                        "type": "integer"
-                      },
-                      "cache_write_count": {
-                        "description": "Number of cache writes",
-                        "format": "int32",
-                        "minimum": 0,
-                        "type": "integer"
-                      },
-                      "cache_write_input_bytes": {
-                        "description": "Size of cache write",
-                        "format": "int64",
-                        "minimum": 0,
-                        "type": "integer"
-                      },
-                      "chunks": {
-                        "description": "The individual chunks returned from the pipeline of samplers.",
-                        "items": {
-                          "type": "string"
-                        },
-                        "type": "array"
-                      },
-                      "engine_request": {
-                        "description": "JSON-serialized request sent to the inference engine.",
-                        "type": "string"
-                      },
-                      "lb_address": {
-                        "description": "The load balancer address",
-                        "type": "string"
-                      },
-                      "prompt": {
-                        "description": "The prompt sent to the model in text form.",
-                        "type": "string"
-                      },
-                      "request": {
-                        "description": "The request received from the user.",
-                        "type": "string"
-                      },
-                      "responses": {
-                        "description": "The response(s) received from the model.",
-                        "items": {
-                          "type": "string"
-                        },
-                        "type": "array"
-                      },
-                      "sampler_checkpoint_mount": {
-                        "description": "The underlying checkpoint mount path for the sampler that served this request.",
-                        "type": "string"
-                      },
-                      "sampler_tag": {
-                        "description": "The tag of the actual engines sitting behind the GTP address. Eg \"grok-4-code-eapi-lap4-unified-sblbm-0\"",
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "attempts",
-                      "request",
-                      "prompt",
-                      "engine_request",
-                      "responses",
-                      "chunks",
-                      "cache_read_count",
-                      "cache_read_input_bytes",
-                      "cache_write_count",
-                      "cache_write_input_bytes",
-                      "lb_address",
-                      "sampler_tag",
-                      "sampler_checkpoint_mount"
-                    ],
-                    "type": "object"
-                  }
-                ]
+              "error": {
+                "description": "An error object returned when the model fails to generate a response."
+              },
+              "frequency_penalty": {
+                "description": "(NOT SUPPORTED in Responses API) Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.",
+                "format": "float",
+                "type": "number"
               },
               "id": {
                 "description": "Unique ID of the response.",
@@ -1982,21 +2011,70 @@
                   },
                   {
                     "description": "Details about why the response is incomplete.",
-                    "properties": {
-                      "reason": {
-                        "description": "The reason why the response is incomplete.",
-                        "type": "string"
+                    "oneOf": [
+                      {
+                        "properties": {
+                          "reason": {
+                            "enum": [
+                              "max_output_tokens"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "reason"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "reason": {
+                            "enum": [
+                              "max_prompt_tokens"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "reason"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "properties": {
+                          "reason": {
+                            "enum": [
+                              "max_time_limit"
+                            ],
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "reason"
+                        ],
+                        "type": "object"
                       }
-                    },
-                    "required": [
-                      "reason"
-                    ],
-                    "type": "object"
+                    ]
                   }
+                ]
+              },
+              "instructions": {
+                "description": "A system (or developer) message inserted into the model's context.",
+                "type": [
+                  "string",
+                  "null"
                 ]
               },
               "max_output_tokens": {
                 "description": "Max number of tokens that can be generated in a response. This includes both output and reasoning tokens.",
+                "format": "int32",
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "max_tool_calls": {
+                "description": "The maximum number of tool calls allowed for this response.",
                 "format": "int32",
                 "type": [
                   "integer",
@@ -2034,6 +2112,29 @@
                                         "description": "Citations.",
                                         "items": {
                                           "properties": {
+                                            "end_index": {
+                                              "description": "The end index of the annotation.",
+                                              "format": "int32",
+                                              "type": [
+                                                "integer",
+                                                "null"
+                                              ]
+                                            },
+                                            "start_index": {
+                                              "description": "The summary of the annotation.",
+                                              "format": "int32",
+                                              "type": [
+                                                "integer",
+                                                "null"
+                                              ]
+                                            },
+                                            "title": {
+                                              "description": "The title of the annotation.",
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
+                                            },
                                             "type": {
                                               "description": "The type of the annotation. Only supported type currently is `url_citation`.",
                                               "type": "string"
@@ -2133,7 +2234,6 @@
                                     },
                                     "required": [
                                       "text",
-                                      "annotations",
                                       "type"
                                     ],
                                     "type": "object"
@@ -2233,6 +2333,27 @@
                         {
                           "description": "The reasoning done by the model.",
                           "properties": {
+                            "content": {
+                              "description": "The reasoning text contents.",
+                              "items": {
+                                "properties": {
+                                  "text": {
+                                    "description": "Reasoning done by the model.",
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "description": "The type of the object, which is always `reasoning_text`.",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "text",
+                                  "type"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
                             "encrypted_content": {
                               "description": "The enrypted reasoning. Returned when `reasoning.encrypted_content` is passed in `include`.",
                               "type": [
@@ -2249,11 +2370,11 @@
                               "type": "string"
                             },
                             "summary": {
-                              "description": "The reasoning text contents.",
+                              "description": "The summarized reasoning text contents.",
                               "items": {
                                 "properties": {
                                   "text": {
-                                    "description": "Reasoning done by the model.",
+                                    "description": "Summary of the reasoning done by the model.",
                                     "type": "string"
                                   },
                                   "type": {
@@ -2652,8 +2773,20 @@
                 "description": "Whether to allow the model to run parallel tool calls.",
                 "type": "boolean"
               },
+              "presence_penalty": {
+                "description": "(NOT SUPPORTED in Responses API) Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.",
+                "format": "float",
+                "type": "number"
+              },
               "previous_response_id": {
                 "description": "The ID of the previous response from the model.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "prompt_cache_key": {
+                "description": "The cache key used for the prompt for routing to the correct engine.",
                 "type": [
                   "string",
                   "null"
@@ -2693,6 +2826,18 @@
                     "type": "object"
                   }
                 ]
+              },
+              "safety_identifier": {
+                "description": "A stable identifier used to help detect users of your application that may be violating xAI's usage policies.",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "service_tier": {
+                "default": "default",
+                "description": "Specifies the processing tier used for serving the request.",
+                "type": "string"
               },
               "status": {
                 "description": "Status of the response. One of `completed`, `in_progress` or `incomplete`.",
@@ -2999,7 +3144,52 @@
                               ]
                             },
                             "user_location": {
-                              "description": "The user location to use for the search.\nFor OpenAI API compatibility ONLY. Request will be rejected if this field is set."
+                              "oneOf": [
+                                {
+                                  "type": "null"
+                                },
+                                {
+                                  "description": "The user location to use for the search.\nFor OpenAI API compatibility ONLY. Request will be rejected if this field is set.",
+                                  "properties": {
+                                    "city": {
+                                      "description": "City of the user's location.",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "country": {
+                                      "description": "Two-letter ISO 3166-1 alpha-2 country code, like US, GB, etc.",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "region": {
+                                      "description": "Region of the user's location.",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "timezone": {
+                                      "description": "Timezone of the user's location, IANA timezone like America/Chicago, Europe/London, etc.",
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "type": {
+                                      "description": "Type is always `\"approximate\"`.",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "type"
+                                  ],
+                                  "type": "object"
+                                }
+                              ]
                             }
                           },
                           "type": "object"
@@ -3231,6 +3421,11 @@
                 "maxItems": 128,
                 "type": "array"
               },
+              "top_logprobs": {
+                "description": "An integer between 0 and 8 specifying the number of most likely tokens to return at each token position.",
+                "format": "int32",
+                "type": "integer"
+              },
               "top_p": {
                 "default": 1,
                 "description": "An alternative to sampling with `temperature`, called nucleus sampling, where the model considers the results of the tokens with `top_p` probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. It is generally recommended to alter this or `temperature` but not both.",
@@ -3242,6 +3437,11 @@
                   "null"
                 ]
               },
+              "truncation": {
+                "default": "disabled",
+                "description": "The truncation strategy to use for the model response.",
+                "type": "string"
+              },
               "usage": {
                 "oneOf": [
                   {
@@ -3252,6 +3452,14 @@
                     "properties": {
                       "cost_in_nano_usd": {
                         "description": "Cost in nano US dollars for this request.",
+                        "format": "int64",
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      },
+                      "cost_in_usd_ticks": {
+                        "description": "Accurate cost of this request in USD ticks, where \"tick\" is defined as follows:\nTICKS_IN_USD_CENT: i64 = 100_000_000\nwhich means there is 10'000'000'000 ticks in one *dollar*.",
                         "format": "int64",
                         "type": [
                           "integer",
@@ -3396,7 +3604,13 @@
               "tools",
               "status",
               "store",
-              "metadata"
+              "metadata",
+              "background",
+              "service_tier",
+              "truncation",
+              "top_logprobs",
+              "presence_penalty",
+              "frequency_penalty"
             ],
             "type": "object"
           }
