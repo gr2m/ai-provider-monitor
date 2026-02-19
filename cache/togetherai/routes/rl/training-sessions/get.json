@@ -15,7 +15,8 @@
           "TRAINING_SESSION_STATUS_RUNNING",
           "TRAINING_SESSION_STATUS_STOPPED",
           "TRAINING_SESSION_STATUS_STOPPING",
-          "TRAINING_SESSION_STATUS_ERROR"
+          "TRAINING_SESSION_STATUS_ERROR",
+          "TRAINING_SESSION_STATUS_EXPIRED"
         ],
         "type": "string"
       }
@@ -25,7 +26,9 @@
       "name": "limit",
       "required": false,
       "schema": {
+        "default": "20",
         "description": "Maximum number of sessions to return (1-100), defaults to 20",
+        "format": "int32",
         "type": "integer"
       }
     },
@@ -34,7 +37,9 @@
       "name": "offset",
       "required": false,
       "schema": {
+        "default": "0",
         "description": "Number of sessions to skip",
+        "format": "int32",
         "type": "integer"
       }
     }
@@ -44,73 +49,112 @@
       "content": {
         "application/json": {
           "schema": {
-            "items": {
-              "type": "object",
-              "properties": {
-                "base_model": {
-                  "description": "Base model used for the training session",
-                  "example": "meta-llama/Meta-Llama-3-8B-Instruct",
-                  "type": "string"
-                },
-                "checkpoint_id": {
-                  "description": "Checkpoint ID to use for the training session",
-                  "type": "string"
-                },
-                "created_at": {
-                  "description": "Timestamp when the training session was created",
-                  "format": "date-time",
-                  "type": "string"
-                },
-                "lora_config": {
-                  "description": "LoRA adapter configuration",
+            "properties": {
+              "data": {
+                "description": "List of training sessions",
+                "items": {
+                  "type": "object",
                   "properties": {
-                    "alpha": {
-                      "default": 16,
-                      "description": "Alpha of the LoRA adapter",
-                      "type": "integer"
+                    "base_model": {
+                      "description": "Base model used for the training session",
+                      "example": "meta-llama/Meta-Llama-3-8B-Instruct",
+                      "type": "string"
                     },
-                    "dropout": {
-                      "default": 0.05,
-                      "description": "Dropout of the LoRA adapter",
-                      "type": "number"
+                    "checkpoint_id": {
+                      "description": "Checkpoint ID to use for the training session",
+                      "type": "string"
                     },
-                    "rank": {
-                      "default": 8,
-                      "description": "Rank of the LoRA adapter",
-                      "type": "integer"
+                    "created_at": {
+                      "description": "Timestamp when the training session was created",
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "lora_config": {
+                      "description": "LoRA adapter configuration",
+                      "properties": {
+                        "alpha": {
+                          "default": "16",
+                          "description": "Alpha of the LoRA adapter",
+                          "example": 16,
+                          "format": "int64",
+                          "type": "integer"
+                        },
+                        "dropout": {
+                          "default": "0.05",
+                          "description": "Dropout of the LoRA adapter",
+                          "example": 0.05,
+                          "format": "float",
+                          "type": "number"
+                        },
+                        "rank": {
+                          "default": "8",
+                          "description": "Rank of the LoRA adapter",
+                          "example": 8,
+                          "format": "int64",
+                          "type": "integer"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "session_id": {
+                      "description": "ID of the training session",
+                      "type": "string"
+                    },
+                    "status": {
+                      "default": "TRAINING_SESSION_STATUS_UNSPECIFIED",
+                      "description": "Status of the training session",
+                      "enum": [
+                        "TRAINING_SESSION_STATUS_UNSPECIFIED",
+                        "TRAINING_SESSION_STATUS_CREATING",
+                        "TRAINING_SESSION_STATUS_RUNNING",
+                        "TRAINING_SESSION_STATUS_STOPPED",
+                        "TRAINING_SESSION_STATUS_STOPPING",
+                        "TRAINING_SESSION_STATUS_ERROR",
+                        "TRAINING_SESSION_STATUS_EXPIRED"
+                      ],
+                      "type": "string"
+                    },
+                    "step": {
+                      "default": "0",
+                      "description": "Current training step",
+                      "format": "uint64",
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "description": "Timestamp when the training session was last updated",
+                      "format": "date-time",
+                      "type": "string"
                     }
+                  }
+                },
+                "type": "array"
+              },
+              "meta": {
+                "description": "Pagination metadata",
+                "properties": {
+                  "limit": {
+                    "description": "Maximum number of items returned per page",
+                    "example": 20,
+                    "format": "int32",
+                    "type": "integer"
                   },
-                  "type": "object"
+                  "offset": {
+                    "description": "Number of items skipped",
+                    "example": 0,
+                    "format": "int32",
+                    "type": "integer"
+                  },
+                  "total": {
+                    "description": "Total number of items matching the filter",
+                    "example": 42,
+                    "format": "int64",
+                    "type": "string"
+                  }
                 },
-                "session_id": {
-                  "description": "ID of the training session",
-                  "type": "string"
-                },
-                "status": {
-                  "default": "TRAINING_SESSION_STATUS_UNSPECIFIED",
-                  "description": "Status of the training session",
-                  "enum": [
-                    "TRAINING_SESSION_STATUS_UNSPECIFIED",
-                    "TRAINING_SESSION_STATUS_CREATING",
-                    "TRAINING_SESSION_STATUS_RUNNING",
-                    "TRAINING_SESSION_STATUS_STOPPED",
-                    "TRAINING_SESSION_STATUS_STOPPING",
-                    "TRAINING_SESSION_STATUS_ERROR"
-                  ],
-                  "type": "string"
-                },
-                "step": {
-                  "description": "Current training step",
-                  "type": "integer"
-                },
-                "updated_at": {
-                  "description": "Timestamp when the training session was last updated",
-                  "format": "date-time",
-                  "type": "string"
-                }
+                "type": "object"
               }
             },
-            "type": "array"
+            "type": "object"
           }
         }
       },
@@ -122,7 +166,20 @@
           "schema": {
             "properties": {
               "code": {
+                "format": "int32",
                 "type": "integer"
+              },
+              "details": {
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {},
+                  "properties": {
+                    "@type": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "type": "array"
               },
               "message": {
                 "type": "string"
