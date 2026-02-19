@@ -13,12 +13,12 @@ on:
       - ".github/workflows/check-for-api-changes.yml"
 
 jobs:
-  check:
+  # Job 1: Per-provider detection of changed routes
+  detect:
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
-      issues: write
     strategy:
       fail-fast: false
       matrix:
@@ -68,22 +68,14 @@ jobs:
       - name: Download
         id: download
         run: |
-          # Download the current OpenAPI API spec
-          # Set the output file path using matrix.source.filename
           output_file="cache/${{ matrix.source.name }}/${{ matrix.source.filename }}"
-          # Download to cache
           curl -s "${{ matrix.source.openapi_url }}" -o "$output_file"
-          # Set the file path as an output variable
           echo "file_path=$output_file" >> $GITHUB_OUTPUT
 
       - name: Sort keys in OpenAPI specification
-        id: fetch-url
         run: |
-          # install yq
           wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           chmod +x /usr/local/bin/yq
-
-          # sort keys in the file
           yq -i -P 'sort_keys(..)' ${{ steps.download.outputs.file_path }}
 
       - name: Setup Node.js
@@ -96,16 +88,11 @@ jobs:
         run: npm ci
 
       - name: Format specification
-        run: |
-          # Format the file
-          npx prettier --write "${{ steps.download.outputs.file_path }}"
+        run: npx prettier --write "${{ steps.download.outputs.file_path }}"
 
-      - name: generate route files
+      - name: Generate route files
         run: |
-          # delete existing route files
           rm -rf cache/${{ matrix.source.name }}/routes
-
-          # Generate route files
           node scripts/dereference-and-split-into-route-files.js ${{ matrix.source.name }}
 
       # If this is the first run, create PR with the initial spec
@@ -126,169 +113,313 @@ jobs:
 
       - name: Stage changes
         if: steps.detect-first-run.outputs.first_run != 'true'
-        run: |
-          # Stage all changes including new files
-          git add cache/${{ matrix.source.name }}/
+        run: git add cache/${{ matrix.source.name }}/
 
       - name: Detect changes
         if: steps.detect-first-run.outputs.first_run != 'true'
         id: detect-changes
         run: |
-          # Compare with previous version using git (including staged changes)
           if ! git diff --quiet --cached HEAD cache/${{ matrix.source.name }}/routes/**; then
             echo "changes_detected=true" >> $GITHUB_OUTPUT
-            echo "Changes detected in ${{ matrix.source.name }} API specification"
           else
             echo "changes_detected=false" >> $GITHUB_OUTPUT
-            echo "No changes detected"
           fi
 
-      - name: Diff
+      - name: Build changed routes list
         if: steps.detect-changes.outputs.changes_detected == 'true'
-        id: diff
         run: |
-          # Get file changes summary
-          FILE_CHANGES=$(git diff --cached --name-status HEAD cache/${{ matrix.source.name }}/routes/**)
-          
-          # Get detailed diff only for modified files (M)
-          MODIFIED_FILES=$(echo "$FILE_CHANGES" | grep "^M" | cut -f2)
-          
-          if [ -n "$MODIFIED_FILES" ]; then
-            MODIFIED_DIFF=$(git diff --cached HEAD $MODIFIED_FILES)
+          PROVIDER="${{ matrix.source.name }}"
+          mkdir -p route-changes
+
+          # List changed route files with status (A=added, M=modified, D=deleted)
+          git diff --cached --name-status HEAD "cache/${PROVIDER}/routes/**" | while IFS=$'\t' read -r status file; do
+            # Derive route: cache/openai/routes/chat/completions/post.json → POST /chat/completions
+            ROUTE_PATH=$(echo "$file" | sed "s|cache/${PROVIDER}/routes/||" | sed 's|/[^/]*\.json$||')
+            METHOD=$(basename "$file" .json | tr '[:lower:]' '[:upper:]')
+            ROUTE="${METHOD} /${ROUTE_PATH}"
+
+            # Sanitize file path for artifact name
+            SAFE_NAME=$(echo "$file" | sed "s|cache/${PROVIDER}/routes/||" | sed 's|/|--|g' | sed 's|\.json$||')
+
+            echo "{\"provider\":\"${PROVIDER}\",\"file\":\"${file}\",\"status\":\"${status}\",\"route\":\"${ROUTE}\",\"safe_name\":\"${SAFE_NAME}\"}" > "route-changes/${SAFE_NAME}.json"
+          done
+
+          echo "Changed routes:"
+          cat route-changes/*.json 2>/dev/null || echo "none"
+
+      - name: Upload new cache
+        if: steps.detect-changes.outputs.changes_detected == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cache-${{ matrix.source.name }}
+          path: cache/${{ matrix.source.name }}/
+
+      - name: Upload changed routes list
+        if: steps.detect-changes.outputs.changes_detected == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: changed-routes-${{ matrix.source.name }}
+          path: route-changes/
+
+      - name: Summary
+        run: |
+          if [ "${{ steps.detect-first-run.outputs.first_run }}" = "true" ]; then
+            echo "✅ First run completed - ${{ matrix.source.name }} API specification saved"
+          elif [ "${{ steps.detect-changes.outputs.changes_detected }}" = "true" ]; then
+            echo "🔄 Changes detected in ${{ matrix.source.name }}"
           else
-            MODIFIED_DIFF=""
+            echo "✅ No changes detected - ${{ matrix.source.name }} is up to date"
           fi
-          
-          # Combine for LLM
-          echo "text<<EOF" >> $GITHUB_OUTPUT
-          echo "File changes:" >> $GITHUB_OUTPUT
-          echo "$FILE_CHANGES" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          if [ -n "$MODIFIED_DIFF" ]; then
-            echo "Modified files details:" >> $GITHUB_OUTPUT
-            echo "$MODIFIED_DIFF" >> $GITHUB_OUTPUT
+
+  # Job 2: Collect all changed routes into a single matrix
+  build-matrix:
+    needs: detect
+    runs-on: ubuntu-latest
+    outputs:
+      route_matrix: ${{ steps.matrix.outputs.routes }}
+      provider_matrix: ${{ steps.matrix.outputs.providers }}
+      has_changes: ${{ steps.matrix.outputs.has_changes }}
+    steps:
+      - name: Download changed routes artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: changed-routes-*
+          path: all-changes/
+
+      - name: Build matrix
+        id: matrix
+        run: |
+          ROUTES="[]"
+          PROVIDERS="[]"
+
+          # Process each provider's changed routes
+          for dir in all-changes/changed-routes-*/; do
+            [ -d "$dir" ] || continue
+            for f in "$dir"*.json; do
+              [ -f "$f" ] || continue
+              ENTRY=$(cat "$f")
+              ROUTES=$(echo "$ROUTES" | jq --argjson entry "$ENTRY" '. + [$entry]')
+              PROVIDER=$(echo "$ENTRY" | jq -r '.provider')
+              PROVIDERS=$(echo "$PROVIDERS" | jq --arg p "$PROVIDER" 'if index($p) then . else . + [$p] end')
+            done
+          done
+
+          ROUTE_COUNT=$(echo "$ROUTES" | jq length)
+          echo "Found $ROUTE_COUNT changed routes across $(echo "$PROVIDERS" | jq length) providers"
+          echo "$ROUTES" | jq .
+
+          echo "routes=$(echo "$ROUTES" | jq -c .)" >> $GITHUB_OUTPUT
+          echo "providers=$(echo "$PROVIDERS" | jq -c .)" >> $GITHUB_OUTPUT
+
+          if [ "$ROUTE_COUNT" -gt 0 ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
           fi
-          echo "EOF" >> $GITHUB_OUTPUT
+
+  # Job 3: Analyze each changed route individually
+  analyze:
+    needs: build-matrix
+    if: needs.build-matrix.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        route: ${{ fromJson(needs.build-matrix.outputs.route_matrix) }}
+    steps:
+      - name: Checkout repository (old state)
+        uses: actions/checkout@v6
+
+      - name: Download new cache
+        uses: actions/download-artifact@v4
+        with:
+          name: cache-${{ matrix.route.provider }}
+          path: new-cache/
 
       - name: Get today's date
-        if: steps.detect-changes.outputs.changes_detected == 'true'
         id: today
         run: echo "date=$(date -u +%Y-%m-%d)" >> $GITHUB_OUTPUT
 
-      - name: Debug diff
-        if: steps.detect-changes.outputs.changes_detected == 'true'
+      - name: Prepare old and new spec files
+        id: specs
         run: |
-          echo "FILE_CHANGES:"
-          git diff --cached --name-status HEAD cache/${{ matrix.source.name }}/routes/**
-          echo ""
-          
-          MODIFIED_FILES=$(git diff --cached --name-status HEAD cache/${{ matrix.source.name }}/routes/** | grep "^M" | cut -f2)
-          if [ -n "$MODIFIED_FILES" ]; then
-            echo "MODIFIED_DIFF:"
-            git diff --cached HEAD $MODIFIED_FILES
-            echo ""
+          PROVIDER="${{ matrix.route.provider }}"
+          FILE="${{ matrix.route.file }}"
+          STATUS="${{ matrix.route.status }}"
+          RELATIVE="${FILE#cache/${PROVIDER}/}"
+
+          OLD_FILE="$FILE"
+          NEW_FILE="new-cache/${RELATIVE}"
+
+          # Check which files actually exist
+          [ "$STATUS" != "A" ] && [ -f "$OLD_FILE" ] && echo "old_file=$OLD_FILE" >> $GITHUB_OUTPUT
+          [ "$STATUS" != "D" ] && [ -f "$NEW_FILE" ] && echo "new_file=$NEW_FILE" >> $GITHUB_OUTPUT
+
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Analyze route change
+        id: analyze
+        env:
+          OPENAI_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+        run: |
+          ARGS=("${{ matrix.route.status }}" "${{ matrix.route.route }}" "${{ steps.today.outputs.date }}")
+          [ -n "${{ steps.specs.outputs.old_file }}" ] && ARGS+=("${{ steps.specs.outputs.old_file }}") || ARGS+=("")
+          [ -n "${{ steps.specs.outputs.new_file }}" ] && ARGS+=("${{ steps.specs.outputs.new_file }}") || ARGS+=("")
+
+          RESULT=$(node scripts/analyze-route-change.js "${ARGS[@]}")
+          echo "Analysis result:"
+          echo "$RESULT" | jq .
+
+          # Save to file for artifact upload
+          echo "$RESULT" > analysis-result.json
+
+      - name: Upload analysis result
+        uses: actions/upload-artifact@v4
+        with:
+          name: analysis-${{ matrix.route.provider }}--${{ matrix.route.safe_name }}
+          path: analysis-result.json
+
+  # Job 4: Collect results and create PR per provider
+  update:
+    needs: [build-matrix, analyze]
+    if: needs.build-matrix.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: ${{ fromJson(needs.build-matrix.outputs.provider_matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download new cache
+        uses: actions/download-artifact@v4
+        with:
+          name: cache-${{ matrix.provider }}
+          path: new-cache/
+
+      - name: Copy updated cache to working tree
+        run: |
+          rm -rf cache/${{ matrix.provider }}/
+          cp -r new-cache/ cache/${{ matrix.provider }}/
+
+      - name: Download analysis results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: analysis-${{ matrix.provider }}--*
+          path: analysis-results/
+
+      - name: Collect change records and create PR description
+        id: collect
+        run: |
+          ALL_CHANGES="[]"
+          ALL_SUMMARIES=""
+
+          # Merge all analysis results for this provider
+          for dir in analysis-results/analysis-${{ matrix.provider }}--*/; do
+            [ -d "$dir" ] || continue
+            RESULT=$(cat "${dir}analysis-result.json")
+            CHANGES=$(echo "$RESULT" | jq '.changes')
+            SUMMARY=$(echo "$RESULT" | jq -r '.summary')
+
+            ALL_CHANGES=$(echo "$ALL_CHANGES" | jq --argjson c "$CHANGES" '. + $c')
+            ALL_SUMMARIES="${ALL_SUMMARIES}- ${SUMMARY}\n"
+          done
+
+          CHANGE_COUNT=$(echo "$ALL_CHANGES" | jq length)
+          echo "Collected $CHANGE_COUNT change records"
+
+          # Build PR title
+          if [ "$CHANGE_COUNT" -eq 1 ]; then
+            TITLE=$(echo "$ALL_CHANGES" | jq -r '.[0].note' | head -c 100)
+          else
+            TITLE="update ${{ matrix.provider }} API specification (${CHANGE_COUNT} changes)"
           fi
 
-      - name: Analyze changes
-        if: steps.detect-changes.outputs.changes_detected == 'true'
-        id: analyze
-        uses: vercel/ai-action@v2
-        with:
-          model: "openai/gpt-5.2-pro"
-          api-key: ${{ secrets.AI_GATEWAY_API_KEY }}
-          prompt: |
-            Analyze the following OpenAPI specification diff and produce structured change records.
+          # Build PR body from change records
+          BODY=""
+          BREAKING=$(echo "$ALL_CHANGES" | jq '[.[] | select(.breaking == true)]')
+          FEATURES=$(echo "$ALL_CHANGES" | jq '[.[] | select(.breaking == false and .change != "removed" and .doc_only == false)]')
+          FIXES=$(echo "$ALL_CHANGES" | jq '[.[] | select(.doc_only == true)]')
 
-            Derive the route from the file path in the diff. For example, changes in `cache/cohere/routes/v2/chat/post.json` belong to the `POST /v2/chat` route.
+          if [ "$(echo "$BREAKING" | jq length)" -gt 0 ]; then
+            BODY="${BODY}### Breaking changes\n\n"
+            for row in $(echo "$BREAKING" | jq -r '.[] | @base64'); do
+              ROUTE=$(echo "$row" | base64 -d | jq -r '.route')
+              NOTE=$(echo "$row" | base64 -d | jq -r '.note')
+              BODY="${BODY}- **${ROUTE}**: ${NOTE}\n"
+            done
+            BODY="${BODY}\n"
+          fi
 
-            For each logical change, create a record with:
-            - route: "METHOD /path" (e.g. "POST /v1/chat/completions")
-            - change: "added", "changed", or "removed"
-            - target: "route" (endpoint added/removed), "request", or "response"
-            - breaking: true/false
-            - deprecated: true if the change marks something as deprecated
-            - doc_only: true if only descriptions/examples changed, not schema structure
-            - note: human-readable summary of the change
-            - paths: array of {path, before, after} objects describing specific property changes. Use JSON-path-like notation relative to the route spec (e.g. "requestBody.schema.properties.model.type"). Set before to null for additions, after to null for removals.
+          if [ "$(echo "$FEATURES" | jq length)" -gt 0 ]; then
+            BODY="${BODY}### New features\n\n"
+            for row in $(echo "$FEATURES" | jq -r '.[] | @base64'); do
+              ROUTE=$(echo "$row" | base64 -d | jq -r '.route')
+              NOTE=$(echo "$row" | base64 -d | jq -r '.note')
+              BODY="${BODY}- **${ROUTE}**: ${NOTE}\n"
+            done
+            BODY="${BODY}\n"
+          fi
 
-            Also provide:
-            - summary: conventional commit message summarizing all changes (max 100 chars)
-            - description: markdown description with sections for breaking changes, new features, and fixes, grouped by route
+          if [ "$(echo "$FIXES" | jq length)" -gt 0 ]; then
+            BODY="${BODY}### Documentation fixes\n\n"
+            for row in $(echo "$FIXES" | jq -r '.[] | @base64'); do
+              ROUTE=$(echo "$row" | base64 -d | jq -r '.route')
+              NOTE=$(echo "$row" | base64 -d | jq -r '.note')
+              BODY="${BODY}- **${ROUTE}**: ${NOTE}\n"
+            done
+          fi
 
-            Today's date is ${{ steps.today.outputs.date }}.
+          # Save outputs
+          echo "title=${TITLE}" >> $GITHUB_OUTPUT
 
-            Diff:
-            ${{ steps.diff.outputs.text }}
-          schema: |
-            {
-              "$schema": "http://json-schema.org/draft-07/schema#",
-              "title": "Structured Change Analysis",
-              "type": "object",
-              "properties": {
-                "summary": {
-                  "type": "string",
-                  "description": "Conventional commit message summarizing all changes (max 100 chars)."
-                },
-                "description": {
-                  "type": "string",
-                  "description": "Markdown description of changes."
-                },
-                "changes": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "route": { "type": "string", "description": "METHOD /path" },
-                      "date": { "type": "string", "description": "ISO date (YYYY-MM-DD)" },
-                      "change": { "type": "string", "enum": ["added", "changed", "removed"] },
-                      "target": { "type": "string", "enum": ["route", "request", "response"] },
-                      "breaking": { "type": "boolean" },
-                      "deprecated": { "type": "boolean" },
-                      "doc_only": { "type": "boolean" },
-                      "note": { "type": "string" },
-                      "paths": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "path": { "type": "string" },
-                            "before": {},
-                            "after": {}
-                          },
-                          "required": ["path", "before", "after"]
-                        }
-                      }
-                    },
-                    "required": ["route", "date", "change", "target", "breaking", "deprecated", "doc_only", "note", "paths"]
-                  }
-                }
-              },
-              "required": ["summary", "description", "changes"],
-              "additionalProperties": false
-            }
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          echo "changes=$(echo "$ALL_CHANGES" | jq -c .)" >> $GITHUB_OUTPUT
 
       - name: Append change records
-        if: steps.detect-changes.outputs.changes_detected == 'true'
         run: |
-          node scripts/append-changes.js "${{ matrix.source.name }}" '${{ toJson(fromJson(steps.analyze.outputs.json).changes) }}'
-          git add changes/
+          node scripts/append-changes.js "${{ matrix.provider }}" '${{ steps.collect.outputs.changes }}'
 
       - name: Create Pull Request
         id: create-pr
-        if: steps.detect-changes.outputs.changes_detected == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Update ${{ matrix.source.name }} API specification"
-          title: ${{ fromJson(steps.analyze.outputs.json).summary }}
-          body: ${{ fromJson(steps.analyze.outputs.json).description }}
-          branch: update/${{ matrix.source.name }}
+          commit-message: "Update ${{ matrix.provider }} API specification"
+          title: ${{ steps.collect.outputs.title }}
+          body: ${{ steps.collect.outputs.body }}
+          branch: update/${{ matrix.provider }}
           delete-branch: true
           labels: |
-            provider:${{ matrix.source.name }}
+            provider:${{ matrix.provider }}
           assignees: ${{ github.repository_owner }}
 
-      # use gh CLI to merge the PR with squash and merge
+      # Auto-merge the PR
       - uses: actions/create-github-app-token@v2
         if: steps.create-pr.outputs.pull-request-url != ''
         id: app-token
@@ -303,11 +434,4 @@ jobs:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Summary
-        run: |
-          if [ "${{ steps.detect-first-run.outputs.first_run }}" = "true" ]; then
-            echo "✅ First run completed - ${{ matrix.source.name }} API specification saved"
-          elif [ "${{ steps.detect-changes.outputs.changes_detected }}" = "true" ]; then
-            echo "🔄 Changes detected - Pull request created: ${{ steps.create-pr.outputs.pull-request-url }}"
-          else
-            echo "✅ No changes detected - ${{ matrix.source.name }} API specification is up to date"
-          fi
+        run: echo "🔄 PR created for ${{ matrix.provider }} - ${{ steps.create-pr.outputs.pull-request-url }}"
