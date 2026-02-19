@@ -1,0 +1,249 @@
+{
+  "description": "Estimate the price of a fine-tuning job.",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "properties": {
+            "from_checkpoint": {
+              "description": "The checkpoint identifier to continue training from a previous fine-tuning job. Format is `{$JOB_ID}` or `{$OUTPUT_MODEL_NAME}` or `{$JOB_ID}:{$STEP}` or `{$OUTPUT_MODEL_NAME}:{$STEP}`. The step value is optional; without it, the final checkpoint will be used.",
+              "type": "string"
+            },
+            "model": {
+              "description": "Name of the base model to run fine-tune job on",
+              "type": "string"
+            },
+            "n_epochs": {
+              "default": 1,
+              "description": "Number of complete passes through the training dataset (higher values may improve results but increase cost and risk of overfitting)",
+              "type": "integer"
+            },
+            "n_evals": {
+              "default": 0,
+              "description": "Number of evaluations to be run on a given validation set during training",
+              "type": "integer"
+            },
+            "training_file": {
+              "description": "File-ID of a training file uploaded to the Together API",
+              "type": "string"
+            },
+            "training_method": {
+              "description": "The training method to use. 'sft' for Supervised Fine-Tuning or 'dpo' for Direct Preference Optimization.",
+              "oneOf": [
+                {
+                  "properties": {
+                    "method": {
+                      "enum": [
+                        "sft"
+                      ],
+                      "type": "string"
+                    },
+                    "train_on_inputs": {
+                      "default": "auto",
+                      "description": "Whether to mask the user messages in conversational data or prompts in instruction data.",
+                      "oneOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "enum": [
+                            "auto"
+                          ],
+                          "type": "string"
+                        }
+                      ],
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "method",
+                    "train_on_inputs"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "properties": {
+                    "dpo_beta": {
+                      "default": 0.1,
+                      "format": "float",
+                      "type": "number"
+                    },
+                    "dpo_normalize_logratios_by_length": {
+                      "default": false,
+                      "type": "boolean"
+                    },
+                    "dpo_reference_free": {
+                      "default": false,
+                      "type": "boolean"
+                    },
+                    "method": {
+                      "enum": [
+                        "dpo"
+                      ],
+                      "type": "string"
+                    },
+                    "rpo_alpha": {
+                      "default": 0,
+                      "format": "float",
+                      "type": "number"
+                    },
+                    "simpo_gamma": {
+                      "default": 0,
+                      "format": "float",
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "method"
+                  ],
+                  "type": "object"
+                }
+              ],
+              "type": "object"
+            },
+            "training_type": {
+              "oneOf": [
+                {
+                  "properties": {
+                    "type": {
+                      "enum": [
+                        "Full"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "properties": {
+                    "lora_alpha": {
+                      "type": "integer"
+                    },
+                    "lora_dropout": {
+                      "default": 0,
+                      "format": "float",
+                      "type": "number"
+                    },
+                    "lora_r": {
+                      "type": "integer"
+                    },
+                    "lora_trainable_modules": {
+                      "default": "all-linear",
+                      "type": "string"
+                    },
+                    "type": {
+                      "enum": [
+                        "Lora"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "lora_r",
+                    "lora_alpha"
+                  ],
+                  "type": "object"
+                }
+              ],
+              "type": "object"
+            },
+            "validation_file": {
+              "description": "File-ID of a validation file uploaded to the Together API",
+              "type": "string"
+            }
+          },
+          "required": [
+            "training_file"
+          ],
+          "type": "object"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "allowed_to_proceed": {
+                "description": "Whether the user is allowed to proceed with the fine-tuning job",
+                "example": true,
+                "type": "boolean"
+              },
+              "estimated_eval_token_count": {
+                "description": "The estimated number of tokens for evaluation",
+                "type": "number"
+              },
+              "estimated_total_price": {
+                "description": "The price of the fine-tuning job",
+                "type": "number"
+              },
+              "estimated_train_token_count": {
+                "description": "The estimated number of tokens to be trained",
+                "type": "number"
+              },
+              "user_limit": {
+                "description": "The user's credit limit in dollars",
+                "type": "number"
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "description": "Price estimated successfully"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "code": {
+                    "default": null,
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "message": {
+                    "nullable": false,
+                    "type": "string"
+                  },
+                  "param": {
+                    "default": null,
+                    "nullable": true,
+                    "type": "string"
+                  },
+                  "type": {
+                    "nullable": false,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Internal Server Error"
+    }
+  },
+  "summary": "Estimate price",
+  "tags": [
+    "Fine-tuning"
+  ]
+}
