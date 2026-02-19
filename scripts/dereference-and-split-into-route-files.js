@@ -29,7 +29,10 @@ try {
     for (const [path, operations] of Object.entries(schema.paths)) {
       for (const [method, operation] of Object.entries(operations)) {
 
-        const routeFilePath = `${dirname(filePath)}/routes${path}`;
+        // Sanitize path for filesystem/artifact compatibility
+        // ? and = are not allowed in GitHub Actions artifact paths
+        const safePath = path.replaceAll("?", "%3F").replaceAll("=", "%3D");
+        const routeFilePath = `${dirname(filePath)}/routes${safePath}`;
         console.log(routeFilePath, method);
         await mkdir(routeFilePath, { recursive: true });
         await writeFile(
