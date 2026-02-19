@@ -122,7 +122,6 @@ jobs:
           delete-branch: true
           labels: |
             provider:${{ matrix.source.name }}
-            version:breaking
           commit-message: "feat: add initial ${{ matrix.source.name }} API specification"
 
       - name: Stage changes
@@ -171,6 +170,11 @@ jobs:
           fi
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Get today's date
+        if: steps.detect-changes.outputs.changes_detected == 'true'
+        id: today
+        run: echo "date=$(date -u +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
       - name: Debug diff
         if: steps.detect-changes.outputs.changes_detected == 'true'
         run: |
@@ -185,14 +189,89 @@ jobs:
             echo ""
           fi
 
-      - name: Generate release notes
+      - name: Analyze changes
         if: steps.detect-changes.outputs.changes_detected == 'true'
-        id: release-notes
-        env:
-          OPENAI_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+        id: analyze
+        uses: vercel/ai-action@v2
+        with:
+          model: "openai/gpt-5.2-pro"
+          api-key: ${{ secrets.AI_GATEWAY_API_KEY }}
+          prompt: |
+            Analyze the following OpenAPI specification diff and produce structured change records.
+
+            Derive the route from the file path in the diff. For example, changes in `cache/cohere/routes/v2/chat/post.json` belong to the `POST /v2/chat` route.
+
+            For each logical change, create a record with:
+            - route: "METHOD /path" (e.g. "POST /v1/chat/completions")
+            - change: "added", "changed", or "removed"
+            - target: "route" (endpoint added/removed), "request", or "response"
+            - breaking: true/false
+            - deprecated: true if the change marks something as deprecated
+            - doc_only: true if only descriptions/examples changed, not schema structure
+            - note: human-readable summary of the change
+            - paths: array of {path, before, after} objects describing specific property changes. Use JSON-path-like notation relative to the route spec (e.g. "requestBody.schema.properties.model.type"). Set before to null for additions, after to null for removals.
+
+            Also provide:
+            - summary: conventional commit message summarizing all changes (max 100 chars)
+            - description: markdown description with sections for breaking changes, new features, and fixes, grouped by route
+
+            Today's date is ${{ steps.today.outputs.date }}.
+
+            Diff:
+            ${{ steps.diff.outputs.text }}
+          schema: |
+            {
+              "$schema": "http://json-schema.org/draft-07/schema#",
+              "title": "Structured Change Analysis",
+              "type": "object",
+              "properties": {
+                "summary": {
+                  "type": "string",
+                  "description": "Conventional commit message summarizing all changes (max 100 chars)."
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Markdown description of changes."
+                },
+                "changes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "route": { "type": "string", "description": "METHOD /path" },
+                      "date": { "type": "string", "description": "ISO date (YYYY-MM-DD)" },
+                      "change": { "type": "string", "enum": ["added", "changed", "removed"] },
+                      "target": { "type": "string", "enum": ["route", "request", "response"] },
+                      "breaking": { "type": "boolean" },
+                      "deprecated": { "type": "boolean" },
+                      "doc_only": { "type": "boolean" },
+                      "note": { "type": "string" },
+                      "paths": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "path": { "type": "string" },
+                            "before": {},
+                            "after": {}
+                          },
+                          "required": ["path", "before", "after"]
+                        }
+                      }
+                    },
+                    "required": ["route", "date", "change", "target", "breaking", "deprecated", "doc_only", "note", "paths"]
+                  }
+                }
+              },
+              "required": ["summary", "description", "changes"],
+              "additionalProperties": false
+            }
+
+      - name: Append change records
+        if: steps.detect-changes.outputs.changes_detected == 'true'
         run: |
-          # Generate release notes using custom script
-          node scripts/generate-release-notes.js "${{ steps.diff.outputs.text }}" "${{ matrix.source.name }}"
+          node scripts/append-changes.js "${{ matrix.source.name }}" '${{ toJson(fromJson(steps.analyze.outputs.json).changes) }}'
+          git add changes/
 
       - name: Create Pull Request
         id: create-pr
@@ -201,12 +280,11 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: "Update ${{ matrix.source.name }} API specification"
-          title: ${{ steps.release-notes.outputs.summary }}
-          body: ${{ steps.release-notes.outputs.description }}
+          title: ${{ fromJson(steps.analyze.outputs.json).summary }}
+          body: ${{ fromJson(steps.analyze.outputs.json).description }}
           branch: update/${{ matrix.source.name }}
           delete-branch: true
           labels: |
-            version:${{ steps.release-notes.outputs.version }}
             provider:${{ matrix.source.name }}
           assignees: ${{ github.repository_owner }}
 
