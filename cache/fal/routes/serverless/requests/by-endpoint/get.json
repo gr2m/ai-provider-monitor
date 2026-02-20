@@ -1,0 +1,633 @@
+{
+  "description": "Lists requests for endpoints accessible to the authenticated user.\n\n**Authentication:** Requires API key.\n\n**Filters:**\n- Time range via start / end\n- Status (success, error, user_error)\n- Request ID\n- Pagination via cursor/limit (limit defaults to 50, max 100)\n\n**Sorting:**\n- By end time (default) or duration\n\n**Expansions:**\n- Include payloads by adding expand=payloads",
+  "operationId": "serverlessListRequestsByEndpoint",
+  "parameters": [
+    {
+      "description": "Number of items to return per page (max 100)",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "default": 50,
+        "description": "Number of items to return per page (max 100)",
+        "example": 20,
+        "maximum": 100,
+        "minimum": 1,
+        "type": "integer"
+      }
+    },
+    {
+      "description": "Pagination cursor encoding the page number",
+      "in": "query",
+      "name": "cursor",
+      "required": false,
+      "schema": {
+        "description": "Pagination cursor encoding the page number",
+        "example": "Mg==",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Endpoint identifier to filter requests by",
+      "in": "query",
+      "name": "endpoint_id",
+      "required": true,
+      "schema": {
+        "description": "Endpoint identifier to filter requests by",
+        "example": "fal-ai/flux/dev",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Start date in ISO8601 format (e.g., '2025-01-01T00:00:00Z' or '2025-01-01'). Defaults to 24 hours ago.",
+      "in": "query",
+      "name": "start",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        ],
+        "description": "Start date in ISO8601 format (e.g., '2025-01-01T00:00:00Z' or '2025-01-01'). Defaults to 24 hours ago.",
+        "example": "2025-01-01T00:00:00Z"
+      }
+    },
+    {
+      "description": "End date in ISO8601 format (e.g., '2025-01-31T23:59:59Z' or '2025-01-31'). Defaults to current time.",
+      "in": "query",
+      "name": "end",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        ],
+        "description": "End date in ISO8601 format (e.g., '2025-01-31T23:59:59Z' or '2025-01-31'). Defaults to current time.",
+        "example": "2025-01-31T23:59:59Z"
+      }
+    },
+    {
+      "description": "Filter by request status",
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+        "description": "Filter by request status",
+        "enum": [
+          "success",
+          "error",
+          "user_error"
+        ],
+        "example": "success",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Filter by specific request ID",
+      "in": "query",
+      "name": "request_id",
+      "required": false,
+      "schema": {
+        "description": "Filter by specific request ID",
+        "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "format": "uuid",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Fields to expand in the response. Use payloads to include input and output payloads.",
+      "explode": true,
+      "in": "query",
+      "name": "expand",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Fields to expand in the response. Use payloads to include input and output payloads.",
+        "example": [
+          "payloads"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Sort results by end time or duration",
+      "in": "query",
+      "name": "sort_by",
+      "required": false,
+      "schema": {
+        "default": "ended_at",
+        "description": "Sort results by end time or duration",
+        "enum": [
+          "ended_at",
+          "duration"
+        ],
+        "example": "ended_at",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "example": {
+            "has_more": true,
+            "items": [
+              {
+                "duration": 7.8,
+                "ended_at": "2025-01-01T00:00:08Z",
+                "endpoint_id": "fal-ai/flux/dev",
+                "json_input": {
+                  "prompt": "cat astronaut"
+                },
+                "json_output": {
+                  "status": "ok"
+                },
+                "request_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "runner_id": "f1e2d3c4-b5a6-7890-dcba-0987654321fe",
+                "sent_at": "2025-01-01T00:00:01Z",
+                "started_at": "2025-01-01T00:00:05Z",
+                "status_code": 200
+              }
+            ],
+            "next_cursor": "Mg=="
+          },
+          "schema": {
+            "description": "Paginated list of serverless requests for the specified endpoint",
+            "properties": {
+              "has_more": {
+                "description": "Boolean indicating if more results are available (convenience field derived from next_cursor)",
+                "type": "boolean"
+              },
+              "items": {
+                "description": "List of requests matching the filter",
+                "items": {
+                  "description": "Serverless request item",
+                  "properties": {
+                    "duration": {
+                      "description": "Total request duration in seconds",
+                      "example": 7.8,
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "ended_at": {
+                      "description": "Time when request finished processing",
+                      "example": "2025-01-01T00:00:08Z",
+                      "format": "date-time",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "endpoint_id": {
+                      "description": "Endpoint that was executed for this request",
+                      "example": "fal-ai/flux/dev",
+                      "type": "string"
+                    },
+                    "json_input": {
+                      "description": "Input payload for the request"
+                    },
+                    "json_output": {
+                      "description": "Output payload for the request"
+                    },
+                    "request_id": {
+                      "description": "Unique identifier for the request",
+                      "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "runner_id": {
+                      "description": "Unique identifier for the runner execution instance",
+                      "example": "f1e2d3c4-b5a6-7890-dcba-0987654321fe",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "sent_at": {
+                      "description": "Time when request was sent to the backend",
+                      "example": "2025-01-01T00:00:01Z",
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "started_at": {
+                      "description": "Time when request processing started",
+                      "example": "2025-01-01T00:00:05Z",
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "status_code": {
+                      "description": "HTTP status code returned by the request",
+                      "example": 200,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "request_id",
+                    "endpoint_id",
+                    "started_at",
+                    "sent_at",
+                    "runner_id"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "next_cursor": {
+                "description": "Cursor for the next page of results, null if no more pages",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "next_cursor",
+              "has_more",
+              "items"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Requests listed successfully"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Invalid request parameters",
+              "type": "validation_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Authentication required",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Authentication required"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Access denied",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Access denied"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Resource not found",
+              "type": "not_found"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Resource not found"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Rate limit exceeded",
+              "type": "rate_limited"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Rate limit exceeded"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "An unexpected error occurred",
+              "type": "server_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Internal server error"
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "summary": "List requests by endpoint",
+  "tags": [
+    "Serverless",
+    "Requests"
+  ]
+}
