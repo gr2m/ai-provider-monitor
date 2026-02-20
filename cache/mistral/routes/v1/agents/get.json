@@ -3,24 +3,125 @@
   "operationId": "agents_api_v1_agents_list",
   "parameters": [
     {
+      "description": "Page number (0-indexed)",
       "in": "query",
       "name": "page",
       "required": false,
       "schema": {
         "default": 0,
+        "description": "Page number (0-indexed)",
+        "minimum": 0,
         "title": "Page",
         "type": "integer"
       }
     },
     {
+      "description": "Number of agents per page",
       "in": "query",
       "name": "page_size",
       "required": false,
       "schema": {
         "default": 20,
+        "description": "Number of agents per page",
+        "maximum": 1000,
+        "minimum": 1,
         "title": "Page Size",
         "type": "integer"
       }
+    },
+    {
+      "in": "query",
+      "name": "deployment_chat",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Deployment Chat"
+      }
+    },
+    {
+      "in": "query",
+      "name": "sources",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "enum": [
+                "api",
+                "playground",
+                "agent_builder_v1"
+              ],
+              "title": "RequestSource",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Sources"
+      }
+    },
+    {
+      "in": "query",
+      "name": "name",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Name"
+      }
+    },
+    {
+      "in": "query",
+      "name": "id",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Id"
+      }
+    },
+    {
+      "content": {
+        "application/json": {
+          "schema": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        }
+      },
+      "in": "query",
+      "name": "metadata",
+      "required": false
     }
   ],
   "responses": {
@@ -64,6 +165,7 @@
                       "anyOf": [
                         {
                           "additionalProperties": false,
+                          "description": "Enable users to specify an expected completion, optimizing response times by leveraging known or predictable content.",
                           "properties": {
                             "content": {
                               "default": "",
@@ -114,6 +216,44 @@
                       "anyOf": [
                         {
                           "additionalProperties": false,
+                          "description": "Specify the format that the model must output. By default it will use `{ \"type\": \"text\" }`. Setting to `{ \"type\": \"json_object\" }` enables JSON mode, which guarantees the message the model generates is in JSON. When using JSON mode you MUST also instruct the model to produce JSON yourself with a system or a user message. Setting to `{ \"type\": \"json_schema\" }` enables JSON schema mode, which guarantees the message the model generates is in JSON and follows the schema you provide.",
+                          "examples": [
+                            {
+                              "type": "text"
+                            },
+                            {
+                              "type": "json_object"
+                            },
+                            {
+                              "json_schema": {
+                                "name": "book",
+                                "schema": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "authors": {
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "title": "Authors",
+                                      "type": "array"
+                                    },
+                                    "name": {
+                                      "title": "Name",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "name",
+                                    "authors"
+                                  ],
+                                  "title": "Book",
+                                  "type": "object"
+                                },
+                                "strict": true
+                              },
+                              "type": "json_schema"
+                            }
+                          ],
                           "properties": {
                             "json_schema": {
                               "anyOf": [
@@ -160,7 +300,6 @@
                             },
                             "type": {
                               "default": "text",
-                              "description": "An object specifying the format that the model must output. Setting to `{ \"type\": \"json_object\" }` enables JSON mode, which guarantees the message the model generates is in JSON. When using JSON mode you MUST also instruct the model to produce JSON yourself with a system or a user message.",
                               "enum": [
                                 "text",
                                 "json_object",
@@ -241,6 +380,10 @@
                   "title": "Created At",
                   "type": "string"
                 },
+                "deployment_chat": {
+                  "title": "Deployment Chat",
+                  "type": "boolean"
+                },
                 "description": {
                   "anyOf": [
                     {
@@ -283,6 +426,19 @@
                   "description": "Instruction prompt the model will follow during the conversation.",
                   "title": "Instructions"
                 },
+                "metadata": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": true,
+                      "description": "Custom type for metadata with embedded validation.",
+                      "title": "MetadataDict",
+                      "type": "object"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
                 "model": {
                   "title": "Model",
                   "type": "string"
@@ -297,6 +453,10 @@
                     "agent"
                   ],
                   "title": "Object",
+                  "type": "string"
+                },
+                "source": {
+                  "title": "Source",
                   "type": "string"
                 },
                 "tools": {
@@ -462,6 +622,13 @@
                 "version": {
                   "title": "Version",
                   "type": "integer"
+                },
+                "versions": {
+                  "items": {
+                    "type": "integer"
+                  },
+                  "title": "Versions",
+                  "type": "array"
                 }
               },
               "required": [
@@ -469,8 +636,11 @@
                 "name",
                 "id",
                 "version",
+                "versions",
                 "created_at",
-                "updated_at"
+                "updated_at",
+                "deployment_chat",
+                "source"
               ],
               "title": "Agent",
               "type": "object"
