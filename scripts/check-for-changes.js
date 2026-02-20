@@ -21,7 +21,7 @@
  */
 
 import { readFile, writeFile, mkdir, rm, glob } from "node:fs/promises";
-import { dirname, basename } from "node:path";
+import { basename } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
@@ -65,10 +65,19 @@ try {
 // --- Step 3: Download fresh spec ---
 await mkdir(`cache/${provider}`, { recursive: true });
 console.error(`Downloading spec from ${openapiUrl}`);
-const response = await fetch(openapiUrl);
+let response;
+for (let attempt = 1; attempt <= 3; attempt++) {
+  response = await fetch(openapiUrl);
+  if (response.ok) break;
+  if (attempt < 3) {
+    const delay = attempt === 1 ? 5000 : 30000;
+    console.error(`Attempt ${attempt} failed (${response.status}), retrying in ${delay / 1000}s...`);
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+}
 if (!response.ok) {
   throw new Error(
-    `Failed to download spec: ${response.status} ${response.statusText}`
+    `Failed to download spec after 3 attempts: ${response.status} ${response.statusText}`
   );
 }
 const specContent = await response.text();
