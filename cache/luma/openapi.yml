@@ -1,0 +1,1104 @@
+components:
+  schemas:
+    AspectRatio:
+      default: 16:9
+      description: The aspect ratio of the generation
+      enum:
+        - 1:1
+        - 16:9
+        - 9:16
+        - 4:3
+        - 3:4
+        - 21:9
+        - 9:21
+      example: 16:9
+      type: string
+    Assets:
+      description: The assets of the generation
+      examples:
+        - summary: Video
+          value:
+            video: https://example.com/video.mp4
+        - summary: Image
+          value:
+            image: https://example.com/image.jpg
+      properties:
+        image:
+          description: The URL of the image
+          format: uri
+          type: string
+        progress_video:
+          description: The URL of the progress video
+          format: uri
+          type: string
+        video:
+          description: The URL of the video
+          format: uri
+          type: string
+      type: object
+    AudioGenerationRequest:
+      description: The audio generation request object
+      properties:
+        callback_url:
+          description: The callback URL for the audio
+          format: uri
+          type: string
+        generation_type:
+          default: add_audio
+          enum:
+            - add_audio
+          type: string
+        negative_prompt:
+          description: The negative prompt of the audio
+          type: string
+        prompt:
+          description: The prompt of the audio
+          type: string
+      type: object
+    Concept:
+      description: The concept object
+      properties:
+        key:
+          description: The key of the concept
+          type: string
+      required:
+        - key
+      type: object
+    Credits:
+      description: The credits object
+      properties:
+        credit_balance:
+          description: Available credits balance in USD cents
+          format: float
+          type: number
+      required:
+        - credit_balance
+      type: object
+    Error:
+      description: The error object
+      example:
+        detail: Invalid API key is provided
+      properties:
+        detail:
+          description: The error message
+          type: string
+      type: object
+    Generation:
+      description: The generation response object
+      example:
+        assets:
+          video: https://example.com/video.mp4
+        created_at: "2023-06-01T12:00:00Z"
+        failure_reason: null
+        id: 123e4567-e89b-12d3-a456-426614174000
+        model: ray-2
+        request:
+          aspect_ratio: 16:9
+          keyframes:
+            frame0:
+              type: image
+              url: https://example.com/image.jpg
+            frame1:
+              id: 123e4567-e89b-12d3-a456-426614174000
+              type: generation
+          loop: true
+          prompt: A serene lake surrounded by mountains at sunset
+        state: completed
+      properties:
+        assets:
+          $ref: "#/components/schemas/Assets"
+          description: The assets of the generation
+        created_at:
+          description: The date and time when the generation was created
+          format: date-time
+          type: string
+        failure_reason:
+          description: The reason for the state of the generation
+          type: string
+        generation_type:
+          $ref: "#/components/schemas/GenerationType"
+          default: video
+          description: The type of the generation
+        id:
+          description: The ID of the generation
+          format: uuid
+          type: string
+        model:
+          description: The model used for the generation
+          type: string
+        request:
+          description: The request of the generation
+          oneOf:
+            - $ref: "#/components/schemas/GenerationRequest"
+            - $ref: "#/components/schemas/ImageGenerationRequest"
+            - $ref: "#/components/schemas/UpscaleVideoGenerationRequest"
+            - $ref: "#/components/schemas/AudioGenerationRequest"
+            - $ref: "#/components/schemas/ReframeImageRequest"
+            - $ref: "#/components/schemas/ReframeVideoRequest"
+            - $ref: "#/components/schemas/ModifyVideoRequest"
+        state:
+          $ref: "#/components/schemas/State"
+          description: The state of the generation
+      type: object
+    GenerationReference:
+      description: The generation reference object
+      example:
+        id: 123e4567-e89b-12d3-a456-426614174003
+        type: generation
+      properties:
+        id:
+          description: The ID of the generation
+          format: uuid
+          type: string
+        type:
+          default: generation
+          enum:
+            - generation
+          type: string
+      required:
+        - type
+        - id
+      type: object
+    GenerationRequest:
+      description: The generation request object
+      examples:
+        - summary: Text to video
+          value:
+            aspect_ratio: 16:9
+            loop: true
+            prompt: A serene lake surrounded by mountains at sunset
+        - summary: Image to video
+          value:
+            aspect_ratio: 16:9
+            keyframes:
+              frame0:
+                type: image
+                url: https://example.com/image.jpg
+            loop: false
+            prompt: A serene lake surrounded by mountains at sunset
+        - summary: Image to video end frame
+          value:
+            aspect_ratio: 16:9
+            keyframes:
+              frame1:
+                type: image
+                url: https://example.com/image.jpg
+            loop: false
+            prompt: A serene lake surrounded by mountains at sunset
+        - summary: Image to video keyframes
+          value:
+            aspect_ratio: 16:9
+            keyframes:
+              frame0:
+                type: image
+                url: https://example.com/image.jpg
+              frame1:
+                type: image
+                url: https://example.com/image.jpg
+            prompt: A serene lake surrounded by mountains at sunset
+        - summary: Extend video
+          value:
+            aspect_ratio: 16:9
+            keyframes:
+              frame0:
+                id: 123e4567-e89b-12d3-a456-426614174000
+                type: generation
+            loop: true
+            prompt: A serene lake surrounded by mountains at sunset
+        - summary: Extend video reverse
+          value:
+            aspect_ratio: 16:9
+            keyframes:
+              frame1:
+                id: 123e4567-e89b-12d3-a456-426614174000
+                type: generation
+            prompt: A serene lake surrounded by mountains at sunset
+        - summary: Interpolate image to video
+          value:
+            aspect_ratio: 16:9
+            keyframes:
+              frame0:
+                type: image
+                url: https://example.com/image.jpg
+              frame1:
+                id: 123e4567-e89b-12d3-a456-426614174000
+                type: generation
+            prompt: A serene lake surrounded by mountains at sunset
+        - summary: Interpolate video to image
+          value:
+            aspect_ratio: 16:9
+            keyframes:
+              frame0:
+                id: 123e4567-e89b-12d3-a456-426614174000
+                type: generation
+              frame1:
+                type: image
+                url: https://example.com/video.mp4
+            prompt: A serene lake surrounded by mountains at sunset
+      properties:
+        aspect_ratio:
+          $ref: "#/components/schemas/AspectRatio"
+          description: The aspect ratio of the generation
+        callback_url:
+          description: The callback URL of the generation, a POST request with Generation object will be sent to the callback URL when the generation is dreaming, completed, or failed
+          format: uri
+          type: string
+        concepts:
+          description: The concepts of the generation
+          items:
+            $ref: "#/components/schemas/Concept"
+          type: array
+        duration:
+          $ref: "#/components/schemas/VideoModelOutputDuration"
+          description: The duration of the generation
+        generation_type:
+          default: video
+          enum:
+            - video
+          type: string
+        keyframes:
+          $ref: "#/components/schemas/Keyframes"
+          description: The keyframes of the generation
+        loop:
+          description: Whether to loop the video
+          type: boolean
+        model:
+          $ref: "#/components/schemas/VideoModel"
+          description: The model used for the generation
+        prompt:
+          description: The prompt of the generation
+          type: string
+        resolution:
+          $ref: "#/components/schemas/VideoModelOutputResolution"
+          description: The resolution of the generation
+      required:
+        - model
+      type: object
+    GenerationType:
+      enum:
+        - video
+        - image
+      type: string
+    ImageFormat:
+      default: jpg
+      description: The format of the image
+      enum:
+        - jpg
+        - png
+      type: string
+    ImageGenerationRequest:
+      description: The image generation request object
+      properties:
+        aspect_ratio:
+          $ref: "#/components/schemas/AspectRatio"
+          description: The aspect ratio of the generation
+        callback_url:
+          description: The callback URL for the generation
+          format: uri
+          type: string
+        character_ref:
+          properties:
+            identity0:
+              $ref: "#/components/schemas/ImageIdentity"
+          type: object
+        format:
+          $ref: "#/components/schemas/ImageFormat"
+          default: jpg
+          description: The format of the image
+        generation_type:
+          default: image
+          enum:
+            - image
+          type: string
+        image_ref:
+          items:
+            $ref: "#/components/schemas/ImageRef"
+          type: array
+        model:
+          $ref: "#/components/schemas/ImageModel"
+          description: The model used for the generation
+        modify_image_ref:
+          $ref: "#/components/schemas/ModifyImageRef"
+        prompt:
+          description: The prompt of the generation
+          type: string
+        style_ref:
+          items:
+            $ref: "#/components/schemas/ImageRef"
+          type: array
+        sync:
+          default: false
+          description: Create image in synchronous mode and return complated image
+          type: boolean
+        sync_timeout:
+          default: 60
+          description: The timeout for the synchronous image generation
+          type: number
+      required:
+        - model
+      type: object
+    ImageIdentity:
+      description: The image identity object
+      properties:
+        images:
+          description: The URLs of the image identity
+          items:
+            format: uri
+            type: string
+          type: array
+      type: object
+    ImageModel:
+      default: photon-1
+      description: The image model used for the generation
+      enum:
+        - photon-1
+        - photon-flash-1
+      type: string
+    ImageRef:
+      description: The image reference object
+      properties:
+        url:
+          description: The URL of the image reference
+          format: uri
+          type: string
+        weight:
+          description: The weight of the image reference
+          type: number
+      type: object
+    ImageReference:
+      description: The image object
+      example:
+        type: image
+        url: https://example.com/image.jpg
+      properties:
+        type:
+          default: image
+          enum:
+            - image
+          type: string
+        url:
+          description: The URL of the image
+          format: uri
+          type: string
+      required:
+        - type
+        - url
+      type: object
+    Keyframe:
+      description: A keyframe can be either a Generation reference, an Image, or a Video
+      discriminator:
+        mapping:
+          generation: "#/components/schemas/GenerationReference"
+          image: "#/components/schemas/ImageReference"
+        propertyName: type
+      examples:
+        - summary: Generation reference
+          value:
+            id: 123e4567-e89b-12d3-a456-426614174000
+            type: generation
+        - summary: Image reference
+          value:
+            type: image
+            url: https://example.com/image.jpg
+      oneOf:
+        - $ref: "#/components/schemas/GenerationReference"
+        - $ref: "#/components/schemas/ImageReference"
+    Keyframes:
+      description: The keyframes of the generation
+      example:
+        frame0:
+          type: image
+          url: https://example.com/image.jpg
+        frame1:
+          id: 123e4567-e89b-12d3-a456-426614174000
+          type: generation
+      properties:
+        frame0:
+          $ref: "#/components/schemas/Keyframe"
+          description: The frame 0 of the generation
+        frame1:
+          $ref: "#/components/schemas/Keyframe"
+          description: The frame 1 of the generation
+      type: object
+    ListGenerationResponse:
+      description: The generations response object
+      example:
+        count: 1
+        generations:
+          - assets:
+              video: https://example.com/video.mp4
+            created_at: "2023-06-01T12:00:00Z"
+            failure_reason: null
+            id: 123e4567-e89b-12d3-a456-426614174000
+            request:
+              aspect_ratio: 16:9
+              keyframes:
+                frame0:
+                  type: image
+                  url: https://example.com/image.jpg
+                frame1:
+                  id: 123e4567-e89b-12d3-a456-426614174000
+                  type: generation
+              loop: true
+              prompt: A serene lake surrounded by mountains at sunset
+            state: completed
+            version: v1.6
+        has_more: false
+        limit: 100
+        offset: 0
+      properties:
+        count:
+          description: The number of generations returned
+          type: integer
+        generations:
+          description: The generations requested
+          items:
+            $ref: "#/components/schemas/Generation"
+          type: array
+        has_more:
+          description: Whether there are more generations
+          type: boolean
+        limit:
+          description: The limit of the generations requested
+          type: integer
+        offset:
+          description: The offset of the generations requested
+          type: integer
+      required:
+        - generations
+      type: object
+    Media:
+      description: The image entity object
+      properties:
+        url:
+          description: The URL of the media
+          format: uri
+          type: string
+      required:
+        - url
+      type: object
+    ModifyImageRef:
+      description: The modify image reference object
+      properties:
+        url:
+          description: The URL of the image reference
+          format: uri
+          type: string
+        weight:
+          description: The weight of the modify image reference
+          type: number
+      type: object
+    ModifyVideoMode:
+      description: The mode of the modify video
+      enum:
+        - adhere_1
+        - adhere_2
+        - adhere_3
+        - flex_1
+        - flex_2
+        - flex_3
+        - reimagine_1
+        - reimagine_2
+        - reimagine_3
+      type: string
+    ModifyVideoModel:
+      description: The model used for the modify video
+      enum:
+        - ray-2
+        - ray-flash-2
+      type: string
+    ModifyVideoRequest:
+      description: The modify video generation request object
+      properties:
+        callback_url:
+          description: The callback URL of the generation, a POST request with Generation object will be sent to the callback URL when the generation is dreaming, completed, or failed
+          format: uri
+          type: string
+        first_frame:
+          $ref: "#/components/schemas/Media"
+        generation_type:
+          default: modify_video
+          enum:
+            - modify_video
+          type: string
+        media:
+          $ref: "#/components/schemas/Media"
+        mode:
+          $ref: "#/components/schemas/ModifyVideoMode"
+          description: The mode of the modify video
+        model:
+          $ref: "#/components/schemas/ModifyVideoModel"
+          description: The model used for the modify video
+        prompt:
+          description: The prompt of the generation
+          type: string
+      required:
+        - media
+        - model
+        - mode
+        - generation_type
+      type: object
+    ReframeImageModels:
+      description: The model used for the reframe image
+      enum:
+        - photon-1
+        - photon-flash-1
+      type: string
+    ReframeImageRequest:
+      description: The reframe image generation request object
+      properties:
+        aspect_ratio:
+          $ref: "#/components/schemas/AspectRatio"
+          description: The aspect ratio of the generation
+        callback_url:
+          description: The callback URL of the generation, a POST request with Generation object will be sent to the callback URL when the generation is dreaming, completed, or failed
+          format: uri
+          type: string
+        format:
+          $ref: "#/components/schemas/ImageFormat"
+          description: The format of the image
+        generation_type:
+          default: reframe_image
+          enum:
+            - reframe_image
+          type: string
+        grid_position_x:
+          description: The x position of the image in the grid
+          type: integer
+        grid_position_y:
+          description: The y position of the image in the grid
+          type: integer
+        media:
+          $ref: "#/components/schemas/Media"
+        model:
+          $ref: "#/components/schemas/ReframeImageModels"
+          description: The model used for the reframe image
+        prompt:
+          default: ""
+          description: The prompt of the generation
+          type: string
+        resized_height:
+          description: Resized height of source image
+          type: integer
+        resized_width:
+          description: Resized width of source image
+          type: integer
+        x_end:
+          description: The x end of the crop bounds
+          type: integer
+        x_start:
+          description: The x start of the crop bounds
+          type: integer
+        y_end:
+          description: The y end of the crop bounds
+          type: integer
+        y_start:
+          description: The y start of the crop bounds
+          type: integer
+      required:
+        - media
+        - aspect_ratio
+        - model
+        - generation_type
+      type: object
+    ReframeVideoModels:
+      description: The model used for the reframe video
+      enum:
+        - ray-2
+        - ray-flash-2
+      type: string
+    ReframeVideoRequest:
+      description: The reframe video generation request object
+      properties:
+        aspect_ratio:
+          $ref: "#/components/schemas/AspectRatio"
+          description: The aspect ratio of the generation
+        callback_url:
+          description: The callback URL of the generation, a POST request with Generation object will be sent to the callback URL when the generation is dreaming, completed, or failed
+          format: uri
+          type: string
+        first_frame:
+          $ref: "#/components/schemas/Media"
+        generation_type:
+          default: reframe_video
+          enum:
+            - reframe_video
+          type: string
+        grid_position_x:
+          description: The x position of the image in the grid
+          type: integer
+        grid_position_y:
+          description: The y position of the image in the grid
+          type: integer
+        media:
+          $ref: "#/components/schemas/Media"
+        model:
+          $ref: "#/components/schemas/ReframeVideoModels"
+          description: The model used for the reframe video
+        prompt:
+          default: ""
+          description: The prompt of the generation
+          type: string
+        resized_height:
+          description: Resized height of source video
+          type: integer
+        resized_width:
+          description: Resized width of source video
+          type: integer
+        x_end:
+          description: The x end of the crop bounds
+          type: integer
+        x_start:
+          description: The x start of the crop bounds
+          type: integer
+        y_end:
+          description: The y end of the crop bounds
+          type: integer
+        y_start:
+          description: The y start of the crop bounds
+          type: integer
+      required:
+        - media
+        - aspect_ratio
+        - model
+        - generation_type
+      type: object
+    State:
+      description: The state of the generation
+      enum:
+        - queued
+        - dreaming
+        - completed
+        - failed
+      example: completed
+      type: string
+    UpscaleVideoGenerationRequest:
+      description: The upscale generation request object
+      properties:
+        callback_url:
+          description: The callback URL for the upscale
+          format: uri
+          type: string
+        generation_type:
+          default: upscale_video
+          enum:
+            - upscale_video
+          type: string
+        resolution:
+          $ref: "#/components/schemas/VideoModelOutputResolution"
+          description: The resolution of the upscale
+      type: object
+    VideoModel:
+      description: The video model used for the generation
+      enum:
+        - ray-2
+        - ray-flash-2
+      example: ray-2
+      type: string
+    VideoModelOutputDuration:
+      anyOf:
+        - enum:
+            - 5s
+            - 9s
+          type: string
+        - type: string
+    VideoModelOutputResolution:
+      anyOf:
+        - enum:
+            - 540p
+            - 720p
+            - 1080p
+            - 4k
+          type: string
+        - type: string
+  securitySchemes:
+    BearerAuth:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
+info:
+  contact:
+    email: support@lumalabs.ai
+    name: Luma AI, Inc.
+    url: https://lumalabs.ai
+  description: Generate videos using Dream Machine.
+  license:
+    name: Proprietary
+    url: https://lumalabs.ai/legal/tos
+  summary: A RESTful API for interacting with the Dream Machine
+  termsOfService: https://lumalabs.ai/legal/tos
+  title: Dream Machine API
+  version: 1.1.0
+openapi: 3.1.0
+paths:
+  /credits:
+    get:
+      description: Get the credits information for the api user
+      operationId: getCredits
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Credits"
+          description: Credits found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error
+      summary: Get credits
+      tags:
+        - Credits
+  /generations:
+    get:
+      description: Retrieve a list of generations with optional filtering and sorting
+      operationId: listGenerations
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema:
+            default: 100
+            type: integer
+        - in: query
+          name: offset
+          required: false
+          schema:
+            default: 0
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListGenerationResponse"
+          description: Generations found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error
+      summary: List generations
+      tags:
+        - Generations
+  /generations/concepts/list:
+    get:
+      description: Get all possible concepts
+      operationId: getConcepts
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  type: string
+                type: array
+          description: Concepts found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error
+      summary: Get concepts
+      tags:
+        - Generations
+  /generations/image:
+    post:
+      description: Generate an image with the provided prompt
+      operationId: generateImage
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImageGenerationRequest"
+        description: The image generation request object
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Generation"
+          description: Image generated
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error
+      summary: Generate an image
+      tags:
+        - Generations
+        - Image
+  /generations/image/reframe:
+    post:
+      description: Reframe an image by its ID
+      operationId: reframeImage
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReframeImageRequest"
+        description: The reframe image generation request object
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Generation"
+          description: Image reframed
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error
+      summary: Reframe an image
+      tags:
+        - Generations
+        - Image
+        - Reframe
+  /generations/video:
+    post:
+      description: Initiate a new generation with the provided prompt
+      operationId: createGeneration
+      requestBody:
+        content:
+          application/json:
+            examples:
+              default:
+                value:
+                  aspect_ratio: 16:9
+                  keyframes:
+                    frame0:
+                      type: image
+                      url: https://example.com/image.jpg
+                    frame1:
+                      id: 123e4567-e89b-12d3-a456-426614174000
+                      type: generation
+                  loop: true
+                  prompt: A serene lake surrounded by mountains at sunset
+            schema:
+              $ref: "#/components/schemas/GenerationRequest"
+        description: The generation request object
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Generation"
+          description: Generation created
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error
+      summary: Create a generation
+      tags:
+        - Generations
+  /generations/video/modify:
+    post:
+      description: Modify a video with style transfer and prompt-based editing
+      operationId: modifyVideo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModifyVideoRequest"
+        description: The modify video generation request object
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Generation"
+          description: Video modified
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error
+      summary: Modify a video
+      tags:
+        - Generations
+        - Video
+        - Modify
+  /generations/video/reframe:
+    post:
+      description: Reframe a video by its ID
+      operationId: reframeVideo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReframeVideoRequest"
+        description: The reframe video generation request object
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Generation"
+          description: Video reframed
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error
+      summary: Reframe a video
+      tags:
+        - Generations
+        - Video
+        - Reframe
+  /generations/{id}:
+    delete:
+      description: Remove a specific generation by its ID
+      operationId: deleteGeneration
+      parameters:
+        - description: The ID of the generation
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Generation deleted
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error
+      summary: Delete a generation
+      tags:
+        - Generations
+    get:
+      description: Retrieve details of a specific generation by its ID
+      operationId: getGeneration
+      parameters:
+        - description: The ID of the generation
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Generation"
+          description: Generation found
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error
+      summary: Get a generation
+      tags:
+        - Generations
+  /generations/{id}/audio:
+    post:
+      description: Add audio to a generation by its ID
+      operationId: addAudioToGeneration
+      parameters:
+        - description: The ID of the generation
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AudioGenerationRequest"
+        description: The audio generation request object
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Generation"
+          description: Audio added to generation
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error
+      summary: Add audio to a generation
+      tags:
+        - Generations
+  /generations/{id}/upscale:
+    post:
+      description: Upscale a generation by its ID
+      operationId: upscaleGeneration
+      parameters:
+        - description: The ID of the generation
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpscaleVideoGenerationRequest"
+        description: The upscale request object
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Generation"
+          description: Generation upscaled
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+          description: Error
+      summary: Upscale a generation
+      tags:
+        - Generations
+  /ping:
+    get:
+      description: Check if the API is running
+      operationId: ping
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                example:
+                  message: pong
+                properties:
+                  message:
+                    description: The message
+                    type: string
+                type: object
+          description: API is running
+      summary: Ping
+      tags:
+        - Ping
+security:
+  - BearerAuth: []
+servers:
+  - url: https://api.lumalabs.ai/dream-machine/v1
