@@ -1,5 +1,21 @@
 import { generateText, Output, jsonSchema } from "ai";
 
+/**
+ * Recursively strips "description", "example", and "examples" keys from an object.
+ * Returns a new object with only the structural schema properties.
+ */
+function stripDocsFromSpec(obj) {
+  if (obj === null || typeof obj !== "object") return obj;
+  if (Array.isArray(obj)) return obj.map(stripDocsFromSpec);
+
+  const result = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (key === "description" || key === "example" || key === "examples") continue;
+    result[key] = stripDocsFromSpec(value);
+  }
+  return result;
+}
+
 const SCHEMA = jsonSchema({
   type: "object",
   properties: {
@@ -71,13 +87,35 @@ export async function analyzeRouteChange({
     throw new Error("AI_GATEWAY_API_KEY environment variable is required");
   }
 
+  // Strip descriptions and examples to reduce token count and focus on structural changes
+  const oldSpec = oldContent ? JSON.stringify(stripDocsFromSpec(JSON.parse(oldContent)), null, 2) : "";
+  const newSpec = newContent ? JSON.stringify(stripDocsFromSpec(JSON.parse(newContent)), null, 2) : "";
+
+  // For modifications, check if only docs changed (specs identical after stripping)
+  if (status === "M" && oldSpec === newSpec) {
+    return {
+      changes: [{
+        change: "changed",
+        target: "route",
+        breaking: false,
+        deprecated: false,
+        doc_only: true,
+        note: "Documentation-only changes (descriptions or examples updated)",
+        paths: [],
+        route,
+        date,
+      }],
+      summary: "Documentation updates only",
+    };
+  }
+
   let prompt;
   if (status === "A") {
     prompt = `A new API route was added: ${route}
 
-Here is the full dereferenced OpenAPI specification for this route:
+Here is the dereferenced OpenAPI specification for this route (descriptions and examples stripped):
 
-${newContent}
+${newSpec}
 
 Produce change records for this addition. Since the entire route is new, create a single record with change "added" and target "route". Include a brief note describing what this endpoint does. The paths array should be empty for route-level additions.
 
@@ -85,9 +123,9 @@ Also provide a one-line summary (max 100 chars).`;
   } else if (status === "D") {
     prompt = `An API route was removed: ${route}
 
-Here was the full dereferenced OpenAPI specification for this route:
+Here was the dereferenced OpenAPI specification for this route (descriptions and examples stripped):
 
-${oldContent}
+${oldSpec}
 
 Produce change records for this removal. Create a single record with change "removed", target "route", breaking true. Include a brief note describing what this endpoint was. The paths array should be empty for route-level removals.
 
@@ -95,20 +133,20 @@ Also provide a one-line summary (max 100 chars).`;
   } else {
     prompt = `An API route was modified: ${route}
 
-Here is the OLD dereferenced specification:
+Here is the OLD specification (descriptions and examples stripped):
 
-${oldContent}
+${oldSpec}
 
-Here is the NEW dereferenced specification:
+Here is the NEW specification (descriptions and examples stripped):
 
-${newContent}
+${newSpec}
 
 Analyze the differences and produce change records. For each logical change, create a record with:
 - change: "added" (new property/option), "changed" (type/value change), or "removed" (property/option gone)
 - target: "request" or "response"
 - breaking: true if the change could break existing consumers
 - deprecated: true if something was marked as deprecated
-- doc_only: true if only descriptions/examples changed, not schema structure
+- doc_only: false (doc-only changes have already been filtered out)
 - note: human-readable description of the change
 - paths: array of {path, before, after} with JSON-path-like notation relative to the route spec. Use "null" string for before on additions and after on removals.
 
