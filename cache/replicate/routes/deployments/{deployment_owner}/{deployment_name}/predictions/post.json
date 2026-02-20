@@ -1,0 +1,401 @@
+{
+  "description": "Create a prediction for the deployment and inputs you provide.\n\nExample cURL request:\n\n```console\ncurl -s -X POST -H 'Prefer: wait' \\\n  -d '{\"input\": {\"prompt\": \"A photo of a bear riding a bicycle over the moon\"}}' \\\n  -H \"Authorization: Bearer $REPLICATE_API_TOKEN\" \\\n  -H 'Content-Type: application/json' \\\n  https://api.replicate.com/v1/deployments/acme/my-app-image-generator/predictions\n```\n\nThe request will wait up to 60 seconds for the model to run. If this time is exceeded the prediction will be returned in a `\"starting\"` state and need to be retrieved using the `predictions.get` endpoint.\n\nFor a complete overview of the `deployments.predictions.create` API check out our documentation on [creating a prediction](https://replicate.com/docs/topics/predictions/create-a-prediction) which covers a variety of use cases.\n",
+  "operationId": "deployments.predictions.create",
+  "parameters": [
+    {
+      "description": "The name of the user or organization that owns the deployment.\n",
+      "in": "path",
+      "name": "deployment_owner",
+      "required": true,
+      "schema": {
+        "type": "string"
+      }
+    },
+    {
+      "description": "The name of the deployment.\n",
+      "in": "path",
+      "name": "deployment_name",
+      "required": true,
+      "schema": {
+        "type": "string"
+      }
+    },
+    {
+      "description": "Leave the request open and wait for the model to finish generating output. Set to `wait=n` where n is a number of seconds between 1 and 60.\n\nSee https://replicate.com/docs/topics/predictions/create-a-prediction#sync-mode for more information.",
+      "in": "header",
+      "name": "Prefer",
+      "schema": {
+        "example": "wait=5",
+        "pattern": "^wait(=([1-9]|[1-9][0-9]|60))?$",
+        "type": "string"
+      }
+    },
+    {
+      "description": "The maximum time the prediction can run before it is automatically canceled. The lifetime is measured from when the prediction is created.\n\nThe duration can be specified as string with an optional unit suffix:\n- `s` for seconds (e.g., `30s`, `90s`)\n- `m` for minutes (e.g., `5m`, `15m`)\n- `h` for hours (e.g., `1h`, `2h30m`)\n- defaults to seconds if no unit suffix is provided (e.g. `30` is the same as `30s`)\n\nYou can combine units for more precision (e.g., `1h30m45s`).\n\nThe minimum allowed duration is 5 seconds.\n",
+      "in": "header",
+      "name": "Cancel-After",
+      "schema": {
+        "example": "5m",
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "additionalProperties": false,
+          "properties": {
+            "input": {
+              "description": "The model's input as a JSON object. The input schema depends on what model you are running. To see the available inputs, click the \"API\" tab on the model you are running or [get the model version](#models.versions.get) and look at its `openapi_schema` property. For example, [stability-ai/sdxl](https://replicate.com/stability-ai/sdxl) takes `prompt` as an input.\n\nFiles should be passed as HTTP URLs or data URLs.\n\nUse an HTTP URL when:\n\n- you have a large file > 256kb\n- you want to be able to use the file multiple times\n- you want your prediction metadata to be associable with your input files\n\nUse a data URL when:\n\n- you have a small file <= 256kb\n- you don't want to upload and host the file somewhere\n- you don't need to use the file again (Replicate will not store it)\n",
+              "example": {
+                "prompt": "Tell me a joke",
+                "system_prompt": "You are a helpful assistant"
+              },
+              "type": "object"
+            },
+            "stream": {
+              "description": "**This field is deprecated.**\n\nRequest a URL to receive streaming output using [server-sent events (SSE)](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events).\n\nThis field is no longer needed as the returned prediction will always have a `stream` entry in its `urls` property if the model supports streaming.\n",
+              "type": "boolean"
+            },
+            "webhook": {
+              "description": "An HTTPS URL for receiving a webhook when the prediction has new output. The webhook will be a POST request where the request body is the same as the response body of the [get prediction](#predictions.get) operation. If there are network problems, we will retry the webhook a few times, so make sure it can be safely called more than once. Replicate will not follow redirects when sending webhook requests to your service, so be sure to specify a URL that will resolve without redirecting.\n",
+              "example": "https://example.com/my-webhook-handler",
+              "type": "string"
+            },
+            "webhook_events_filter": {
+              "description": "By default, we will send requests to your webhook URL whenever there are new outputs or the prediction has finished. You can change which events trigger webhook requests by specifying `webhook_events_filter` in the prediction request:\n\n- `start`: immediately on prediction start\n- `output`: each time a prediction generates an output (note that predictions can generate multiple outputs)\n- `logs`: each time log output is generated by a prediction\n- `completed`: when the prediction reaches a terminal state (succeeded/canceled/failed)\n\nFor example, if you only wanted requests to be sent at the start and end of the prediction, you would provide:\n\n```json\n{\n  \"input\": {\n    \"text\": \"Alice\"\n  },\n  \"webhook\": \"https://example.com/my-webhook\",\n  \"webhook_events_filter\": [\"start\", \"completed\"]\n}\n```\n\nRequests for event types `output` and `logs` will be sent at most once every 500ms. If you request `start` and `completed` webhooks, then they'll always be sent regardless of throttling.\n",
+              "example": [
+                "start",
+                "completed"
+              ],
+              "items": {
+                "enum": [
+                  "start",
+                  "output",
+                  "logs",
+                  "completed"
+                ],
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "input"
+          ],
+          "type": "object"
+        }
+      }
+    }
+  },
+  "responses": {
+    "201": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "completed_at": {
+                "description": "The time that the model completed the prediction and all outputs were uploaded",
+                "format": "date-time",
+                "type": "string"
+              },
+              "created_at": {
+                "description": "The time that the prediction was created",
+                "format": "date-time",
+                "type": "string"
+              },
+              "data_removed": {
+                "description": "Whether the prediction output has been deleted",
+                "type": "boolean"
+              },
+              "deadline": {
+                "description": "The absolute time at which the prediction will be automatically canceled if it has not completed",
+                "format": "date-time",
+                "type": "string"
+              },
+              "deployment": {
+                "description": "The name of the deployment that created the prediction",
+                "type": "string"
+              },
+              "error": {
+                "description": "An error string if the model status is `\"failed\"`",
+                "nullable": true,
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "input": {
+                "additionalProperties": true,
+                "description": "The prediction input",
+                "type": "object"
+              },
+              "logs": {
+                "description": "The log output from the model",
+                "type": "string"
+              },
+              "metrics": {
+                "additionalProperties": true,
+                "description": "Additional metrics associated with the prediction",
+                "properties": {
+                  "total_time": {
+                    "description": "The total time, in seconds, that the prediction took to complete",
+                    "type": "number"
+                  }
+                },
+                "type": "object"
+              },
+              "model": {
+                "description": "The name of the model that created the prediction",
+                "type": "string"
+              },
+              "output": {
+                "description": "The prediction output, which can be any JSON-serializable value, depending on the model"
+              },
+              "source": {
+                "description": "Indicates how the prediction was created",
+                "enum": [
+                  "web",
+                  "api"
+                ],
+                "type": "string"
+              },
+              "started_at": {
+                "description": "The time that the model began the prediction",
+                "format": "date-time",
+                "type": "string"
+              },
+              "status": {
+                "description": "The prediction status. `canceled` means the prediction was canceled (either by the user or because it reached its deadline while running). `aborted` means the prediction was terminated before it started running (for example, when a deadline is reached before the prediction starts).\n",
+                "enum": [
+                  "starting",
+                  "processing",
+                  "succeeded",
+                  "failed",
+                  "canceled",
+                  "aborted"
+                ],
+                "type": "string"
+              },
+              "urls": {
+                "description": "URLs for working with the prediction",
+                "properties": {
+                  "cancel": {
+                    "description": "Cancel the prediction via API",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "get": {
+                    "description": "Retrieve the latest state of the prediction via API",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "stream": {
+                    "description": "An event source to stream the output of the prediction via API",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "web": {
+                    "description": "View the prediction in a browser",
+                    "format": "uri",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "web",
+                  "get",
+                  "cancel"
+                ],
+                "type": "object"
+              },
+              "version": {
+                "oneOf": [
+                  {
+                    "description": "The ID of the model version that created the prediction",
+                    "type": "string"
+                  },
+                  {
+                    "description": "The model does not support versions, used by official models.",
+                    "enum": [
+                      "hidden"
+                    ],
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "model",
+              "version",
+              "input",
+              "output",
+              "data_removed",
+              "error",
+              "status",
+              "created_at",
+              "urls"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Prediction has been created. If the `Prefer: wait` header is provided it will contain the final output."
+    },
+    "202": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "completed_at": {
+                "description": "The time that the model completed the prediction and all outputs were uploaded",
+                "format": "date-time",
+                "type": "string"
+              },
+              "created_at": {
+                "description": "The time that the prediction was created",
+                "format": "date-time",
+                "type": "string"
+              },
+              "data_removed": {
+                "description": "Whether the prediction output has been deleted",
+                "type": "boolean"
+              },
+              "deadline": {
+                "description": "The absolute time at which the prediction will be automatically canceled if it has not completed",
+                "format": "date-time",
+                "type": "string"
+              },
+              "deployment": {
+                "description": "The name of the deployment that created the prediction",
+                "type": "string"
+              },
+              "error": {
+                "description": "An error string if the model status is `\"failed\"`",
+                "nullable": true,
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "input": {
+                "additionalProperties": true,
+                "description": "The prediction input",
+                "type": "object"
+              },
+              "logs": {
+                "description": "The log output from the model",
+                "type": "string"
+              },
+              "metrics": {
+                "additionalProperties": true,
+                "description": "Additional metrics associated with the prediction",
+                "properties": {
+                  "total_time": {
+                    "description": "The total time, in seconds, that the prediction took to complete",
+                    "type": "number"
+                  }
+                },
+                "type": "object"
+              },
+              "model": {
+                "description": "The name of the model that created the prediction",
+                "type": "string"
+              },
+              "output": {
+                "description": "The prediction output, which can be any JSON-serializable value, depending on the model"
+              },
+              "source": {
+                "description": "Indicates how the prediction was created",
+                "enum": [
+                  "web",
+                  "api"
+                ],
+                "type": "string"
+              },
+              "started_at": {
+                "description": "The time that the model began the prediction",
+                "format": "date-time",
+                "type": "string"
+              },
+              "status": {
+                "description": "The prediction status. `canceled` means the prediction was canceled (either by the user or because it reached its deadline while running). `aborted` means the prediction was terminated before it started running (for example, when a deadline is reached before the prediction starts).\n",
+                "enum": [
+                  "starting",
+                  "processing",
+                  "succeeded",
+                  "failed",
+                  "canceled",
+                  "aborted"
+                ],
+                "type": "string"
+              },
+              "urls": {
+                "description": "URLs for working with the prediction",
+                "properties": {
+                  "cancel": {
+                    "description": "Cancel the prediction via API",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "get": {
+                    "description": "Retrieve the latest state of the prediction via API",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "stream": {
+                    "description": "An event source to stream the output of the prediction via API",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "web": {
+                    "description": "View the prediction in a browser",
+                    "format": "uri",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "web",
+                  "get",
+                  "cancel"
+                ],
+                "type": "object"
+              },
+              "version": {
+                "oneOf": [
+                  {
+                    "description": "The ID of the model version that created the prediction",
+                    "type": "string"
+                  },
+                  {
+                    "description": "The model does not support versions, used by official models.",
+                    "enum": [
+                      "hidden"
+                    ],
+                    "type": "string"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "model",
+              "version",
+              "input",
+              "output",
+              "data_removed",
+              "error",
+              "status",
+              "created_at",
+              "urls"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Prediction has been created but does not yet have all outputs"
+    }
+  },
+  "summary": "Create a prediction using a deployment"
+}
