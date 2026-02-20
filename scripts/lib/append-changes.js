@@ -11,7 +11,7 @@ import yaml from "js-yaml";
  */
 export async function appendChanges(provider, changes) {
   if (!Array.isArray(changes) || changes.length === 0) {
-    console.log("No changes to append");
+    console.error("No changes to append");
     return;
   }
 
@@ -55,6 +55,6 @@ export async function appendChanges(provider, changes) {
 
     const merged = [...existing, ...records];
     await writeFile(filePath, yaml.dump(merged, { lineWidth: -1 }));
-    console.log(`${filePath}: appended ${records.length} record(s)`);
+    console.error(`${filePath}: appended ${records.length} record(s)`);
   }
 }

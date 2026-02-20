@@ -141,8 +141,8 @@ test("handles multiple routes in one call", async (t) => {
 });
 
 test("handles empty changes array", async (t) => {
-  const { stdout } = await exec("node", [SCRIPT, "openai", "[]"]);
-  t.true(stdout.includes("No changes to append"));
+  const { stderr } = await exec("node", [SCRIPT, "openai", "[]"]);
+  t.true(stderr.includes("No changes to append"));
 });
 
 test("route-level add has no route field in output", async (t) => {
