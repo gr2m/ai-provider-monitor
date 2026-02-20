@@ -31,7 +31,7 @@ try {
 
         // Sanitize path for filesystem/artifact compatibility
         // ? and = are not allowed in GitHub Actions artifact paths
-        const safePath = path.replaceAll("?", "%3F").replaceAll("=", "%3D");
+        const safePath = path.replaceAll("?", "_QMARK_").replaceAll("=", "_EQ_");
         const routeFilePath = `${dirname(filePath)}/routes${safePath}`;
         console.log(routeFilePath, method);
         await mkdir(routeFilePath, { recursive: true });

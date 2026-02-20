@@ -76,7 +76,7 @@ jobs:
         run: |
           wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
           chmod +x /usr/local/bin/yq
-          yq -i -P 'sort_keys(..)' ${{ steps.download.outputs.file_path }}
+          yq -i -P 'sort_keys(..) | explode(.)' ${{ steps.download.outputs.file_path }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -131,16 +131,26 @@ jobs:
           PROVIDER="${{ matrix.source.name }}"
           mkdir -p route-changes
 
-          # List changed route files with status (A=added, M=modified, D=deleted)
-          git diff --cached --name-status HEAD "cache/${PROVIDER}/routes/**" | while IFS=$'\t' read -r status file; do
+          # List changed route files with status (A=added, M=modified, D=deleted, R=renamed)
+          # For renames (R###), git outputs: status\told_path\tnew_path
+          git diff --cached --name-status HEAD "cache/${PROVIDER}/routes/**" | while IFS=$'\t' read -r status old_file new_file; do
+            # For renames, use new_file; for other statuses, old_file is the only path
+            if [[ "$status" == R* ]]; then
+              file="$new_file"
+              # Treat renames as modifications for downstream processing
+              status="M"
+            else
+              file="$old_file"
+            fi
+
             # Derive route: cache/openai/routes/chat/completions/post.json → POST /chat/completions
-            # Decode %3F→? and %3D→= for display (encoded by dereference script)
-            ROUTE_PATH=$(echo "$file" | sed "s|cache/${PROVIDER}/routes/||" | sed 's|/[^/]*\.json$||' | sed 's|%3F|?|g' | sed 's|%3D|=|g')
+            # Decode _QMARK_→? and _EQ_→= for display
+            ROUTE_PATH=$(echo "$file" | sed "s|cache/${PROVIDER}/routes/||" | sed 's|/[^/]*\.json$||' | sed 's|_QMARK_|?|g' | sed 's|_EQ_|=|g')
             METHOD=$(basename "$file" .json | tr '[:lower:]' '[:upper:]')
             ROUTE="${METHOD} /${ROUTE_PATH}"
 
-            # Sanitize file path for artifact name (replace / and % with --)
-            SAFE_NAME=$(echo "$file" | sed "s|cache/${PROVIDER}/routes/||" | sed 's|/|--|g' | sed 's|%|_|g' | sed 's|\.json$||')
+            # Sanitize file path for artifact name (replace special chars)
+            SAFE_NAME=$(echo "$file" | sed "s|cache/${PROVIDER}/routes/||" | sed 's|/|--|g' | sed 's|_QMARK_|_|g' | sed 's|_EQ_|_|g' | sed 's|\.json$||')
 
             echo "{\"provider\":\"${PROVIDER}\",\"file\":\"${file}\",\"status\":\"${status}\",\"route\":\"${ROUTE}\",\"safe_name\":\"${SAFE_NAME}\"}" > "route-changes/${SAFE_NAME}.json"
           done
