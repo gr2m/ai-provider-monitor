@@ -1,0 +1,423 @@
+{
+  "description": "\nComputes cost estimates using one of two methods:\n\n**1. Historical API Price** (`historical_api_price`):\n- Based on historical pricing per API call from past usage patterns\n- Takes `call_quantity` (number of API calls) per endpoint\n- Useful for estimating based on actual historical usage patterns\n- Example: \"How much will 100 calls to flux/dev cost?\"\n\n**2. Unit Price** (`unit_price`):\n- Based on unit price × expected billing units from pricing service\n- Takes `unit_quantity` (number of billing units like images/videos) per endpoint\n- Useful when you know the expected output quantity\n- Example: \"How much will 50 images from flux/dev cost?\"\n\n**Authentication:** Required. Users must provide a valid API key.\nCustom pricing or discounts may be applied based on account status.\n\n**Common Use Cases:**\n- Pre-calculate costs for batch operations\n- Display cost estimates in user interfaces\n- Budget planning and cost optimization\n\nSee [fal.ai pricing](https://fal.ai/pricing) for more details.\n    ",
+  "operationId": "estimatePricing",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "examples": {
+          "historical": {
+            "summary": "Historical API price estimate",
+            "value": {
+              "endpoints": {
+                "fal-ai/flux/dev": {
+                  "call_quantity": 100
+                },
+                "fal-ai/flux/schnell": {
+                  "call_quantity": 50
+                }
+              },
+              "estimate_type": "historical_api_price"
+            }
+          },
+          "unit_price": {
+            "summary": "Unit price estimate",
+            "value": {
+              "endpoints": {
+                "fal-ai/flux-pro": {
+                  "unit_quantity": 25
+                },
+                "fal-ai/flux/dev": {
+                  "unit_quantity": 50
+                }
+              },
+              "estimate_type": "unit_price"
+            }
+          }
+        },
+        "schema": {
+          "example": {
+            "endpoints": {
+              "fal-ai/flux/dev": {
+                "call_quantity": 100
+              },
+              "fal-ai/flux/schnell": {
+                "call_quantity": 50
+              }
+            },
+            "estimate_type": "historical_api_price"
+          },
+          "oneOf": [
+            {
+              "description": "Historical API price estimate: Calculates cost based on historical pricing per API call. Useful for estimating costs based on actual usage patterns.",
+              "properties": {
+                "endpoints": {
+                  "additionalProperties": {
+                    "properties": {
+                      "call_quantity": {
+                        "description": "Number of API calls to estimate (regardless of units per call)",
+                        "minimum": 1,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "call_quantity"
+                    ],
+                    "type": "object"
+                  },
+                  "description": "Map of endpoint IDs to call quantities",
+                  "type": "object"
+                },
+                "estimate_type": {
+                  "description": "Estimate type: historical API pricing based on past usage patterns",
+                  "enum": [
+                    "historical_api_price"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "estimate_type",
+                "endpoints"
+              ],
+              "type": "object"
+            },
+            {
+              "description": "Unit price estimate: Calculates cost based on unit price × billing units. Useful for estimating costs when you know the expected output quantity.",
+              "properties": {
+                "endpoints": {
+                  "additionalProperties": {
+                    "properties": {
+                      "unit_quantity": {
+                        "description": "Number of billing units expected (e.g., number of images, videos, etc.)",
+                        "minimum": 0.000001,
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "unit_quantity"
+                    ],
+                    "type": "object"
+                  },
+                  "description": "Map of endpoint IDs to unit quantities",
+                  "type": "object"
+                },
+                "estimate_type": {
+                  "description": "Estimate type: unit price calculation based on billing units",
+                  "enum": [
+                    "unit_price"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "estimate_type",
+                "endpoints"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "examples": {
+            "historical": {
+              "summary": "Historical API price estimate result",
+              "value": {
+                "currency": "USD",
+                "estimate_type": "historical_api_price",
+                "total_cost": 3.75
+              }
+            },
+            "unit_price": {
+              "summary": "Unit price estimate result",
+              "value": {
+                "currency": "USD",
+                "estimate_type": "unit_price",
+                "total_cost": 1.88
+              }
+            }
+          },
+          "schema": {
+            "description": "Cost estimation response with total cost",
+            "example": {
+              "currency": "USD",
+              "estimate_type": "historical_api_price",
+              "total_cost": 3.75
+            },
+            "properties": {
+              "currency": {
+                "description": "Three-letter currency code (ISO 4217, e.g., 'USD')",
+                "maxLength": 3,
+                "minLength": 3,
+                "type": "string"
+              },
+              "estimate_type": {
+                "description": "The type of estimate that was performed",
+                "enum": [
+                  "historical_api_price",
+                  "unit_price"
+                ],
+                "type": "string"
+              },
+              "total_cost": {
+                "description": "Total estimated cost across all endpoints",
+                "minimum": 0,
+                "type": "number"
+              }
+            },
+            "required": [
+              "estimate_type",
+              "total_cost",
+              "currency"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Cost estimates calculated successfully"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Invalid request parameters",
+              "type": "validation_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Authentication required",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Authentication required"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Resource not found",
+              "type": "not_found"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Resource not found"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Rate limit exceeded",
+              "type": "rate_limited"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Rate limit exceeded"
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "summary": "Estimate cost",
+  "tags": [
+    "Models",
+    "Pricing"
+  ]
+}

@@ -1,0 +1,616 @@
+{
+  "description": "\nUnified endpoint for discovering model endpoints. Supports three usage modes:\n\n**1. List Mode** (no parameters):\nPaginated list of all available model endpoints with minimal metadata.\n\n**2. Find Mode** (`endpoint_id` parameter):\nRetrieve specific model endpoint(s) by ID. Supports single or multiple IDs.\n\n**3. Search Mode** (search parameters):\nFilter models by free-text query, category, or status.\n\n**Expansion:**\nUse `expand=openapi-3.0` to include the full OpenAPI 3.0 schema inline in the 'openapi' field for each model.\n\n**Examples of `endpoint_id` values:**\n- `fal-ai/flux/dev`\n- `fal-ai/wan/v2.2-a14b/text-to-video`\n- `fal-ai/minimax/video-01/image-to-video`\n- `fal-ai/hunyuan3d-v21`\n\nSee [fal.ai Model APIs](https://docs.fal.ai/model-apis) for more details.\n\n**Authentication:** Optional. Providing an API key grants higher rate limits.\n\n**Common Use Cases:**\n- Browse available models for integration\n- Retrieve metadata for specific endpoints\n- Search for models by category or keywords\n- Get OpenAPI schemas for code generation\n- Build model selection interfaces\n    ",
+  "operationId": "getModels",
+  "parameters": [
+    {
+      "description": "Maximum number of items to return. Actual maximum depends on query type and expansion parameters.",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "description": "Maximum number of items to return. Actual maximum depends on query type and expansion parameters.",
+        "example": 50,
+        "minimum": 1,
+        "type": "integer"
+      }
+    },
+    {
+      "description": "Pagination cursor from previous response. Encodes the page number.",
+      "in": "query",
+      "name": "cursor",
+      "required": false,
+      "schema": {
+        "description": "Pagination cursor from previous response. Encodes the page number.",
+        "example": "Mg==",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Endpoint ID(s) to retrieve (e.g., 'fal-ai/flux/dev'). Can be a single value or multiple values (1-50 models). When combined with search params, narrows results to these IDs. Use array syntax: ?endpoint_id=model1&endpoint_id=model2",
+      "explode": true,
+      "in": "query",
+      "name": "endpoint_id",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Endpoint ID(s) to retrieve (e.g., 'fal-ai/flux/dev'). Can be a single value or multiple values (1-50 models). When combined with search params, narrows results to these IDs. Use array syntax: ?endpoint_id=model1&endpoint_id=model2",
+        "example": [
+          "fal-ai/flux/dev",
+          "fal-ai/flux-pro"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Free-text search query to filter models by name, description, or category",
+      "in": "query",
+      "name": "q",
+      "required": false,
+      "schema": {
+        "description": "Free-text search query to filter models by name, description, or category",
+        "example": "text to image",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Filter by category (e.g., 'text-to-image', 'image-to-video', 'training')",
+      "in": "query",
+      "name": "category",
+      "required": false,
+      "schema": {
+        "description": "Filter by category (e.g., 'text-to-image', 'image-to-video', 'training')",
+        "example": "text-to-image",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Filter models by status - omit to include all statuses",
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+        "description": "Filter models by status - omit to include all statuses",
+        "enum": [
+          "active",
+          "deprecated"
+        ],
+        "example": "active",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Fields to expand in the response. Supported values: 'openapi-3.0' (includes full OpenAPI 3.0 schema in 'openapi' field)",
+      "explode": true,
+      "in": "query",
+      "name": "expand",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Fields to expand in the response. Supported values: 'openapi-3.0' (includes full OpenAPI 3.0 schema in 'openapi' field)",
+        "example": [
+          "openapi-3.0"
+        ]
+      },
+      "style": "form"
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "example": {
+            "has_more": false,
+            "models": [
+              {
+                "endpoint_id": "fal-ai/flux/dev",
+                "metadata": {
+                  "category": "text-to-image",
+                  "date": "2024-08-01T00:00:00Z",
+                  "description": "Fast text-to-image generation",
+                  "display_name": "FLUX.1 [dev]",
+                  "highlighted": true,
+                  "is_favorited": false,
+                  "model_url": "https://fal.run/fal-ai/flux/dev",
+                  "pinned": false,
+                  "status": "active",
+                  "tags": [
+                    "fast",
+                    "pro"
+                  ],
+                  "thumbnail_url": "https://fal.media/files/example.jpg",
+                  "updated_at": "2025-01-15T12:00:00Z"
+                }
+              }
+            ],
+            "next_cursor": null
+          },
+          "schema": {
+            "description": "Response containing model data with pagination support",
+            "properties": {
+              "has_more": {
+                "description": "Boolean indicating if more results are available (convenience field derived from next_cursor)",
+                "type": "boolean"
+              },
+              "models": {
+                "description": "Array of model information",
+                "items": {
+                  "description": "Model information with optional metadata and expandable fields",
+                  "properties": {
+                    "endpoint_id": {
+                      "description": "Stable identifier used to call the model (e.g., 'fal-ai/wan/v2.2-a14b/text-to-video', 'fal-ai/minimax/video-01/image-to-video', 'fal-ai/hunyuan3d-v21')",
+                      "type": "string"
+                    },
+                    "metadata": {
+                      "description": "Model metadata (optional - may be absent for endpoints without registry entries)",
+                      "properties": {
+                        "category": {
+                          "description": "Model category (e.g., 'text-to-image', 'image-to-video', 'text-to-video', 'image-to-3d', 'training')",
+                          "type": "string"
+                        },
+                        "date": {
+                          "description": "ISO8601 timestamp of model creation",
+                          "type": "string"
+                        },
+                        "description": {
+                          "description": "Brief description of the model's capabilities and use cases",
+                          "type": "string"
+                        },
+                        "display_name": {
+                          "description": "Human-readable label shown on Explore/Model pages",
+                          "type": "string"
+                        },
+                        "duration_estimate": {
+                          "description": "Estimated duration in minutes (optional)",
+                          "type": "number"
+                        },
+                        "github_url": {
+                          "description": "License or GitHub URL (optional)",
+                          "type": "string"
+                        },
+                        "group": {
+                          "description": "Model group information (optional)",
+                          "properties": {
+                            "key": {
+                              "description": "Group key identifier",
+                              "type": "string"
+                            },
+                            "label": {
+                              "description": "Human-readable group label",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "key",
+                            "label"
+                          ],
+                          "type": "object"
+                        },
+                        "highlighted": {
+                          "description": "Whether the model is highlighted",
+                          "type": "boolean"
+                        },
+                        "inference_endpoint_ids": {
+                          "description": "Related inference endpoint IDs (optional, only present when non-empty, for training models)",
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "is_favorited": {
+                          "description": "Whether the model is favorited by the authenticated user (null when unauthenticated)",
+                          "type": [
+                            "boolean",
+                            "null"
+                          ]
+                        },
+                        "kind": {
+                          "description": "Model kind - inference or training (optional)",
+                          "enum": [
+                            "inference",
+                            "training"
+                          ],
+                          "type": "string"
+                        },
+                        "license_type": {
+                          "description": "License type for the model (optional)",
+                          "enum": [
+                            "commercial",
+                            "research",
+                            "private"
+                          ],
+                          "type": "string"
+                        },
+                        "model_url": {
+                          "description": "Full model endpoint URL (e.g., https://fal.run/...)",
+                          "type": "string"
+                        },
+                        "pinned": {
+                          "description": "Whether the model is pinned",
+                          "type": "boolean"
+                        },
+                        "status": {
+                          "description": "'active' or 'deprecated'. Newest models are surfaced in Explore and may be flagged as 'new/beta' in tags",
+                          "enum": [
+                            "active",
+                            "deprecated"
+                          ],
+                          "type": "string"
+                        },
+                        "stream_url": {
+                          "description": "Streaming endpoint URL (optional)",
+                          "type": "string"
+                        },
+                        "tags": {
+                          "description": "Freeform tags such as 'new', 'beta', 'pro', or 'turbo' (Explore badges)",
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "thumbnail_animated_url": {
+                          "description": "Animated thumbnail URL (optional)",
+                          "type": "string"
+                        },
+                        "thumbnail_url": {
+                          "description": "Main thumbnail image URL",
+                          "type": "string"
+                        },
+                        "training_endpoint_ids": {
+                          "description": "Related training endpoint IDs (optional, only present when non-empty, for inference models)",
+                          "items": {
+                            "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "updated_at": {
+                          "description": "ISO8601 timestamp of when the model was last updated",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "display_name",
+                        "category",
+                        "description",
+                        "status",
+                        "tags",
+                        "updated_at",
+                        "is_favorited",
+                        "thumbnail_url",
+                        "model_url",
+                        "date",
+                        "highlighted",
+                        "pinned"
+                      ],
+                      "type": "object"
+                    },
+                    "openapi": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": {},
+                          "description": "OpenAPI 3.0 specification for the model",
+                          "properties": {
+                            "openapi": {
+                              "description": "OpenAPI version (e.g., '3.0.4')",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "openapi"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "description": "Error encountered while expanding OpenAPI schema",
+                          "properties": {
+                            "error": {
+                              "description": "Error details for failed OpenAPI expansion",
+                              "properties": {
+                                "code": {
+                                  "description": "Error code (e.g., 'expansion_failed')",
+                                  "type": "string"
+                                },
+                                "message": {
+                                  "description": "Human-readable error message",
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "code",
+                                "message"
+                              ],
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "error"
+                          ],
+                          "type": "object"
+                        }
+                      ],
+                      "description": "OpenAPI 3.0 specification or error (present when expand=openapi-3.0 is requested)"
+                    }
+                  },
+                  "required": [
+                    "endpoint_id"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "next_cursor": {
+                "description": "Cursor for the next page of results, null if no more pages",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "models",
+              "has_more"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Successfully retrieved model endpoints"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Invalid request parameters",
+              "type": "validation_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Resource not found",
+              "type": "not_found"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Resource not found"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Rate limit exceeded",
+              "type": "rate_limited"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Rate limit exceeded"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "An unexpected error occurred",
+              "type": "server_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Internal server error"
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "summary": "Model search",
+  "tags": [
+    "Models"
+  ]
+}

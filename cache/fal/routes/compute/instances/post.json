@@ -1,0 +1,447 @@
+{
+  "description": "Creates a new compute instance with the specified configuration and SSH key.\n\n**Requirements:**\n- Requires compute permissions (extra_permissions.compute = true)\n- Authentication required via admin API key\n- Valid SSH public key required for instance access\n\n**Key Features:**\n- Create high-performance GPU instances\n- Specify sector for InfiniBand configuration (8x H100 only)\n- SSH key-based authentication\n- Automatic instance provisioning and region assignment\n- Idempotent creation with Idempotency-Key header (optional but recommended)\n\n**Common Use Cases:**\n- Spin up compute resources for ML training\n- Create GPU instances for inference workloads\n- Set up development environments with H100 GPUs\n- Deploy distributed training with InfiniBand networking\n\n**Instance Types:**\n- `gpu_8x_h100_sxm5`: 8x NVIDIA H100 GPUs (high-performance, supports sector configuration for InfiniBand)\n- `gpu_1x_h100_sxm5`: 1x NVIDIA H100 GPU (standard)\n\n**Idempotency:**\n- Optional Idempotency-Key header prevents duplicate instance creation on retries\n- Responses cached for 10 minutes per unique key\n\nSee [fal.ai docs](https://docs.fal.ai/compute) for more details.",
+  "operationId": "createComputeInstance",
+  "parameters": [
+    {
+      "description": "Optional idempotency key for safe request retries",
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": false,
+      "schema": {
+        "description": "Optional idempotency key for safe request retries",
+        "example": "550e8400-e29b-41d4-a716-446655440000",
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "example": {
+          "instance_type": "gpu_8x_h100_sxm5",
+          "sector": "sector_1",
+          "ssh_key": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7Kl4... user@host"
+        },
+        "schema": {
+          "description": "Request body for creating a new compute instance with SSH access",
+          "properties": {
+            "instance_type": {
+              "description": "Type of compute instance to create",
+              "enum": [
+                "gpu_8x_h100_sxm5",
+                "gpu_1x_h100_sxm5"
+              ],
+              "example": "gpu_1x_h100_sxm5",
+              "type": "string"
+            },
+            "sector": {
+              "description": "Sector for InfiniBand configuration (only valid with gpu_8x_h100_sxm5)",
+              "enum": [
+                "sector_1",
+                "sector_2",
+                "sector_3"
+              ],
+              "example": "sector_1",
+              "type": "string"
+            },
+            "ssh_key": {
+              "description": "SSH public key for accessing the instance (e.g., 'ssh-rsa AAAAB3...')",
+              "example": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC... user@host",
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "instance_type",
+            "ssh_key"
+          ],
+          "type": "object"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "201": {
+      "content": {
+        "application/json": {
+          "example": {
+            "creator_user_nickname": "developer",
+            "id": "inst_abc123xyz",
+            "instance_type": "gpu_8x_h100_sxm5",
+            "region": "us-west",
+            "sector": "sector_1",
+            "status": "provisioning"
+          },
+          "schema": {
+            "description": "Compute instance details including configuration, location, and status",
+            "properties": {
+              "creator_user_nickname": {
+                "description": "Nickname of the user who created this instance",
+                "example": "developer",
+                "type": "string"
+              },
+              "id": {
+                "description": "Unique identifier for the compute instance",
+                "example": "inst_abc123xyz",
+                "type": "string"
+              },
+              "instance_type": {
+                "description": "Type of compute instance (GPU configuration)",
+                "enum": [
+                  "gpu_8x_h100_sxm5",
+                  "gpu_1x_h100_sxm5"
+                ],
+                "example": "gpu_1x_h100_sxm5",
+                "type": "string"
+              },
+              "ip": {
+                "description": "IP address of the instance (available when instance is ready)",
+                "example": "203.0.113.42",
+                "type": "string"
+              },
+              "region": {
+                "description": "Geographical region where the instance is located",
+                "enum": [
+                  "us-west",
+                  "us-central",
+                  "us-east",
+                  "eu-north",
+                  "eu-west",
+                  "other"
+                ],
+                "example": "us-west",
+                "type": "string"
+              },
+              "sector": {
+                "description": "Sector identifier for instance placement within the region (if applicable)",
+                "enum": [
+                  "sector_1",
+                  "sector_2",
+                  "sector_3"
+                ],
+                "example": "sector_1",
+                "type": "string"
+              },
+              "status": {
+                "description": "Current operational status of the instance",
+                "enum": [
+                  "ready",
+                  "init",
+                  "pending",
+                  "provisioning",
+                  "stopped",
+                  "unknown"
+                ],
+                "example": "ready",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "instance_type",
+              "region",
+              "status"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Compute instance created successfully"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Invalid request parameters",
+              "type": "validation_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Authentication required",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Authentication required"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Access denied",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Access denied"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Rate limit exceeded",
+              "type": "rate_limited"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Rate limit exceeded"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "An unexpected error occurred",
+              "type": "server_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Internal server error"
+    }
+  },
+  "security": [
+    {
+      "adminApiKey": []
+    }
+  ],
+  "summary": "Create Compute Instance",
+  "tags": [
+    "Compute"
+  ]
+}
