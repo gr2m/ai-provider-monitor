@@ -1,9 +1,6 @@
-import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { dirname } from "node:path";
+import { generateText, Output, jsonSchema } from "ai";
 
-import yaml from "js-yaml";
-
-const SCHEMA = {
+const SCHEMA = jsonSchema({
   type: "object",
   properties: {
     changes: {
@@ -50,36 +47,7 @@ const SCHEMA = {
   },
   required: ["changes", "summary"],
   additionalProperties: false,
-};
-
-async function callOpenAI(prompt, schema) {
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "gpt-5",
-      messages: [{ role: "user", content: prompt }],
-      response_format: {
-        type: "json_schema",
-        json_schema: { name: "route_analysis", schema },
-      },
-      temperature: 0.1,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(
-      `OpenAI API error: ${response.status} ${response.statusText} - ${errorBody}`
-    );
-  }
-
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content);
-}
+});
 
 /**
  * Analyzes a single route change by comparing old and new content.
@@ -99,8 +67,8 @@ export async function analyzeRouteChange({
   oldContent,
   newContent,
 }) {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error("OPENAI_API_KEY environment variable is required");
+  if (!process.env.AI_GATEWAY_API_KEY) {
+    throw new Error("AI_GATEWAY_API_KEY environment variable is required");
   }
 
   let prompt;
@@ -147,7 +115,12 @@ Analyze the differences and produce change records. For each logical change, cre
 Also provide a one-line summary of all changes to this route (max 100 chars).`;
   }
 
-  const result = await callOpenAI(prompt, SCHEMA);
+  const { output: result } = await generateText({
+    model: "openai/gpt-5",
+    prompt,
+    output: Output.object({ schema: SCHEMA }),
+    temperature: 0.1,
+  });
 
   for (const change of result.changes) {
     change.route = route;

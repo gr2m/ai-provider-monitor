@@ -14,7 +14,7 @@
  *   new-file - path to the new route spec (required for M and A)
  *
  * Environment:
- *   OPENAI_API_KEY - OpenAI API key
+ *   AI_GATEWAY_API_KEY - AI Gateway API key
  *
  * Outputs JSON to stdout: { changes: [...], summary: "..." }
  */

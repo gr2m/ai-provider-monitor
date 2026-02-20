@@ -12,7 +12,7 @@
  *   filename    - local filename for the spec, e.g. "openapi.yml"
  *
  * Environment:
- *   OPENAI_API_KEY - OpenAI API key (required when changes are detected)
+ *   AI_GATEWAY_API_KEY - AI Gateway API key (required when changes are detected)
  *
  * Outputs JSON to stdout:
  *   { has_changes: boolean, first_run: boolean, title: string, body: string }
