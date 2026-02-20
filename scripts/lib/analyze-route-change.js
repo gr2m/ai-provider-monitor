@@ -65,6 +65,51 @@ const SCHEMA = jsonSchema({
   additionalProperties: false,
 });
 
+function buildPrompt(status, route, oldSpec, newSpec) {
+  if (status === "A") {
+    return `A new API route was added: ${route}
+
+Here is the full dereferenced OpenAPI specification for this route:
+
+${newSpec}
+
+Produce change records for this addition. Since the entire route is new, create a single record with change "added" and target "route". Include a brief note describing what this endpoint does. The paths array should be empty for route-level additions.
+
+Also provide a one-line summary (max 100 chars).`;
+  } else if (status === "D") {
+    return `An API route was removed: ${route}
+
+Here was the full dereferenced OpenAPI specification for this route:
+
+${oldSpec}
+
+Produce change records for this removal. Create a single record with change "removed", target "route", breaking true. Include a brief note describing what this endpoint was. The paths array should be empty for route-level removals.
+
+Also provide a one-line summary (max 100 chars).`;
+  } else {
+    return `An API route was modified: ${route}
+
+Here is the OLD dereferenced specification:
+
+${oldSpec}
+
+Here is the NEW dereferenced specification:
+
+${newSpec}
+
+Analyze the differences and produce change records. For each logical change, create a record with:
+- change: "added" (new property/option), "changed" (type/value change), or "removed" (property/option gone)
+- target: "request" or "response"
+- breaking: true if the change could break existing consumers
+- deprecated: true if something was marked as deprecated
+- doc_only: true if only descriptions/examples changed, not schema structure
+- note: human-readable description of the change
+- paths: array of {path, before, after} with JSON-path-like notation relative to the route spec. Use "null" string for before on additions and after on removals.
+
+Also provide a one-line summary of all changes to this route (max 100 chars).`;
+  }
+}
+
 /**
  * Analyzes a single route change by comparing old and new content.
  *
@@ -87,78 +132,36 @@ export async function analyzeRouteChange({
     throw new Error("AI_GATEWAY_API_KEY environment variable is required");
   }
 
-  // Strip descriptions and examples to reduce token count and focus on structural changes
-  const oldSpec = oldContent ? JSON.stringify(stripDocsFromSpec(JSON.parse(oldContent)), null, 2) : "";
-  const newSpec = newContent ? JSON.stringify(stripDocsFromSpec(JSON.parse(newContent)), null, 2) : "";
+  const prompt = buildPrompt(status, route, oldContent, newContent);
 
-  // For modifications, check if only docs changed (specs identical after stripping)
-  if (status === "M" && oldSpec === newSpec) {
-    return {
-      changes: [{
-        change: "changed",
-        target: "route",
-        breaking: false,
-        deprecated: false,
-        doc_only: true,
-        note: "Documentation-only changes (descriptions or examples updated)",
-        paths: [],
-        route,
-        date,
-      }],
-      summary: "Documentation updates only",
-    };
+  let result;
+  try {
+    ({ output: result } = await generateText({
+      model: "openai/gpt-5",
+      prompt,
+      output: Output.object({ schema: SCHEMA }),
+      temperature: 0.1,
+    }));
+  } catch (error) {
+    if (!error.message?.includes("exceeds the context window")) {
+      throw error;
+    }
+
+    // Retry with stripped descriptions/examples to fit within context window
+    console.error(`Context window exceeded for ${route}, retrying with stripped spec`);
+
+    const oldSpec = oldContent ? JSON.stringify(stripDocsFromSpec(JSON.parse(oldContent)), null, 2) : "";
+    const newSpec = newContent ? JSON.stringify(stripDocsFromSpec(JSON.parse(newContent)), null, 2) : "";
+
+    const strippedPrompt = buildPrompt(status, route, oldSpec, newSpec);
+
+    ({ output: result } = await generateText({
+      model: "openai/gpt-5",
+      prompt: strippedPrompt,
+      output: Output.object({ schema: SCHEMA }),
+      temperature: 0.1,
+    }));
   }
-
-  let prompt;
-  if (status === "A") {
-    prompt = `A new API route was added: ${route}
-
-Here is the dereferenced OpenAPI specification for this route (descriptions and examples stripped):
-
-${newSpec}
-
-Produce change records for this addition. Since the entire route is new, create a single record with change "added" and target "route". Include a brief note describing what this endpoint does. The paths array should be empty for route-level additions.
-
-Also provide a one-line summary (max 100 chars).`;
-  } else if (status === "D") {
-    prompt = `An API route was removed: ${route}
-
-Here was the dereferenced OpenAPI specification for this route (descriptions and examples stripped):
-
-${oldSpec}
-
-Produce change records for this removal. Create a single record with change "removed", target "route", breaking true. Include a brief note describing what this endpoint was. The paths array should be empty for route-level removals.
-
-Also provide a one-line summary (max 100 chars).`;
-  } else {
-    prompt = `An API route was modified: ${route}
-
-Here is the OLD specification (descriptions and examples stripped):
-
-${oldSpec}
-
-Here is the NEW specification (descriptions and examples stripped):
-
-${newSpec}
-
-Analyze the differences and produce change records. For each logical change, create a record with:
-- change: "added" (new property/option), "changed" (type/value change), or "removed" (property/option gone)
-- target: "request" or "response"
-- breaking: true if the change could break existing consumers
-- deprecated: true if something was marked as deprecated
-- doc_only: false (doc-only changes have already been filtered out)
-- note: human-readable description of the change
-- paths: array of {path, before, after} with JSON-path-like notation relative to the route spec. Use "null" string for before on additions and after on removals.
-
-Also provide a one-line summary of all changes to this route (max 100 chars).`;
-  }
-
-  const { output: result } = await generateText({
-    model: "openai/gpt-5",
-    prompt,
-    output: Output.object({ schema: SCHEMA }),
-    temperature: 0.1,
-  });
 
   for (const change of result.changes) {
     change.route = route;
