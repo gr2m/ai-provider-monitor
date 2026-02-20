@@ -12,7 +12,7 @@
             },
             "frequency_penalty": {
               "default": 0,
-              "description": "frequency_penalty penalizes the repetition of words based on their frequency in the generated text. A higher frequency penalty discourages the model from repeating words that have already appeared frequently in the output, promoting diversity and reducing repetition.",
+              "description": "The `frequency_penalty` penalizes the repetition of words based on their frequency in the generated text. A higher frequency penalty discourages the model from repeating words that have already appeared frequently in the output, promoting diversity and reducing repetition.",
               "maximum": 2,
               "minimum": -2,
               "title": "Frequency Penalty",
@@ -62,26 +62,117 @@
                           },
                           {
                             "items": {
-                              "additionalProperties": false,
-                              "properties": {
-                                "text": {
-                                  "title": "Text",
-                                  "type": "string"
+                              "discriminator": {
+                                "mapping": {
+                                  "text": "#/components/schemas/TextChunk",
+                                  "thinking": "#/components/schemas/ThinkChunk"
                                 },
-                                "type": {
-                                  "default": "text",
-                                  "enum": [
+                                "propertyName": "type"
+                              },
+                              "oneOf": [
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "text": {
+                                      "title": "Text",
+                                      "type": "string"
+                                    },
+                                    "type": {
+                                      "default": "text",
+                                      "enum": [
+                                        "text"
+                                      ],
+                                      "title": "Type",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
                                     "text"
                                   ],
-                                  "title": "Type",
-                                  "type": "string"
+                                  "title": "TextChunk",
+                                  "type": "object"
+                                },
+                                {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "closed": {
+                                      "default": true,
+                                      "description": "Whether the thinking chunk is closed or not. Currently only used for prefixing.",
+                                      "title": "Closed",
+                                      "type": "boolean"
+                                    },
+                                    "thinking": {
+                                      "items": {
+                                        "anyOf": [
+                                          {
+                                            "additionalProperties": false,
+                                            "properties": {
+                                              "reference_ids": {
+                                                "items": {
+                                                  "type": "integer"
+                                                },
+                                                "title": "Reference Ids",
+                                                "type": "array"
+                                              },
+                                              "type": {
+                                                "default": "reference",
+                                                "enum": [
+                                                  "reference"
+                                                ],
+                                                "title": "Type",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "reference_ids"
+                                            ],
+                                            "title": "ReferenceChunk",
+                                            "type": "object"
+                                          },
+                                          {
+                                            "additionalProperties": false,
+                                            "properties": {
+                                              "text": {
+                                                "title": "Text",
+                                                "type": "string"
+                                              },
+                                              "type": {
+                                                "default": "text",
+                                                "enum": [
+                                                  "text"
+                                                ],
+                                                "title": "Type",
+                                                "type": "string"
+                                              }
+                                            },
+                                            "required": [
+                                              "text"
+                                            ],
+                                            "title": "TextChunk",
+                                            "type": "object"
+                                          }
+                                        ]
+                                      },
+                                      "title": "Thinking",
+                                      "type": "array"
+                                    },
+                                    "type": {
+                                      "default": "thinking",
+                                      "enum": [
+                                        "thinking"
+                                      ],
+                                      "title": "Type",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "thinking"
+                                  ],
+                                  "title": "ThinkChunk",
+                                  "type": "object"
                                 }
-                              },
-                              "required": [
-                                "text"
                               ],
-                              "title": "TextChunk",
-                              "type": "object"
+                              "title": "SystemMessageContentChunks"
                             },
                             "type": "array"
                           }
@@ -1132,6 +1223,18 @@
               "title": "Messages",
               "type": "array"
             },
+            "metadata": {
+              "anyOf": [
+                {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Metadata"
+            },
             "n": {
               "anyOf": [
                 {
@@ -1152,6 +1255,7 @@
             },
             "prediction": {
               "additionalProperties": false,
+              "description": "Enable users to specify an expected completion, optimizing response times by leveraging known or predictable content.",
               "properties": {
                 "content": {
                   "default": "",
@@ -1170,12 +1274,11 @@
               "default": {
                 "content": "",
                 "type": "content"
-              },
-              "description": "Enable users to specify expected results, optimizing response times by leveraging known or predictable content. This approach is especially effective for updating text documents or code files with minimal changes, reducing latency while maintaining high-quality results."
+              }
             },
             "presence_penalty": {
               "default": 0,
-              "description": "presence_penalty determines how much the model penalizes the repetition of words or phrases. A higher presence penalty encourages the model to use a wider variety of words and phrases, making the output more diverse and creative.",
+              "description": "The `presence_penalty` determines how much the model penalizes the repetition of words or phrases. A higher presence penalty encourages the model to use a wider variety of words and phrases, making the output more diverse and creative.",
               "maximum": 2,
               "minimum": -2,
               "title": "Presence Penalty",
@@ -1184,6 +1287,7 @@
             "prompt_mode": {
               "anyOf": [
                 {
+                  "description": "Available options to the prompt_mode argument on the chat completion endpoint.\nValues represent high-level intent. Assignment to actual SPs is handled internally.\nSystem prompt may include knowledge cutoff date, model capabilities, tone to use, safety guidelines, etc.",
                   "enum": [
                     "reasoning"
                   ],
@@ -1211,6 +1315,44 @@
             },
             "response_format": {
               "additionalProperties": false,
+              "description": "Specify the format that the model must output. By default it will use `{ \"type\": \"text\" }`. Setting to `{ \"type\": \"json_object\" }` enables JSON mode, which guarantees the message the model generates is in JSON. When using JSON mode you MUST also instruct the model to produce JSON yourself with a system or a user message. Setting to `{ \"type\": \"json_schema\" }` enables JSON schema mode, which guarantees the message the model generates is in JSON and follows the schema you provide.",
+              "examples": [
+                {
+                  "type": "text"
+                },
+                {
+                  "type": "json_object"
+                },
+                {
+                  "json_schema": {
+                    "name": "book",
+                    "schema": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "authors": {
+                          "items": {
+                            "type": "string"
+                          },
+                          "title": "Authors",
+                          "type": "array"
+                        },
+                        "name": {
+                          "title": "Name",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "authors"
+                      ],
+                      "title": "Book",
+                      "type": "object"
+                    },
+                    "strict": true
+                  },
+                  "type": "json_schema"
+                }
+              ],
               "properties": {
                 "json_schema": {
                   "anyOf": [
@@ -1257,7 +1399,6 @@
                 },
                 "type": {
                   "default": "text",
-                  "description": "An object specifying the format that the model must output. Setting to `{ \"type\": \"json_object\" }` enables JSON mode, which guarantees the message the model generates is in JSON. When using JSON mode you MUST also instruct the model to produce JSON yourself with a system or a user message.",
                   "enum": [
                     "text",
                     "json_object",
@@ -1416,6 +1557,34 @@
     "200": {
       "content": {
         "application/json": {
+          "examples": {
+            "userExample": {
+              "value": {
+                "choices": [
+                  {
+                    "finish_reason": "stop",
+                    "index": 0,
+                    "message": {
+                      "content": "Arrr, the scallywag Claude Monet be the finest French painter to ever splash colors on a canvas, savvy?",
+                      "prefix": false,
+                      "role": "assistant",
+                      "tool_calls": null
+                    }
+                  }
+                ],
+                "created": 1759500534,
+                "id": "cf79f7daaee244b1a0ae5c7b1444424a",
+                "model": "mistral-medium-latest",
+                "object": "chat.completion",
+                "usage": {
+                  "completion_tokens": 27,
+                  "prompt_audio_seconds": {},
+                  "prompt_tokens": 24,
+                  "total_tokens": 51
+                }
+              }
+            }
+          },
           "schema": {
             "allOf": [
               {
