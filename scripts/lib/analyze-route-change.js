@@ -102,7 +102,7 @@ Analyze the differences and produce change records. For each logical change, cre
 - target: "request" or "response"
 - breaking: true if the change could break existing consumers
 - deprecated: true if something was marked as deprecated
-- doc_only: true if only descriptions/examples changed, not schema structure
+- doc_only: true if only descriptions/examples changed, not schema structure. Ignore if only examples changed.
 - note: human-readable description of the change
 - paths: array of {path, before, after} with JSON-path-like notation relative to the route spec. Use "null" string for before on additions and after on removals.
 
