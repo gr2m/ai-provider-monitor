@@ -63,7 +63,15 @@ for (const provider of providers) {
 
   if (routes.length === 0) continue;
 
-  console.log(`### ${provider}\n`);
+  // Find the OpenAPI spec file for this provider
+  const providerFiles = await readdir(`${cacheDir}/${provider}`);
+  const specFile = providerFiles.find((f) => f.startsWith("openapi."));
+  const specLink = specFile ? `${cacheDir}/${provider}/${specFile}` : null;
+
+  const heading = specLink
+    ? `### [${provider}](${specLink})`
+    : `### ${provider}`;
+  console.log(`${heading}\n`);
   console.log("| Method | Route | Event Type |");
   console.log("| --- | --- | --- |");
   for (const { method, routePath, eventType } of routes) {
