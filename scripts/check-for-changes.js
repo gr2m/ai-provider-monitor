@@ -26,7 +26,6 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 import yaml from "js-yaml";
-import $RefParser from "@apidevtools/json-schema-ref-parser";
 
 import { analyzeRouteChange } from "./lib/analyze-route-change.js";
 import { appendChanges } from "./lib/append-changes.js";
@@ -91,8 +90,8 @@ await exec("yq", ["-i", "-P", "sort_keys(..) | explode(.)", specPath]);
 console.error("Formatting with prettier");
 await exec("npx", ["prettier", "--write", specPath]);
 
-// --- Step 5: Dereference and split into route files ---
-console.error("Dereferencing and splitting into route files");
+// --- Step 5: Bundle and split into route files ---
+console.error("Bundling and splitting into route files");
 await rm(`cache/${provider}/routes`, { recursive: true, force: true });
 
 const processedContent = await readFile(specPath, "utf8");
@@ -101,7 +100,8 @@ const schema = specPath.endsWith(".json")
   : yaml.load(processedContent);
 
 removeXPrefix(schema);
-await $RefParser.dereference(schema);
+// Don't dereference — keep $ref pointers to avoid duplicating shared schemas.
+// yq's explode() already resolved YAML anchors in step 4.
 
 const newRoutes = new Map();
 if (schema.paths) {
@@ -109,7 +109,8 @@ if (schema.paths) {
     for (const [method, operation] of Object.entries(operations)) {
       const safePath = path.replaceAll("?", "_QMARK_").replaceAll("=", "_EQ_");
       const relativePath = `${safePath.slice(1)}/${method}.json`;
-      const content = JSON.stringify(operation, null, 2) + "\n";
+      const bundled = buildBundledRoute(operation, schema);
+      const content = JSON.stringify(bundled, null, 2) + "\n";
       newRoutes.set(relativePath, content);
 
       const routeDir = `cache/${provider}/routes${safePath}`;
@@ -292,6 +293,80 @@ if (docFixes.length > 0) {
 console.log(JSON.stringify({ has_changes: true, first_run: false, title, body }));
 
 // --- Helpers ---
+
+/**
+ * Resolves a JSON pointer (e.g. "#/components/schemas/Foo") against a root object.
+ */
+function resolveRef(root, refPath) {
+  const parts = refPath.replace("#/", "").split("/");
+  let current = root;
+  for (const part of parts) {
+    current = current?.[part];
+    if (current === undefined) return undefined;
+  }
+  return current;
+}
+
+/**
+ * Walks an object and collects all $ref paths transitively.
+ * Returns a Map of refPath -> resolved value.
+ */
+function collectRefsTransitively(root, obj) {
+  const refs = new Map();
+  const visited = new Set();
+  const queue = [];
+
+  function findRefs(obj) {
+    if (obj === null || typeof obj !== "object") return;
+    if (Array.isArray(obj)) {
+      for (const item of obj) findRefs(item);
+      return;
+    }
+    if (obj.$ref && typeof obj.$ref === "string" && !visited.has(obj.$ref)) {
+      visited.add(obj.$ref);
+      queue.push(obj.$ref);
+    }
+    for (const [key, value] of Object.entries(obj)) {
+      if (key !== "$ref") findRefs(value);
+    }
+  }
+
+  findRefs(obj);
+  while (queue.length > 0) {
+    const refPath = queue.shift();
+    const resolved = resolveRef(root, refPath);
+    if (resolved) {
+      refs.set(refPath, resolved);
+      findRefs(resolved);
+    }
+  }
+  return refs;
+}
+
+/**
+ * Builds a self-contained route file that keeps $ref pointers but bundles
+ * only the referenced schemas. The $ref paths (e.g. "#/components/schemas/X")
+ * resolve correctly because schemas are placed at the same relative path.
+ */
+function buildBundledRoute(operation, fullSpec) {
+  const refs = collectRefsTransitively(fullSpec, operation);
+  if (refs.size === 0) return operation;
+
+  // Group referenced values by their path in the spec
+  // e.g. "#/components/schemas/Response" -> components.schemas.Response
+  const extra = {};
+  for (const [refPath, value] of refs) {
+    const parts = refPath.replace("#/", "").split("/");
+    let target = extra;
+    for (let i = 0; i < parts.length - 1; i++) {
+      target[parts[i]] = target[parts[i]] || {};
+      target = target[parts[i]];
+    }
+    target[parts[parts.length - 1]] = value;
+  }
+
+  return { ...operation, ...extra };
+}
 
 function removeXPrefix(obj) {
   if (obj === null || typeof obj !== "object") {

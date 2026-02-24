@@ -2,7 +2,6 @@ import { writeFile, readFile, mkdir, glob } from "node:fs/promises";
 import { dirname } from "node:path";
 
 import yaml from "js-yaml";
-import $RefParser from "@apidevtools/json-schema-ref-parser";
 
 console.log("");
 
@@ -25,7 +24,6 @@ try {
 
     removeXPrefix(schema);
 
-    await $RefParser.dereference(schema);
     for (const [path, operations] of Object.entries(schema.paths)) {
       for (const [method, operation] of Object.entries(operations)) {
 
@@ -35,9 +33,10 @@ try {
         const routeFilePath = `${dirname(filePath)}/routes${safePath}`;
         console.log(routeFilePath, method);
         await mkdir(routeFilePath, { recursive: true });
+        const bundled = buildBundledRoute(operation, schema);
         await writeFile(
           `${routeFilePath}/${method}.json`,
-          JSON.stringify(operation, null, 2) + "\n"
+          JSON.stringify(bundled, null, 2) + "\n"
         );
       }
     }
@@ -50,7 +49,7 @@ function removeXPrefix(obj) {
   if (obj === null || typeof obj !== 'object') {
     return;
   }
-  
+
   if (Array.isArray(obj)) {
     for (const item of obj) {
       removeXPrefix(item);
@@ -64,4 +63,61 @@ function removeXPrefix(obj) {
       }
     }
   }
-};
+}
+
+function resolveRef(root, refPath) {
+  const parts = refPath.replace("#/", "").split("/");
+  let current = root;
+  for (const part of parts) {
+    current = current?.[part];
+    if (current === undefined) return undefined;
+  }
+  return current;
+}
+
+function collectRefsTransitively(root, obj) {
+  const refs = new Map();
+  const visited = new Set();
+  const queue = [];
+
+  function findRefs(obj) {
+    if (obj === null || typeof obj !== "object") return;
+    if (Array.isArray(obj)) { for (const item of obj) findRefs(item); return; }
+    if (obj.$ref && typeof obj.$ref === "string" && !visited.has(obj.$ref)) {
+      visited.add(obj.$ref);
+      queue.push(obj.$ref);
+    }
+    for (const [key, value] of Object.entries(obj)) {
+      if (key !== "$ref") findRefs(value);
+    }
+  }
+
+  findRefs(obj);
+  while (queue.length > 0) {
+    const refPath = queue.shift();
+    const resolved = resolveRef(root, refPath);
+    if (resolved) {
+      refs.set(refPath, resolved);
+      findRefs(resolved);
+    }
+  }
+  return refs;
+}
+
+function buildBundledRoute(operation, fullSpec) {
+  const refs = collectRefsTransitively(fullSpec, operation);
+  if (refs.size === 0) return operation;
+
+  const extra = {};
+  for (const [refPath, value] of refs) {
+    const parts = refPath.replace("#/", "").split("/");
+    let target = extra;
+    for (let i = 0; i < parts.length - 1; i++) {
+      target[parts[i]] = target[parts[i]] || {};
+      target = target[parts[i]];
+    }
+    target[parts[parts.length - 1]] = value;
+  }
+
+  return { ...operation, ...extra };
+}
