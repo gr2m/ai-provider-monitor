@@ -105,6 +105,7 @@ jobs:
           echo "has_changes=$(jq -r '.has_changes' result.json)" >> $GITHUB_OUTPUT
           echo "first_run=$(jq -r '.first_run' result.json)" >> $GITHUB_OUTPUT
           echo "title=$(jq -r '.title' result.json)" >> $GITHUB_OUTPUT
+          echo "changed_routes=$(jq -c '.changed_routes' result.json)" >> $GITHUB_OUTPUT
 
           echo "body<<EOF" >> $GITHUB_OUTPUT
           jq -r '.body' result.json >> $GITHUB_OUTPUT
@@ -155,6 +156,14 @@ jobs:
           gh pr merge ${{ steps.create-pr.outputs.pull-request-number }} --squash --delete-branch --repo ${{ github.repository }}
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+
+      - name: Send notifications
+        if: steps.create-pr.outputs.pull-request-url != ''
+        env:
+          APP_ID: ${{ vars.APP_ID }}
+          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+        run: |
+          node scripts/send-notifications.js "${{ matrix.source.name }}" '${{ steps.check.outputs.changed_routes }}'
 
       - name: Summary
         run: |
