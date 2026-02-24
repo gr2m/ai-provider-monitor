@@ -29,6 +29,7 @@ import yaml from "js-yaml";
 
 import { analyzeRouteChange } from "./lib/analyze-route-change.js";
 import { appendChanges } from "./lib/append-changes.js";
+import { deriveOperationId } from "./lib/derive-operation-id.js";
 import { isIdenticalAfterNormalizingTimestamps } from "./lib/normalize-examples.js";
 
 const exec = promisify(execFile);
@@ -125,7 +126,7 @@ console.error(`Generated ${newRoutes.size} route files`);
 if (isFirstRun) {
   console.error("First run detected, skipping analysis");
   console.log(
-    JSON.stringify({ has_changes: false, first_run: true, title: "", body: "" })
+    JSON.stringify({ has_changes: false, first_run: true, title: "", body: "", changed_routes: [] })
   );
   process.exit(0);
 }
@@ -182,6 +183,7 @@ if (changedRoutes.length === 0) {
       first_run: false,
       title: "",
       body: "",
+      changed_routes: [],
     })
   );
   process.exit(0);
@@ -289,8 +291,16 @@ if (docFixes.length > 0) {
   }
 }
 
-// --- Step 11: Output result ---
-console.log(JSON.stringify({ has_changes: true, first_run: false, title, body }));
+// --- Step 11: Build changed_routes for notifications ---
+const changed_routes = changedRoutes.map(({ relativePath, status, oldContent, newContent }) => {
+  // Use oldContent for deleted routes, newContent for added/modified
+  const content = status === "D" ? oldContent : newContent;
+  const operationId = deriveOperationId(relativePath, content);
+  return { relativePath, status, operationId };
+});
+
+// --- Step 12: Output result ---
+console.log(JSON.stringify({ has_changes: true, first_run: false, title, body, changed_routes }));
 
 // --- Helpers ---
 
