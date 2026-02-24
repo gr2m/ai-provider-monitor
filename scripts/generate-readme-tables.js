@@ -51,7 +51,8 @@ for (const provider of providers) {
 
     const eventType = `api:${provider}:${operationId}`;
 
-    routes.push({ method, routePath, eventType });
+    const specPath = `${provider}/routes/${relativePath}`;
+    routes.push({ method, routePath, eventType, specPath });
   }
 
   // Sort by route path, then method
@@ -63,19 +64,13 @@ for (const provider of providers) {
 
   if (routes.length === 0) continue;
 
-  // Find the OpenAPI spec file for this provider
-  const providerFiles = await readdir(`${cacheDir}/${provider}`);
-  const specFile = providerFiles.find((f) => f.startsWith("openapi."));
-  const specLink = specFile ? `${cacheDir}/${provider}/${specFile}` : null;
-
-  const heading = specLink
-    ? `### [${provider}](${specLink})`
-    : `### ${provider}`;
-  console.log(`${heading}\n`);
-  console.log("| Method | Route | Event Type |");
-  console.log("| --- | --- | --- |");
-  for (const { method, routePath, eventType } of routes) {
-    console.log(`| ${method} | ${routePath} | \`${eventType}\` |`);
+  console.log(`### ${provider}\n`);
+  console.log("| Method | Route | Event Type | Spec |");
+  console.log("| --- | --- | --- | --- |");
+  for (const { method, routePath, eventType, specPath } of routes) {
+    const specUrl = `https://github.com/gr2m/ai-provider-monitor/blob/main/cache/${specPath}`;
+    const specLink = `[${specPath}](${specUrl})`;
+    console.log(`| ${method} | ${routePath} | \`${eventType}\` | ${specLink} |`);
   }
   console.log();
 }
