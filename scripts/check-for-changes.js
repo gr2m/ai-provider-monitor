@@ -30,6 +30,7 @@ import $RefParser from "@apidevtools/json-schema-ref-parser";
 
 import { analyzeRouteChange } from "./lib/analyze-route-change.js";
 import { appendChanges } from "./lib/append-changes.js";
+import { isIdenticalAfterNormalizingTimestamps } from "./lib/normalize-examples.js";
 
 const exec = promisify(execFile);
 
@@ -141,12 +142,23 @@ for (const [relativePath, newContent] of newRoutes) {
       newContent,
     });
   } else if (oldContent !== newContent) {
-    changedRoutes.push({
-      relativePath,
-      status: "M",
+    // Check if the only changes are timestamps in examples
+    const onlyTimestampsChanged = isIdenticalAfterNormalizingTimestamps(
       oldContent,
-      newContent,
-    });
+      newContent
+    );
+    if (!onlyTimestampsChanged) {
+      changedRoutes.push({
+        relativePath,
+        status: "M",
+        oldContent,
+        newContent,
+      });
+    } else {
+      console.error(
+        `Skipping ${relativePath} - only timestamps changed in examples`
+      );
+    }
   }
 }
 
