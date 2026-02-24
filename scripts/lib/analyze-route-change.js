@@ -1,4 +1,5 @@
 import { generateText, Output, jsonSchema } from "ai";
+import { isIdenticalAfterNormalizingTimestamps } from "./normalize-examples.js";
 
 /**
  * Recursively strips "description", "example", and "examples" keys from an object.
@@ -130,6 +131,38 @@ export async function analyzeRouteChange({
 }) {
   if (!process.env.AI_GATEWAY_API_KEY) {
     throw new Error("AI_GATEWAY_API_KEY environment variable is required");
+  }
+
+  // Check if only timestamps changed in examples (for modified routes)
+  if (
+    status === "M" &&
+    oldContent &&
+    newContent &&
+    isIdenticalAfterNormalizingTimestamps(oldContent, newContent)
+  ) {
+    // Return a doc_only change indicating only timestamps/examples changed
+    return {
+      changes: [
+        {
+          route,
+          date,
+          change: "changed",
+          target: "response",
+          breaking: false,
+          deprecated: false,
+          doc_only: true,
+          note: "Example timestamp values updated",
+          paths: [
+            {
+              path: "examples",
+              before: "[timestamps]",
+              after: "[timestamps]",
+            },
+          ],
+        },
+      ],
+      summary: "Example timestamps updated",
+    };
   }
 
   const prompt = buildPrompt(status, route, oldContent, newContent);
