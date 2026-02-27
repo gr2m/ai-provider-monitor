@@ -1,0 +1,473 @@
+{
+  "description": "Search, filter, and browse your request history. Supports three modes:\n\n**1. Semantic Search** (`query`, `image_url`, or `video_url` parameter):\nFind visually or conceptually similar results using AI embeddings. Provide a text\nquery for text-to-image search, an image URL for image-to-image similarity search,\nor a video URL for video-to-image similarity search.\n\n**2. Filtered Browse** (no `query`, `image_url`, or `video_url`):\nBrowse request history with hard filters. Returns results ordered by creation date (newest first).\n\n**3. Semantic + Filters** (search params AND filter params):\nCombine semantic search with hard filters. Filters narrow the candidate set before\nranking by similarity.\n\n**Filter Options:**\n- `endpoint`: Filter by fal endpoint\n- `exclude_api_requests` / `only_api_requests`: Filter by request source\n\n**Restricted Request View:**\nFor accounts with restricted request view enabled, an admin API key is required.\nNon-admin keys will receive a 403 error.\n\n**Examples:**\n- Semantic text search: `?query=sunset+landscape`\n- Image similarity: `?image_url=https://...&min_similarity=0.5`\n- Filtered search: `?query=portrait&endpoint=fal-ai/flux/dev`\n- Browse by endpoint: `?endpoint=fal-ai/flux/dev`",
+  "operationId": "searchRequests",
+  "parameters": [
+    {
+      "description": "Maximum number of items to return. Actual maximum depends on query type and expansion parameters.",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "description": "Maximum number of items to return. Actual maximum depends on query type and expansion parameters.",
+        "example": 50,
+        "minimum": 1,
+        "type": "integer"
+      }
+    },
+    {
+      "description": "Pagination cursor from previous response. Encodes the page number.",
+      "in": "query",
+      "name": "cursor",
+      "required": false,
+      "schema": {
+        "description": "Pagination cursor from previous response. Encodes the page number.",
+        "example": "Mg==",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Text search query for semantic search. Mutually exclusive with image_url and video_url.",
+      "in": "query",
+      "name": "query",
+      "required": false,
+      "schema": {
+        "description": "Text search query for semantic search. Mutually exclusive with image_url and video_url.",
+        "example": "sunset landscape",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Image URL for similarity search. Mutually exclusive with query and video_url.",
+      "in": "query",
+      "name": "image_url",
+      "required": false,
+      "schema": {
+        "description": "Image URL for similarity search. Mutually exclusive with query and video_url.",
+        "example": "https://v3.fal.media/files/abc123/output.png",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Video URL for similarity search. Mutually exclusive with query and image_url.",
+      "in": "query",
+      "name": "video_url",
+      "required": false,
+      "schema": {
+        "description": "Video URL for similarity search. Mutually exclusive with query and image_url.",
+        "example": "https://v3.fal.media/files/abc123/output.mp4",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Filter by fal endpoint to scope request history.",
+      "in": "query",
+      "name": "endpoint",
+      "required": false,
+      "schema": {
+        "description": "Filter by fal endpoint to scope request history.",
+        "example": "fal-ai/flux/dev",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Exclude requests made via API keys (only show playground/UI requests). Mutually exclusive with only_api_requests.",
+      "in": "query",
+      "name": "exclude_api_requests",
+      "required": false,
+      "schema": {
+        "description": "Exclude requests made via API keys (only show playground/UI requests). Mutually exclusive with only_api_requests.",
+        "example": true,
+        "type": "boolean"
+      }
+    },
+    {
+      "description": "Only include requests made via API keys. Mutually exclusive with exclude_api_requests.",
+      "in": "query",
+      "name": "only_api_requests",
+      "required": false,
+      "schema": {
+        "description": "Only include requests made via API keys. Mutually exclusive with exclude_api_requests.",
+        "example": true,
+        "type": "boolean"
+      }
+    },
+    {
+      "description": "Minimum similarity score (0-1) for semantic search results. Only applies when query or image_url is provided.",
+      "in": "query",
+      "name": "min_similarity",
+      "required": false,
+      "schema": {
+        "description": "Minimum similarity score (0-1) for semantic search results. Only applies when query or image_url is provided.",
+        "example": 0.3,
+        "maximum": 1,
+        "minimum": 0,
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "example": {
+            "has_more": false,
+            "next_cursor": null,
+            "results": [
+              {
+                "duration": 5,
+                "ended_at": "2025-01-15T12:00:00Z",
+                "endpoint_id": "fal-ai/flux/dev",
+                "request_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "sent_at": "2025-01-15T11:59:50Z",
+                "similarity": 0.95,
+                "started_at": "2025-01-15T11:59:55Z",
+                "status_code": 200
+              }
+            ]
+          },
+          "schema": {
+            "description": "Request search results with pagination",
+            "properties": {
+              "has_more": {
+                "description": "Boolean indicating if more results are available (convenience field derived from next_cursor)",
+                "type": "boolean"
+              },
+              "next_cursor": {
+                "description": "Cursor for the next page of results, null if no more pages",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "results": {
+                "description": "Array of matching request results, ordered by relevance or recency",
+                "items": {
+                  "description": "Request search result",
+                  "properties": {
+                    "duration": {
+                      "description": "Total request duration in seconds",
+                      "example": 7.8,
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "ended_at": {
+                      "description": "Time when request finished processing",
+                      "example": "2025-01-01T00:00:08Z",
+                      "format": "date-time",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "endpoint_id": {
+                      "description": "Endpoint that was executed for this request",
+                      "example": "fal-ai/flux/dev",
+                      "type": "string"
+                    },
+                    "json_input": {
+                      "description": "Input payload for the request"
+                    },
+                    "json_output": {
+                      "description": "Output payload for the request"
+                    },
+                    "request_id": {
+                      "description": "Unique identifier for the request",
+                      "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "sent_at": {
+                      "description": "Time when request was sent to the backend",
+                      "example": "2025-01-01T00:00:01Z",
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "similarity": {
+                      "description": "Similarity score (0-1) when semantic search is used",
+                      "example": 0.87,
+                      "maximum": 1,
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "started_at": {
+                      "description": "Time when request processing started",
+                      "example": "2025-01-01T00:00:05Z",
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "status_code": {
+                      "description": "HTTP status code returned by the request",
+                      "example": 200,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "request_id",
+                    "endpoint_id",
+                    "started_at",
+                    "sent_at"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "next_cursor",
+              "has_more",
+              "results"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Successfully retrieved request search results"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Invalid request parameters",
+              "type": "validation_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Authentication required",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Authentication required"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Rate limit exceeded",
+              "type": "rate_limited"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Rate limit exceeded"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "An unexpected error occurred",
+              "type": "server_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Internal server error"
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "summary": "Search Requests",
+  "tags": [
+    "Models",
+    "Requests"
+  ]
+}
