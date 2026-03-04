@@ -65,6 +65,7 @@
       }
     },
     {
+      "description": "Filter by agent name",
       "in": "query",
       "name": "name",
       "required": false,
@@ -77,7 +78,26 @@
             "type": "null"
           }
         ],
+        "description": "Filter by agent name",
         "title": "Name"
+      }
+    },
+    {
+      "description": "Search agents by name or ID",
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Search agents by name or ID",
+        "title": "Search"
       }
     },
     {
@@ -186,6 +206,20 @@
             ],
             "title": "Description"
           },
+          "guardrails": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/GuardrailConfig"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guardrails"
+          },
           "handoffs": {
             "anyOf": [
               {
@@ -236,10 +270,8 @@
             "type": "string"
           },
           "object": {
+            "const": "agent",
             "default": "agent",
-            "enum": [
-              "agent"
-            ],
             "title": "Object",
             "type": "string"
           },
@@ -293,6 +325,17 @@
           "version": {
             "title": "Version",
             "type": "integer"
+          },
+          "version_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Message"
           },
           "versions": {
             "items": {
@@ -440,6 +483,31 @@
         "title": "CompletionArgs",
         "type": "object"
       },
+      "GuardrailConfig": {
+        "properties": {
+          "block_on_error": {
+            "default": false,
+            "description": "If true, return HTTP 403 and block request in the event of a server-side error",
+            "title": "Block On Error",
+            "type": "boolean"
+          },
+          "moderation_llm_v1": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationLLMV1Config"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "moderation_llm_v1"
+        ],
+        "title": "GuardrailConfig",
+        "type": "object"
+      },
       "MetadataDict": {
         "additionalProperties": true,
         "description": "Custom type for metadata with embedded validation.",
@@ -470,6 +538,16 @@
       "WebSearchTool": {
         "additionalProperties": false,
         "properties": {
+          "tool_configuration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolConfiguration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "default": "web_search",
             "enum": [
@@ -485,6 +563,16 @@
       "WebSearchPremiumTool": {
         "additionalProperties": false,
         "properties": {
+          "tool_configuration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolConfiguration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "default": "web_search_premium",
             "enum": [
@@ -500,6 +588,16 @@
       "CodeInterpreterTool": {
         "additionalProperties": false,
         "properties": {
+          "tool_configuration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolConfiguration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "default": "code_interpreter",
             "enum": [
@@ -515,6 +613,16 @@
       "ImageGenerationTool": {
         "additionalProperties": false,
         "properties": {
+          "tool_configuration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolConfiguration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "default": "image_generation",
             "enum": [
@@ -538,6 +646,16 @@
             "minItems": 1,
             "title": "Library Ids",
             "type": "array"
+          },
+          "tool_configuration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolConfiguration"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "type": {
             "default": "document_library",
@@ -692,6 +810,40 @@
         "title": "ToolChoiceEnum",
         "type": "string"
       },
+      "ModerationLLMV1Config": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ModerationLLMV1Action",
+            "default": "none",
+            "description": "Action to take if any score is above the threshold for any category."
+          },
+          "custom_category_thresholds": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationLLMV1CategoryThresholds"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Override default thresholds for specific categories."
+          },
+          "ignore_other_categories": {
+            "default": false,
+            "description": "If true, only evaluate categories in custom_category_thresholds; others are ignored.",
+            "title": "Ignore Other Categories",
+            "type": "boolean"
+          },
+          "model_name": {
+            "default": "mistral-moderation-2411",
+            "description": "Override model name. Should be omitted in general.",
+            "title": "Model Name",
+            "type": "string"
+          }
+        },
+        "title": "ModerationLLMV1Config",
+        "type": "object"
+      },
       "Function": {
         "additionalProperties": false,
         "properties": {
@@ -720,6 +872,55 @@
           "parameters"
         ],
         "title": "Function",
+        "type": "object"
+      },
+      "ToolConfiguration": {
+        "additionalProperties": false,
+        "properties": {
+          "exclude": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclude"
+          },
+          "include": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include"
+          },
+          "requires_confirmation": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requires Confirmation"
+          }
+        },
+        "title": "ToolConfiguration",
         "type": "object"
       },
       "JsonSchema": {
@@ -766,6 +967,119 @@
         ],
         "title": "ResponseFormats",
         "type": "string"
+      },
+      "ModerationLLMV1Action": {
+        "enum": [
+          "none",
+          "block"
+        ],
+        "title": "ModerationLLMV1Action",
+        "type": "string"
+      },
+      "ModerationLLMV1CategoryThresholds": {
+        "properties": {
+          "dangerous_and_criminal_content": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dangerous And Criminal Content"
+          },
+          "financial": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Financial"
+          },
+          "hate_and_discrimination": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hate And Discrimination"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health"
+          },
+          "law": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Law"
+          },
+          "pii": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pii"
+          },
+          "selfharm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selfharm"
+          },
+          "sexual": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sexual"
+          },
+          "violence_and_threats": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Violence And Threats"
+          }
+        },
+        "title": "ModerationLLMV1CategoryThresholds",
+        "type": "object"
       }
     }
   }
