@@ -2567,7 +2567,7 @@
     },
     "/models": {
       "get": {
-        "description": "\nUnified endpoint for discovering model endpoints. Supports three usage modes:\n\n**1. List Mode** (no parameters):\nPaginated list of all available model endpoints with minimal metadata.\n\n**2. Find Mode** (`endpoint_id` parameter):\nRetrieve specific model endpoint(s) by ID. Supports single or multiple IDs.\n\n**3. Search Mode** (search parameters):\nFilter models by free-text query, category, or status.\n\n**Expansion:**\nUse `expand=openapi-3.0` to include the full OpenAPI 3.0 schema inline in the 'openapi' field for each model.\n\n**Examples of `endpoint_id` values:**\n- `fal-ai/flux/dev`\n- `fal-ai/wan/v2.2-a14b/text-to-video`\n- `fal-ai/minimax/video-01/image-to-video`\n- `fal-ai/hunyuan3d-v21`\n\nSee [fal.ai Model APIs](https://docs.fal.ai/model-apis) for more details.\n\n**Authentication:** Optional. Providing an API key grants higher rate limits.\n\n**Common Use Cases:**\n- Browse available models for integration\n- Retrieve metadata for specific endpoints\n- Search for models by category or keywords\n- Get OpenAPI schemas for code generation\n- Build model selection interfaces\n    ",
+        "description": "\nUnified endpoint for discovering model endpoints. Supports three usage modes:\n\n**1. List Mode** (no parameters):\nPaginated list of all available model endpoints with minimal metadata.\n\n**2. Find Mode** (`endpoint_id` parameter):\nRetrieve specific model endpoint(s) by ID. Supports single or multiple IDs.\n\n**3. Search Mode** (search parameters):\nFilter models by free-text query, category, or status.\n\n**Expansion:**\nUse `expand` to include additional data in each model object:\n- `openapi-3.0` — full OpenAPI 3.0 schema in the `openapi` field\n- `enterprise_status` — enterprise readiness status (`ready` or `pending`) in the `enterprise_status` field\n\n**Examples of `endpoint_id` values:**\n- `fal-ai/flux/dev`\n- `fal-ai/wan/v2.2-a14b/text-to-video`\n- `fal-ai/minimax/video-01/image-to-video`\n- `fal-ai/hunyuan3d-v21`\n\nSee [fal.ai Model APIs](https://docs.fal.ai/model-apis) for more details.\n\n**Authentication:** Optional. Providing an API key grants higher rate limits.\n\n**Common Use Cases:**\n- Browse available models for integration\n- Retrieve metadata for specific endpoints\n- Search for models by category or keywords\n- Get OpenAPI schemas for code generation\n- Build model selection interfaces\n    ",
         "operationId": "getModels",
         "parameters": [
           {
@@ -2651,7 +2651,7 @@
             }
           },
           {
-            "description": "Fields to expand in the response. Supported values: 'openapi-3.0' (includes full OpenAPI 3.0 schema in 'openapi' field)",
+            "description": "Fields to expand in the response. Supported values: 'openapi-3.0' (includes full OpenAPI 3.0 schema in 'openapi' field), 'enterprise_status' (includes enterprise readiness status)",
             "explode": true,
             "in": "query",
             "name": "expand",
@@ -2668,8 +2668,8 @@
                   "type": "array"
                 }
               ],
-              "description": "Fields to expand in the response. Supported values: 'openapi-3.0' (includes full OpenAPI 3.0 schema in 'openapi' field)",
-              "example": ["openapi-3.0"]
+              "description": "Fields to expand in the response. Supported values: 'openapi-3.0' (includes full OpenAPI 3.0 schema in 'openapi' field), 'enterprise_status' (includes enterprise readiness status)",
+              "example": ["openapi-3.0", "enterprise_status"]
             },
             "style": "form"
           }
@@ -2716,6 +2716,38 @@
                           "endpoint_id": {
                             "description": "Stable identifier used to call the model (e.g., 'fal-ai/wan/v2.2-a14b/text-to-video', 'fal-ai/minimax/video-01/image-to-video', 'fal-ai/hunyuan3d-v21')",
                             "type": "string"
+                          },
+                          "enterprise_status": {
+                            "anyOf": [
+                              {
+                                "description": "'ready' means approved for enterprise use, 'pending' means awaiting approval",
+                                "enum": ["ready", "pending"],
+                                "type": "string"
+                              },
+                              {
+                                "description": "Error encountered while expanding enterprise status",
+                                "properties": {
+                                  "error": {
+                                    "description": "Error details for failed enterprise status expansion",
+                                    "properties": {
+                                      "code": {
+                                        "description": "Error code (e.g., 'expansion_failed')",
+                                        "type": "string"
+                                      },
+                                      "message": {
+                                        "description": "Human-readable error message",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": ["code", "message"],
+                                    "type": "object"
+                                  }
+                                },
+                                "required": ["error"],
+                                "type": "object"
+                              }
+                            ],
+                            "description": "Enterprise readiness status (present when expand=enterprise_status is requested)"
                           },
                           "metadata": {
                             "description": "Model metadata (optional - may be absent for endpoints without registry entries)",
