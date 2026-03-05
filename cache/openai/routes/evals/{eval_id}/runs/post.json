@@ -1009,6 +1009,9 @@
             "$ref": "#/components/schemas/FileSearchTool"
           },
           {
+            "$ref": "#/components/schemas/ComputerTool"
+          },
+          {
             "$ref": "#/components/schemas/ComputerUsePreviewTool"
           },
           {
@@ -1031,6 +1034,12 @@
           },
           {
             "$ref": "#/components/schemas/CustomToolParam"
+          },
+          {
+            "$ref": "#/components/schemas/NamespaceToolParam"
+          },
+          {
+            "$ref": "#/components/schemas/ToolSearchToolParam"
           },
           {
             "$ref": "#/components/schemas/WebSearchPreviewTool"
@@ -1184,7 +1193,7 @@
         "type": "array"
       },
       "MessagePhase": {
-        "description": "Labels an `assistant` message as intermediate commentary (`commentary`) or the final answer (`final_answer`). For models like `gpt-5.3-codex` and beyond, when sending follow-up requests, preserve and resend phase on all assistant messages — dropping it can degrade performance. Not used for user messages.\n\nUse `commentary` for an intermediate assistant message and `final_answer` for\nthe final assistant message. For follow-up requests with models like\n`gpt-5.3-codex` and later, preserve and resend phase on all assistant\nmessages. Omitting it can degrade performance. Not used for user messages.\n",
+        "description": "Labels an `assistant` message as intermediate commentary (`commentary`) or the final answer (`final_answer`).\nFor models like `gpt-5.3-codex` and beyond, when sending follow-up requests, preserve and resend\nphase on all assistant messages — dropping it can degrade performance. Not used for user messages.\n",
         "enum": [
           "commentary",
           "final_answer"
@@ -1285,6 +1294,10 @@
       "FunctionTool": {
         "description": "Defines a function in your own code the model can choose to call. Learn more about [function calling](https://platform.openai.com/docs/guides/function-calling).",
         "properties": {
+          "defer_loading": {
+            "description": "Whether this function is deferred and loaded via tool search.",
+            "type": "boolean"
+          },
           "description": {
             "anyOf": [
               {
@@ -1384,6 +1397,24 @@
           "vector_store_ids"
         ],
         "title": "File search",
+        "type": "object"
+      },
+      "ComputerTool": {
+        "description": "A tool that controls a virtual computer. Learn more about the [computer tool](https://platform.openai.com/docs/guides/tools-computer-use).",
+        "properties": {
+          "type": {
+            "default": "computer",
+            "description": "The type of the computer tool. Always `computer`.",
+            "enum": [
+              "computer"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "Computer",
         "type": "object"
       },
       "ComputerUsePreviewTool": {
@@ -1524,6 +1555,10 @@
               "connector_sharepoint"
             ],
             "type": "string"
+          },
+          "defer_loading": {
+            "description": "Whether this MCP tool is deferred and discovered via tool search.\n",
+            "type": "boolean"
           },
           "headers": {
             "anyOf": [
@@ -1823,6 +1858,10 @@
       "CustomToolParam": {
         "description": "A custom tool that processes input using a specified format. Learn more about   [custom tools](/docs/guides/function-calling#custom-tools)",
         "properties": {
+          "defer_loading": {
+            "description": "Whether this tool should be deferred and discovered via tool search.",
+            "type": "boolean"
+          },
           "description": {
             "description": "Optional description of the custom tool, used to provide more context.",
             "type": "string"
@@ -1861,9 +1900,109 @@
         "title": "Custom tool",
         "type": "object"
       },
+      "NamespaceToolParam": {
+        "description": "Groups function/custom tools under a shared namespace.",
+        "properties": {
+          "description": {
+            "description": "A description of the namespace shown to the model.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "name": {
+            "description": "The namespace name used in tool calls (for example, `crm`).",
+            "minLength": 1,
+            "type": "string"
+          },
+          "tools": {
+            "description": "The function/custom tools available inside this namespace.",
+            "items": {
+              "description": "A function or custom tool that belongs to a namespace.",
+              "discriminator": {
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/FunctionToolParam"
+                },
+                {
+                  "$ref": "#/components/schemas/CustomToolParam"
+                }
+              ]
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "type": {
+            "default": "namespace",
+            "description": "The type of the tool. Always `namespace`.",
+            "enum": [
+              "namespace"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description",
+          "tools"
+        ],
+        "title": "Namespace",
+        "type": "object"
+      },
+      "ToolSearchToolParam": {
+        "description": "Hosted or BYOT tool search configuration for deferred tools.",
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "description": "Description shown to the model for a client-executed tool search tool.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "execution": {
+            "$ref": "#/components/schemas/ToolSearchExecutionType",
+            "description": "Whether tool search is executed by the server or by the client."
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmptyModelParam",
+                "description": "Parameter schema for a client-executed tool search tool."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "default": "tool_search",
+            "description": "The type of the tool. Always `tool_search`.",
+            "enum": [
+              "tool_search"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "Tool search tool",
+        "type": "object"
+      },
       "WebSearchPreviewTool": {
         "description": "This tool searches the web for relevant results to use in a response. Learn more about the [web search tool](https://platform.openai.com/docs/guides/tools-web-search).",
         "properties": {
+          "search_content_types": {
+            "items": {
+              "$ref": "#/components/schemas/SearchContentType"
+            },
+            "type": "array"
+          },
           "search_context_size": {
             "$ref": "#/components/schemas/SearchContextSize",
             "description": "High level guidance for the amount of context window space to use for the search. One of `low`, `medium`, or `high`. `medium` is the default."
@@ -2316,6 +2455,77 @@
         "title": "Grammar format",
         "type": "object"
       },
+      "FunctionToolParam": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "type": "string"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmptyModelParam"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "strict": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "default": "function",
+            "enum": [
+              "function"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ],
+        "type": "object"
+      },
+      "ToolSearchExecutionType": {
+        "enum": [
+          "server",
+          "client"
+        ],
+        "type": "string"
+      },
+      "EmptyModelParam": {
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "SearchContentType": {
+        "enum": [
+          "text",
+          "image"
+        ],
+        "type": "string"
+      },
       "SearchContextSize": {
         "enum": [
           "low",
@@ -2412,7 +2622,7 @@
         "properties": {
           "detail": {
             "$ref": "#/components/schemas/ImageDetail",
-            "description": "The detail level of the image to be sent to the model. One of `high`, `low`, or `auto`. Defaults to `auto`."
+            "description": "The detail level of the image to be sent to the model. One of `high`, `low`, `auto`, or `original`. Defaults to `auto`."
           },
           "file_id": {
             "anyOf": [
@@ -2455,6 +2665,10 @@
       "InputFileContent": {
         "description": "A file input to the model.",
         "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/FileInputDetail",
+            "description": "The detail level of the file to be sent to the model. One of `high` or `low`. Defaults to `high`."
+          },
           "file_data": {
             "description": "The content of the file to be sent to the model.\n",
             "type": "string"
@@ -2853,7 +3067,15 @@
         "enum": [
           "low",
           "high",
-          "auto"
+          "auto",
+          "original"
+        ],
+        "type": "string"
+      },
+      "FileInputDetail": {
+        "enum": [
+          "low",
+          "high"
         ],
         "type": "string"
       },
