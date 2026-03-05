@@ -1773,12 +1773,12 @@
               },
               {
                 "$ref": "#/components/schemas/VideoResponse",
-                "description": "The generated video response. Only present if status is \"done\"."
+                "description": "The generated video response. Only present if status is \"done\" or \"failed\".\nWhen failed, the `error` field in VideoResponse describes the failure."
               }
             ]
           },
           "status": {
-            "description": "Status of the deferred request: \"pending\" or \"done\".",
+            "description": "Status of the deferred request: \"pending\", \"done\", or \"failed\".",
             "type": "string"
           }
         },
@@ -5147,6 +5147,21 @@
         "required": ["upsampled_prompt"],
         "type": "object"
       },
+      "VideoError": {
+        "description": "Structured error returned when video generation fails.",
+        "properties": {
+          "code": {
+            "description": "Machine-readable error code (e.g. \"invalid_argument\", \"internal_error\").",
+            "type": "string"
+          },
+          "message": {
+            "description": "Human-readable error message describing the failure.",
+            "type": "string"
+          }
+        },
+        "required": ["code", "message"],
+        "type": "object"
+      },
       "VideoGenerationModel": {
         "description": "Details of a video generation model",
         "properties": {
@@ -5232,6 +5247,17 @@
           "block_reason": {
             "description": "If the request was blocked by moderation, contains the block reason.",
             "type": ["string", "null"]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/VideoError",
+                "description": "Structured error describing why video generation failed.\nOnly present when the generation encountered a failure (4xx or 5xx)."
+              }
+            ]
           },
           "model": {
             "description": "The model used to generate the video.",
@@ -7050,6 +7076,7 @@
     },
     "/v1/videos/{request_id}": {
       "get": {
+        "description": "Returns the current status of a video generation job. When the job completes\nsuccessfully the response contains the generated video URL. When the job fails\nthe response contains a structured `error` object with a machine-readable\n`code` and a human-readable `message`.\n\nBoth successful and failed completions return HTTP 200 — use the `status`\nfield (`\"done\"` or `\"failed\"`) to distinguish between the two.",
         "operationId": "handle_get_deferred_video_request",
         "parameters": [
           {
@@ -7066,12 +7093,33 @@
           "200": {
             "content": {
               "application/json": {
-                "example": {
-                  "model": "grok-imagine-video",
-                  "status": "done",
-                  "video": {
-                    "duration": 6,
-                    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-f532feb6-49a9-4f9a-9a37-6e64ef725e8f.mp4"
+                "examples": {
+                  "done": {
+                    "summary": "Video generation completed successfully",
+                    "value": {
+                      "model": "grok-imagine-video",
+                      "status": "done",
+                      "video": {
+                        "duration": 6,
+                        "respect_moderation": true,
+                        "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-f532feb6-49a9-4f9a-9a37-6e64ef725e8f.mp4"
+                      }
+                    }
+                  },
+                  "failed": {
+                    "summary": "Video generation failed",
+                    "value": {
+                      "error": {
+                        "code": "internal_error",
+                        "message": "Video generation failed due to an internal error. Please try again."
+                      },
+                      "model": "",
+                      "status": "failed",
+                      "video": {
+                        "duration": 0,
+                        "respect_moderation": true
+                      }
+                    }
                   }
                 },
                 "schema": {
@@ -7079,7 +7127,7 @@
                 }
               }
             },
-            "description": "Video generation completed"
+            "description": "Video generation completed or failed. Check the `status` field to determine the outcome."
           },
           "202": {
             "description": "Video generation still in progress"
