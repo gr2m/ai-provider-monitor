@@ -250,6 +250,20 @@ for (const result of analysisResults) {
   allChanges.push(...result.changes);
 }
 
+if (allChanges.length === 0) {
+  console.error("No meaningful changes detected after analysis");
+  console.log(
+    JSON.stringify({
+      has_changes: false,
+      first_run: false,
+      title: "",
+      body: "",
+      changed_routes: [],
+    })
+  );
+  process.exit(0);
+}
+
 // --- Step 9: Append change records ---
 await appendChanges(provider, allChanges);
 
