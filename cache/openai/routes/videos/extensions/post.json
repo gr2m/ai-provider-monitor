@@ -1,16 +1,16 @@
 {
-  "operationId": "createVideo",
+  "operationId": "CreateVideoExtend",
   "parameters": [],
   "requestBody": {
     "content": {
       "application/json": {
         "schema": {
-          "$ref": "#/components/schemas/CreateVideoJsonBody"
+          "$ref": "#/components/schemas/CreateVideoExtendJsonBody"
         }
       },
       "multipart/form-data": {
         "schema": {
-          "$ref": "#/components/schemas/CreateVideoMultipartBody"
+          "$ref": "#/components/schemas/CreateVideoExtendMultipartBody"
         }
       }
     }
@@ -27,82 +27,70 @@
       "description": "Success"
     }
   },
-  "summary": "Create a new video generation job from a prompt and optional reference assets.",
+  "summary": "Create an extension of a completed video.",
   "tags": [
     "Videos"
   ],
   "components": {
     "schemas": {
-      "CreateVideoJsonBody": {
-        "description": "JSON parameters for creating a new video generation job.",
+      "CreateVideoExtendJsonBody": {
+        "description": "JSON parameters for extending an existing generated video.",
         "properties": {
-          "input_reference": {
-            "$ref": "#/components/schemas/ImageRefParam-2",
-            "description": "Optional reference object that guides generation. Provide exactly one of `image_url` or `file_id`."
-          },
-          "model": {
-            "$ref": "#/components/schemas/VideoModel",
-            "description": "The video generation model to use (allowed values: sora-2, sora-2-pro). Defaults to `sora-2`."
-          },
           "prompt": {
-            "description": "Text prompt that describes the video to generate.",
+            "description": "Updated text prompt that directs the extension generation.",
             "maxLength": 32000,
             "minLength": 1,
             "type": "string"
           },
           "seconds": {
             "$ref": "#/components/schemas/VideoSeconds",
-            "description": "Clip duration in seconds (allowed values: 4, 8, 12). Defaults to 4 seconds."
+            "description": "Length of the newly generated extension segment in seconds (allowed values: 4, 8, 12, 16, 20)."
           },
-          "size": {
-            "$ref": "#/components/schemas/VideoSize",
-            "description": "Output resolution formatted as width x height (allowed values: 720x1280, 1280x720, 1024x1792, 1792x1024). Defaults to 720x1280."
+          "video": {
+            "$ref": "#/components/schemas/VideoReferenceInputParam",
+            "description": "Reference to the completed video to extend."
           }
         },
         "required": [
-          "prompt"
+          "video",
+          "prompt",
+          "seconds"
         ],
-        "title": "Create video JSON request",
+        "title": "Create video extension JSON request",
         "type": "object"
       },
-      "CreateVideoMultipartBody": {
-        "description": "Multipart parameters for creating a new video generation job.",
+      "CreateVideoExtendMultipartBody": {
+        "description": "Multipart parameters for extending an existing generated video.",
         "properties": {
-          "input_reference": {
-            "oneOf": [
-              {
-                "description": "Optional reference asset upload or reference object that guides generation.",
-                "format": "binary",
-                "type": "string"
-              },
-              {
-                "$ref": "#/components/schemas/ImageRefParam-2"
-              }
-            ]
-          },
-          "model": {
-            "$ref": "#/components/schemas/VideoModel",
-            "description": "The video generation model to use (allowed values: sora-2, sora-2-pro). Defaults to `sora-2`."
-          },
           "prompt": {
-            "description": "Text prompt that describes the video to generate.",
+            "description": "Updated text prompt that directs the extension generation.",
             "maxLength": 32000,
             "minLength": 1,
             "type": "string"
           },
           "seconds": {
             "$ref": "#/components/schemas/VideoSeconds",
-            "description": "Clip duration in seconds (allowed values: 4, 8, 12). Defaults to 4 seconds."
+            "description": "Length of the newly generated extension segment in seconds (allowed values: 4, 8, 12, 16, 20)."
           },
-          "size": {
-            "$ref": "#/components/schemas/VideoSize",
-            "description": "Output resolution formatted as width x height (allowed values: 720x1280, 1280x720, 1024x1792, 1792x1024). Defaults to 720x1280."
+          "video": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/VideoReferenceInputParam"
+              },
+              {
+                "description": "Reference to the completed video to extend.",
+                "format": "binary",
+                "type": "string"
+              }
+            ]
           }
         },
         "required": [
-          "prompt"
+          "video",
+          "prompt",
+          "seconds"
         ],
-        "title": "Create video multipart request",
+        "title": "Create video extension multipart request",
         "type": "object"
       },
       "VideoResource": {
@@ -218,38 +206,6 @@
         "title": "Video job",
         "type": "object"
       },
-      "ImageRefParam-2": {
-        "properties": {
-          "file_id": {
-            "example": "file-123",
-            "type": "string"
-          },
-          "image_url": {
-            "description": "A fully qualified URL or base64-encoded data URL.",
-            "maxLength": 20971520,
-            "type": "string"
-          }
-        },
-        "required": [],
-        "type": "object"
-      },
-      "VideoModel": {
-        "anyOf": [
-          {
-            "type": "string"
-          },
-          {
-            "enum": [
-              "sora-2",
-              "sora-2-pro",
-              "sora-2-2025-10-06",
-              "sora-2-pro-2025-10-06",
-              "sora-2-2025-12-08"
-            ],
-            "type": "string"
-          }
-        ]
-      },
       "VideoSeconds": {
         "enum": [
           "4",
@@ -258,14 +214,19 @@
         ],
         "type": "string"
       },
-      "VideoSize": {
-        "enum": [
-          "720x1280",
-          "1280x720",
-          "1024x1792",
-          "1792x1024"
+      "VideoReferenceInputParam": {
+        "description": "Reference to the completed video.",
+        "properties": {
+          "id": {
+            "description": "The identifier of the completed video.",
+            "example": "video_123",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
         ],
-        "type": "string"
+        "type": "object"
       },
       "Error-2": {
         "description": "An error that occurred while generating the response.",
@@ -285,6 +246,32 @@
         ],
         "title": "Error",
         "type": "object"
+      },
+      "VideoModel": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "sora-2",
+              "sora-2-pro",
+              "sora-2-2025-10-06",
+              "sora-2-pro-2025-10-06",
+              "sora-2-2025-12-08"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "VideoSize": {
+        "enum": [
+          "720x1280",
+          "1280x720",
+          "1024x1792",
+          "1792x1024"
+        ],
+        "type": "string"
       },
       "VideoStatus": {
         "enum": [
