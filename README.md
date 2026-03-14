@@ -4,7 +4,7 @@
 
 A GitHub Actions-powered service that monitors API specification changes from major AI providers and automatically creates pull requests when changes are detected.
 
-When a change is detected and merged, a repository dispatch event is sent to all repositories with the [ai-provider-monitor](https://github.com/apps/ai-provider-monitor) GitHub App installed. The event type is `ai-provider-monitor:<provider>`, e.g. `ai-provider-monitor:openai`.
+When a change is detected and merged, repository dispatch events are sent to all repositories with the [ai-provider-monitor](https://github.com/apps/ai-provider-monitor) GitHub App installed. Each changed route triggers a separate `ai-provider-monitor:<provider>` event, e.g. `ai-provider-monitor:openai`.
 
 ## Get notified
 
@@ -26,27 +26,28 @@ jobs:
     steps:
       - run: |
           echo "Provider: ${{ github.event.client_payload.provider }}"
-          echo "Routes: ${{ toJson(github.event.client_payload.routes) }}"
+          echo "Route: ${{ github.event.client_payload.route }}"
+          echo "Status: ${{ github.event.client_payload.status }}"
+          echo "Changes: ${{ toJson(github.event.client_payload.changes) }}"
 ```
 
 The `client_payload` contains:
 
 - `provider` — the provider name (e.g. `openai`)
-- `routes` — array of changed routes, each with:
-  - `route` — the HTTP method and path (e.g. `POST /chat/completions`)
-  - `status` — `A` (added), `M` (modified), or `D` (deleted)
-  - `changes` — array of change records, each with:
-    - `change` — `added`, `changed`, or `removed`
-    - `target` — `route`, `request`, or `response`
-    - `breaking` — boolean, whether the change could break existing consumers
-    - `deprecated` — boolean, whether something was marked as deprecated
-    - `doc_only` — boolean, whether only descriptions/examples changed
-    - `note` — human-readable description of the change
-    - `paths` — array of `{ path, before, after }` with JSON-path-like notation
+- `route` — the HTTP method and path (e.g. `POST /chat/completions`)
+- `status` — `A` (added), `M` (modified), or `D` (deleted)
+- `changes` — array of change records, each with:
+  - `change` — `added`, `changed`, or `removed`
+  - `target` — `route`, `request`, or `response`
+  - `breaking` — boolean, whether the change could break existing consumers
+  - `deprecated` — boolean, whether something was marked as deprecated
+  - `doc_only` — boolean, whether only descriptions/examples changed
+  - `note` — human-readable description of the change
+  - `paths` — array of `{ path, before, after }` with JSON-path-like notation
 
 ### Filtering events
 
-Since all changes for a provider are sent in a single event, use workflow conditions to filter for what you care about.
+Each changed route triggers its own event. Use workflow conditions to filter for what you care about.
 
 **Only run when a specific route changed:**
 
@@ -54,7 +55,7 @@ Since all changes for a provider are sent in a single event, use workflow condit
 jobs:
   handle-change:
     runs-on: ubuntu-latest
-    if: contains(toJson(github.event.client_payload.routes), 'POST /chat/completions')
+    if: github.event.client_payload.route == 'POST /chat/completions'
     steps:
       - run: echo "Chat completions endpoint changed"
 ```
@@ -65,7 +66,7 @@ jobs:
 jobs:
   handle-breaking:
     runs-on: ubuntu-latest
-    if: contains(toJson(github.event.client_payload.routes), '"breaking":true')
+    if: contains(toJson(github.event.client_payload.changes), '"breaking":true')
     steps:
       - run: echo "Breaking change detected"
 ```
@@ -80,20 +81,17 @@ jobs:
       - uses: actions/github-script@v7
         with:
           script: |
-            const routes = context.payload.client_payload.routes;
+            const { route, status, changes } = context.payload.client_payload;
 
-            // Find breaking changes
-            const breaking = routes.filter(r =>
-              r.changes.some(c => c.breaking)
-            );
+            // Check for breaking changes
+            const breaking = changes.filter(c => c.breaking);
             if (breaking.length > 0) {
-              core.warning(`${breaking.length} route(s) with breaking changes`);
+              core.warning(`${route}: ${breaking.length} breaking change(s)`);
             }
 
-            // Check a specific route
-            const chatRoute = routes.find(r => r.route === 'POST /chat/completions');
-            if (chatRoute) {
-              core.info(`Chat completions: ${chatRoute.changes.map(c => c.note).join(', ')}`);
+            // Log all change notes
+            for (const change of changes) {
+              core.info(`${change.change} (${change.target}): ${change.note}`);
             }
 ```
 

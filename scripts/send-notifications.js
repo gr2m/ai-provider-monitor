@@ -50,7 +50,7 @@ const eventType = `ai-provider-monitor:${provider}`;
 
 /**
  * Attempts to send a dispatch event. If the payload is too large,
- * splits the routes array into smaller batches and retries.
+ * splits the changes array into smaller batches and retries.
  */
 async function sendDispatch(octokit, repository, payload) {
   try {
@@ -63,21 +63,21 @@ async function sendDispatch(octokit, repository, payload) {
     return 1;
   } catch (error) {
     // GitHub returns 422 when the payload is too large
-    if (error.status === 422 && payload.routes && payload.routes.length > 1) {
+    if (error.status === 422 && payload.changes && payload.changes.length > 1) {
       console.error(
-        `Payload too large for ${repository.full_name} (${payload.routes.length} routes), splitting...`
+        `Payload too large for ${repository.full_name} (${payload.changes.length} changes), splitting...`
       );
 
-      const routes = payload.routes;
-      const mid = Math.ceil(routes.length / 2);
+      const changes = payload.changes;
+      const mid = Math.ceil(changes.length / 2);
 
       const countA = await sendDispatch(octokit, repository, {
         ...payload,
-        routes: routes.slice(0, mid),
+        changes: changes.slice(0, mid),
       });
       const countB = await sendDispatch(octokit, repository, {
         ...payload,
-        routes: routes.slice(mid),
+        changes: changes.slice(mid),
       });
       return countA + countB;
     }
@@ -91,18 +91,22 @@ let errorCount = 0;
 await app.eachRepository(async ({ octokit, repository }) => {
   const repo = repository.full_name;
 
-  try {
-    const count = await sendDispatch(octokit, repository, {
-      provider,
-      routes: changedRoutes,
-    });
-    dispatchCount += count;
-    console.error(`Dispatched ${eventType} to ${repo}`);
-  } catch (error) {
-    errorCount++;
-    console.error(
-      `Failed to dispatch ${eventType} to ${repo}: ${error.message}`
-    );
+  for (const { route, status, changes } of changedRoutes) {
+    try {
+      const count = await sendDispatch(octokit, repository, {
+        provider,
+        route,
+        status,
+        changes,
+      });
+      dispatchCount += count;
+      console.error(`Dispatched ${eventType} (${route}) to ${repo}`);
+    } catch (error) {
+      errorCount++;
+      console.error(
+        `Failed to dispatch ${eventType} (${route}) to ${repo}: ${error.message}`
+      );
+    }
   }
 });
 
