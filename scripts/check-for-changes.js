@@ -308,7 +308,7 @@ if (docFixes.length > 0) {
 const changed_routes = changedRoutes.map(({ relativePath, status }, index) => {
   const route = deriveRoute(relativePath);
   const changes = analysisResults[index].changes;
-  return { route, status, changes };
+  return { route, changes };
 });
 
 // --- Step 12: Output result ---

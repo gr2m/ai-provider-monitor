@@ -27,7 +27,8 @@ jobs:
       - run: |
           echo "Provider: ${{ github.event.client_payload.provider }}"
           echo "Route: ${{ github.event.client_payload.route }}"
-          echo "Status: ${{ github.event.client_payload.status }}"
+          echo "Breaking: ${{ github.event.client_payload.breaking }}"
+          echo "Doc only: ${{ github.event.client_payload.doc_only }}"
           echo "Changes: ${{ toJson(github.event.client_payload.changes) }}"
 ```
 
@@ -35,11 +36,12 @@ The `client_payload` contains:
 
 - `provider` — the provider name (e.g. `openai`)
 - `route` — the HTTP method and path (e.g. `POST /chat/completions`)
-- `status` — `A` (added), `M` (modified), or `D` (deleted)
+- `breaking` — `true` if any change could break existing consumers
+- `doc_only` — `true` if all changes are documentation-only
 - `changes` — array of change records, each with:
   - `change` — `added`, `changed`, or `removed`
   - `target` — `route`, `request`, or `response`
-  - `breaking` — boolean, whether the change could break existing consumers
+  - `breaking` — boolean, whether this specific change is breaking
   - `deprecated` — boolean, whether something was marked as deprecated
   - `doc_only` — boolean, whether only descriptions/examples changed
   - `note` — human-readable description of the change
@@ -66,9 +68,20 @@ jobs:
 jobs:
   handle-breaking:
     runs-on: ubuntu-latest
-    if: contains(toJson(github.event.client_payload.changes), '"breaking":true')
+    if: github.event.client_payload.breaking
     steps:
-      - run: echo "Breaking change detected"
+      - run: echo "Breaking change detected in ${{ github.event.client_payload.route }}"
+```
+
+**Skip documentation-only changes:**
+
+```yaml
+jobs:
+  handle-change:
+    runs-on: ubuntu-latest
+    if: "!github.event.client_payload.doc_only"
+    steps:
+      - run: echo "Functional change in ${{ github.event.client_payload.route }}"
 ```
 
 **Filter in a script step for more control:**
@@ -81,15 +94,13 @@ jobs:
       - uses: actions/github-script@v7
         with:
           script: |
-            const { route, status, changes } = context.payload.client_payload;
+            const { route, breaking, changes } = context.payload.client_payload;
 
-            // Check for breaking changes
-            const breaking = changes.filter(c => c.breaking);
-            if (breaking.length > 0) {
-              core.warning(`${route}: ${breaking.length} breaking change(s)`);
+            if (breaking) {
+              const breakingChanges = changes.filter(c => c.breaking);
+              core.warning(`${route}: ${breakingChanges.length} breaking change(s)`);
             }
 
-            // Log all change notes
             for (const change of changes) {
               core.info(`${change.change} (${change.target}): ${change.note}`);
             }

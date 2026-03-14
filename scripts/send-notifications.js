@@ -91,12 +91,16 @@ let errorCount = 0;
 await app.eachRepository(async ({ octokit, repository }) => {
   const repo = repository.full_name;
 
-  for (const { route, status, changes } of changedRoutes) {
+  for (const { route, changes } of changedRoutes) {
+    const breaking = changes.some((c) => c.breaking);
+    const doc_only = changes.every((c) => c.doc_only);
+
     try {
       const count = await sendDispatch(octokit, repository, {
         provider,
         route,
-        status,
+        breaking,
+        doc_only,
         changes,
       });
       dispatchCount += count;
