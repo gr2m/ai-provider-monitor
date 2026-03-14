@@ -28,14 +28,23 @@ jobs:
           echo "Provider: ${{ github.event.client_payload.provider }}"
           echo "Operation: ${{ github.event.client_payload.operationId }}"
           echo "Status: ${{ github.event.client_payload.status }}"
-          echo "Path: ${{ github.event.client_payload.relativePath }}"
+          echo "Route: ${{ github.event.client_payload.route }}"
+          echo "Changes: ${{ toJson(github.event.client_payload.changes) }}"
 ```
 
 The `client_payload` contains:
 - `provider` — the provider name (e.g. `openai`)
 - `operationId` — the OpenAPI operation ID
 - `status` — `A` (added), `M` (modified), or `D` (deleted)
-- `relativePath` — the route file path (e.g. `chat/completions/post.json`)
+- `route` — the HTTP method and path (e.g. `POST /chat/completions`)
+- `changes` — array of change records, each with:
+  - `change` — `added`, `changed`, or `removed`
+  - `target` — `route`, `request`, or `response`
+  - `breaking` — boolean, whether the change could break existing consumers
+  - `deprecated` — boolean, whether something was marked as deprecated
+  - `doc_only` — boolean, whether only descriptions/examples changed
+  - `note` — human-readable description of the change
+  - `paths` — array of `{ path, before, after }` with JSON-path-like notation
 
 ## How it works
 
