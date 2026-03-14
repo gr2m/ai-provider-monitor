@@ -9,7 +9,7 @@
  *
  * Arguments:
  *   provider           - e.g. "openai"
- *   changed_routes_json - JSON array of { relativePath, status, operationId }
+ *   changed_routes_json - JSON array of { route, status, operationId, changes }
  *
  * Environment:
  *   APP_ID          - GitHub App ID
@@ -46,35 +46,70 @@ const app = new App({
   privateKey: APP_PRIVATE_KEY,
 });
 
+/**
+ * Attempts to send a dispatch event. If the payload is too large,
+ * splits the changes array into smaller batches and retries.
+ */
+async function sendDispatch(octokit, repository, eventType, payload) {
+  try {
+    await octokit.request("POST /repos/{owner}/{repo}/dispatches", {
+      owner: repository.owner.login,
+      repo: repository.name,
+      event_type: eventType,
+      client_payload: payload,
+    });
+    return 1;
+  } catch (error) {
+    // GitHub returns 422 when the payload is too large
+    if (error.status === 422 && payload.changes && payload.changes.length > 1) {
+      console.error(
+        `Payload too large for ${eventType} to ${repository.full_name} (${payload.changes.length} changes), splitting...`
+      );
+
+      const changes = payload.changes;
+      const mid = Math.ceil(changes.length / 2);
+      const firstHalf = changes.slice(0, mid);
+      const secondHalf = changes.slice(mid);
+
+      const countA = await sendDispatch(octokit, repository, eventType, {
+        ...payload,
+        changes: firstHalf,
+      });
+      const countB = await sendDispatch(octokit, repository, eventType, {
+        ...payload,
+        changes: secondHalf,
+      });
+      return countA + countB;
+    }
+    throw error;
+  }
+}
+
 let dispatchCount = 0;
 let errorCount = 0;
 
 await app.eachRepository(async ({ octokit, repository }) => {
   const repo = repository.full_name;
 
-  for (const route of changedRoutes) {
-    const { relativePath, status, operationId } = route;
+  for (const routeEntry of changedRoutes) {
+    const { route, status, operationId, changes } = routeEntry;
 
     if (!operationId) {
-      console.error(`Skipping ${relativePath} — no operationId`);
+      console.error(`Skipping ${route} — no operationId`);
       continue;
     }
 
     const eventType = `api:${provider}:${operationId}`;
 
     try {
-      await octokit.request("POST /repos/{owner}/{repo}/dispatches", {
-        owner: repository.owner.login,
-        repo: repository.name,
-        event_type: eventType,
-        client_payload: {
-          provider,
-          operationId,
-          status,
-          relativePath,
-        },
+      const count = await sendDispatch(octokit, repository, eventType, {
+        provider,
+        operationId,
+        status,
+        route,
+        changes,
       });
-      dispatchCount++;
+      dispatchCount += count;
       console.error(`Dispatched ${eventType} to ${repo}`);
     } catch (error) {
       errorCount++;

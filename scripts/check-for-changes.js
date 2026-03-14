@@ -306,11 +306,13 @@ if (docFixes.length > 0) {
 }
 
 // --- Step 11: Build changed_routes for notifications ---
-const changed_routes = changedRoutes.map(({ relativePath, status, oldContent, newContent }) => {
+const changed_routes = changedRoutes.map(({ relativePath, status, oldContent, newContent }, index) => {
   // Use oldContent for deleted routes, newContent for added/modified
   const content = status === "D" ? oldContent : newContent;
   const operationId = deriveOperationId(relativePath, content);
-  return { relativePath, status, operationId };
+  const route = deriveRoute(relativePath);
+  const changes = analysisResults[index].changes;
+  return { route, status, operationId, changes };
 });
 
 // --- Step 12: Output result ---
