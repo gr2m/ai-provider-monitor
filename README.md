@@ -114,900 +114,900 @@ The repository uses GitHub Actions to monitor API specification changes from AI 
 
 Event type: `ai-provider-monitor:anthropic`
 
-| Method | Route | Spec |
-| --- | --- | --- |
-| POST | /v1/complete | [anthropic/routes/v1/complete/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/complete/post.json) |
-| GET | /v1/files | [anthropic/routes/v1/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/get.json) |
-| POST | /v1/files | [anthropic/routes/v1/files/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/post.json) |
-| GET | /v1/files?beta=true | [anthropic/routes/v1/files_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files_QMARK_beta_EQ_true/get.json) |
-| POST | /v1/files?beta=true | [anthropic/routes/v1/files_QMARK_beta_EQ_true/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files_QMARK_beta_EQ_true/post.json) |
-| DELETE | /v1/files/{file_id} | [anthropic/routes/v1/files/{file_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/{file_id}/delete.json) |
-| GET | /v1/files/{file_id} | [anthropic/routes/v1/files/{file_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/{file_id}/get.json) |
-| DELETE | /v1/files/{file_id}?beta=true | [anthropic/routes/v1/files/{file_id}_QMARK_beta_EQ_true/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/{file_id}_QMARK_beta_EQ_true/delete.json) |
-| GET | /v1/files/{file_id}?beta=true | [anthropic/routes/v1/files/{file_id}_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/{file_id}_QMARK_beta_EQ_true/get.json) |
-| GET | /v1/files/{file_id}/content | [anthropic/routes/v1/files/{file_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/{file_id}/content/get.json) |
-| GET | /v1/files/{file_id}/content?beta=true | [anthropic/routes/v1/files/{file_id}/content_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/{file_id}/content_QMARK_beta_EQ_true/get.json) |
-| POST | /v1/messages | [anthropic/routes/v1/messages/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/post.json) |
-| POST | /v1/messages?beta=true | [anthropic/routes/v1/messages_QMARK_beta_EQ_true/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages_QMARK_beta_EQ_true/post.json) |
-| GET | /v1/messages/batches | [anthropic/routes/v1/messages/batches/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/get.json) |
-| POST | /v1/messages/batches | [anthropic/routes/v1/messages/batches/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/post.json) |
-| GET | /v1/messages/batches?beta=true | [anthropic/routes/v1/messages/batches_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches_QMARK_beta_EQ_true/get.json) |
-| POST | /v1/messages/batches?beta=true | [anthropic/routes/v1/messages/batches_QMARK_beta_EQ_true/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches_QMARK_beta_EQ_true/post.json) |
-| DELETE | /v1/messages/batches/{message_batch_id} | [anthropic/routes/v1/messages/batches/{message_batch_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}/delete.json) |
-| GET | /v1/messages/batches/{message_batch_id} | [anthropic/routes/v1/messages/batches/{message_batch_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}/get.json) |
-| DELETE | /v1/messages/batches/{message_batch_id}?beta=true | [anthropic/routes/v1/messages/batches/{message_batch_id}_QMARK_beta_EQ_true/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}_QMARK_beta_EQ_true/delete.json) |
-| GET | /v1/messages/batches/{message_batch_id}?beta=true | [anthropic/routes/v1/messages/batches/{message_batch_id}_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}_QMARK_beta_EQ_true/get.json) |
-| POST | /v1/messages/batches/{message_batch_id}/cancel | [anthropic/routes/v1/messages/batches/{message_batch_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}/cancel/post.json) |
-| POST | /v1/messages/batches/{message_batch_id}/cancel?beta=true | [anthropic/routes/v1/messages/batches/{message_batch_id}/cancel_QMARK_beta_EQ_true/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}/cancel_QMARK_beta_EQ_true/post.json) |
-| GET | /v1/messages/batches/{message_batch_id}/results | [anthropic/routes/v1/messages/batches/{message_batch_id}/results/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}/results/get.json) |
-| GET | /v1/messages/batches/{message_batch_id}/results?beta=true | [anthropic/routes/v1/messages/batches/{message_batch_id}/results_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}/results_QMARK_beta_EQ_true/get.json) |
-| POST | /v1/messages/count_tokens | [anthropic/routes/v1/messages/count_tokens/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/count_tokens/post.json) |
-| POST | /v1/messages/count_tokens?beta=true | [anthropic/routes/v1/messages/count_tokens_QMARK_beta_EQ_true/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/count_tokens_QMARK_beta_EQ_true/post.json) |
-| GET | /v1/models | [anthropic/routes/v1/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/models/get.json) |
-| GET | /v1/models?beta=true | [anthropic/routes/v1/models_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/models_QMARK_beta_EQ_true/get.json) |
-| GET | /v1/models/{model_id} | [anthropic/routes/v1/models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/models/{model_id}/get.json) |
-| GET | /v1/models/{model_id}?beta=true | [anthropic/routes/v1/models/{model_id}_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/models/{model_id}_QMARK_beta_EQ_true/get.json) |
-| GET | /v1/skills | [anthropic/routes/v1/skills/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/get.json) |
-| POST | /v1/skills | [anthropic/routes/v1/skills/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/post.json) |
-| GET | /v1/skills?beta=true | [anthropic/routes/v1/skills_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills_QMARK_beta_EQ_true/get.json) |
-| POST | /v1/skills?beta=true | [anthropic/routes/v1/skills_QMARK_beta_EQ_true/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills_QMARK_beta_EQ_true/post.json) |
-| DELETE | /v1/skills/{skill_id} | [anthropic/routes/v1/skills/{skill_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/delete.json) |
-| GET | /v1/skills/{skill_id} | [anthropic/routes/v1/skills/{skill_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/get.json) |
-| DELETE | /v1/skills/{skill_id}?beta=true | [anthropic/routes/v1/skills/{skill_id}_QMARK_beta_EQ_true/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}_QMARK_beta_EQ_true/delete.json) |
-| GET | /v1/skills/{skill_id}?beta=true | [anthropic/routes/v1/skills/{skill_id}_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}_QMARK_beta_EQ_true/get.json) |
-| GET | /v1/skills/{skill_id}/versions | [anthropic/routes/v1/skills/{skill_id}/versions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions/get.json) |
-| POST | /v1/skills/{skill_id}/versions | [anthropic/routes/v1/skills/{skill_id}/versions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions/post.json) |
-| GET | /v1/skills/{skill_id}/versions?beta=true | [anthropic/routes/v1/skills/{skill_id}/versions_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions_QMARK_beta_EQ_true/get.json) |
-| POST | /v1/skills/{skill_id}/versions?beta=true | [anthropic/routes/v1/skills/{skill_id}/versions_QMARK_beta_EQ_true/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions_QMARK_beta_EQ_true/post.json) |
-| DELETE | /v1/skills/{skill_id}/versions/{version} | [anthropic/routes/v1/skills/{skill_id}/versions/{version}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions/{version}/delete.json) |
-| GET | /v1/skills/{skill_id}/versions/{version} | [anthropic/routes/v1/skills/{skill_id}/versions/{version}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions/{version}/get.json) |
-| DELETE | /v1/skills/{skill_id}/versions/{version}?beta=true | [anthropic/routes/v1/skills/{skill_id}/versions/{version}_QMARK_beta_EQ_true/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions/{version}_QMARK_beta_EQ_true/delete.json) |
-| GET | /v1/skills/{skill_id}/versions/{version}?beta=true | [anthropic/routes/v1/skills/{skill_id}/versions/{version}_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions/{version}_QMARK_beta_EQ_true/get.json) |
+| Route | Spec |
+| --- | --- |
+| POST /v1/complete | [anthropic/routes/v1/complete/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/complete/post.json) |
+| GET /v1/files | [anthropic/routes/v1/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/get.json) |
+| POST /v1/files | [anthropic/routes/v1/files/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/post.json) |
+| GET /v1/files?beta=true | [anthropic/routes/v1/files_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files_QMARK_beta_EQ_true/get.json) |
+| POST /v1/files?beta=true | [anthropic/routes/v1/files_QMARK_beta_EQ_true/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files_QMARK_beta_EQ_true/post.json) |
+| DELETE /v1/files/{file_id} | [anthropic/routes/v1/files/{file_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/{file_id}/delete.json) |
+| GET /v1/files/{file_id} | [anthropic/routes/v1/files/{file_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/{file_id}/get.json) |
+| DELETE /v1/files/{file_id}?beta=true | [anthropic/routes/v1/files/{file_id}_QMARK_beta_EQ_true/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/{file_id}_QMARK_beta_EQ_true/delete.json) |
+| GET /v1/files/{file_id}?beta=true | [anthropic/routes/v1/files/{file_id}_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/{file_id}_QMARK_beta_EQ_true/get.json) |
+| GET /v1/files/{file_id}/content | [anthropic/routes/v1/files/{file_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/{file_id}/content/get.json) |
+| GET /v1/files/{file_id}/content?beta=true | [anthropic/routes/v1/files/{file_id}/content_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/files/{file_id}/content_QMARK_beta_EQ_true/get.json) |
+| POST /v1/messages | [anthropic/routes/v1/messages/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/post.json) |
+| POST /v1/messages?beta=true | [anthropic/routes/v1/messages_QMARK_beta_EQ_true/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages_QMARK_beta_EQ_true/post.json) |
+| GET /v1/messages/batches | [anthropic/routes/v1/messages/batches/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/get.json) |
+| POST /v1/messages/batches | [anthropic/routes/v1/messages/batches/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/post.json) |
+| GET /v1/messages/batches?beta=true | [anthropic/routes/v1/messages/batches_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches_QMARK_beta_EQ_true/get.json) |
+| POST /v1/messages/batches?beta=true | [anthropic/routes/v1/messages/batches_QMARK_beta_EQ_true/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches_QMARK_beta_EQ_true/post.json) |
+| DELETE /v1/messages/batches/{message_batch_id} | [anthropic/routes/v1/messages/batches/{message_batch_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}/delete.json) |
+| GET /v1/messages/batches/{message_batch_id} | [anthropic/routes/v1/messages/batches/{message_batch_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}/get.json) |
+| DELETE /v1/messages/batches/{message_batch_id}?beta=true | [anthropic/routes/v1/messages/batches/{message_batch_id}_QMARK_beta_EQ_true/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}_QMARK_beta_EQ_true/delete.json) |
+| GET /v1/messages/batches/{message_batch_id}?beta=true | [anthropic/routes/v1/messages/batches/{message_batch_id}_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}_QMARK_beta_EQ_true/get.json) |
+| POST /v1/messages/batches/{message_batch_id}/cancel | [anthropic/routes/v1/messages/batches/{message_batch_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}/cancel/post.json) |
+| POST /v1/messages/batches/{message_batch_id}/cancel?beta=true | [anthropic/routes/v1/messages/batches/{message_batch_id}/cancel_QMARK_beta_EQ_true/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}/cancel_QMARK_beta_EQ_true/post.json) |
+| GET /v1/messages/batches/{message_batch_id}/results | [anthropic/routes/v1/messages/batches/{message_batch_id}/results/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}/results/get.json) |
+| GET /v1/messages/batches/{message_batch_id}/results?beta=true | [anthropic/routes/v1/messages/batches/{message_batch_id}/results_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/batches/{message_batch_id}/results_QMARK_beta_EQ_true/get.json) |
+| POST /v1/messages/count_tokens | [anthropic/routes/v1/messages/count_tokens/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/count_tokens/post.json) |
+| POST /v1/messages/count_tokens?beta=true | [anthropic/routes/v1/messages/count_tokens_QMARK_beta_EQ_true/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/messages/count_tokens_QMARK_beta_EQ_true/post.json) |
+| GET /v1/models | [anthropic/routes/v1/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/models/get.json) |
+| GET /v1/models?beta=true | [anthropic/routes/v1/models_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/models_QMARK_beta_EQ_true/get.json) |
+| GET /v1/models/{model_id} | [anthropic/routes/v1/models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/models/{model_id}/get.json) |
+| GET /v1/models/{model_id}?beta=true | [anthropic/routes/v1/models/{model_id}_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/models/{model_id}_QMARK_beta_EQ_true/get.json) |
+| GET /v1/skills | [anthropic/routes/v1/skills/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/get.json) |
+| POST /v1/skills | [anthropic/routes/v1/skills/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/post.json) |
+| GET /v1/skills?beta=true | [anthropic/routes/v1/skills_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills_QMARK_beta_EQ_true/get.json) |
+| POST /v1/skills?beta=true | [anthropic/routes/v1/skills_QMARK_beta_EQ_true/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills_QMARK_beta_EQ_true/post.json) |
+| DELETE /v1/skills/{skill_id} | [anthropic/routes/v1/skills/{skill_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/delete.json) |
+| GET /v1/skills/{skill_id} | [anthropic/routes/v1/skills/{skill_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/get.json) |
+| DELETE /v1/skills/{skill_id}?beta=true | [anthropic/routes/v1/skills/{skill_id}_QMARK_beta_EQ_true/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}_QMARK_beta_EQ_true/delete.json) |
+| GET /v1/skills/{skill_id}?beta=true | [anthropic/routes/v1/skills/{skill_id}_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}_QMARK_beta_EQ_true/get.json) |
+| GET /v1/skills/{skill_id}/versions | [anthropic/routes/v1/skills/{skill_id}/versions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions/get.json) |
+| POST /v1/skills/{skill_id}/versions | [anthropic/routes/v1/skills/{skill_id}/versions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions/post.json) |
+| GET /v1/skills/{skill_id}/versions?beta=true | [anthropic/routes/v1/skills/{skill_id}/versions_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions_QMARK_beta_EQ_true/get.json) |
+| POST /v1/skills/{skill_id}/versions?beta=true | [anthropic/routes/v1/skills/{skill_id}/versions_QMARK_beta_EQ_true/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions_QMARK_beta_EQ_true/post.json) |
+| DELETE /v1/skills/{skill_id}/versions/{version} | [anthropic/routes/v1/skills/{skill_id}/versions/{version}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions/{version}/delete.json) |
+| GET /v1/skills/{skill_id}/versions/{version} | [anthropic/routes/v1/skills/{skill_id}/versions/{version}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions/{version}/get.json) |
+| DELETE /v1/skills/{skill_id}/versions/{version}?beta=true | [anthropic/routes/v1/skills/{skill_id}/versions/{version}_QMARK_beta_EQ_true/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions/{version}_QMARK_beta_EQ_true/delete.json) |
+| GET /v1/skills/{skill_id}/versions/{version}?beta=true | [anthropic/routes/v1/skills/{skill_id}/versions/{version}_QMARK_beta_EQ_true/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/anthropic/routes/v1/skills/{skill_id}/versions/{version}_QMARK_beta_EQ_true/get.json) |
 
 ### assemblyai
 
 Event type: `ai-provider-monitor:assemblyai`
 
-| Method | Route | Spec |
-| --- | --- | --- |
-| GET | /v2/transcript | [assemblyai/routes/v2/transcript/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/get.json) |
-| POST | /v2/transcript | [assemblyai/routes/v2/transcript/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/post.json) |
-| DELETE | /v2/transcript/{transcript_id} | [assemblyai/routes/v2/transcript/{transcript_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/{transcript_id}/delete.json) |
-| GET | /v2/transcript/{transcript_id} | [assemblyai/routes/v2/transcript/{transcript_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/{transcript_id}/get.json) |
-| GET | /v2/transcript/{transcript_id}/{subtitle_format} | [assemblyai/routes/v2/transcript/{transcript_id}/{subtitle_format}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/{transcript_id}/{subtitle_format}/get.json) |
-| GET | /v2/transcript/{transcript_id}/paragraphs | [assemblyai/routes/v2/transcript/{transcript_id}/paragraphs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/{transcript_id}/paragraphs/get.json) |
-| GET | /v2/transcript/{transcript_id}/redacted-audio | [assemblyai/routes/v2/transcript/{transcript_id}/redacted-audio/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/{transcript_id}/redacted-audio/get.json) |
-| GET | /v2/transcript/{transcript_id}/sentences | [assemblyai/routes/v2/transcript/{transcript_id}/sentences/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/{transcript_id}/sentences/get.json) |
-| GET | /v2/transcript/{transcript_id}/word-search | [assemblyai/routes/v2/transcript/{transcript_id}/word-search/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/{transcript_id}/word-search/get.json) |
-| POST | /v2/upload | [assemblyai/routes/v2/upload/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/upload/post.json) |
+| Route | Spec |
+| --- | --- |
+| GET /v2/transcript | [assemblyai/routes/v2/transcript/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/get.json) |
+| POST /v2/transcript | [assemblyai/routes/v2/transcript/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/post.json) |
+| DELETE /v2/transcript/{transcript_id} | [assemblyai/routes/v2/transcript/{transcript_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/{transcript_id}/delete.json) |
+| GET /v2/transcript/{transcript_id} | [assemblyai/routes/v2/transcript/{transcript_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/{transcript_id}/get.json) |
+| GET /v2/transcript/{transcript_id}/{subtitle_format} | [assemblyai/routes/v2/transcript/{transcript_id}/{subtitle_format}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/{transcript_id}/{subtitle_format}/get.json) |
+| GET /v2/transcript/{transcript_id}/paragraphs | [assemblyai/routes/v2/transcript/{transcript_id}/paragraphs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/{transcript_id}/paragraphs/get.json) |
+| GET /v2/transcript/{transcript_id}/redacted-audio | [assemblyai/routes/v2/transcript/{transcript_id}/redacted-audio/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/{transcript_id}/redacted-audio/get.json) |
+| GET /v2/transcript/{transcript_id}/sentences | [assemblyai/routes/v2/transcript/{transcript_id}/sentences/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/{transcript_id}/sentences/get.json) |
+| GET /v2/transcript/{transcript_id}/word-search | [assemblyai/routes/v2/transcript/{transcript_id}/word-search/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/transcript/{transcript_id}/word-search/get.json) |
+| POST /v2/upload | [assemblyai/routes/v2/upload/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/assemblyai/routes/v2/upload/post.json) |
 
 ### black-forest-labs
 
 Event type: `ai-provider-monitor:black-forest-labs`
 
-| Method | Route | Spec |
-| --- | --- | --- |
-| GET | /v1/credits | [black-forest-labs/routes/v1/credits/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/credits/get.json) |
-| POST | /v1/delete_finetune | [black-forest-labs/routes/v1/delete_finetune/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/delete_finetune/post.json) |
-| GET | /v1/finetune_details | [black-forest-labs/routes/v1/finetune_details/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/finetune_details/get.json) |
-| POST | /v1/flux-2-flex | [black-forest-labs/routes/v1/flux-2-flex/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-2-flex/post.json) |
-| POST | /v1/flux-2-klein-4b | [black-forest-labs/routes/v1/flux-2-klein-4b/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-2-klein-4b/post.json) |
-| POST | /v1/flux-2-klein-9b | [black-forest-labs/routes/v1/flux-2-klein-9b/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-2-klein-9b/post.json) |
-| POST | /v1/flux-2-klein-9b-preview | [black-forest-labs/routes/v1/flux-2-klein-9b-preview/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-2-klein-9b-preview/post.json) |
-| POST | /v1/flux-2-max | [black-forest-labs/routes/v1/flux-2-max/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-2-max/post.json) |
-| POST | /v1/flux-2-pro | [black-forest-labs/routes/v1/flux-2-pro/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-2-pro/post.json) |
-| POST | /v1/flux-2-pro-preview | [black-forest-labs/routes/v1/flux-2-pro-preview/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-2-pro-preview/post.json) |
-| POST | /v1/flux-dev | [black-forest-labs/routes/v1/flux-dev/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-dev/post.json) |
-| POST | /v1/flux-kontext-max | [black-forest-labs/routes/v1/flux-kontext-max/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-kontext-max/post.json) |
-| POST | /v1/flux-kontext-pro | [black-forest-labs/routes/v1/flux-kontext-pro/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-kontext-pro/post.json) |
-| POST | /v1/flux-pro-1.0-expand | [black-forest-labs/routes/v1/flux-pro-1.0-expand/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-pro-1.0-expand/post.json) |
-| POST | /v1/flux-pro-1.0-fill | [black-forest-labs/routes/v1/flux-pro-1.0-fill/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-pro-1.0-fill/post.json) |
-| POST | /v1/flux-pro-1.0-fill-finetuned | [black-forest-labs/routes/v1/flux-pro-1.0-fill-finetuned/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-pro-1.0-fill-finetuned/post.json) |
-| POST | /v1/flux-pro-1.1 | [black-forest-labs/routes/v1/flux-pro-1.1/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-pro-1.1/post.json) |
-| POST | /v1/flux-pro-1.1-ultra | [black-forest-labs/routes/v1/flux-pro-1.1-ultra/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-pro-1.1-ultra/post.json) |
-| POST | /v1/flux-pro-1.1-ultra-finetuned | [black-forest-labs/routes/v1/flux-pro-1.1-ultra-finetuned/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-pro-1.1-ultra-finetuned/post.json) |
-| GET | /v1/get_result | [black-forest-labs/routes/v1/get_result/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/get_result/get.json) |
-| GET | /v1/my_finetunes | [black-forest-labs/routes/v1/my_finetunes/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/my_finetunes/get.json) |
+| Route | Spec |
+| --- | --- |
+| GET /v1/credits | [black-forest-labs/routes/v1/credits/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/credits/get.json) |
+| POST /v1/delete_finetune | [black-forest-labs/routes/v1/delete_finetune/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/delete_finetune/post.json) |
+| GET /v1/finetune_details | [black-forest-labs/routes/v1/finetune_details/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/finetune_details/get.json) |
+| POST /v1/flux-2-flex | [black-forest-labs/routes/v1/flux-2-flex/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-2-flex/post.json) |
+| POST /v1/flux-2-klein-4b | [black-forest-labs/routes/v1/flux-2-klein-4b/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-2-klein-4b/post.json) |
+| POST /v1/flux-2-klein-9b | [black-forest-labs/routes/v1/flux-2-klein-9b/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-2-klein-9b/post.json) |
+| POST /v1/flux-2-klein-9b-preview | [black-forest-labs/routes/v1/flux-2-klein-9b-preview/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-2-klein-9b-preview/post.json) |
+| POST /v1/flux-2-max | [black-forest-labs/routes/v1/flux-2-max/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-2-max/post.json) |
+| POST /v1/flux-2-pro | [black-forest-labs/routes/v1/flux-2-pro/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-2-pro/post.json) |
+| POST /v1/flux-2-pro-preview | [black-forest-labs/routes/v1/flux-2-pro-preview/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-2-pro-preview/post.json) |
+| POST /v1/flux-dev | [black-forest-labs/routes/v1/flux-dev/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-dev/post.json) |
+| POST /v1/flux-kontext-max | [black-forest-labs/routes/v1/flux-kontext-max/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-kontext-max/post.json) |
+| POST /v1/flux-kontext-pro | [black-forest-labs/routes/v1/flux-kontext-pro/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-kontext-pro/post.json) |
+| POST /v1/flux-pro-1.0-expand | [black-forest-labs/routes/v1/flux-pro-1.0-expand/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-pro-1.0-expand/post.json) |
+| POST /v1/flux-pro-1.0-fill | [black-forest-labs/routes/v1/flux-pro-1.0-fill/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-pro-1.0-fill/post.json) |
+| POST /v1/flux-pro-1.0-fill-finetuned | [black-forest-labs/routes/v1/flux-pro-1.0-fill-finetuned/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-pro-1.0-fill-finetuned/post.json) |
+| POST /v1/flux-pro-1.1 | [black-forest-labs/routes/v1/flux-pro-1.1/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-pro-1.1/post.json) |
+| POST /v1/flux-pro-1.1-ultra | [black-forest-labs/routes/v1/flux-pro-1.1-ultra/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-pro-1.1-ultra/post.json) |
+| POST /v1/flux-pro-1.1-ultra-finetuned | [black-forest-labs/routes/v1/flux-pro-1.1-ultra-finetuned/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/flux-pro-1.1-ultra-finetuned/post.json) |
+| GET /v1/get_result | [black-forest-labs/routes/v1/get_result/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/get_result/get.json) |
+| GET /v1/my_finetunes | [black-forest-labs/routes/v1/my_finetunes/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/black-forest-labs/routes/v1/my_finetunes/get.json) |
 
 ### cohere
 
 Event type: `ai-provider-monitor:cohere`
 
-| Method | Route | Spec |
-| --- | --- | --- |
-| POST | /v1/chat | [cohere/routes/v1/chat/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/chat/post.json) |
-| POST | /v1/check-api-key | [cohere/routes/v1/check-api-key/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/check-api-key/post.json) |
-| POST | /v1/classify | [cohere/routes/v1/classify/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/classify/post.json) |
-| GET | /v1/connectors | [cohere/routes/v1/connectors/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/connectors/get.json) |
-| POST | /v1/connectors | [cohere/routes/v1/connectors/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/connectors/post.json) |
-| DELETE | /v1/connectors/{id} | [cohere/routes/v1/connectors/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/connectors/{id}/delete.json) |
-| GET | /v1/connectors/{id} | [cohere/routes/v1/connectors/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/connectors/{id}/get.json) |
-| PATCH | /v1/connectors/{id} | [cohere/routes/v1/connectors/{id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/connectors/{id}/patch.json) |
-| POST | /v1/connectors/{id}/oauth/authorize | [cohere/routes/v1/connectors/{id}/oauth/authorize/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/connectors/{id}/oauth/authorize/post.json) |
-| GET | /v1/datasets | [cohere/routes/v1/datasets/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/datasets/get.json) |
-| POST | /v1/datasets | [cohere/routes/v1/datasets/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/datasets/post.json) |
-| DELETE | /v1/datasets/{id} | [cohere/routes/v1/datasets/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/datasets/{id}/delete.json) |
-| GET | /v1/datasets/{id} | [cohere/routes/v1/datasets/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/datasets/{id}/get.json) |
-| GET | /v1/datasets/usage | [cohere/routes/v1/datasets/usage/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/datasets/usage/get.json) |
-| PARAMETERS | /v1/detokenize | [cohere/routes/v1/detokenize/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/detokenize/parameters.json) |
-| POST | /v1/detokenize | [cohere/routes/v1/detokenize/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/detokenize/post.json) |
-| POST | /v1/embed | [cohere/routes/v1/embed/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/embed/post.json) |
-| GET | /v1/embed-jobs | [cohere/routes/v1/embed-jobs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/embed-jobs/get.json) |
-| POST | /v1/embed-jobs | [cohere/routes/v1/embed-jobs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/embed-jobs/post.json) |
-| GET | /v1/embed-jobs/{id} | [cohere/routes/v1/embed-jobs/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/embed-jobs/{id}/get.json) |
-| POST | /v1/embed-jobs/{id}/cancel | [cohere/routes/v1/embed-jobs/{id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/embed-jobs/{id}/cancel/post.json) |
-| GET | /v1/finetuning/finetuned-models | [cohere/routes/v1/finetuning/finetuned-models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/finetuning/finetuned-models/get.json) |
-| POST | /v1/finetuning/finetuned-models | [cohere/routes/v1/finetuning/finetuned-models/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/finetuning/finetuned-models/post.json) |
-| GET | /v1/finetuning/finetuned-models/{finetuned_model_id}/events | [cohere/routes/v1/finetuning/finetuned-models/{finetuned_model_id}/events/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/finetuning/finetuned-models/{finetuned_model_id}/events/get.json) |
-| GET | /v1/finetuning/finetuned-models/{finetuned_model_id}/training-step-metrics | [cohere/routes/v1/finetuning/finetuned-models/{finetuned_model_id}/training-step-metrics/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/finetuning/finetuned-models/{finetuned_model_id}/training-step-metrics/get.json) |
-| DELETE | /v1/finetuning/finetuned-models/{id} | [cohere/routes/v1/finetuning/finetuned-models/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/finetuning/finetuned-models/{id}/delete.json) |
-| GET | /v1/finetuning/finetuned-models/{id} | [cohere/routes/v1/finetuning/finetuned-models/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/finetuning/finetuned-models/{id}/get.json) |
-| PATCH | /v1/finetuning/finetuned-models/{id} | [cohere/routes/v1/finetuning/finetuned-models/{id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/finetuning/finetuned-models/{id}/patch.json) |
-| POST | /v1/generate | [cohere/routes/v1/generate/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/generate/post.json) |
-| GET | /v1/models | [cohere/routes/v1/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/models/get.json) |
-| GET | /v1/models/{model} | [cohere/routes/v1/models/{model}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/models/{model}/get.json) |
-| POST | /v1/rerank | [cohere/routes/v1/rerank/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/rerank/post.json) |
-| POST | /v1/summarize | [cohere/routes/v1/summarize/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/summarize/post.json) |
-| POST | /v1/tokenize | [cohere/routes/v1/tokenize/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/tokenize/post.json) |
-| GET | /v2/batches | [cohere/routes/v2/batches/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v2/batches/get.json) |
-| POST | /v2/batches | [cohere/routes/v2/batches/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v2/batches/post.json) |
-| GET | /v2/batches/{id} | [cohere/routes/v2/batches/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v2/batches/{id}/get.json) |
-| POST | /v2/batches/{id}:cancel | [cohere/routes/v2/batches/{id}:cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v2/batches/{id}:cancel/post.json) |
-| POST | /v2/chat | [cohere/routes/v2/chat/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v2/chat/post.json) |
-| POST | /v2/embed | [cohere/routes/v2/embed/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v2/embed/post.json) |
-| POST | /v2/rerank | [cohere/routes/v2/rerank/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v2/rerank/post.json) |
+| Route | Spec |
+| --- | --- |
+| POST /v1/chat | [cohere/routes/v1/chat/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/chat/post.json) |
+| POST /v1/check-api-key | [cohere/routes/v1/check-api-key/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/check-api-key/post.json) |
+| POST /v1/classify | [cohere/routes/v1/classify/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/classify/post.json) |
+| GET /v1/connectors | [cohere/routes/v1/connectors/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/connectors/get.json) |
+| POST /v1/connectors | [cohere/routes/v1/connectors/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/connectors/post.json) |
+| DELETE /v1/connectors/{id} | [cohere/routes/v1/connectors/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/connectors/{id}/delete.json) |
+| GET /v1/connectors/{id} | [cohere/routes/v1/connectors/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/connectors/{id}/get.json) |
+| PATCH /v1/connectors/{id} | [cohere/routes/v1/connectors/{id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/connectors/{id}/patch.json) |
+| POST /v1/connectors/{id}/oauth/authorize | [cohere/routes/v1/connectors/{id}/oauth/authorize/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/connectors/{id}/oauth/authorize/post.json) |
+| GET /v1/datasets | [cohere/routes/v1/datasets/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/datasets/get.json) |
+| POST /v1/datasets | [cohere/routes/v1/datasets/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/datasets/post.json) |
+| DELETE /v1/datasets/{id} | [cohere/routes/v1/datasets/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/datasets/{id}/delete.json) |
+| GET /v1/datasets/{id} | [cohere/routes/v1/datasets/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/datasets/{id}/get.json) |
+| GET /v1/datasets/usage | [cohere/routes/v1/datasets/usage/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/datasets/usage/get.json) |
+| PARAMETERS /v1/detokenize | [cohere/routes/v1/detokenize/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/detokenize/parameters.json) |
+| POST /v1/detokenize | [cohere/routes/v1/detokenize/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/detokenize/post.json) |
+| POST /v1/embed | [cohere/routes/v1/embed/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/embed/post.json) |
+| GET /v1/embed-jobs | [cohere/routes/v1/embed-jobs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/embed-jobs/get.json) |
+| POST /v1/embed-jobs | [cohere/routes/v1/embed-jobs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/embed-jobs/post.json) |
+| GET /v1/embed-jobs/{id} | [cohere/routes/v1/embed-jobs/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/embed-jobs/{id}/get.json) |
+| POST /v1/embed-jobs/{id}/cancel | [cohere/routes/v1/embed-jobs/{id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/embed-jobs/{id}/cancel/post.json) |
+| GET /v1/finetuning/finetuned-models | [cohere/routes/v1/finetuning/finetuned-models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/finetuning/finetuned-models/get.json) |
+| POST /v1/finetuning/finetuned-models | [cohere/routes/v1/finetuning/finetuned-models/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/finetuning/finetuned-models/post.json) |
+| GET /v1/finetuning/finetuned-models/{finetuned_model_id}/events | [cohere/routes/v1/finetuning/finetuned-models/{finetuned_model_id}/events/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/finetuning/finetuned-models/{finetuned_model_id}/events/get.json) |
+| GET /v1/finetuning/finetuned-models/{finetuned_model_id}/training-step-metrics | [cohere/routes/v1/finetuning/finetuned-models/{finetuned_model_id}/training-step-metrics/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/finetuning/finetuned-models/{finetuned_model_id}/training-step-metrics/get.json) |
+| DELETE /v1/finetuning/finetuned-models/{id} | [cohere/routes/v1/finetuning/finetuned-models/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/finetuning/finetuned-models/{id}/delete.json) |
+| GET /v1/finetuning/finetuned-models/{id} | [cohere/routes/v1/finetuning/finetuned-models/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/finetuning/finetuned-models/{id}/get.json) |
+| PATCH /v1/finetuning/finetuned-models/{id} | [cohere/routes/v1/finetuning/finetuned-models/{id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/finetuning/finetuned-models/{id}/patch.json) |
+| POST /v1/generate | [cohere/routes/v1/generate/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/generate/post.json) |
+| GET /v1/models | [cohere/routes/v1/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/models/get.json) |
+| GET /v1/models/{model} | [cohere/routes/v1/models/{model}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/models/{model}/get.json) |
+| POST /v1/rerank | [cohere/routes/v1/rerank/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/rerank/post.json) |
+| POST /v1/summarize | [cohere/routes/v1/summarize/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/summarize/post.json) |
+| POST /v1/tokenize | [cohere/routes/v1/tokenize/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v1/tokenize/post.json) |
+| GET /v2/batches | [cohere/routes/v2/batches/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v2/batches/get.json) |
+| POST /v2/batches | [cohere/routes/v2/batches/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v2/batches/post.json) |
+| GET /v2/batches/{id} | [cohere/routes/v2/batches/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v2/batches/{id}/get.json) |
+| POST /v2/batches/{id}:cancel | [cohere/routes/v2/batches/{id}:cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v2/batches/{id}:cancel/post.json) |
+| POST /v2/chat | [cohere/routes/v2/chat/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v2/chat/post.json) |
+| POST /v2/embed | [cohere/routes/v2/embed/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v2/embed/post.json) |
+| POST /v2/rerank | [cohere/routes/v2/rerank/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/cohere/routes/v2/rerank/post.json) |
 
 ### deepgram
 
 Event type: `ai-provider-monitor:deepgram`
 
-| Method | Route | Spec |
-| --- | --- | --- |
-| DESCRIPTION | /v1/agent/settings/think/models | [deepgram/routes/v1/agent/settings/think/models/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/agent/settings/think/models/description.json) |
-| GET | /v1/agent/settings/think/models | [deepgram/routes/v1/agent/settings/think/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/agent/settings/think/models/get.json) |
-| SERVERS | /v1/agent/settings/think/models | [deepgram/routes/v1/agent/settings/think/models/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/agent/settings/think/models/servers.json) |
-| DESCRIPTION | /v1/auth/grant | [deepgram/routes/v1/auth/grant/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/auth/grant/description.json) |
-| POST | /v1/auth/grant | [deepgram/routes/v1/auth/grant/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/auth/grant/post.json) |
-| SERVERS | /v1/auth/grant | [deepgram/routes/v1/auth/grant/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/auth/grant/servers.json) |
-| DESCRIPTION | /v1/listen | [deepgram/routes/v1/listen/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/listen/description.json) |
-| POST | /v1/listen | [deepgram/routes/v1/listen/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/listen/post.json) |
-| SERVERS | /v1/listen | [deepgram/routes/v1/listen/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/listen/servers.json) |
-| DESCRIPTION | /v1/models | [deepgram/routes/v1/models/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/models/description.json) |
-| GET | /v1/models | [deepgram/routes/v1/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/models/get.json) |
-| SERVERS | /v1/models | [deepgram/routes/v1/models/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/models/servers.json) |
-| DESCRIPTION | /v1/models/{model_id} | [deepgram/routes/v1/models/{model_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/models/{model_id}/description.json) |
-| GET | /v1/models/{model_id} | [deepgram/routes/v1/models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/models/{model_id}/get.json) |
-| PARAMETERS | /v1/models/{model_id} | [deepgram/routes/v1/models/{model_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/models/{model_id}/parameters.json) |
-| SERVERS | /v1/models/{model_id} | [deepgram/routes/v1/models/{model_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/models/{model_id}/servers.json) |
-| DESCRIPTION | /v1/projects | [deepgram/routes/v1/projects/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/description.json) |
-| GET | /v1/projects | [deepgram/routes/v1/projects/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/get.json) |
-| SERVERS | /v1/projects | [deepgram/routes/v1/projects/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/servers.json) |
-| DELETE | /v1/projects/{project_id} | [deepgram/routes/v1/projects/{project_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/delete.json) |
-| DESCRIPTION | /v1/projects/{project_id} | [deepgram/routes/v1/projects/{project_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/description.json) |
-| GET | /v1/projects/{project_id} | [deepgram/routes/v1/projects/{project_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/get.json) |
-| PARAMETERS | /v1/projects/{project_id} | [deepgram/routes/v1/projects/{project_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/parameters.json) |
-| PATCH | /v1/projects/{project_id} | [deepgram/routes/v1/projects/{project_id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/patch.json) |
-| SERVERS | /v1/projects/{project_id} | [deepgram/routes/v1/projects/{project_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/balances | [deepgram/routes/v1/projects/{project_id}/balances/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/description.json) |
-| GET | /v1/projects/{project_id}/balances | [deepgram/routes/v1/projects/{project_id}/balances/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/balances | [deepgram/routes/v1/projects/{project_id}/balances/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/balances | [deepgram/routes/v1/projects/{project_id}/balances/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/balances/{balance_id} | [deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/description.json) |
-| GET | /v1/projects/{project_id}/balances/{balance_id} | [deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/balances/{balance_id} | [deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/balances/{balance_id} | [deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/billing/breakdown | [deepgram/routes/v1/projects/{project_id}/billing/breakdown/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/breakdown/description.json) |
-| GET | /v1/projects/{project_id}/billing/breakdown | [deepgram/routes/v1/projects/{project_id}/billing/breakdown/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/breakdown/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/billing/breakdown | [deepgram/routes/v1/projects/{project_id}/billing/breakdown/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/breakdown/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/billing/breakdown | [deepgram/routes/v1/projects/{project_id}/billing/breakdown/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/breakdown/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/billing/fields | [deepgram/routes/v1/projects/{project_id}/billing/fields/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/fields/description.json) |
-| GET | /v1/projects/{project_id}/billing/fields | [deepgram/routes/v1/projects/{project_id}/billing/fields/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/fields/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/billing/fields | [deepgram/routes/v1/projects/{project_id}/billing/fields/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/fields/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/billing/fields | [deepgram/routes/v1/projects/{project_id}/billing/fields/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/fields/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/invites | [deepgram/routes/v1/projects/{project_id}/invites/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/description.json) |
-| GET | /v1/projects/{project_id}/invites | [deepgram/routes/v1/projects/{project_id}/invites/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/invites | [deepgram/routes/v1/projects/{project_id}/invites/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/parameters.json) |
-| POST | /v1/projects/{project_id}/invites | [deepgram/routes/v1/projects/{project_id}/invites/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/post.json) |
-| SERVERS | /v1/projects/{project_id}/invites | [deepgram/routes/v1/projects/{project_id}/invites/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/servers.json) |
-| DELETE | /v1/projects/{project_id}/invites/{email} | [deepgram/routes/v1/projects/{project_id}/invites/{email}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/{email}/delete.json) |
-| DESCRIPTION | /v1/projects/{project_id}/invites/{email} | [deepgram/routes/v1/projects/{project_id}/invites/{email}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/{email}/description.json) |
-| PARAMETERS | /v1/projects/{project_id}/invites/{email} | [deepgram/routes/v1/projects/{project_id}/invites/{email}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/{email}/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/invites/{email} | [deepgram/routes/v1/projects/{project_id}/invites/{email}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/{email}/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/keys | [deepgram/routes/v1/projects/{project_id}/keys/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/description.json) |
-| GET | /v1/projects/{project_id}/keys | [deepgram/routes/v1/projects/{project_id}/keys/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/keys | [deepgram/routes/v1/projects/{project_id}/keys/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/parameters.json) |
-| POST | /v1/projects/{project_id}/keys | [deepgram/routes/v1/projects/{project_id}/keys/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/post.json) |
-| SERVERS | /v1/projects/{project_id}/keys | [deepgram/routes/v1/projects/{project_id}/keys/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/servers.json) |
-| DELETE | /v1/projects/{project_id}/keys/{key_id} | [deepgram/routes/v1/projects/{project_id}/keys/{key_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/{key_id}/delete.json) |
-| DESCRIPTION | /v1/projects/{project_id}/keys/{key_id} | [deepgram/routes/v1/projects/{project_id}/keys/{key_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/{key_id}/description.json) |
-| GET | /v1/projects/{project_id}/keys/{key_id} | [deepgram/routes/v1/projects/{project_id}/keys/{key_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/{key_id}/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/keys/{key_id} | [deepgram/routes/v1/projects/{project_id}/keys/{key_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/{key_id}/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/keys/{key_id} | [deepgram/routes/v1/projects/{project_id}/keys/{key_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/{key_id}/servers.json) |
-| DELETE | /v1/projects/{project_id}/leave | [deepgram/routes/v1/projects/{project_id}/leave/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/leave/delete.json) |
-| DESCRIPTION | /v1/projects/{project_id}/leave | [deepgram/routes/v1/projects/{project_id}/leave/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/leave/description.json) |
-| PARAMETERS | /v1/projects/{project_id}/leave | [deepgram/routes/v1/projects/{project_id}/leave/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/leave/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/leave | [deepgram/routes/v1/projects/{project_id}/leave/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/leave/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/members | [deepgram/routes/v1/projects/{project_id}/members/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/description.json) |
-| GET | /v1/projects/{project_id}/members | [deepgram/routes/v1/projects/{project_id}/members/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/members | [deepgram/routes/v1/projects/{project_id}/members/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/members | [deepgram/routes/v1/projects/{project_id}/members/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/servers.json) |
-| DELETE | /v1/projects/{project_id}/members/{member_id} | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/delete.json) |
-| DESCRIPTION | /v1/projects/{project_id}/members/{member_id} | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/description.json) |
-| PARAMETERS | /v1/projects/{project_id}/members/{member_id} | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/members/{member_id} | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/members/{member_id}/scopes | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/description.json) |
-| GET | /v1/projects/{project_id}/members/{member_id}/scopes | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/members/{member_id}/scopes | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/parameters.json) |
-| PUT | /v1/projects/{project_id}/members/{member_id}/scopes | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/put.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/put.json) |
-| SERVERS | /v1/projects/{project_id}/members/{member_id}/scopes | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/models | [deepgram/routes/v1/projects/{project_id}/models/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/description.json) |
-| GET | /v1/projects/{project_id}/models | [deepgram/routes/v1/projects/{project_id}/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/models | [deepgram/routes/v1/projects/{project_id}/models/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/models | [deepgram/routes/v1/projects/{project_id}/models/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/models/{model_id} | [deepgram/routes/v1/projects/{project_id}/models/{model_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/{model_id}/description.json) |
-| GET | /v1/projects/{project_id}/models/{model_id} | [deepgram/routes/v1/projects/{project_id}/models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/{model_id}/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/models/{model_id} | [deepgram/routes/v1/projects/{project_id}/models/{model_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/{model_id}/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/models/{model_id} | [deepgram/routes/v1/projects/{project_id}/models/{model_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/{model_id}/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/purchases | [deepgram/routes/v1/projects/{project_id}/purchases/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/purchases/description.json) |
-| GET | /v1/projects/{project_id}/purchases | [deepgram/routes/v1/projects/{project_id}/purchases/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/purchases/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/purchases | [deepgram/routes/v1/projects/{project_id}/purchases/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/purchases/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/purchases | [deepgram/routes/v1/projects/{project_id}/purchases/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/purchases/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/requests | [deepgram/routes/v1/projects/{project_id}/requests/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/description.json) |
-| GET | /v1/projects/{project_id}/requests | [deepgram/routes/v1/projects/{project_id}/requests/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/requests | [deepgram/routes/v1/projects/{project_id}/requests/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/requests | [deepgram/routes/v1/projects/{project_id}/requests/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/requests/{request_id} | [deepgram/routes/v1/projects/{project_id}/requests/{request_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/{request_id}/description.json) |
-| GET | /v1/projects/{project_id}/requests/{request_id} | [deepgram/routes/v1/projects/{project_id}/requests/{request_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/{request_id}/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/requests/{request_id} | [deepgram/routes/v1/projects/{project_id}/requests/{request_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/{request_id}/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/requests/{request_id} | [deepgram/routes/v1/projects/{project_id}/requests/{request_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/{request_id}/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/self-hosted/distribution/credentials | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/description.json) |
-| GET | /v1/projects/{project_id}/self-hosted/distribution/credentials | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/self-hosted/distribution/credentials | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/parameters.json) |
-| POST | /v1/projects/{project_id}/self-hosted/distribution/credentials | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/post.json) |
-| SERVERS | /v1/projects/{project_id}/self-hosted/distribution/credentials | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/servers.json) |
-| DELETE | /v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id} | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/delete.json) |
-| DESCRIPTION | /v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id} | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/description.json) |
-| GET | /v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id} | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id} | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id} | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/usage | [deepgram/routes/v1/projects/{project_id}/usage/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/description.json) |
-| GET | /v1/projects/{project_id}/usage | [deepgram/routes/v1/projects/{project_id}/usage/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/usage | [deepgram/routes/v1/projects/{project_id}/usage/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/usage | [deepgram/routes/v1/projects/{project_id}/usage/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/usage/breakdown | [deepgram/routes/v1/projects/{project_id}/usage/breakdown/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/breakdown/description.json) |
-| GET | /v1/projects/{project_id}/usage/breakdown | [deepgram/routes/v1/projects/{project_id}/usage/breakdown/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/breakdown/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/usage/breakdown | [deepgram/routes/v1/projects/{project_id}/usage/breakdown/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/breakdown/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/usage/breakdown | [deepgram/routes/v1/projects/{project_id}/usage/breakdown/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/breakdown/servers.json) |
-| DESCRIPTION | /v1/projects/{project_id}/usage/fields | [deepgram/routes/v1/projects/{project_id}/usage/fields/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/fields/description.json) |
-| GET | /v1/projects/{project_id}/usage/fields | [deepgram/routes/v1/projects/{project_id}/usage/fields/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/fields/get.json) |
-| PARAMETERS | /v1/projects/{project_id}/usage/fields | [deepgram/routes/v1/projects/{project_id}/usage/fields/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/fields/parameters.json) |
-| SERVERS | /v1/projects/{project_id}/usage/fields | [deepgram/routes/v1/projects/{project_id}/usage/fields/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/fields/servers.json) |
-| DESCRIPTION | /v1/read | [deepgram/routes/v1/read/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/read/description.json) |
-| POST | /v1/read | [deepgram/routes/v1/read/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/read/post.json) |
-| SERVERS | /v1/read | [deepgram/routes/v1/read/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/read/servers.json) |
-| DESCRIPTION | /v1/speak | [deepgram/routes/v1/speak/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/speak/description.json) |
-| POST | /v1/speak | [deepgram/routes/v1/speak/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/speak/post.json) |
-| SERVERS | /v1/speak | [deepgram/routes/v1/speak/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/speak/servers.json) |
+| Route | Spec |
+| --- | --- |
+| DESCRIPTION /v1/agent/settings/think/models | [deepgram/routes/v1/agent/settings/think/models/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/agent/settings/think/models/description.json) |
+| GET /v1/agent/settings/think/models | [deepgram/routes/v1/agent/settings/think/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/agent/settings/think/models/get.json) |
+| SERVERS /v1/agent/settings/think/models | [deepgram/routes/v1/agent/settings/think/models/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/agent/settings/think/models/servers.json) |
+| DESCRIPTION /v1/auth/grant | [deepgram/routes/v1/auth/grant/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/auth/grant/description.json) |
+| POST /v1/auth/grant | [deepgram/routes/v1/auth/grant/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/auth/grant/post.json) |
+| SERVERS /v1/auth/grant | [deepgram/routes/v1/auth/grant/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/auth/grant/servers.json) |
+| DESCRIPTION /v1/listen | [deepgram/routes/v1/listen/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/listen/description.json) |
+| POST /v1/listen | [deepgram/routes/v1/listen/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/listen/post.json) |
+| SERVERS /v1/listen | [deepgram/routes/v1/listen/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/listen/servers.json) |
+| DESCRIPTION /v1/models | [deepgram/routes/v1/models/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/models/description.json) |
+| GET /v1/models | [deepgram/routes/v1/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/models/get.json) |
+| SERVERS /v1/models | [deepgram/routes/v1/models/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/models/servers.json) |
+| DESCRIPTION /v1/models/{model_id} | [deepgram/routes/v1/models/{model_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/models/{model_id}/description.json) |
+| GET /v1/models/{model_id} | [deepgram/routes/v1/models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/models/{model_id}/get.json) |
+| PARAMETERS /v1/models/{model_id} | [deepgram/routes/v1/models/{model_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/models/{model_id}/parameters.json) |
+| SERVERS /v1/models/{model_id} | [deepgram/routes/v1/models/{model_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/models/{model_id}/servers.json) |
+| DESCRIPTION /v1/projects | [deepgram/routes/v1/projects/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/description.json) |
+| GET /v1/projects | [deepgram/routes/v1/projects/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/get.json) |
+| SERVERS /v1/projects | [deepgram/routes/v1/projects/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/servers.json) |
+| DELETE /v1/projects/{project_id} | [deepgram/routes/v1/projects/{project_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/delete.json) |
+| DESCRIPTION /v1/projects/{project_id} | [deepgram/routes/v1/projects/{project_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/description.json) |
+| GET /v1/projects/{project_id} | [deepgram/routes/v1/projects/{project_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/get.json) |
+| PARAMETERS /v1/projects/{project_id} | [deepgram/routes/v1/projects/{project_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/parameters.json) |
+| PATCH /v1/projects/{project_id} | [deepgram/routes/v1/projects/{project_id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/patch.json) |
+| SERVERS /v1/projects/{project_id} | [deepgram/routes/v1/projects/{project_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/balances | [deepgram/routes/v1/projects/{project_id}/balances/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/description.json) |
+| GET /v1/projects/{project_id}/balances | [deepgram/routes/v1/projects/{project_id}/balances/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/get.json) |
+| PARAMETERS /v1/projects/{project_id}/balances | [deepgram/routes/v1/projects/{project_id}/balances/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/parameters.json) |
+| SERVERS /v1/projects/{project_id}/balances | [deepgram/routes/v1/projects/{project_id}/balances/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/balances/{balance_id} | [deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/description.json) |
+| GET /v1/projects/{project_id}/balances/{balance_id} | [deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/get.json) |
+| PARAMETERS /v1/projects/{project_id}/balances/{balance_id} | [deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/parameters.json) |
+| SERVERS /v1/projects/{project_id}/balances/{balance_id} | [deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/balances/{balance_id}/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/billing/breakdown | [deepgram/routes/v1/projects/{project_id}/billing/breakdown/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/breakdown/description.json) |
+| GET /v1/projects/{project_id}/billing/breakdown | [deepgram/routes/v1/projects/{project_id}/billing/breakdown/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/breakdown/get.json) |
+| PARAMETERS /v1/projects/{project_id}/billing/breakdown | [deepgram/routes/v1/projects/{project_id}/billing/breakdown/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/breakdown/parameters.json) |
+| SERVERS /v1/projects/{project_id}/billing/breakdown | [deepgram/routes/v1/projects/{project_id}/billing/breakdown/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/breakdown/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/billing/fields | [deepgram/routes/v1/projects/{project_id}/billing/fields/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/fields/description.json) |
+| GET /v1/projects/{project_id}/billing/fields | [deepgram/routes/v1/projects/{project_id}/billing/fields/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/fields/get.json) |
+| PARAMETERS /v1/projects/{project_id}/billing/fields | [deepgram/routes/v1/projects/{project_id}/billing/fields/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/fields/parameters.json) |
+| SERVERS /v1/projects/{project_id}/billing/fields | [deepgram/routes/v1/projects/{project_id}/billing/fields/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/billing/fields/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/invites | [deepgram/routes/v1/projects/{project_id}/invites/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/description.json) |
+| GET /v1/projects/{project_id}/invites | [deepgram/routes/v1/projects/{project_id}/invites/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/get.json) |
+| PARAMETERS /v1/projects/{project_id}/invites | [deepgram/routes/v1/projects/{project_id}/invites/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/parameters.json) |
+| POST /v1/projects/{project_id}/invites | [deepgram/routes/v1/projects/{project_id}/invites/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/post.json) |
+| SERVERS /v1/projects/{project_id}/invites | [deepgram/routes/v1/projects/{project_id}/invites/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/servers.json) |
+| DELETE /v1/projects/{project_id}/invites/{email} | [deepgram/routes/v1/projects/{project_id}/invites/{email}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/{email}/delete.json) |
+| DESCRIPTION /v1/projects/{project_id}/invites/{email} | [deepgram/routes/v1/projects/{project_id}/invites/{email}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/{email}/description.json) |
+| PARAMETERS /v1/projects/{project_id}/invites/{email} | [deepgram/routes/v1/projects/{project_id}/invites/{email}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/{email}/parameters.json) |
+| SERVERS /v1/projects/{project_id}/invites/{email} | [deepgram/routes/v1/projects/{project_id}/invites/{email}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/invites/{email}/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/keys | [deepgram/routes/v1/projects/{project_id}/keys/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/description.json) |
+| GET /v1/projects/{project_id}/keys | [deepgram/routes/v1/projects/{project_id}/keys/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/get.json) |
+| PARAMETERS /v1/projects/{project_id}/keys | [deepgram/routes/v1/projects/{project_id}/keys/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/parameters.json) |
+| POST /v1/projects/{project_id}/keys | [deepgram/routes/v1/projects/{project_id}/keys/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/post.json) |
+| SERVERS /v1/projects/{project_id}/keys | [deepgram/routes/v1/projects/{project_id}/keys/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/servers.json) |
+| DELETE /v1/projects/{project_id}/keys/{key_id} | [deepgram/routes/v1/projects/{project_id}/keys/{key_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/{key_id}/delete.json) |
+| DESCRIPTION /v1/projects/{project_id}/keys/{key_id} | [deepgram/routes/v1/projects/{project_id}/keys/{key_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/{key_id}/description.json) |
+| GET /v1/projects/{project_id}/keys/{key_id} | [deepgram/routes/v1/projects/{project_id}/keys/{key_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/{key_id}/get.json) |
+| PARAMETERS /v1/projects/{project_id}/keys/{key_id} | [deepgram/routes/v1/projects/{project_id}/keys/{key_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/{key_id}/parameters.json) |
+| SERVERS /v1/projects/{project_id}/keys/{key_id} | [deepgram/routes/v1/projects/{project_id}/keys/{key_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/keys/{key_id}/servers.json) |
+| DELETE /v1/projects/{project_id}/leave | [deepgram/routes/v1/projects/{project_id}/leave/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/leave/delete.json) |
+| DESCRIPTION /v1/projects/{project_id}/leave | [deepgram/routes/v1/projects/{project_id}/leave/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/leave/description.json) |
+| PARAMETERS /v1/projects/{project_id}/leave | [deepgram/routes/v1/projects/{project_id}/leave/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/leave/parameters.json) |
+| SERVERS /v1/projects/{project_id}/leave | [deepgram/routes/v1/projects/{project_id}/leave/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/leave/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/members | [deepgram/routes/v1/projects/{project_id}/members/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/description.json) |
+| GET /v1/projects/{project_id}/members | [deepgram/routes/v1/projects/{project_id}/members/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/get.json) |
+| PARAMETERS /v1/projects/{project_id}/members | [deepgram/routes/v1/projects/{project_id}/members/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/parameters.json) |
+| SERVERS /v1/projects/{project_id}/members | [deepgram/routes/v1/projects/{project_id}/members/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/servers.json) |
+| DELETE /v1/projects/{project_id}/members/{member_id} | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/delete.json) |
+| DESCRIPTION /v1/projects/{project_id}/members/{member_id} | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/description.json) |
+| PARAMETERS /v1/projects/{project_id}/members/{member_id} | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/parameters.json) |
+| SERVERS /v1/projects/{project_id}/members/{member_id} | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/members/{member_id}/scopes | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/description.json) |
+| GET /v1/projects/{project_id}/members/{member_id}/scopes | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/get.json) |
+| PARAMETERS /v1/projects/{project_id}/members/{member_id}/scopes | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/parameters.json) |
+| PUT /v1/projects/{project_id}/members/{member_id}/scopes | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/put.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/put.json) |
+| SERVERS /v1/projects/{project_id}/members/{member_id}/scopes | [deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/members/{member_id}/scopes/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/models | [deepgram/routes/v1/projects/{project_id}/models/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/description.json) |
+| GET /v1/projects/{project_id}/models | [deepgram/routes/v1/projects/{project_id}/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/get.json) |
+| PARAMETERS /v1/projects/{project_id}/models | [deepgram/routes/v1/projects/{project_id}/models/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/parameters.json) |
+| SERVERS /v1/projects/{project_id}/models | [deepgram/routes/v1/projects/{project_id}/models/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/models/{model_id} | [deepgram/routes/v1/projects/{project_id}/models/{model_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/{model_id}/description.json) |
+| GET /v1/projects/{project_id}/models/{model_id} | [deepgram/routes/v1/projects/{project_id}/models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/{model_id}/get.json) |
+| PARAMETERS /v1/projects/{project_id}/models/{model_id} | [deepgram/routes/v1/projects/{project_id}/models/{model_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/{model_id}/parameters.json) |
+| SERVERS /v1/projects/{project_id}/models/{model_id} | [deepgram/routes/v1/projects/{project_id}/models/{model_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/models/{model_id}/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/purchases | [deepgram/routes/v1/projects/{project_id}/purchases/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/purchases/description.json) |
+| GET /v1/projects/{project_id}/purchases | [deepgram/routes/v1/projects/{project_id}/purchases/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/purchases/get.json) |
+| PARAMETERS /v1/projects/{project_id}/purchases | [deepgram/routes/v1/projects/{project_id}/purchases/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/purchases/parameters.json) |
+| SERVERS /v1/projects/{project_id}/purchases | [deepgram/routes/v1/projects/{project_id}/purchases/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/purchases/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/requests | [deepgram/routes/v1/projects/{project_id}/requests/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/description.json) |
+| GET /v1/projects/{project_id}/requests | [deepgram/routes/v1/projects/{project_id}/requests/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/get.json) |
+| PARAMETERS /v1/projects/{project_id}/requests | [deepgram/routes/v1/projects/{project_id}/requests/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/parameters.json) |
+| SERVERS /v1/projects/{project_id}/requests | [deepgram/routes/v1/projects/{project_id}/requests/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/requests/{request_id} | [deepgram/routes/v1/projects/{project_id}/requests/{request_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/{request_id}/description.json) |
+| GET /v1/projects/{project_id}/requests/{request_id} | [deepgram/routes/v1/projects/{project_id}/requests/{request_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/{request_id}/get.json) |
+| PARAMETERS /v1/projects/{project_id}/requests/{request_id} | [deepgram/routes/v1/projects/{project_id}/requests/{request_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/{request_id}/parameters.json) |
+| SERVERS /v1/projects/{project_id}/requests/{request_id} | [deepgram/routes/v1/projects/{project_id}/requests/{request_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/requests/{request_id}/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/self-hosted/distribution/credentials | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/description.json) |
+| GET /v1/projects/{project_id}/self-hosted/distribution/credentials | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/get.json) |
+| PARAMETERS /v1/projects/{project_id}/self-hosted/distribution/credentials | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/parameters.json) |
+| POST /v1/projects/{project_id}/self-hosted/distribution/credentials | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/post.json) |
+| SERVERS /v1/projects/{project_id}/self-hosted/distribution/credentials | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/servers.json) |
+| DELETE /v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id} | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/delete.json) |
+| DESCRIPTION /v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id} | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/description.json) |
+| GET /v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id} | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/get.json) |
+| PARAMETERS /v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id} | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/parameters.json) |
+| SERVERS /v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id} | [deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/self-hosted/distribution/credentials/{distribution_credentials_id}/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/usage | [deepgram/routes/v1/projects/{project_id}/usage/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/description.json) |
+| GET /v1/projects/{project_id}/usage | [deepgram/routes/v1/projects/{project_id}/usage/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/get.json) |
+| PARAMETERS /v1/projects/{project_id}/usage | [deepgram/routes/v1/projects/{project_id}/usage/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/parameters.json) |
+| SERVERS /v1/projects/{project_id}/usage | [deepgram/routes/v1/projects/{project_id}/usage/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/usage/breakdown | [deepgram/routes/v1/projects/{project_id}/usage/breakdown/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/breakdown/description.json) |
+| GET /v1/projects/{project_id}/usage/breakdown | [deepgram/routes/v1/projects/{project_id}/usage/breakdown/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/breakdown/get.json) |
+| PARAMETERS /v1/projects/{project_id}/usage/breakdown | [deepgram/routes/v1/projects/{project_id}/usage/breakdown/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/breakdown/parameters.json) |
+| SERVERS /v1/projects/{project_id}/usage/breakdown | [deepgram/routes/v1/projects/{project_id}/usage/breakdown/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/breakdown/servers.json) |
+| DESCRIPTION /v1/projects/{project_id}/usage/fields | [deepgram/routes/v1/projects/{project_id}/usage/fields/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/fields/description.json) |
+| GET /v1/projects/{project_id}/usage/fields | [deepgram/routes/v1/projects/{project_id}/usage/fields/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/fields/get.json) |
+| PARAMETERS /v1/projects/{project_id}/usage/fields | [deepgram/routes/v1/projects/{project_id}/usage/fields/parameters.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/fields/parameters.json) |
+| SERVERS /v1/projects/{project_id}/usage/fields | [deepgram/routes/v1/projects/{project_id}/usage/fields/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/projects/{project_id}/usage/fields/servers.json) |
+| DESCRIPTION /v1/read | [deepgram/routes/v1/read/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/read/description.json) |
+| POST /v1/read | [deepgram/routes/v1/read/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/read/post.json) |
+| SERVERS /v1/read | [deepgram/routes/v1/read/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/read/servers.json) |
+| DESCRIPTION /v1/speak | [deepgram/routes/v1/speak/description.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/speak/description.json) |
+| POST /v1/speak | [deepgram/routes/v1/speak/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/speak/post.json) |
+| SERVERS /v1/speak | [deepgram/routes/v1/speak/servers.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/deepgram/routes/v1/speak/servers.json) |
 
 ### fal
 
 Event type: `ai-provider-monitor:fal`
 
-| Method | Route | Spec |
-| --- | --- | --- |
-| GET | /compute/instances | [fal/routes/compute/instances/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/compute/instances/get.json) |
-| POST | /compute/instances | [fal/routes/compute/instances/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/compute/instances/post.json) |
-| DELETE | /compute/instances/{id} | [fal/routes/compute/instances/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/compute/instances/{id}/delete.json) |
-| GET | /compute/instances/{id} | [fal/routes/compute/instances/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/compute/instances/{id}/get.json) |
-| GET | /keys | [fal/routes/keys/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/keys/get.json) |
-| POST | /keys | [fal/routes/keys/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/keys/post.json) |
-| DELETE | /keys/{key_id} | [fal/routes/keys/{key_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/keys/{key_id}/delete.json) |
-| GET | /meta | [fal/routes/meta/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/meta/get.json) |
-| GET | /models | [fal/routes/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/get.json) |
-| GET | /models/analytics | [fal/routes/models/analytics/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/analytics/get.json) |
-| GET | /models/billing-events | [fal/routes/models/billing-events/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/billing-events/get.json) |
-| GET | /models/pricing | [fal/routes/models/pricing/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/pricing/get.json) |
-| POST | /models/pricing/estimate | [fal/routes/models/pricing/estimate/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/pricing/estimate/post.json) |
-| DELETE | /models/requests/{request_id}/payloads | [fal/routes/models/requests/{request_id}/payloads/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/requests/{request_id}/payloads/delete.json) |
-| GET | /models/requests/by-endpoint | [fal/routes/models/requests/by-endpoint/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/requests/by-endpoint/get.json) |
-| GET | /models/requests/search | [fal/routes/models/requests/search/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/requests/search/get.json) |
-| GET | /models/usage | [fal/routes/models/usage/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/usage/get.json) |
-| DELETE | /serverless/apps/{owner}/{name}/queue | [fal/routes/serverless/apps/{owner}/{name}/queue/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/apps/{owner}/{name}/queue/delete.json) |
-| GET | /serverless/apps/{owner}/{name}/queue | [fal/routes/serverless/apps/{owner}/{name}/queue/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/apps/{owner}/{name}/queue/get.json) |
-| GET | /serverless/files/file/{file} | [fal/routes/serverless/files/file/{file}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/files/file/{file}/get.json) |
-| POST | /serverless/files/file/local/{target_path} | [fal/routes/serverless/files/file/local/{target_path}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/files/file/local/{target_path}/post.json) |
-| POST | /serverless/files/file/url/{file} | [fal/routes/serverless/files/file/url/{file}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/files/file/url/{file}/post.json) |
-| GET | /serverless/files/list | [fal/routes/serverless/files/list/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/files/list/get.json) |
-| GET | /serverless/files/list/{dir} | [fal/routes/serverless/files/list/{dir}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/files/list/{dir}/get.json) |
-| POST | /serverless/logs/history | [fal/routes/serverless/logs/history/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/logs/history/post.json) |
-| POST | /serverless/logs/stream | [fal/routes/serverless/logs/stream/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/logs/stream/post.json) |
-| GET | /serverless/metrics | [fal/routes/serverless/metrics/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/metrics/get.json) |
-| GET | /serverless/requests/by-endpoint | [fal/routes/serverless/requests/by-endpoint/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/requests/by-endpoint/get.json) |
-| GET | /workflows | [fal/routes/workflows/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/workflows/get.json) |
-| GET | /workflows/{username}/{workflow_name} | [fal/routes/workflows/{username}/{workflow_name}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/workflows/{username}/{workflow_name}/get.json) |
+| Route | Spec |
+| --- | --- |
+| GET /compute/instances | [fal/routes/compute/instances/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/compute/instances/get.json) |
+| POST /compute/instances | [fal/routes/compute/instances/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/compute/instances/post.json) |
+| DELETE /compute/instances/{id} | [fal/routes/compute/instances/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/compute/instances/{id}/delete.json) |
+| GET /compute/instances/{id} | [fal/routes/compute/instances/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/compute/instances/{id}/get.json) |
+| GET /keys | [fal/routes/keys/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/keys/get.json) |
+| POST /keys | [fal/routes/keys/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/keys/post.json) |
+| DELETE /keys/{key_id} | [fal/routes/keys/{key_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/keys/{key_id}/delete.json) |
+| GET /meta | [fal/routes/meta/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/meta/get.json) |
+| GET /models | [fal/routes/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/get.json) |
+| GET /models/analytics | [fal/routes/models/analytics/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/analytics/get.json) |
+| GET /models/billing-events | [fal/routes/models/billing-events/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/billing-events/get.json) |
+| GET /models/pricing | [fal/routes/models/pricing/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/pricing/get.json) |
+| POST /models/pricing/estimate | [fal/routes/models/pricing/estimate/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/pricing/estimate/post.json) |
+| DELETE /models/requests/{request_id}/payloads | [fal/routes/models/requests/{request_id}/payloads/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/requests/{request_id}/payloads/delete.json) |
+| GET /models/requests/by-endpoint | [fal/routes/models/requests/by-endpoint/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/requests/by-endpoint/get.json) |
+| GET /models/requests/search | [fal/routes/models/requests/search/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/requests/search/get.json) |
+| GET /models/usage | [fal/routes/models/usage/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/models/usage/get.json) |
+| DELETE /serverless/apps/{owner}/{name}/queue | [fal/routes/serverless/apps/{owner}/{name}/queue/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/apps/{owner}/{name}/queue/delete.json) |
+| GET /serverless/apps/{owner}/{name}/queue | [fal/routes/serverless/apps/{owner}/{name}/queue/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/apps/{owner}/{name}/queue/get.json) |
+| GET /serverless/files/file/{file} | [fal/routes/serverless/files/file/{file}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/files/file/{file}/get.json) |
+| POST /serverless/files/file/local/{target_path} | [fal/routes/serverless/files/file/local/{target_path}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/files/file/local/{target_path}/post.json) |
+| POST /serverless/files/file/url/{file} | [fal/routes/serverless/files/file/url/{file}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/files/file/url/{file}/post.json) |
+| GET /serverless/files/list | [fal/routes/serverless/files/list/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/files/list/get.json) |
+| GET /serverless/files/list/{dir} | [fal/routes/serverless/files/list/{dir}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/files/list/{dir}/get.json) |
+| POST /serverless/logs/history | [fal/routes/serverless/logs/history/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/logs/history/post.json) |
+| POST /serverless/logs/stream | [fal/routes/serverless/logs/stream/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/logs/stream/post.json) |
+| GET /serverless/metrics | [fal/routes/serverless/metrics/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/metrics/get.json) |
+| GET /serverless/requests/by-endpoint | [fal/routes/serverless/requests/by-endpoint/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/serverless/requests/by-endpoint/get.json) |
+| GET /workflows | [fal/routes/workflows/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/workflows/get.json) |
+| GET /workflows/{username}/{workflow_name} | [fal/routes/workflows/{username}/{workflow_name}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/fal/routes/workflows/{username}/{workflow_name}/get.json) |
 
 ### gladia
 
 Event type: `ai-provider-monitor:gladia`
 
-| Method | Route | Spec |
-| --- | --- | --- |
-| POST | /audio/text/audio-transcription | [gladia/routes/audio/text/audio-transcription/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/audio/text/audio-transcription/post.json) |
-| GET | /v1/history | [gladia/routes/v1/history/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v1/history/get.json) |
-| GET | /v2/live | [gladia/routes/v2/live/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/live/get.json) |
-| POST | /v2/live | [gladia/routes/v2/live/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/live/post.json) |
-| DELETE | /v2/live/{id} | [gladia/routes/v2/live/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/live/{id}/delete.json) |
-| GET | /v2/live/{id} | [gladia/routes/v2/live/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/live/{id}/get.json) |
-| PATCH | /v2/live/{id} | [gladia/routes/v2/live/{id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/live/{id}/patch.json) |
-| GET | /v2/live/{id}/file | [gladia/routes/v2/live/{id}/file/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/live/{id}/file/get.json) |
-| GET | /v2/pre-recorded | [gladia/routes/v2/pre-recorded/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/pre-recorded/get.json) |
-| POST | /v2/pre-recorded | [gladia/routes/v2/pre-recorded/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/pre-recorded/post.json) |
-| DELETE | /v2/pre-recorded/{id} | [gladia/routes/v2/pre-recorded/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/pre-recorded/{id}/delete.json) |
-| GET | /v2/pre-recorded/{id} | [gladia/routes/v2/pre-recorded/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/pre-recorded/{id}/get.json) |
-| GET | /v2/pre-recorded/{id}/file | [gladia/routes/v2/pre-recorded/{id}/file/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/pre-recorded/{id}/file/get.json) |
-| GET | /v2/transcription | [gladia/routes/v2/transcription/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/transcription/get.json) |
-| POST | /v2/transcription | [gladia/routes/v2/transcription/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/transcription/post.json) |
-| DELETE | /v2/transcription/{id} | [gladia/routes/v2/transcription/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/transcription/{id}/delete.json) |
-| GET | /v2/transcription/{id} | [gladia/routes/v2/transcription/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/transcription/{id}/get.json) |
-| GET | /v2/transcription/{id}/file | [gladia/routes/v2/transcription/{id}/file/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/transcription/{id}/file/get.json) |
-| POST | /v2/upload | [gladia/routes/v2/upload/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/upload/post.json) |
-| POST | /video/text/video-transcription | [gladia/routes/video/text/video-transcription/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/video/text/video-transcription/post.json) |
+| Route | Spec |
+| --- | --- |
+| POST /audio/text/audio-transcription | [gladia/routes/audio/text/audio-transcription/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/audio/text/audio-transcription/post.json) |
+| GET /v1/history | [gladia/routes/v1/history/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v1/history/get.json) |
+| GET /v2/live | [gladia/routes/v2/live/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/live/get.json) |
+| POST /v2/live | [gladia/routes/v2/live/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/live/post.json) |
+| DELETE /v2/live/{id} | [gladia/routes/v2/live/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/live/{id}/delete.json) |
+| GET /v2/live/{id} | [gladia/routes/v2/live/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/live/{id}/get.json) |
+| PATCH /v2/live/{id} | [gladia/routes/v2/live/{id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/live/{id}/patch.json) |
+| GET /v2/live/{id}/file | [gladia/routes/v2/live/{id}/file/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/live/{id}/file/get.json) |
+| GET /v2/pre-recorded | [gladia/routes/v2/pre-recorded/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/pre-recorded/get.json) |
+| POST /v2/pre-recorded | [gladia/routes/v2/pre-recorded/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/pre-recorded/post.json) |
+| DELETE /v2/pre-recorded/{id} | [gladia/routes/v2/pre-recorded/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/pre-recorded/{id}/delete.json) |
+| GET /v2/pre-recorded/{id} | [gladia/routes/v2/pre-recorded/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/pre-recorded/{id}/get.json) |
+| GET /v2/pre-recorded/{id}/file | [gladia/routes/v2/pre-recorded/{id}/file/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/pre-recorded/{id}/file/get.json) |
+| GET /v2/transcription | [gladia/routes/v2/transcription/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/transcription/get.json) |
+| POST /v2/transcription | [gladia/routes/v2/transcription/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/transcription/post.json) |
+| DELETE /v2/transcription/{id} | [gladia/routes/v2/transcription/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/transcription/{id}/delete.json) |
+| GET /v2/transcription/{id} | [gladia/routes/v2/transcription/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/transcription/{id}/get.json) |
+| GET /v2/transcription/{id}/file | [gladia/routes/v2/transcription/{id}/file/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/transcription/{id}/file/get.json) |
+| POST /v2/upload | [gladia/routes/v2/upload/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/v2/upload/post.json) |
+| POST /video/text/video-transcription | [gladia/routes/video/text/video-transcription/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/gladia/routes/video/text/video-transcription/post.json) |
 
 ### groq
 
 Event type: `ai-provider-monitor:groq`
 
-| Method | Route | Spec |
-| --- | --- | --- |
-| POST | /openai/v1/audio/speech | [groq/routes/openai/v1/audio/speech/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/audio/speech/post.json) |
-| POST | /openai/v1/audio/transcriptions | [groq/routes/openai/v1/audio/transcriptions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/audio/transcriptions/post.json) |
-| POST | /openai/v1/audio/translations | [groq/routes/openai/v1/audio/translations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/audio/translations/post.json) |
-| GET | /openai/v1/batches | [groq/routes/openai/v1/batches/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/batches/get.json) |
-| POST | /openai/v1/batches | [groq/routes/openai/v1/batches/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/batches/post.json) |
-| GET | /openai/v1/batches/{batch_id} | [groq/routes/openai/v1/batches/{batch_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/batches/{batch_id}/get.json) |
-| POST | /openai/v1/batches/{batch_id}/cancel | [groq/routes/openai/v1/batches/{batch_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/batches/{batch_id}/cancel/post.json) |
-| POST | /openai/v1/chat/completions | [groq/routes/openai/v1/chat/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/chat/completions/post.json) |
-| POST | /openai/v1/embeddings | [groq/routes/openai/v1/embeddings/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/embeddings/post.json) |
-| GET | /openai/v1/files | [groq/routes/openai/v1/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/files/get.json) |
-| POST | /openai/v1/files | [groq/routes/openai/v1/files/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/files/post.json) |
-| DELETE | /openai/v1/files/{file_id} | [groq/routes/openai/v1/files/{file_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/files/{file_id}/delete.json) |
-| GET | /openai/v1/files/{file_id} | [groq/routes/openai/v1/files/{file_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/files/{file_id}/get.json) |
-| GET | /openai/v1/files/{file_id}/content | [groq/routes/openai/v1/files/{file_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/files/{file_id}/content/get.json) |
-| GET | /openai/v1/models | [groq/routes/openai/v1/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/models/get.json) |
-| DELETE | /openai/v1/models/{model} | [groq/routes/openai/v1/models/{model}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/models/{model}/delete.json) |
-| GET | /openai/v1/models/{model} | [groq/routes/openai/v1/models/{model}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/models/{model}/get.json) |
-| POST | /openai/v1/reranking | [groq/routes/openai/v1/reranking/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/reranking/post.json) |
-| POST | /openai/v1/responses | [groq/routes/openai/v1/responses/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/responses/post.json) |
-| GET | /v1/fine_tunings | [groq/routes/v1/fine_tunings/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/v1/fine_tunings/get.json) |
-| POST | /v1/fine_tunings | [groq/routes/v1/fine_tunings/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/v1/fine_tunings/post.json) |
-| DELETE | /v1/fine_tunings/{id} | [groq/routes/v1/fine_tunings/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/v1/fine_tunings/{id}/delete.json) |
-| GET | /v1/fine_tunings/{id} | [groq/routes/v1/fine_tunings/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/v1/fine_tunings/{id}/get.json) |
+| Route | Spec |
+| --- | --- |
+| POST /openai/v1/audio/speech | [groq/routes/openai/v1/audio/speech/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/audio/speech/post.json) |
+| POST /openai/v1/audio/transcriptions | [groq/routes/openai/v1/audio/transcriptions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/audio/transcriptions/post.json) |
+| POST /openai/v1/audio/translations | [groq/routes/openai/v1/audio/translations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/audio/translations/post.json) |
+| GET /openai/v1/batches | [groq/routes/openai/v1/batches/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/batches/get.json) |
+| POST /openai/v1/batches | [groq/routes/openai/v1/batches/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/batches/post.json) |
+| GET /openai/v1/batches/{batch_id} | [groq/routes/openai/v1/batches/{batch_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/batches/{batch_id}/get.json) |
+| POST /openai/v1/batches/{batch_id}/cancel | [groq/routes/openai/v1/batches/{batch_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/batches/{batch_id}/cancel/post.json) |
+| POST /openai/v1/chat/completions | [groq/routes/openai/v1/chat/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/chat/completions/post.json) |
+| POST /openai/v1/embeddings | [groq/routes/openai/v1/embeddings/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/embeddings/post.json) |
+| GET /openai/v1/files | [groq/routes/openai/v1/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/files/get.json) |
+| POST /openai/v1/files | [groq/routes/openai/v1/files/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/files/post.json) |
+| DELETE /openai/v1/files/{file_id} | [groq/routes/openai/v1/files/{file_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/files/{file_id}/delete.json) |
+| GET /openai/v1/files/{file_id} | [groq/routes/openai/v1/files/{file_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/files/{file_id}/get.json) |
+| GET /openai/v1/files/{file_id}/content | [groq/routes/openai/v1/files/{file_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/files/{file_id}/content/get.json) |
+| GET /openai/v1/models | [groq/routes/openai/v1/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/models/get.json) |
+| DELETE /openai/v1/models/{model} | [groq/routes/openai/v1/models/{model}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/models/{model}/delete.json) |
+| GET /openai/v1/models/{model} | [groq/routes/openai/v1/models/{model}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/models/{model}/get.json) |
+| POST /openai/v1/reranking | [groq/routes/openai/v1/reranking/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/reranking/post.json) |
+| POST /openai/v1/responses | [groq/routes/openai/v1/responses/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/openai/v1/responses/post.json) |
+| GET /v1/fine_tunings | [groq/routes/v1/fine_tunings/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/v1/fine_tunings/get.json) |
+| POST /v1/fine_tunings | [groq/routes/v1/fine_tunings/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/v1/fine_tunings/post.json) |
+| DELETE /v1/fine_tunings/{id} | [groq/routes/v1/fine_tunings/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/v1/fine_tunings/{id}/delete.json) |
+| GET /v1/fine_tunings/{id} | [groq/routes/v1/fine_tunings/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/groq/routes/v1/fine_tunings/{id}/get.json) |
 
 ### luma
 
 Event type: `ai-provider-monitor:luma`
 
-| Method | Route | Spec |
-| --- | --- | --- |
-| GET | /credits | [luma/routes/credits/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/credits/get.json) |
-| GET | /generations | [luma/routes/generations/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/get.json) |
-| DELETE | /generations/{id} | [luma/routes/generations/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/{id}/delete.json) |
-| GET | /generations/{id} | [luma/routes/generations/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/{id}/get.json) |
-| POST | /generations/{id}/audio | [luma/routes/generations/{id}/audio/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/{id}/audio/post.json) |
-| POST | /generations/{id}/upscale | [luma/routes/generations/{id}/upscale/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/{id}/upscale/post.json) |
-| GET | /generations/concepts/list | [luma/routes/generations/concepts/list/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/concepts/list/get.json) |
-| POST | /generations/image | [luma/routes/generations/image/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/image/post.json) |
-| POST | /generations/image/reframe | [luma/routes/generations/image/reframe/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/image/reframe/post.json) |
-| POST | /generations/video | [luma/routes/generations/video/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/video/post.json) |
-| POST | /generations/video/modify | [luma/routes/generations/video/modify/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/video/modify/post.json) |
-| POST | /generations/video/reframe | [luma/routes/generations/video/reframe/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/video/reframe/post.json) |
-| GET | /ping | [luma/routes/ping/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/ping/get.json) |
+| Route | Spec |
+| --- | --- |
+| GET /credits | [luma/routes/credits/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/credits/get.json) |
+| GET /generations | [luma/routes/generations/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/get.json) |
+| DELETE /generations/{id} | [luma/routes/generations/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/{id}/delete.json) |
+| GET /generations/{id} | [luma/routes/generations/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/{id}/get.json) |
+| POST /generations/{id}/audio | [luma/routes/generations/{id}/audio/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/{id}/audio/post.json) |
+| POST /generations/{id}/upscale | [luma/routes/generations/{id}/upscale/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/{id}/upscale/post.json) |
+| GET /generations/concepts/list | [luma/routes/generations/concepts/list/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/concepts/list/get.json) |
+| POST /generations/image | [luma/routes/generations/image/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/image/post.json) |
+| POST /generations/image/reframe | [luma/routes/generations/image/reframe/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/image/reframe/post.json) |
+| POST /generations/video | [luma/routes/generations/video/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/video/post.json) |
+| POST /generations/video/modify | [luma/routes/generations/video/modify/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/video/modify/post.json) |
+| POST /generations/video/reframe | [luma/routes/generations/video/reframe/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/generations/video/reframe/post.json) |
+| GET /ping | [luma/routes/ping/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/luma/routes/ping/get.json) |
 
 ### mistral
 
 Event type: `ai-provider-monitor:mistral`
 
-| Method | Route | Spec |
-| --- | --- | --- |
-| GET | /v1/agents | [mistral/routes/v1/agents/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/get.json) |
-| POST | /v1/agents | [mistral/routes/v1/agents/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/post.json) |
-| DELETE | /v1/agents/{agent_id} | [mistral/routes/v1/agents/{agent_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/delete.json) |
-| GET | /v1/agents/{agent_id} | [mistral/routes/v1/agents/{agent_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/get.json) |
-| PATCH | /v1/agents/{agent_id} | [mistral/routes/v1/agents/{agent_id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/patch.json) |
-| DELETE | /v1/agents/{agent_id}/aliases | [mistral/routes/v1/agents/{agent_id}/aliases/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/aliases/delete.json) |
-| GET | /v1/agents/{agent_id}/aliases | [mistral/routes/v1/agents/{agent_id}/aliases/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/aliases/get.json) |
-| PUT | /v1/agents/{agent_id}/aliases | [mistral/routes/v1/agents/{agent_id}/aliases/put.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/aliases/put.json) |
-| PATCH | /v1/agents/{agent_id}/version | [mistral/routes/v1/agents/{agent_id}/version/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/version/patch.json) |
-| GET | /v1/agents/{agent_id}/versions | [mistral/routes/v1/agents/{agent_id}/versions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/versions/get.json) |
-| GET | /v1/agents/{agent_id}/versions/{version} | [mistral/routes/v1/agents/{agent_id}/versions/{version}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/versions/{version}/get.json) |
-| POST | /v1/agents/completions | [mistral/routes/v1/agents/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/completions/post.json) |
-| POST | /v1/audio/transcriptions | [mistral/routes/v1/audio/transcriptions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/audio/transcriptions/post.json) |
-| POST | /v1/audio/transcriptions#stream | [mistral/routes/v1/audio/transcriptions#stream/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/audio/transcriptions#stream/post.json) |
-| GET | /v1/batch/jobs | [mistral/routes/v1/batch/jobs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/batch/jobs/get.json) |
-| POST | /v1/batch/jobs | [mistral/routes/v1/batch/jobs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/batch/jobs/post.json) |
-| GET | /v1/batch/jobs/{job_id} | [mistral/routes/v1/batch/jobs/{job_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/batch/jobs/{job_id}/get.json) |
-| POST | /v1/batch/jobs/{job_id}/cancel | [mistral/routes/v1/batch/jobs/{job_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/batch/jobs/{job_id}/cancel/post.json) |
-| POST | /v1/chat/classifications | [mistral/routes/v1/chat/classifications/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/chat/classifications/post.json) |
-| POST | /v1/chat/completions | [mistral/routes/v1/chat/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/chat/completions/post.json) |
-| POST | /v1/chat/moderations | [mistral/routes/v1/chat/moderations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/chat/moderations/post.json) |
-| POST | /v1/classifications | [mistral/routes/v1/classifications/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/classifications/post.json) |
-| GET | /v1/conversations | [mistral/routes/v1/conversations/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/get.json) |
-| POST | /v1/conversations | [mistral/routes/v1/conversations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/post.json) |
-| DELETE | /v1/conversations/{conversation_id} | [mistral/routes/v1/conversations/{conversation_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}/delete.json) |
-| GET | /v1/conversations/{conversation_id} | [mistral/routes/v1/conversations/{conversation_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}/get.json) |
-| POST | /v1/conversations/{conversation_id} | [mistral/routes/v1/conversations/{conversation_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}/post.json) |
-| GET | /v1/conversations/{conversation_id}/history | [mistral/routes/v1/conversations/{conversation_id}/history/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}/history/get.json) |
-| GET | /v1/conversations/{conversation_id}/messages | [mistral/routes/v1/conversations/{conversation_id}/messages/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}/messages/get.json) |
-| POST | /v1/conversations/{conversation_id}/restart | [mistral/routes/v1/conversations/{conversation_id}/restart/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}/restart/post.json) |
-| POST | /v1/conversations/{conversation_id}/restart#stream | [mistral/routes/v1/conversations/{conversation_id}/restart#stream/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}/restart#stream/post.json) |
-| POST | /v1/conversations/{conversation_id}#stream | [mistral/routes/v1/conversations/{conversation_id}#stream/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}#stream/post.json) |
-| POST | /v1/conversations#stream | [mistral/routes/v1/conversations#stream/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations#stream/post.json) |
-| POST | /v1/embeddings | [mistral/routes/v1/embeddings/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/embeddings/post.json) |
-| GET | /v1/files | [mistral/routes/v1/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/files/get.json) |
-| POST | /v1/files | [mistral/routes/v1/files/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/files/post.json) |
-| DELETE | /v1/files/{file_id} | [mistral/routes/v1/files/{file_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/files/{file_id}/delete.json) |
-| GET | /v1/files/{file_id} | [mistral/routes/v1/files/{file_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/files/{file_id}/get.json) |
-| GET | /v1/files/{file_id}/content | [mistral/routes/v1/files/{file_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/files/{file_id}/content/get.json) |
-| GET | /v1/files/{file_id}/url | [mistral/routes/v1/files/{file_id}/url/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/files/{file_id}/url/get.json) |
-| POST | /v1/fim/completions | [mistral/routes/v1/fim/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fim/completions/post.json) |
-| GET | /v1/fine_tuning/jobs | [mistral/routes/v1/fine_tuning/jobs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/jobs/get.json) |
-| POST | /v1/fine_tuning/jobs | [mistral/routes/v1/fine_tuning/jobs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/jobs/post.json) |
-| GET | /v1/fine_tuning/jobs/{job_id} | [mistral/routes/v1/fine_tuning/jobs/{job_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/jobs/{job_id}/get.json) |
-| POST | /v1/fine_tuning/jobs/{job_id}/cancel | [mistral/routes/v1/fine_tuning/jobs/{job_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/jobs/{job_id}/cancel/post.json) |
-| POST | /v1/fine_tuning/jobs/{job_id}/start | [mistral/routes/v1/fine_tuning/jobs/{job_id}/start/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/jobs/{job_id}/start/post.json) |
-| PATCH | /v1/fine_tuning/models/{model_id} | [mistral/routes/v1/fine_tuning/models/{model_id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/models/{model_id}/patch.json) |
-| DELETE | /v1/fine_tuning/models/{model_id}/archive | [mistral/routes/v1/fine_tuning/models/{model_id}/archive/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/models/{model_id}/archive/delete.json) |
-| POST | /v1/fine_tuning/models/{model_id}/archive | [mistral/routes/v1/fine_tuning/models/{model_id}/archive/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/models/{model_id}/archive/post.json) |
-| GET | /v1/libraries | [mistral/routes/v1/libraries/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/get.json) |
-| POST | /v1/libraries | [mistral/routes/v1/libraries/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/post.json) |
-| DELETE | /v1/libraries/{library_id} | [mistral/routes/v1/libraries/{library_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/delete.json) |
-| GET | /v1/libraries/{library_id} | [mistral/routes/v1/libraries/{library_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/get.json) |
-| PUT | /v1/libraries/{library_id} | [mistral/routes/v1/libraries/{library_id}/put.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/put.json) |
-| GET | /v1/libraries/{library_id}/documents | [mistral/routes/v1/libraries/{library_id}/documents/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/get.json) |
-| POST | /v1/libraries/{library_id}/documents | [mistral/routes/v1/libraries/{library_id}/documents/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/post.json) |
-| DELETE | /v1/libraries/{library_id}/documents/{document_id} | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/delete.json) |
-| GET | /v1/libraries/{library_id}/documents/{document_id} | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/get.json) |
-| PUT | /v1/libraries/{library_id}/documents/{document_id} | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/put.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/put.json) |
-| GET | /v1/libraries/{library_id}/documents/{document_id}/extracted-text-signed-url | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/extracted-text-signed-url/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/extracted-text-signed-url/get.json) |
-| POST | /v1/libraries/{library_id}/documents/{document_id}/reprocess | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/reprocess/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/reprocess/post.json) |
-| GET | /v1/libraries/{library_id}/documents/{document_id}/signed-url | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/signed-url/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/signed-url/get.json) |
-| GET | /v1/libraries/{library_id}/documents/{document_id}/status | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/status/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/status/get.json) |
-| GET | /v1/libraries/{library_id}/documents/{document_id}/text_content | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/text_content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/text_content/get.json) |
-| DELETE | /v1/libraries/{library_id}/share | [mistral/routes/v1/libraries/{library_id}/share/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/share/delete.json) |
-| GET | /v1/libraries/{library_id}/share | [mistral/routes/v1/libraries/{library_id}/share/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/share/get.json) |
-| PUT | /v1/libraries/{library_id}/share | [mistral/routes/v1/libraries/{library_id}/share/put.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/share/put.json) |
-| GET | /v1/models | [mistral/routes/v1/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/models/get.json) |
-| DELETE | /v1/models/{model_id} | [mistral/routes/v1/models/{model_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/models/{model_id}/delete.json) |
-| GET | /v1/models/{model_id} | [mistral/routes/v1/models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/models/{model_id}/get.json) |
-| POST | /v1/moderations | [mistral/routes/v1/moderations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/moderations/post.json) |
-| POST | /v1/ocr | [mistral/routes/v1/ocr/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/ocr/post.json) |
+| Route | Spec |
+| --- | --- |
+| GET /v1/agents | [mistral/routes/v1/agents/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/get.json) |
+| POST /v1/agents | [mistral/routes/v1/agents/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/post.json) |
+| DELETE /v1/agents/{agent_id} | [mistral/routes/v1/agents/{agent_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/delete.json) |
+| GET /v1/agents/{agent_id} | [mistral/routes/v1/agents/{agent_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/get.json) |
+| PATCH /v1/agents/{agent_id} | [mistral/routes/v1/agents/{agent_id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/patch.json) |
+| DELETE /v1/agents/{agent_id}/aliases | [mistral/routes/v1/agents/{agent_id}/aliases/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/aliases/delete.json) |
+| GET /v1/agents/{agent_id}/aliases | [mistral/routes/v1/agents/{agent_id}/aliases/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/aliases/get.json) |
+| PUT /v1/agents/{agent_id}/aliases | [mistral/routes/v1/agents/{agent_id}/aliases/put.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/aliases/put.json) |
+| PATCH /v1/agents/{agent_id}/version | [mistral/routes/v1/agents/{agent_id}/version/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/version/patch.json) |
+| GET /v1/agents/{agent_id}/versions | [mistral/routes/v1/agents/{agent_id}/versions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/versions/get.json) |
+| GET /v1/agents/{agent_id}/versions/{version} | [mistral/routes/v1/agents/{agent_id}/versions/{version}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/{agent_id}/versions/{version}/get.json) |
+| POST /v1/agents/completions | [mistral/routes/v1/agents/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/agents/completions/post.json) |
+| POST /v1/audio/transcriptions | [mistral/routes/v1/audio/transcriptions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/audio/transcriptions/post.json) |
+| POST /v1/audio/transcriptions#stream | [mistral/routes/v1/audio/transcriptions#stream/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/audio/transcriptions#stream/post.json) |
+| GET /v1/batch/jobs | [mistral/routes/v1/batch/jobs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/batch/jobs/get.json) |
+| POST /v1/batch/jobs | [mistral/routes/v1/batch/jobs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/batch/jobs/post.json) |
+| GET /v1/batch/jobs/{job_id} | [mistral/routes/v1/batch/jobs/{job_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/batch/jobs/{job_id}/get.json) |
+| POST /v1/batch/jobs/{job_id}/cancel | [mistral/routes/v1/batch/jobs/{job_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/batch/jobs/{job_id}/cancel/post.json) |
+| POST /v1/chat/classifications | [mistral/routes/v1/chat/classifications/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/chat/classifications/post.json) |
+| POST /v1/chat/completions | [mistral/routes/v1/chat/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/chat/completions/post.json) |
+| POST /v1/chat/moderations | [mistral/routes/v1/chat/moderations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/chat/moderations/post.json) |
+| POST /v1/classifications | [mistral/routes/v1/classifications/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/classifications/post.json) |
+| GET /v1/conversations | [mistral/routes/v1/conversations/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/get.json) |
+| POST /v1/conversations | [mistral/routes/v1/conversations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/post.json) |
+| DELETE /v1/conversations/{conversation_id} | [mistral/routes/v1/conversations/{conversation_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}/delete.json) |
+| GET /v1/conversations/{conversation_id} | [mistral/routes/v1/conversations/{conversation_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}/get.json) |
+| POST /v1/conversations/{conversation_id} | [mistral/routes/v1/conversations/{conversation_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}/post.json) |
+| GET /v1/conversations/{conversation_id}/history | [mistral/routes/v1/conversations/{conversation_id}/history/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}/history/get.json) |
+| GET /v1/conversations/{conversation_id}/messages | [mistral/routes/v1/conversations/{conversation_id}/messages/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}/messages/get.json) |
+| POST /v1/conversations/{conversation_id}/restart | [mistral/routes/v1/conversations/{conversation_id}/restart/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}/restart/post.json) |
+| POST /v1/conversations/{conversation_id}/restart#stream | [mistral/routes/v1/conversations/{conversation_id}/restart#stream/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}/restart#stream/post.json) |
+| POST /v1/conversations/{conversation_id}#stream | [mistral/routes/v1/conversations/{conversation_id}#stream/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations/{conversation_id}#stream/post.json) |
+| POST /v1/conversations#stream | [mistral/routes/v1/conversations#stream/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/conversations#stream/post.json) |
+| POST /v1/embeddings | [mistral/routes/v1/embeddings/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/embeddings/post.json) |
+| GET /v1/files | [mistral/routes/v1/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/files/get.json) |
+| POST /v1/files | [mistral/routes/v1/files/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/files/post.json) |
+| DELETE /v1/files/{file_id} | [mistral/routes/v1/files/{file_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/files/{file_id}/delete.json) |
+| GET /v1/files/{file_id} | [mistral/routes/v1/files/{file_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/files/{file_id}/get.json) |
+| GET /v1/files/{file_id}/content | [mistral/routes/v1/files/{file_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/files/{file_id}/content/get.json) |
+| GET /v1/files/{file_id}/url | [mistral/routes/v1/files/{file_id}/url/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/files/{file_id}/url/get.json) |
+| POST /v1/fim/completions | [mistral/routes/v1/fim/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fim/completions/post.json) |
+| GET /v1/fine_tuning/jobs | [mistral/routes/v1/fine_tuning/jobs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/jobs/get.json) |
+| POST /v1/fine_tuning/jobs | [mistral/routes/v1/fine_tuning/jobs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/jobs/post.json) |
+| GET /v1/fine_tuning/jobs/{job_id} | [mistral/routes/v1/fine_tuning/jobs/{job_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/jobs/{job_id}/get.json) |
+| POST /v1/fine_tuning/jobs/{job_id}/cancel | [mistral/routes/v1/fine_tuning/jobs/{job_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/jobs/{job_id}/cancel/post.json) |
+| POST /v1/fine_tuning/jobs/{job_id}/start | [mistral/routes/v1/fine_tuning/jobs/{job_id}/start/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/jobs/{job_id}/start/post.json) |
+| PATCH /v1/fine_tuning/models/{model_id} | [mistral/routes/v1/fine_tuning/models/{model_id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/models/{model_id}/patch.json) |
+| DELETE /v1/fine_tuning/models/{model_id}/archive | [mistral/routes/v1/fine_tuning/models/{model_id}/archive/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/models/{model_id}/archive/delete.json) |
+| POST /v1/fine_tuning/models/{model_id}/archive | [mistral/routes/v1/fine_tuning/models/{model_id}/archive/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/fine_tuning/models/{model_id}/archive/post.json) |
+| GET /v1/libraries | [mistral/routes/v1/libraries/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/get.json) |
+| POST /v1/libraries | [mistral/routes/v1/libraries/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/post.json) |
+| DELETE /v1/libraries/{library_id} | [mistral/routes/v1/libraries/{library_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/delete.json) |
+| GET /v1/libraries/{library_id} | [mistral/routes/v1/libraries/{library_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/get.json) |
+| PUT /v1/libraries/{library_id} | [mistral/routes/v1/libraries/{library_id}/put.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/put.json) |
+| GET /v1/libraries/{library_id}/documents | [mistral/routes/v1/libraries/{library_id}/documents/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/get.json) |
+| POST /v1/libraries/{library_id}/documents | [mistral/routes/v1/libraries/{library_id}/documents/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/post.json) |
+| DELETE /v1/libraries/{library_id}/documents/{document_id} | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/delete.json) |
+| GET /v1/libraries/{library_id}/documents/{document_id} | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/get.json) |
+| PUT /v1/libraries/{library_id}/documents/{document_id} | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/put.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/put.json) |
+| GET /v1/libraries/{library_id}/documents/{document_id}/extracted-text-signed-url | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/extracted-text-signed-url/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/extracted-text-signed-url/get.json) |
+| POST /v1/libraries/{library_id}/documents/{document_id}/reprocess | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/reprocess/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/reprocess/post.json) |
+| GET /v1/libraries/{library_id}/documents/{document_id}/signed-url | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/signed-url/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/signed-url/get.json) |
+| GET /v1/libraries/{library_id}/documents/{document_id}/status | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/status/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/status/get.json) |
+| GET /v1/libraries/{library_id}/documents/{document_id}/text_content | [mistral/routes/v1/libraries/{library_id}/documents/{document_id}/text_content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/documents/{document_id}/text_content/get.json) |
+| DELETE /v1/libraries/{library_id}/share | [mistral/routes/v1/libraries/{library_id}/share/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/share/delete.json) |
+| GET /v1/libraries/{library_id}/share | [mistral/routes/v1/libraries/{library_id}/share/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/share/get.json) |
+| PUT /v1/libraries/{library_id}/share | [mistral/routes/v1/libraries/{library_id}/share/put.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/libraries/{library_id}/share/put.json) |
+| GET /v1/models | [mistral/routes/v1/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/models/get.json) |
+| DELETE /v1/models/{model_id} | [mistral/routes/v1/models/{model_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/models/{model_id}/delete.json) |
+| GET /v1/models/{model_id} | [mistral/routes/v1/models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/models/{model_id}/get.json) |
+| POST /v1/moderations | [mistral/routes/v1/moderations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/moderations/post.json) |
+| POST /v1/ocr | [mistral/routes/v1/ocr/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/mistral/routes/v1/ocr/post.json) |
 
 ### openai
 
 Event type: `ai-provider-monitor:openai`
 
-| Method | Route | Spec |
-| --- | --- | --- |
-| GET | /assistants | [openai/routes/assistants/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/assistants/get.json) |
-| POST | /assistants | [openai/routes/assistants/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/assistants/post.json) |
-| DELETE | /assistants/{assistant_id} | [openai/routes/assistants/{assistant_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/assistants/{assistant_id}/delete.json) |
-| GET | /assistants/{assistant_id} | [openai/routes/assistants/{assistant_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/assistants/{assistant_id}/get.json) |
-| POST | /assistants/{assistant_id} | [openai/routes/assistants/{assistant_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/assistants/{assistant_id}/post.json) |
-| POST | /audio/speech | [openai/routes/audio/speech/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/speech/post.json) |
-| POST | /audio/transcriptions | [openai/routes/audio/transcriptions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/transcriptions/post.json) |
-| POST | /audio/translations | [openai/routes/audio/translations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/translations/post.json) |
-| GET | /audio/voice_consents | [openai/routes/audio/voice_consents/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/voice_consents/get.json) |
-| POST | /audio/voice_consents | [openai/routes/audio/voice_consents/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/voice_consents/post.json) |
-| DELETE | /audio/voice_consents/{consent_id} | [openai/routes/audio/voice_consents/{consent_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/voice_consents/{consent_id}/delete.json) |
-| GET | /audio/voice_consents/{consent_id} | [openai/routes/audio/voice_consents/{consent_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/voice_consents/{consent_id}/get.json) |
-| POST | /audio/voice_consents/{consent_id} | [openai/routes/audio/voice_consents/{consent_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/voice_consents/{consent_id}/post.json) |
-| POST | /audio/voices | [openai/routes/audio/voices/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/voices/post.json) |
-| GET | /batches | [openai/routes/batches/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/batches/get.json) |
-| POST | /batches | [openai/routes/batches/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/batches/post.json) |
-| GET | /batches/{batch_id} | [openai/routes/batches/{batch_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/batches/{batch_id}/get.json) |
-| POST | /batches/{batch_id}/cancel | [openai/routes/batches/{batch_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/batches/{batch_id}/cancel/post.json) |
-| GET | /chat/completions | [openai/routes/chat/completions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chat/completions/get.json) |
-| POST | /chat/completions | [openai/routes/chat/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chat/completions/post.json) |
-| DELETE | /chat/completions/{completion_id} | [openai/routes/chat/completions/{completion_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chat/completions/{completion_id}/delete.json) |
-| GET | /chat/completions/{completion_id} | [openai/routes/chat/completions/{completion_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chat/completions/{completion_id}/get.json) |
-| POST | /chat/completions/{completion_id} | [openai/routes/chat/completions/{completion_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chat/completions/{completion_id}/post.json) |
-| GET | /chat/completions/{completion_id}/messages | [openai/routes/chat/completions/{completion_id}/messages/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chat/completions/{completion_id}/messages/get.json) |
-| POST | /chatkit/sessions | [openai/routes/chatkit/sessions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chatkit/sessions/post.json) |
-| POST | /chatkit/sessions/{session_id}/cancel | [openai/routes/chatkit/sessions/{session_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chatkit/sessions/{session_id}/cancel/post.json) |
-| GET | /chatkit/threads | [openai/routes/chatkit/threads/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chatkit/threads/get.json) |
-| DELETE | /chatkit/threads/{thread_id} | [openai/routes/chatkit/threads/{thread_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chatkit/threads/{thread_id}/delete.json) |
-| GET | /chatkit/threads/{thread_id} | [openai/routes/chatkit/threads/{thread_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chatkit/threads/{thread_id}/get.json) |
-| GET | /chatkit/threads/{thread_id}/items | [openai/routes/chatkit/threads/{thread_id}/items/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chatkit/threads/{thread_id}/items/get.json) |
-| POST | /completions | [openai/routes/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/completions/post.json) |
-| GET | /containers | [openai/routes/containers/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/get.json) |
-| POST | /containers | [openai/routes/containers/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/post.json) |
-| DELETE | /containers/{container_id} | [openai/routes/containers/{container_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/{container_id}/delete.json) |
-| GET | /containers/{container_id} | [openai/routes/containers/{container_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/{container_id}/get.json) |
-| GET | /containers/{container_id}/files | [openai/routes/containers/{container_id}/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/{container_id}/files/get.json) |
-| POST | /containers/{container_id}/files | [openai/routes/containers/{container_id}/files/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/{container_id}/files/post.json) |
-| DELETE | /containers/{container_id}/files/{file_id} | [openai/routes/containers/{container_id}/files/{file_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/{container_id}/files/{file_id}/delete.json) |
-| GET | /containers/{container_id}/files/{file_id} | [openai/routes/containers/{container_id}/files/{file_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/{container_id}/files/{file_id}/get.json) |
-| GET | /containers/{container_id}/files/{file_id}/content | [openai/routes/containers/{container_id}/files/{file_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/{container_id}/files/{file_id}/content/get.json) |
-| POST | /conversations | [openai/routes/conversations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/post.json) |
-| DELETE | /conversations/{conversation_id} | [openai/routes/conversations/{conversation_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/{conversation_id}/delete.json) |
-| GET | /conversations/{conversation_id} | [openai/routes/conversations/{conversation_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/{conversation_id}/get.json) |
-| POST | /conversations/{conversation_id} | [openai/routes/conversations/{conversation_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/{conversation_id}/post.json) |
-| GET | /conversations/{conversation_id}/items | [openai/routes/conversations/{conversation_id}/items/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/{conversation_id}/items/get.json) |
-| POST | /conversations/{conversation_id}/items | [openai/routes/conversations/{conversation_id}/items/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/{conversation_id}/items/post.json) |
-| DELETE | /conversations/{conversation_id}/items/{item_id} | [openai/routes/conversations/{conversation_id}/items/{item_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/{conversation_id}/items/{item_id}/delete.json) |
-| GET | /conversations/{conversation_id}/items/{item_id} | [openai/routes/conversations/{conversation_id}/items/{item_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/{conversation_id}/items/{item_id}/get.json) |
-| POST | /embeddings | [openai/routes/embeddings/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/embeddings/post.json) |
-| GET | /evals | [openai/routes/evals/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/get.json) |
-| POST | /evals | [openai/routes/evals/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/post.json) |
-| DELETE | /evals/{eval_id} | [openai/routes/evals/{eval_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/delete.json) |
-| GET | /evals/{eval_id} | [openai/routes/evals/{eval_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/get.json) |
-| POST | /evals/{eval_id} | [openai/routes/evals/{eval_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/post.json) |
-| GET | /evals/{eval_id}/runs | [openai/routes/evals/{eval_id}/runs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/runs/get.json) |
-| POST | /evals/{eval_id}/runs | [openai/routes/evals/{eval_id}/runs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/runs/post.json) |
-| DELETE | /evals/{eval_id}/runs/{run_id} | [openai/routes/evals/{eval_id}/runs/{run_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/runs/{run_id}/delete.json) |
-| GET | /evals/{eval_id}/runs/{run_id} | [openai/routes/evals/{eval_id}/runs/{run_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/runs/{run_id}/get.json) |
-| POST | /evals/{eval_id}/runs/{run_id} | [openai/routes/evals/{eval_id}/runs/{run_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/runs/{run_id}/post.json) |
-| GET | /evals/{eval_id}/runs/{run_id}/output_items | [openai/routes/evals/{eval_id}/runs/{run_id}/output_items/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/runs/{run_id}/output_items/get.json) |
-| GET | /evals/{eval_id}/runs/{run_id}/output_items/{output_item_id} | [openai/routes/evals/{eval_id}/runs/{run_id}/output_items/{output_item_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/runs/{run_id}/output_items/{output_item_id}/get.json) |
-| GET | /files | [openai/routes/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/files/get.json) |
-| POST | /files | [openai/routes/files/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/files/post.json) |
-| DELETE | /files/{file_id} | [openai/routes/files/{file_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/files/{file_id}/delete.json) |
-| GET | /files/{file_id} | [openai/routes/files/{file_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/files/{file_id}/get.json) |
-| GET | /files/{file_id}/content | [openai/routes/files/{file_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/files/{file_id}/content/get.json) |
-| POST | /fine_tuning/alpha/graders/run | [openai/routes/fine_tuning/alpha/graders/run/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/alpha/graders/run/post.json) |
-| POST | /fine_tuning/alpha/graders/validate | [openai/routes/fine_tuning/alpha/graders/validate/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/alpha/graders/validate/post.json) |
-| GET | /fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions | [openai/routes/fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions/get.json) |
-| POST | /fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions | [openai/routes/fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions/post.json) |
-| DELETE | /fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions/{permission_id} | [openai/routes/fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions/{permission_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions/{permission_id}/delete.json) |
-| GET | /fine_tuning/jobs | [openai/routes/fine_tuning/jobs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/get.json) |
-| POST | /fine_tuning/jobs | [openai/routes/fine_tuning/jobs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/post.json) |
-| GET | /fine_tuning/jobs/{fine_tuning_job_id} | [openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/get.json) |
-| POST | /fine_tuning/jobs/{fine_tuning_job_id}/cancel | [openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/cancel/post.json) |
-| GET | /fine_tuning/jobs/{fine_tuning_job_id}/checkpoints | [openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/checkpoints/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/checkpoints/get.json) |
-| GET | /fine_tuning/jobs/{fine_tuning_job_id}/events | [openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/events/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/events/get.json) |
-| POST | /fine_tuning/jobs/{fine_tuning_job_id}/pause | [openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/pause/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/pause/post.json) |
-| POST | /fine_tuning/jobs/{fine_tuning_job_id}/resume | [openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/resume/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/resume/post.json) |
-| POST | /images/edits | [openai/routes/images/edits/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/images/edits/post.json) |
-| POST | /images/generations | [openai/routes/images/generations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/images/generations/post.json) |
-| POST | /images/variations | [openai/routes/images/variations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/images/variations/post.json) |
-| GET | /models | [openai/routes/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/models/get.json) |
-| DELETE | /models/{model} | [openai/routes/models/{model}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/models/{model}/delete.json) |
-| GET | /models/{model} | [openai/routes/models/{model}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/models/{model}/get.json) |
-| POST | /moderations | [openai/routes/moderations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/moderations/post.json) |
-| GET | /organization/admin_api_keys | [openai/routes/organization/admin_api_keys/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/admin_api_keys/get.json) |
-| POST | /organization/admin_api_keys | [openai/routes/organization/admin_api_keys/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/admin_api_keys/post.json) |
-| DELETE | /organization/admin_api_keys/{key_id} | [openai/routes/organization/admin_api_keys/{key_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/admin_api_keys/{key_id}/delete.json) |
-| GET | /organization/admin_api_keys/{key_id} | [openai/routes/organization/admin_api_keys/{key_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/admin_api_keys/{key_id}/get.json) |
-| GET | /organization/audit_logs | [openai/routes/organization/audit_logs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/audit_logs/get.json) |
-| GET | /organization/certificates | [openai/routes/organization/certificates/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/certificates/get.json) |
-| POST | /organization/certificates | [openai/routes/organization/certificates/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/certificates/post.json) |
-| DELETE | /organization/certificates/{certificate_id} | [openai/routes/organization/certificates/{certificate_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/certificates/{certificate_id}/delete.json) |
-| GET | /organization/certificates/{certificate_id} | [openai/routes/organization/certificates/{certificate_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/certificates/{certificate_id}/get.json) |
-| POST | /organization/certificates/{certificate_id} | [openai/routes/organization/certificates/{certificate_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/certificates/{certificate_id}/post.json) |
-| POST | /organization/certificates/activate | [openai/routes/organization/certificates/activate/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/certificates/activate/post.json) |
-| POST | /organization/certificates/deactivate | [openai/routes/organization/certificates/deactivate/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/certificates/deactivate/post.json) |
-| GET | /organization/costs | [openai/routes/organization/costs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/costs/get.json) |
-| GET | /organization/groups | [openai/routes/organization/groups/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/get.json) |
-| POST | /organization/groups | [openai/routes/organization/groups/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/post.json) |
-| DELETE | /organization/groups/{group_id} | [openai/routes/organization/groups/{group_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/delete.json) |
-| POST | /organization/groups/{group_id} | [openai/routes/organization/groups/{group_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/post.json) |
-| GET | /organization/groups/{group_id}/roles | [openai/routes/organization/groups/{group_id}/roles/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/roles/get.json) |
-| POST | /organization/groups/{group_id}/roles | [openai/routes/organization/groups/{group_id}/roles/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/roles/post.json) |
-| DELETE | /organization/groups/{group_id}/roles/{role_id} | [openai/routes/organization/groups/{group_id}/roles/{role_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/roles/{role_id}/delete.json) |
-| GET | /organization/groups/{group_id}/users | [openai/routes/organization/groups/{group_id}/users/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/users/get.json) |
-| POST | /organization/groups/{group_id}/users | [openai/routes/organization/groups/{group_id}/users/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/users/post.json) |
-| DELETE | /organization/groups/{group_id}/users/{user_id} | [openai/routes/organization/groups/{group_id}/users/{user_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/users/{user_id}/delete.json) |
-| GET | /organization/invites | [openai/routes/organization/invites/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/invites/get.json) |
-| POST | /organization/invites | [openai/routes/organization/invites/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/invites/post.json) |
-| DELETE | /organization/invites/{invite_id} | [openai/routes/organization/invites/{invite_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/invites/{invite_id}/delete.json) |
-| GET | /organization/invites/{invite_id} | [openai/routes/organization/invites/{invite_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/invites/{invite_id}/get.json) |
-| GET | /organization/projects | [openai/routes/organization/projects/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/get.json) |
-| POST | /organization/projects | [openai/routes/organization/projects/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/post.json) |
-| GET | /organization/projects/{project_id} | [openai/routes/organization/projects/{project_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/get.json) |
-| POST | /organization/projects/{project_id} | [openai/routes/organization/projects/{project_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/post.json) |
-| GET | /organization/projects/{project_id}/api_keys | [openai/routes/organization/projects/{project_id}/api_keys/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/api_keys/get.json) |
-| DELETE | /organization/projects/{project_id}/api_keys/{key_id} | [openai/routes/organization/projects/{project_id}/api_keys/{key_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/api_keys/{key_id}/delete.json) |
-| GET | /organization/projects/{project_id}/api_keys/{key_id} | [openai/routes/organization/projects/{project_id}/api_keys/{key_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/api_keys/{key_id}/get.json) |
-| POST | /organization/projects/{project_id}/archive | [openai/routes/organization/projects/{project_id}/archive/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/archive/post.json) |
-| GET | /organization/projects/{project_id}/certificates | [openai/routes/organization/projects/{project_id}/certificates/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/certificates/get.json) |
-| POST | /organization/projects/{project_id}/certificates/activate | [openai/routes/organization/projects/{project_id}/certificates/activate/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/certificates/activate/post.json) |
-| POST | /organization/projects/{project_id}/certificates/deactivate | [openai/routes/organization/projects/{project_id}/certificates/deactivate/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/certificates/deactivate/post.json) |
-| GET | /organization/projects/{project_id}/groups | [openai/routes/organization/projects/{project_id}/groups/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/groups/get.json) |
-| POST | /organization/projects/{project_id}/groups | [openai/routes/organization/projects/{project_id}/groups/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/groups/post.json) |
-| DELETE | /organization/projects/{project_id}/groups/{group_id} | [openai/routes/organization/projects/{project_id}/groups/{group_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/groups/{group_id}/delete.json) |
-| GET | /organization/projects/{project_id}/rate_limits | [openai/routes/organization/projects/{project_id}/rate_limits/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/rate_limits/get.json) |
-| POST | /organization/projects/{project_id}/rate_limits/{rate_limit_id} | [openai/routes/organization/projects/{project_id}/rate_limits/{rate_limit_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/rate_limits/{rate_limit_id}/post.json) |
-| GET | /organization/projects/{project_id}/service_accounts | [openai/routes/organization/projects/{project_id}/service_accounts/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/service_accounts/get.json) |
-| POST | /organization/projects/{project_id}/service_accounts | [openai/routes/organization/projects/{project_id}/service_accounts/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/service_accounts/post.json) |
-| DELETE | /organization/projects/{project_id}/service_accounts/{service_account_id} | [openai/routes/organization/projects/{project_id}/service_accounts/{service_account_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/service_accounts/{service_account_id}/delete.json) |
-| GET | /organization/projects/{project_id}/service_accounts/{service_account_id} | [openai/routes/organization/projects/{project_id}/service_accounts/{service_account_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/service_accounts/{service_account_id}/get.json) |
-| GET | /organization/projects/{project_id}/users | [openai/routes/organization/projects/{project_id}/users/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/users/get.json) |
-| POST | /organization/projects/{project_id}/users | [openai/routes/organization/projects/{project_id}/users/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/users/post.json) |
-| DELETE | /organization/projects/{project_id}/users/{user_id} | [openai/routes/organization/projects/{project_id}/users/{user_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/users/{user_id}/delete.json) |
-| GET | /organization/projects/{project_id}/users/{user_id} | [openai/routes/organization/projects/{project_id}/users/{user_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/users/{user_id}/get.json) |
-| POST | /organization/projects/{project_id}/users/{user_id} | [openai/routes/organization/projects/{project_id}/users/{user_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/users/{user_id}/post.json) |
-| GET | /organization/roles | [openai/routes/organization/roles/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/roles/get.json) |
-| POST | /organization/roles | [openai/routes/organization/roles/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/roles/post.json) |
-| DELETE | /organization/roles/{role_id} | [openai/routes/organization/roles/{role_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/roles/{role_id}/delete.json) |
-| POST | /organization/roles/{role_id} | [openai/routes/organization/roles/{role_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/roles/{role_id}/post.json) |
-| GET | /organization/usage/audio_speeches | [openai/routes/organization/usage/audio_speeches/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/audio_speeches/get.json) |
-| GET | /organization/usage/audio_transcriptions | [openai/routes/organization/usage/audio_transcriptions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/audio_transcriptions/get.json) |
-| GET | /organization/usage/code_interpreter_sessions | [openai/routes/organization/usage/code_interpreter_sessions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/code_interpreter_sessions/get.json) |
-| GET | /organization/usage/completions | [openai/routes/organization/usage/completions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/completions/get.json) |
-| GET | /organization/usage/embeddings | [openai/routes/organization/usage/embeddings/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/embeddings/get.json) |
-| GET | /organization/usage/images | [openai/routes/organization/usage/images/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/images/get.json) |
-| GET | /organization/usage/moderations | [openai/routes/organization/usage/moderations/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/moderations/get.json) |
-| GET | /organization/usage/vector_stores | [openai/routes/organization/usage/vector_stores/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/vector_stores/get.json) |
-| GET | /organization/users | [openai/routes/organization/users/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/users/get.json) |
-| DELETE | /organization/users/{user_id} | [openai/routes/organization/users/{user_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/users/{user_id}/delete.json) |
-| GET | /organization/users/{user_id} | [openai/routes/organization/users/{user_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/users/{user_id}/get.json) |
-| POST | /organization/users/{user_id} | [openai/routes/organization/users/{user_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/users/{user_id}/post.json) |
-| GET | /organization/users/{user_id}/roles | [openai/routes/organization/users/{user_id}/roles/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/users/{user_id}/roles/get.json) |
-| POST | /organization/users/{user_id}/roles | [openai/routes/organization/users/{user_id}/roles/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/users/{user_id}/roles/post.json) |
-| DELETE | /organization/users/{user_id}/roles/{role_id} | [openai/routes/organization/users/{user_id}/roles/{role_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/users/{user_id}/roles/{role_id}/delete.json) |
-| GET | /projects/{project_id}/groups/{group_id}/roles | [openai/routes/projects/{project_id}/groups/{group_id}/roles/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/groups/{group_id}/roles/get.json) |
-| POST | /projects/{project_id}/groups/{group_id}/roles | [openai/routes/projects/{project_id}/groups/{group_id}/roles/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/groups/{group_id}/roles/post.json) |
-| DELETE | /projects/{project_id}/groups/{group_id}/roles/{role_id} | [openai/routes/projects/{project_id}/groups/{group_id}/roles/{role_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/groups/{group_id}/roles/{role_id}/delete.json) |
-| GET | /projects/{project_id}/roles | [openai/routes/projects/{project_id}/roles/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/roles/get.json) |
-| POST | /projects/{project_id}/roles | [openai/routes/projects/{project_id}/roles/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/roles/post.json) |
-| DELETE | /projects/{project_id}/roles/{role_id} | [openai/routes/projects/{project_id}/roles/{role_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/roles/{role_id}/delete.json) |
-| POST | /projects/{project_id}/roles/{role_id} | [openai/routes/projects/{project_id}/roles/{role_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/roles/{role_id}/post.json) |
-| GET | /projects/{project_id}/users/{user_id}/roles | [openai/routes/projects/{project_id}/users/{user_id}/roles/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/users/{user_id}/roles/get.json) |
-| POST | /projects/{project_id}/users/{user_id}/roles | [openai/routes/projects/{project_id}/users/{user_id}/roles/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/users/{user_id}/roles/post.json) |
-| DELETE | /projects/{project_id}/users/{user_id}/roles/{role_id} | [openai/routes/projects/{project_id}/users/{user_id}/roles/{role_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/users/{user_id}/roles/{role_id}/delete.json) |
-| POST | /realtime/calls | [openai/routes/realtime/calls/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/calls/post.json) |
-| POST | /realtime/calls/{call_id}/accept | [openai/routes/realtime/calls/{call_id}/accept/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/calls/{call_id}/accept/post.json) |
-| POST | /realtime/calls/{call_id}/hangup | [openai/routes/realtime/calls/{call_id}/hangup/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/calls/{call_id}/hangup/post.json) |
-| POST | /realtime/calls/{call_id}/refer | [openai/routes/realtime/calls/{call_id}/refer/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/calls/{call_id}/refer/post.json) |
-| POST | /realtime/calls/{call_id}/reject | [openai/routes/realtime/calls/{call_id}/reject/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/calls/{call_id}/reject/post.json) |
-| POST | /realtime/client_secrets | [openai/routes/realtime/client_secrets/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/client_secrets/post.json) |
-| POST | /realtime/sessions | [openai/routes/realtime/sessions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/sessions/post.json) |
-| POST | /realtime/transcription_sessions | [openai/routes/realtime/transcription_sessions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/transcription_sessions/post.json) |
-| POST | /responses | [openai/routes/responses/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/responses/post.json) |
-| DELETE | /responses/{response_id} | [openai/routes/responses/{response_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/responses/{response_id}/delete.json) |
-| GET | /responses/{response_id} | [openai/routes/responses/{response_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/responses/{response_id}/get.json) |
-| POST | /responses/{response_id}/cancel | [openai/routes/responses/{response_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/responses/{response_id}/cancel/post.json) |
-| GET | /responses/{response_id}/input_items | [openai/routes/responses/{response_id}/input_items/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/responses/{response_id}/input_items/get.json) |
-| POST | /responses/compact | [openai/routes/responses/compact/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/responses/compact/post.json) |
-| POST | /responses/input_tokens | [openai/routes/responses/input_tokens/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/responses/input_tokens/post.json) |
-| GET | /skills | [openai/routes/skills/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/get.json) |
-| POST | /skills | [openai/routes/skills/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/post.json) |
-| DELETE | /skills/{skill_id} | [openai/routes/skills/{skill_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/delete.json) |
-| GET | /skills/{skill_id} | [openai/routes/skills/{skill_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/get.json) |
-| POST | /skills/{skill_id} | [openai/routes/skills/{skill_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/post.json) |
-| GET | /skills/{skill_id}/content | [openai/routes/skills/{skill_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/content/get.json) |
-| GET | /skills/{skill_id}/versions | [openai/routes/skills/{skill_id}/versions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/versions/get.json) |
-| POST | /skills/{skill_id}/versions | [openai/routes/skills/{skill_id}/versions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/versions/post.json) |
-| DELETE | /skills/{skill_id}/versions/{version} | [openai/routes/skills/{skill_id}/versions/{version}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/versions/{version}/delete.json) |
-| GET | /skills/{skill_id}/versions/{version} | [openai/routes/skills/{skill_id}/versions/{version}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/versions/{version}/get.json) |
-| GET | /skills/{skill_id}/versions/{version}/content | [openai/routes/skills/{skill_id}/versions/{version}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/versions/{version}/content/get.json) |
-| POST | /threads | [openai/routes/threads/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/post.json) |
-| DELETE | /threads/{thread_id} | [openai/routes/threads/{thread_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/delete.json) |
-| GET | /threads/{thread_id} | [openai/routes/threads/{thread_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/get.json) |
-| POST | /threads/{thread_id} | [openai/routes/threads/{thread_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/post.json) |
-| GET | /threads/{thread_id}/messages | [openai/routes/threads/{thread_id}/messages/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/messages/get.json) |
-| POST | /threads/{thread_id}/messages | [openai/routes/threads/{thread_id}/messages/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/messages/post.json) |
-| DELETE | /threads/{thread_id}/messages/{message_id} | [openai/routes/threads/{thread_id}/messages/{message_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/messages/{message_id}/delete.json) |
-| GET | /threads/{thread_id}/messages/{message_id} | [openai/routes/threads/{thread_id}/messages/{message_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/messages/{message_id}/get.json) |
-| POST | /threads/{thread_id}/messages/{message_id} | [openai/routes/threads/{thread_id}/messages/{message_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/messages/{message_id}/post.json) |
-| GET | /threads/{thread_id}/runs | [openai/routes/threads/{thread_id}/runs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/get.json) |
-| POST | /threads/{thread_id}/runs | [openai/routes/threads/{thread_id}/runs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/post.json) |
-| GET | /threads/{thread_id}/runs/{run_id} | [openai/routes/threads/{thread_id}/runs/{run_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/{run_id}/get.json) |
-| POST | /threads/{thread_id}/runs/{run_id} | [openai/routes/threads/{thread_id}/runs/{run_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/{run_id}/post.json) |
-| POST | /threads/{thread_id}/runs/{run_id}/cancel | [openai/routes/threads/{thread_id}/runs/{run_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/{run_id}/cancel/post.json) |
-| GET | /threads/{thread_id}/runs/{run_id}/steps | [openai/routes/threads/{thread_id}/runs/{run_id}/steps/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/{run_id}/steps/get.json) |
-| GET | /threads/{thread_id}/runs/{run_id}/steps/{step_id} | [openai/routes/threads/{thread_id}/runs/{run_id}/steps/{step_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/{run_id}/steps/{step_id}/get.json) |
-| POST | /threads/{thread_id}/runs/{run_id}/submit_tool_outputs | [openai/routes/threads/{thread_id}/runs/{run_id}/submit_tool_outputs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/{run_id}/submit_tool_outputs/post.json) |
-| POST | /threads/runs | [openai/routes/threads/runs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/runs/post.json) |
-| POST | /uploads | [openai/routes/uploads/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/uploads/post.json) |
-| POST | /uploads/{upload_id}/cancel | [openai/routes/uploads/{upload_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/uploads/{upload_id}/cancel/post.json) |
-| POST | /uploads/{upload_id}/complete | [openai/routes/uploads/{upload_id}/complete/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/uploads/{upload_id}/complete/post.json) |
-| POST | /uploads/{upload_id}/parts | [openai/routes/uploads/{upload_id}/parts/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/uploads/{upload_id}/parts/post.json) |
-| GET | /vector_stores | [openai/routes/vector_stores/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/get.json) |
-| POST | /vector_stores | [openai/routes/vector_stores/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/post.json) |
-| DELETE | /vector_stores/{vector_store_id} | [openai/routes/vector_stores/{vector_store_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/delete.json) |
-| GET | /vector_stores/{vector_store_id} | [openai/routes/vector_stores/{vector_store_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/get.json) |
-| POST | /vector_stores/{vector_store_id} | [openai/routes/vector_stores/{vector_store_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/post.json) |
-| POST | /vector_stores/{vector_store_id}/file_batches | [openai/routes/vector_stores/{vector_store_id}/file_batches/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/file_batches/post.json) |
-| GET | /vector_stores/{vector_store_id}/file_batches/{batch_id} | [openai/routes/vector_stores/{vector_store_id}/file_batches/{batch_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/file_batches/{batch_id}/get.json) |
-| POST | /vector_stores/{vector_store_id}/file_batches/{batch_id}/cancel | [openai/routes/vector_stores/{vector_store_id}/file_batches/{batch_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/file_batches/{batch_id}/cancel/post.json) |
-| GET | /vector_stores/{vector_store_id}/file_batches/{batch_id}/files | [openai/routes/vector_stores/{vector_store_id}/file_batches/{batch_id}/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/file_batches/{batch_id}/files/get.json) |
-| GET | /vector_stores/{vector_store_id}/files | [openai/routes/vector_stores/{vector_store_id}/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/files/get.json) |
-| POST | /vector_stores/{vector_store_id}/files | [openai/routes/vector_stores/{vector_store_id}/files/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/files/post.json) |
-| DELETE | /vector_stores/{vector_store_id}/files/{file_id} | [openai/routes/vector_stores/{vector_store_id}/files/{file_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/files/{file_id}/delete.json) |
-| GET | /vector_stores/{vector_store_id}/files/{file_id} | [openai/routes/vector_stores/{vector_store_id}/files/{file_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/files/{file_id}/get.json) |
-| POST | /vector_stores/{vector_store_id}/files/{file_id} | [openai/routes/vector_stores/{vector_store_id}/files/{file_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/files/{file_id}/post.json) |
-| GET | /vector_stores/{vector_store_id}/files/{file_id}/content | [openai/routes/vector_stores/{vector_store_id}/files/{file_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/files/{file_id}/content/get.json) |
-| POST | /vector_stores/{vector_store_id}/search | [openai/routes/vector_stores/{vector_store_id}/search/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/search/post.json) |
-| GET | /videos | [openai/routes/videos/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/get.json) |
-| POST | /videos | [openai/routes/videos/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/post.json) |
-| DELETE | /videos/{video_id} | [openai/routes/videos/{video_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/{video_id}/delete.json) |
-| GET | /videos/{video_id} | [openai/routes/videos/{video_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/{video_id}/get.json) |
-| GET | /videos/{video_id}/content | [openai/routes/videos/{video_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/{video_id}/content/get.json) |
-| POST | /videos/{video_id}/remix | [openai/routes/videos/{video_id}/remix/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/{video_id}/remix/post.json) |
-| POST | /videos/characters | [openai/routes/videos/characters/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/characters/post.json) |
-| GET | /videos/characters/{character_id} | [openai/routes/videos/characters/{character_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/characters/{character_id}/get.json) |
-| POST | /videos/edits | [openai/routes/videos/edits/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/edits/post.json) |
-| POST | /videos/extensions | [openai/routes/videos/extensions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/extensions/post.json) |
+| Route | Spec |
+| --- | --- |
+| GET /assistants | [openai/routes/assistants/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/assistants/get.json) |
+| POST /assistants | [openai/routes/assistants/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/assistants/post.json) |
+| DELETE /assistants/{assistant_id} | [openai/routes/assistants/{assistant_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/assistants/{assistant_id}/delete.json) |
+| GET /assistants/{assistant_id} | [openai/routes/assistants/{assistant_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/assistants/{assistant_id}/get.json) |
+| POST /assistants/{assistant_id} | [openai/routes/assistants/{assistant_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/assistants/{assistant_id}/post.json) |
+| POST /audio/speech | [openai/routes/audio/speech/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/speech/post.json) |
+| POST /audio/transcriptions | [openai/routes/audio/transcriptions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/transcriptions/post.json) |
+| POST /audio/translations | [openai/routes/audio/translations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/translations/post.json) |
+| GET /audio/voice_consents | [openai/routes/audio/voice_consents/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/voice_consents/get.json) |
+| POST /audio/voice_consents | [openai/routes/audio/voice_consents/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/voice_consents/post.json) |
+| DELETE /audio/voice_consents/{consent_id} | [openai/routes/audio/voice_consents/{consent_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/voice_consents/{consent_id}/delete.json) |
+| GET /audio/voice_consents/{consent_id} | [openai/routes/audio/voice_consents/{consent_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/voice_consents/{consent_id}/get.json) |
+| POST /audio/voice_consents/{consent_id} | [openai/routes/audio/voice_consents/{consent_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/voice_consents/{consent_id}/post.json) |
+| POST /audio/voices | [openai/routes/audio/voices/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/audio/voices/post.json) |
+| GET /batches | [openai/routes/batches/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/batches/get.json) |
+| POST /batches | [openai/routes/batches/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/batches/post.json) |
+| GET /batches/{batch_id} | [openai/routes/batches/{batch_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/batches/{batch_id}/get.json) |
+| POST /batches/{batch_id}/cancel | [openai/routes/batches/{batch_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/batches/{batch_id}/cancel/post.json) |
+| GET /chat/completions | [openai/routes/chat/completions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chat/completions/get.json) |
+| POST /chat/completions | [openai/routes/chat/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chat/completions/post.json) |
+| DELETE /chat/completions/{completion_id} | [openai/routes/chat/completions/{completion_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chat/completions/{completion_id}/delete.json) |
+| GET /chat/completions/{completion_id} | [openai/routes/chat/completions/{completion_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chat/completions/{completion_id}/get.json) |
+| POST /chat/completions/{completion_id} | [openai/routes/chat/completions/{completion_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chat/completions/{completion_id}/post.json) |
+| GET /chat/completions/{completion_id}/messages | [openai/routes/chat/completions/{completion_id}/messages/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chat/completions/{completion_id}/messages/get.json) |
+| POST /chatkit/sessions | [openai/routes/chatkit/sessions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chatkit/sessions/post.json) |
+| POST /chatkit/sessions/{session_id}/cancel | [openai/routes/chatkit/sessions/{session_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chatkit/sessions/{session_id}/cancel/post.json) |
+| GET /chatkit/threads | [openai/routes/chatkit/threads/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chatkit/threads/get.json) |
+| DELETE /chatkit/threads/{thread_id} | [openai/routes/chatkit/threads/{thread_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chatkit/threads/{thread_id}/delete.json) |
+| GET /chatkit/threads/{thread_id} | [openai/routes/chatkit/threads/{thread_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chatkit/threads/{thread_id}/get.json) |
+| GET /chatkit/threads/{thread_id}/items | [openai/routes/chatkit/threads/{thread_id}/items/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/chatkit/threads/{thread_id}/items/get.json) |
+| POST /completions | [openai/routes/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/completions/post.json) |
+| GET /containers | [openai/routes/containers/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/get.json) |
+| POST /containers | [openai/routes/containers/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/post.json) |
+| DELETE /containers/{container_id} | [openai/routes/containers/{container_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/{container_id}/delete.json) |
+| GET /containers/{container_id} | [openai/routes/containers/{container_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/{container_id}/get.json) |
+| GET /containers/{container_id}/files | [openai/routes/containers/{container_id}/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/{container_id}/files/get.json) |
+| POST /containers/{container_id}/files | [openai/routes/containers/{container_id}/files/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/{container_id}/files/post.json) |
+| DELETE /containers/{container_id}/files/{file_id} | [openai/routes/containers/{container_id}/files/{file_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/{container_id}/files/{file_id}/delete.json) |
+| GET /containers/{container_id}/files/{file_id} | [openai/routes/containers/{container_id}/files/{file_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/{container_id}/files/{file_id}/get.json) |
+| GET /containers/{container_id}/files/{file_id}/content | [openai/routes/containers/{container_id}/files/{file_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/containers/{container_id}/files/{file_id}/content/get.json) |
+| POST /conversations | [openai/routes/conversations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/post.json) |
+| DELETE /conversations/{conversation_id} | [openai/routes/conversations/{conversation_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/{conversation_id}/delete.json) |
+| GET /conversations/{conversation_id} | [openai/routes/conversations/{conversation_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/{conversation_id}/get.json) |
+| POST /conversations/{conversation_id} | [openai/routes/conversations/{conversation_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/{conversation_id}/post.json) |
+| GET /conversations/{conversation_id}/items | [openai/routes/conversations/{conversation_id}/items/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/{conversation_id}/items/get.json) |
+| POST /conversations/{conversation_id}/items | [openai/routes/conversations/{conversation_id}/items/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/{conversation_id}/items/post.json) |
+| DELETE /conversations/{conversation_id}/items/{item_id} | [openai/routes/conversations/{conversation_id}/items/{item_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/{conversation_id}/items/{item_id}/delete.json) |
+| GET /conversations/{conversation_id}/items/{item_id} | [openai/routes/conversations/{conversation_id}/items/{item_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/conversations/{conversation_id}/items/{item_id}/get.json) |
+| POST /embeddings | [openai/routes/embeddings/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/embeddings/post.json) |
+| GET /evals | [openai/routes/evals/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/get.json) |
+| POST /evals | [openai/routes/evals/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/post.json) |
+| DELETE /evals/{eval_id} | [openai/routes/evals/{eval_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/delete.json) |
+| GET /evals/{eval_id} | [openai/routes/evals/{eval_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/get.json) |
+| POST /evals/{eval_id} | [openai/routes/evals/{eval_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/post.json) |
+| GET /evals/{eval_id}/runs | [openai/routes/evals/{eval_id}/runs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/runs/get.json) |
+| POST /evals/{eval_id}/runs | [openai/routes/evals/{eval_id}/runs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/runs/post.json) |
+| DELETE /evals/{eval_id}/runs/{run_id} | [openai/routes/evals/{eval_id}/runs/{run_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/runs/{run_id}/delete.json) |
+| GET /evals/{eval_id}/runs/{run_id} | [openai/routes/evals/{eval_id}/runs/{run_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/runs/{run_id}/get.json) |
+| POST /evals/{eval_id}/runs/{run_id} | [openai/routes/evals/{eval_id}/runs/{run_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/runs/{run_id}/post.json) |
+| GET /evals/{eval_id}/runs/{run_id}/output_items | [openai/routes/evals/{eval_id}/runs/{run_id}/output_items/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/runs/{run_id}/output_items/get.json) |
+| GET /evals/{eval_id}/runs/{run_id}/output_items/{output_item_id} | [openai/routes/evals/{eval_id}/runs/{run_id}/output_items/{output_item_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/evals/{eval_id}/runs/{run_id}/output_items/{output_item_id}/get.json) |
+| GET /files | [openai/routes/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/files/get.json) |
+| POST /files | [openai/routes/files/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/files/post.json) |
+| DELETE /files/{file_id} | [openai/routes/files/{file_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/files/{file_id}/delete.json) |
+| GET /files/{file_id} | [openai/routes/files/{file_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/files/{file_id}/get.json) |
+| GET /files/{file_id}/content | [openai/routes/files/{file_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/files/{file_id}/content/get.json) |
+| POST /fine_tuning/alpha/graders/run | [openai/routes/fine_tuning/alpha/graders/run/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/alpha/graders/run/post.json) |
+| POST /fine_tuning/alpha/graders/validate | [openai/routes/fine_tuning/alpha/graders/validate/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/alpha/graders/validate/post.json) |
+| GET /fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions | [openai/routes/fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions/get.json) |
+| POST /fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions | [openai/routes/fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions/post.json) |
+| DELETE /fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions/{permission_id} | [openai/routes/fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions/{permission_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/checkpoints/{fine_tuned_model_checkpoint}/permissions/{permission_id}/delete.json) |
+| GET /fine_tuning/jobs | [openai/routes/fine_tuning/jobs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/get.json) |
+| POST /fine_tuning/jobs | [openai/routes/fine_tuning/jobs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/post.json) |
+| GET /fine_tuning/jobs/{fine_tuning_job_id} | [openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/get.json) |
+| POST /fine_tuning/jobs/{fine_tuning_job_id}/cancel | [openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/cancel/post.json) |
+| GET /fine_tuning/jobs/{fine_tuning_job_id}/checkpoints | [openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/checkpoints/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/checkpoints/get.json) |
+| GET /fine_tuning/jobs/{fine_tuning_job_id}/events | [openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/events/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/events/get.json) |
+| POST /fine_tuning/jobs/{fine_tuning_job_id}/pause | [openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/pause/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/pause/post.json) |
+| POST /fine_tuning/jobs/{fine_tuning_job_id}/resume | [openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/resume/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/fine_tuning/jobs/{fine_tuning_job_id}/resume/post.json) |
+| POST /images/edits | [openai/routes/images/edits/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/images/edits/post.json) |
+| POST /images/generations | [openai/routes/images/generations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/images/generations/post.json) |
+| POST /images/variations | [openai/routes/images/variations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/images/variations/post.json) |
+| GET /models | [openai/routes/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/models/get.json) |
+| DELETE /models/{model} | [openai/routes/models/{model}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/models/{model}/delete.json) |
+| GET /models/{model} | [openai/routes/models/{model}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/models/{model}/get.json) |
+| POST /moderations | [openai/routes/moderations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/moderations/post.json) |
+| GET /organization/admin_api_keys | [openai/routes/organization/admin_api_keys/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/admin_api_keys/get.json) |
+| POST /organization/admin_api_keys | [openai/routes/organization/admin_api_keys/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/admin_api_keys/post.json) |
+| DELETE /organization/admin_api_keys/{key_id} | [openai/routes/organization/admin_api_keys/{key_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/admin_api_keys/{key_id}/delete.json) |
+| GET /organization/admin_api_keys/{key_id} | [openai/routes/organization/admin_api_keys/{key_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/admin_api_keys/{key_id}/get.json) |
+| GET /organization/audit_logs | [openai/routes/organization/audit_logs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/audit_logs/get.json) |
+| GET /organization/certificates | [openai/routes/organization/certificates/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/certificates/get.json) |
+| POST /organization/certificates | [openai/routes/organization/certificates/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/certificates/post.json) |
+| DELETE /organization/certificates/{certificate_id} | [openai/routes/organization/certificates/{certificate_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/certificates/{certificate_id}/delete.json) |
+| GET /organization/certificates/{certificate_id} | [openai/routes/organization/certificates/{certificate_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/certificates/{certificate_id}/get.json) |
+| POST /organization/certificates/{certificate_id} | [openai/routes/organization/certificates/{certificate_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/certificates/{certificate_id}/post.json) |
+| POST /organization/certificates/activate | [openai/routes/organization/certificates/activate/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/certificates/activate/post.json) |
+| POST /organization/certificates/deactivate | [openai/routes/organization/certificates/deactivate/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/certificates/deactivate/post.json) |
+| GET /organization/costs | [openai/routes/organization/costs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/costs/get.json) |
+| GET /organization/groups | [openai/routes/organization/groups/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/get.json) |
+| POST /organization/groups | [openai/routes/organization/groups/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/post.json) |
+| DELETE /organization/groups/{group_id} | [openai/routes/organization/groups/{group_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/delete.json) |
+| POST /organization/groups/{group_id} | [openai/routes/organization/groups/{group_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/post.json) |
+| GET /organization/groups/{group_id}/roles | [openai/routes/organization/groups/{group_id}/roles/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/roles/get.json) |
+| POST /organization/groups/{group_id}/roles | [openai/routes/organization/groups/{group_id}/roles/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/roles/post.json) |
+| DELETE /organization/groups/{group_id}/roles/{role_id} | [openai/routes/organization/groups/{group_id}/roles/{role_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/roles/{role_id}/delete.json) |
+| GET /organization/groups/{group_id}/users | [openai/routes/organization/groups/{group_id}/users/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/users/get.json) |
+| POST /organization/groups/{group_id}/users | [openai/routes/organization/groups/{group_id}/users/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/users/post.json) |
+| DELETE /organization/groups/{group_id}/users/{user_id} | [openai/routes/organization/groups/{group_id}/users/{user_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/groups/{group_id}/users/{user_id}/delete.json) |
+| GET /organization/invites | [openai/routes/organization/invites/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/invites/get.json) |
+| POST /organization/invites | [openai/routes/organization/invites/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/invites/post.json) |
+| DELETE /organization/invites/{invite_id} | [openai/routes/organization/invites/{invite_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/invites/{invite_id}/delete.json) |
+| GET /organization/invites/{invite_id} | [openai/routes/organization/invites/{invite_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/invites/{invite_id}/get.json) |
+| GET /organization/projects | [openai/routes/organization/projects/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/get.json) |
+| POST /organization/projects | [openai/routes/organization/projects/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/post.json) |
+| GET /organization/projects/{project_id} | [openai/routes/organization/projects/{project_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/get.json) |
+| POST /organization/projects/{project_id} | [openai/routes/organization/projects/{project_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/post.json) |
+| GET /organization/projects/{project_id}/api_keys | [openai/routes/organization/projects/{project_id}/api_keys/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/api_keys/get.json) |
+| DELETE /organization/projects/{project_id}/api_keys/{key_id} | [openai/routes/organization/projects/{project_id}/api_keys/{key_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/api_keys/{key_id}/delete.json) |
+| GET /organization/projects/{project_id}/api_keys/{key_id} | [openai/routes/organization/projects/{project_id}/api_keys/{key_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/api_keys/{key_id}/get.json) |
+| POST /organization/projects/{project_id}/archive | [openai/routes/organization/projects/{project_id}/archive/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/archive/post.json) |
+| GET /organization/projects/{project_id}/certificates | [openai/routes/organization/projects/{project_id}/certificates/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/certificates/get.json) |
+| POST /organization/projects/{project_id}/certificates/activate | [openai/routes/organization/projects/{project_id}/certificates/activate/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/certificates/activate/post.json) |
+| POST /organization/projects/{project_id}/certificates/deactivate | [openai/routes/organization/projects/{project_id}/certificates/deactivate/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/certificates/deactivate/post.json) |
+| GET /organization/projects/{project_id}/groups | [openai/routes/organization/projects/{project_id}/groups/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/groups/get.json) |
+| POST /organization/projects/{project_id}/groups | [openai/routes/organization/projects/{project_id}/groups/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/groups/post.json) |
+| DELETE /organization/projects/{project_id}/groups/{group_id} | [openai/routes/organization/projects/{project_id}/groups/{group_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/groups/{group_id}/delete.json) |
+| GET /organization/projects/{project_id}/rate_limits | [openai/routes/organization/projects/{project_id}/rate_limits/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/rate_limits/get.json) |
+| POST /organization/projects/{project_id}/rate_limits/{rate_limit_id} | [openai/routes/organization/projects/{project_id}/rate_limits/{rate_limit_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/rate_limits/{rate_limit_id}/post.json) |
+| GET /organization/projects/{project_id}/service_accounts | [openai/routes/organization/projects/{project_id}/service_accounts/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/service_accounts/get.json) |
+| POST /organization/projects/{project_id}/service_accounts | [openai/routes/organization/projects/{project_id}/service_accounts/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/service_accounts/post.json) |
+| DELETE /organization/projects/{project_id}/service_accounts/{service_account_id} | [openai/routes/organization/projects/{project_id}/service_accounts/{service_account_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/service_accounts/{service_account_id}/delete.json) |
+| GET /organization/projects/{project_id}/service_accounts/{service_account_id} | [openai/routes/organization/projects/{project_id}/service_accounts/{service_account_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/service_accounts/{service_account_id}/get.json) |
+| GET /organization/projects/{project_id}/users | [openai/routes/organization/projects/{project_id}/users/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/users/get.json) |
+| POST /organization/projects/{project_id}/users | [openai/routes/organization/projects/{project_id}/users/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/users/post.json) |
+| DELETE /organization/projects/{project_id}/users/{user_id} | [openai/routes/organization/projects/{project_id}/users/{user_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/users/{user_id}/delete.json) |
+| GET /organization/projects/{project_id}/users/{user_id} | [openai/routes/organization/projects/{project_id}/users/{user_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/users/{user_id}/get.json) |
+| POST /organization/projects/{project_id}/users/{user_id} | [openai/routes/organization/projects/{project_id}/users/{user_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/projects/{project_id}/users/{user_id}/post.json) |
+| GET /organization/roles | [openai/routes/organization/roles/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/roles/get.json) |
+| POST /organization/roles | [openai/routes/organization/roles/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/roles/post.json) |
+| DELETE /organization/roles/{role_id} | [openai/routes/organization/roles/{role_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/roles/{role_id}/delete.json) |
+| POST /organization/roles/{role_id} | [openai/routes/organization/roles/{role_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/roles/{role_id}/post.json) |
+| GET /organization/usage/audio_speeches | [openai/routes/organization/usage/audio_speeches/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/audio_speeches/get.json) |
+| GET /organization/usage/audio_transcriptions | [openai/routes/organization/usage/audio_transcriptions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/audio_transcriptions/get.json) |
+| GET /organization/usage/code_interpreter_sessions | [openai/routes/organization/usage/code_interpreter_sessions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/code_interpreter_sessions/get.json) |
+| GET /organization/usage/completions | [openai/routes/organization/usage/completions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/completions/get.json) |
+| GET /organization/usage/embeddings | [openai/routes/organization/usage/embeddings/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/embeddings/get.json) |
+| GET /organization/usage/images | [openai/routes/organization/usage/images/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/images/get.json) |
+| GET /organization/usage/moderations | [openai/routes/organization/usage/moderations/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/moderations/get.json) |
+| GET /organization/usage/vector_stores | [openai/routes/organization/usage/vector_stores/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/usage/vector_stores/get.json) |
+| GET /organization/users | [openai/routes/organization/users/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/users/get.json) |
+| DELETE /organization/users/{user_id} | [openai/routes/organization/users/{user_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/users/{user_id}/delete.json) |
+| GET /organization/users/{user_id} | [openai/routes/organization/users/{user_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/users/{user_id}/get.json) |
+| POST /organization/users/{user_id} | [openai/routes/organization/users/{user_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/users/{user_id}/post.json) |
+| GET /organization/users/{user_id}/roles | [openai/routes/organization/users/{user_id}/roles/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/users/{user_id}/roles/get.json) |
+| POST /organization/users/{user_id}/roles | [openai/routes/organization/users/{user_id}/roles/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/users/{user_id}/roles/post.json) |
+| DELETE /organization/users/{user_id}/roles/{role_id} | [openai/routes/organization/users/{user_id}/roles/{role_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/organization/users/{user_id}/roles/{role_id}/delete.json) |
+| GET /projects/{project_id}/groups/{group_id}/roles | [openai/routes/projects/{project_id}/groups/{group_id}/roles/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/groups/{group_id}/roles/get.json) |
+| POST /projects/{project_id}/groups/{group_id}/roles | [openai/routes/projects/{project_id}/groups/{group_id}/roles/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/groups/{group_id}/roles/post.json) |
+| DELETE /projects/{project_id}/groups/{group_id}/roles/{role_id} | [openai/routes/projects/{project_id}/groups/{group_id}/roles/{role_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/groups/{group_id}/roles/{role_id}/delete.json) |
+| GET /projects/{project_id}/roles | [openai/routes/projects/{project_id}/roles/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/roles/get.json) |
+| POST /projects/{project_id}/roles | [openai/routes/projects/{project_id}/roles/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/roles/post.json) |
+| DELETE /projects/{project_id}/roles/{role_id} | [openai/routes/projects/{project_id}/roles/{role_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/roles/{role_id}/delete.json) |
+| POST /projects/{project_id}/roles/{role_id} | [openai/routes/projects/{project_id}/roles/{role_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/roles/{role_id}/post.json) |
+| GET /projects/{project_id}/users/{user_id}/roles | [openai/routes/projects/{project_id}/users/{user_id}/roles/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/users/{user_id}/roles/get.json) |
+| POST /projects/{project_id}/users/{user_id}/roles | [openai/routes/projects/{project_id}/users/{user_id}/roles/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/users/{user_id}/roles/post.json) |
+| DELETE /projects/{project_id}/users/{user_id}/roles/{role_id} | [openai/routes/projects/{project_id}/users/{user_id}/roles/{role_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/projects/{project_id}/users/{user_id}/roles/{role_id}/delete.json) |
+| POST /realtime/calls | [openai/routes/realtime/calls/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/calls/post.json) |
+| POST /realtime/calls/{call_id}/accept | [openai/routes/realtime/calls/{call_id}/accept/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/calls/{call_id}/accept/post.json) |
+| POST /realtime/calls/{call_id}/hangup | [openai/routes/realtime/calls/{call_id}/hangup/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/calls/{call_id}/hangup/post.json) |
+| POST /realtime/calls/{call_id}/refer | [openai/routes/realtime/calls/{call_id}/refer/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/calls/{call_id}/refer/post.json) |
+| POST /realtime/calls/{call_id}/reject | [openai/routes/realtime/calls/{call_id}/reject/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/calls/{call_id}/reject/post.json) |
+| POST /realtime/client_secrets | [openai/routes/realtime/client_secrets/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/client_secrets/post.json) |
+| POST /realtime/sessions | [openai/routes/realtime/sessions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/sessions/post.json) |
+| POST /realtime/transcription_sessions | [openai/routes/realtime/transcription_sessions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/realtime/transcription_sessions/post.json) |
+| POST /responses | [openai/routes/responses/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/responses/post.json) |
+| DELETE /responses/{response_id} | [openai/routes/responses/{response_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/responses/{response_id}/delete.json) |
+| GET /responses/{response_id} | [openai/routes/responses/{response_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/responses/{response_id}/get.json) |
+| POST /responses/{response_id}/cancel | [openai/routes/responses/{response_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/responses/{response_id}/cancel/post.json) |
+| GET /responses/{response_id}/input_items | [openai/routes/responses/{response_id}/input_items/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/responses/{response_id}/input_items/get.json) |
+| POST /responses/compact | [openai/routes/responses/compact/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/responses/compact/post.json) |
+| POST /responses/input_tokens | [openai/routes/responses/input_tokens/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/responses/input_tokens/post.json) |
+| GET /skills | [openai/routes/skills/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/get.json) |
+| POST /skills | [openai/routes/skills/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/post.json) |
+| DELETE /skills/{skill_id} | [openai/routes/skills/{skill_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/delete.json) |
+| GET /skills/{skill_id} | [openai/routes/skills/{skill_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/get.json) |
+| POST /skills/{skill_id} | [openai/routes/skills/{skill_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/post.json) |
+| GET /skills/{skill_id}/content | [openai/routes/skills/{skill_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/content/get.json) |
+| GET /skills/{skill_id}/versions | [openai/routes/skills/{skill_id}/versions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/versions/get.json) |
+| POST /skills/{skill_id}/versions | [openai/routes/skills/{skill_id}/versions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/versions/post.json) |
+| DELETE /skills/{skill_id}/versions/{version} | [openai/routes/skills/{skill_id}/versions/{version}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/versions/{version}/delete.json) |
+| GET /skills/{skill_id}/versions/{version} | [openai/routes/skills/{skill_id}/versions/{version}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/versions/{version}/get.json) |
+| GET /skills/{skill_id}/versions/{version}/content | [openai/routes/skills/{skill_id}/versions/{version}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/skills/{skill_id}/versions/{version}/content/get.json) |
+| POST /threads | [openai/routes/threads/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/post.json) |
+| DELETE /threads/{thread_id} | [openai/routes/threads/{thread_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/delete.json) |
+| GET /threads/{thread_id} | [openai/routes/threads/{thread_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/get.json) |
+| POST /threads/{thread_id} | [openai/routes/threads/{thread_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/post.json) |
+| GET /threads/{thread_id}/messages | [openai/routes/threads/{thread_id}/messages/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/messages/get.json) |
+| POST /threads/{thread_id}/messages | [openai/routes/threads/{thread_id}/messages/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/messages/post.json) |
+| DELETE /threads/{thread_id}/messages/{message_id} | [openai/routes/threads/{thread_id}/messages/{message_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/messages/{message_id}/delete.json) |
+| GET /threads/{thread_id}/messages/{message_id} | [openai/routes/threads/{thread_id}/messages/{message_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/messages/{message_id}/get.json) |
+| POST /threads/{thread_id}/messages/{message_id} | [openai/routes/threads/{thread_id}/messages/{message_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/messages/{message_id}/post.json) |
+| GET /threads/{thread_id}/runs | [openai/routes/threads/{thread_id}/runs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/get.json) |
+| POST /threads/{thread_id}/runs | [openai/routes/threads/{thread_id}/runs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/post.json) |
+| GET /threads/{thread_id}/runs/{run_id} | [openai/routes/threads/{thread_id}/runs/{run_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/{run_id}/get.json) |
+| POST /threads/{thread_id}/runs/{run_id} | [openai/routes/threads/{thread_id}/runs/{run_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/{run_id}/post.json) |
+| POST /threads/{thread_id}/runs/{run_id}/cancel | [openai/routes/threads/{thread_id}/runs/{run_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/{run_id}/cancel/post.json) |
+| GET /threads/{thread_id}/runs/{run_id}/steps | [openai/routes/threads/{thread_id}/runs/{run_id}/steps/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/{run_id}/steps/get.json) |
+| GET /threads/{thread_id}/runs/{run_id}/steps/{step_id} | [openai/routes/threads/{thread_id}/runs/{run_id}/steps/{step_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/{run_id}/steps/{step_id}/get.json) |
+| POST /threads/{thread_id}/runs/{run_id}/submit_tool_outputs | [openai/routes/threads/{thread_id}/runs/{run_id}/submit_tool_outputs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/{thread_id}/runs/{run_id}/submit_tool_outputs/post.json) |
+| POST /threads/runs | [openai/routes/threads/runs/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/threads/runs/post.json) |
+| POST /uploads | [openai/routes/uploads/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/uploads/post.json) |
+| POST /uploads/{upload_id}/cancel | [openai/routes/uploads/{upload_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/uploads/{upload_id}/cancel/post.json) |
+| POST /uploads/{upload_id}/complete | [openai/routes/uploads/{upload_id}/complete/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/uploads/{upload_id}/complete/post.json) |
+| POST /uploads/{upload_id}/parts | [openai/routes/uploads/{upload_id}/parts/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/uploads/{upload_id}/parts/post.json) |
+| GET /vector_stores | [openai/routes/vector_stores/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/get.json) |
+| POST /vector_stores | [openai/routes/vector_stores/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/post.json) |
+| DELETE /vector_stores/{vector_store_id} | [openai/routes/vector_stores/{vector_store_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/delete.json) |
+| GET /vector_stores/{vector_store_id} | [openai/routes/vector_stores/{vector_store_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/get.json) |
+| POST /vector_stores/{vector_store_id} | [openai/routes/vector_stores/{vector_store_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/post.json) |
+| POST /vector_stores/{vector_store_id}/file_batches | [openai/routes/vector_stores/{vector_store_id}/file_batches/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/file_batches/post.json) |
+| GET /vector_stores/{vector_store_id}/file_batches/{batch_id} | [openai/routes/vector_stores/{vector_store_id}/file_batches/{batch_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/file_batches/{batch_id}/get.json) |
+| POST /vector_stores/{vector_store_id}/file_batches/{batch_id}/cancel | [openai/routes/vector_stores/{vector_store_id}/file_batches/{batch_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/file_batches/{batch_id}/cancel/post.json) |
+| GET /vector_stores/{vector_store_id}/file_batches/{batch_id}/files | [openai/routes/vector_stores/{vector_store_id}/file_batches/{batch_id}/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/file_batches/{batch_id}/files/get.json) |
+| GET /vector_stores/{vector_store_id}/files | [openai/routes/vector_stores/{vector_store_id}/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/files/get.json) |
+| POST /vector_stores/{vector_store_id}/files | [openai/routes/vector_stores/{vector_store_id}/files/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/files/post.json) |
+| DELETE /vector_stores/{vector_store_id}/files/{file_id} | [openai/routes/vector_stores/{vector_store_id}/files/{file_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/files/{file_id}/delete.json) |
+| GET /vector_stores/{vector_store_id}/files/{file_id} | [openai/routes/vector_stores/{vector_store_id}/files/{file_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/files/{file_id}/get.json) |
+| POST /vector_stores/{vector_store_id}/files/{file_id} | [openai/routes/vector_stores/{vector_store_id}/files/{file_id}/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/files/{file_id}/post.json) |
+| GET /vector_stores/{vector_store_id}/files/{file_id}/content | [openai/routes/vector_stores/{vector_store_id}/files/{file_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/files/{file_id}/content/get.json) |
+| POST /vector_stores/{vector_store_id}/search | [openai/routes/vector_stores/{vector_store_id}/search/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/vector_stores/{vector_store_id}/search/post.json) |
+| GET /videos | [openai/routes/videos/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/get.json) |
+| POST /videos | [openai/routes/videos/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/post.json) |
+| DELETE /videos/{video_id} | [openai/routes/videos/{video_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/{video_id}/delete.json) |
+| GET /videos/{video_id} | [openai/routes/videos/{video_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/{video_id}/get.json) |
+| GET /videos/{video_id}/content | [openai/routes/videos/{video_id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/{video_id}/content/get.json) |
+| POST /videos/{video_id}/remix | [openai/routes/videos/{video_id}/remix/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/{video_id}/remix/post.json) |
+| POST /videos/characters | [openai/routes/videos/characters/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/characters/post.json) |
+| GET /videos/characters/{character_id} | [openai/routes/videos/characters/{character_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/characters/{character_id}/get.json) |
+| POST /videos/edits | [openai/routes/videos/edits/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/edits/post.json) |
+| POST /videos/extensions | [openai/routes/videos/extensions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/openai/routes/videos/extensions/post.json) |
 
 ### replicate
 
 Event type: `ai-provider-monitor:replicate`
 
-| Method | Route | Spec |
-| --- | --- | --- |
-| GET | /account | [replicate/routes/account/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/account/get.json) |
-| GET | /collections | [replicate/routes/collections/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/collections/get.json) |
-| GET | /collections/{collection_slug} | [replicate/routes/collections/{collection_slug}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/collections/{collection_slug}/get.json) |
-| GET | /deployments | [replicate/routes/deployments/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/deployments/get.json) |
-| POST | /deployments | [replicate/routes/deployments/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/deployments/post.json) |
-| DELETE | /deployments/{deployment_owner}/{deployment_name} | [replicate/routes/deployments/{deployment_owner}/{deployment_name}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/deployments/{deployment_owner}/{deployment_name}/delete.json) |
-| GET | /deployments/{deployment_owner}/{deployment_name} | [replicate/routes/deployments/{deployment_owner}/{deployment_name}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/deployments/{deployment_owner}/{deployment_name}/get.json) |
-| PATCH | /deployments/{deployment_owner}/{deployment_name} | [replicate/routes/deployments/{deployment_owner}/{deployment_name}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/deployments/{deployment_owner}/{deployment_name}/patch.json) |
-| POST | /deployments/{deployment_owner}/{deployment_name}/predictions | [replicate/routes/deployments/{deployment_owner}/{deployment_name}/predictions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/deployments/{deployment_owner}/{deployment_name}/predictions/post.json) |
-| GET | /files | [replicate/routes/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/files/get.json) |
-| POST | /files | [replicate/routes/files/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/files/post.json) |
-| DELETE | /files/{file_id} | [replicate/routes/files/{file_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/files/{file_id}/delete.json) |
-| GET | /files/{file_id} | [replicate/routes/files/{file_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/files/{file_id}/get.json) |
-| GET | /files/{file_id}/download | [replicate/routes/files/{file_id}/download/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/files/{file_id}/download/get.json) |
-| GET | /hardware | [replicate/routes/hardware/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/hardware/get.json) |
-| GET | /models | [replicate/routes/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/get.json) |
-| POST | /models | [replicate/routes/models/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/post.json) |
-| QUERY | /models | [replicate/routes/models/query.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/query.json) |
-| DELETE | /models/{model_owner}/{model_name} | [replicate/routes/models/{model_owner}/{model_name}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/delete.json) |
-| GET | /models/{model_owner}/{model_name} | [replicate/routes/models/{model_owner}/{model_name}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/get.json) |
-| PATCH | /models/{model_owner}/{model_name} | [replicate/routes/models/{model_owner}/{model_name}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/patch.json) |
-| GET | /models/{model_owner}/{model_name}/examples | [replicate/routes/models/{model_owner}/{model_name}/examples/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/examples/get.json) |
-| POST | /models/{model_owner}/{model_name}/predictions | [replicate/routes/models/{model_owner}/{model_name}/predictions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/predictions/post.json) |
-| GET | /models/{model_owner}/{model_name}/readme | [replicate/routes/models/{model_owner}/{model_name}/readme/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/readme/get.json) |
-| GET | /models/{model_owner}/{model_name}/versions | [replicate/routes/models/{model_owner}/{model_name}/versions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/versions/get.json) |
-| DELETE | /models/{model_owner}/{model_name}/versions/{version_id} | [replicate/routes/models/{model_owner}/{model_name}/versions/{version_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/versions/{version_id}/delete.json) |
-| GET | /models/{model_owner}/{model_name}/versions/{version_id} | [replicate/routes/models/{model_owner}/{model_name}/versions/{version_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/versions/{version_id}/get.json) |
-| POST | /models/{model_owner}/{model_name}/versions/{version_id}/trainings | [replicate/routes/models/{model_owner}/{model_name}/versions/{version_id}/trainings/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/versions/{version_id}/trainings/post.json) |
-| GET | /predictions | [replicate/routes/predictions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/predictions/get.json) |
-| POST | /predictions | [replicate/routes/predictions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/predictions/post.json) |
-| GET | /predictions/{prediction_id} | [replicate/routes/predictions/{prediction_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/predictions/{prediction_id}/get.json) |
-| POST | /predictions/{prediction_id}/cancel | [replicate/routes/predictions/{prediction_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/predictions/{prediction_id}/cancel/post.json) |
-| GET | /search | [replicate/routes/search/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/search/get.json) |
-| GET | /trainings | [replicate/routes/trainings/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/trainings/get.json) |
-| GET | /trainings/{training_id} | [replicate/routes/trainings/{training_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/trainings/{training_id}/get.json) |
-| POST | /trainings/{training_id}/cancel | [replicate/routes/trainings/{training_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/trainings/{training_id}/cancel/post.json) |
-| GET | /webhooks/default/secret | [replicate/routes/webhooks/default/secret/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/webhooks/default/secret/get.json) |
+| Route | Spec |
+| --- | --- |
+| GET /account | [replicate/routes/account/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/account/get.json) |
+| GET /collections | [replicate/routes/collections/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/collections/get.json) |
+| GET /collections/{collection_slug} | [replicate/routes/collections/{collection_slug}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/collections/{collection_slug}/get.json) |
+| GET /deployments | [replicate/routes/deployments/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/deployments/get.json) |
+| POST /deployments | [replicate/routes/deployments/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/deployments/post.json) |
+| DELETE /deployments/{deployment_owner}/{deployment_name} | [replicate/routes/deployments/{deployment_owner}/{deployment_name}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/deployments/{deployment_owner}/{deployment_name}/delete.json) |
+| GET /deployments/{deployment_owner}/{deployment_name} | [replicate/routes/deployments/{deployment_owner}/{deployment_name}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/deployments/{deployment_owner}/{deployment_name}/get.json) |
+| PATCH /deployments/{deployment_owner}/{deployment_name} | [replicate/routes/deployments/{deployment_owner}/{deployment_name}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/deployments/{deployment_owner}/{deployment_name}/patch.json) |
+| POST /deployments/{deployment_owner}/{deployment_name}/predictions | [replicate/routes/deployments/{deployment_owner}/{deployment_name}/predictions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/deployments/{deployment_owner}/{deployment_name}/predictions/post.json) |
+| GET /files | [replicate/routes/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/files/get.json) |
+| POST /files | [replicate/routes/files/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/files/post.json) |
+| DELETE /files/{file_id} | [replicate/routes/files/{file_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/files/{file_id}/delete.json) |
+| GET /files/{file_id} | [replicate/routes/files/{file_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/files/{file_id}/get.json) |
+| GET /files/{file_id}/download | [replicate/routes/files/{file_id}/download/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/files/{file_id}/download/get.json) |
+| GET /hardware | [replicate/routes/hardware/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/hardware/get.json) |
+| GET /models | [replicate/routes/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/get.json) |
+| POST /models | [replicate/routes/models/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/post.json) |
+| QUERY /models | [replicate/routes/models/query.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/query.json) |
+| DELETE /models/{model_owner}/{model_name} | [replicate/routes/models/{model_owner}/{model_name}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/delete.json) |
+| GET /models/{model_owner}/{model_name} | [replicate/routes/models/{model_owner}/{model_name}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/get.json) |
+| PATCH /models/{model_owner}/{model_name} | [replicate/routes/models/{model_owner}/{model_name}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/patch.json) |
+| GET /models/{model_owner}/{model_name}/examples | [replicate/routes/models/{model_owner}/{model_name}/examples/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/examples/get.json) |
+| POST /models/{model_owner}/{model_name}/predictions | [replicate/routes/models/{model_owner}/{model_name}/predictions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/predictions/post.json) |
+| GET /models/{model_owner}/{model_name}/readme | [replicate/routes/models/{model_owner}/{model_name}/readme/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/readme/get.json) |
+| GET /models/{model_owner}/{model_name}/versions | [replicate/routes/models/{model_owner}/{model_name}/versions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/versions/get.json) |
+| DELETE /models/{model_owner}/{model_name}/versions/{version_id} | [replicate/routes/models/{model_owner}/{model_name}/versions/{version_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/versions/{version_id}/delete.json) |
+| GET /models/{model_owner}/{model_name}/versions/{version_id} | [replicate/routes/models/{model_owner}/{model_name}/versions/{version_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/versions/{version_id}/get.json) |
+| POST /models/{model_owner}/{model_name}/versions/{version_id}/trainings | [replicate/routes/models/{model_owner}/{model_name}/versions/{version_id}/trainings/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/models/{model_owner}/{model_name}/versions/{version_id}/trainings/post.json) |
+| GET /predictions | [replicate/routes/predictions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/predictions/get.json) |
+| POST /predictions | [replicate/routes/predictions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/predictions/post.json) |
+| GET /predictions/{prediction_id} | [replicate/routes/predictions/{prediction_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/predictions/{prediction_id}/get.json) |
+| POST /predictions/{prediction_id}/cancel | [replicate/routes/predictions/{prediction_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/predictions/{prediction_id}/cancel/post.json) |
+| GET /search | [replicate/routes/search/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/search/get.json) |
+| GET /trainings | [replicate/routes/trainings/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/trainings/get.json) |
+| GET /trainings/{training_id} | [replicate/routes/trainings/{training_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/trainings/{training_id}/get.json) |
+| POST /trainings/{training_id}/cancel | [replicate/routes/trainings/{training_id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/trainings/{training_id}/cancel/post.json) |
+| GET /webhooks/default/secret | [replicate/routes/webhooks/default/secret/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/replicate/routes/webhooks/default/secret/get.json) |
 
 ### togetherai
 
 Event type: `ai-provider-monitor:togetherai`
 
-| Method | Route | Spec |
-| --- | --- | --- |
-| POST | /audio/speech | [togetherai/routes/audio/speech/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/audio/speech/post.json) |
-| GET | /audio/speech/websocket | [togetherai/routes/audio/speech/websocket/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/audio/speech/websocket/get.json) |
-| POST | /audio/transcriptions | [togetherai/routes/audio/transcriptions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/audio/transcriptions/post.json) |
-| POST | /audio/translations | [togetherai/routes/audio/translations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/audio/translations/post.json) |
-| GET | /batches | [togetherai/routes/batches/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/batches/get.json) |
-| POST | /batches | [togetherai/routes/batches/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/batches/post.json) |
-| GET | /batches/{id} | [togetherai/routes/batches/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/batches/{id}/get.json) |
-| POST | /batches/{id}/cancel | [togetherai/routes/batches/{id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/batches/{id}/cancel/post.json) |
-| POST | /chat/completions | [togetherai/routes/chat/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/chat/completions/post.json) |
-| GET | /clusters/availability-zones | [togetherai/routes/clusters/availability-zones/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/clusters/availability-zones/get.json) |
-| POST | /completions | [togetherai/routes/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/completions/post.json) |
-| GET | /compute/clusters | [togetherai/routes/compute/clusters/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/get.json) |
-| POST | /compute/clusters | [togetherai/routes/compute/clusters/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/post.json) |
-| DELETE | /compute/clusters/{cluster_id} | [togetherai/routes/compute/clusters/{cluster_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/{cluster_id}/delete.json) |
-| GET | /compute/clusters/{cluster_id} | [togetherai/routes/compute/clusters/{cluster_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/{cluster_id}/get.json) |
-| PUT | /compute/clusters/{cluster_id} | [togetherai/routes/compute/clusters/{cluster_id}/put.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/{cluster_id}/put.json) |
-| GET | /compute/clusters/storage/volumes | [togetherai/routes/compute/clusters/storage/volumes/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/storage/volumes/get.json) |
-| POST | /compute/clusters/storage/volumes | [togetherai/routes/compute/clusters/storage/volumes/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/storage/volumes/post.json) |
-| PUT | /compute/clusters/storage/volumes | [togetherai/routes/compute/clusters/storage/volumes/put.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/storage/volumes/put.json) |
-| DELETE | /compute/clusters/storage/volumes/{volume_id} | [togetherai/routes/compute/clusters/storage/volumes/{volume_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/storage/volumes/{volume_id}/delete.json) |
-| GET | /compute/clusters/storage/volumes/{volume_id} | [togetherai/routes/compute/clusters/storage/volumes/{volume_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/storage/volumes/{volume_id}/get.json) |
-| GET | /compute/regions | [togetherai/routes/compute/regions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/regions/get.json) |
-| GET | /deployments | [togetherai/routes/deployments/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/get.json) |
-| POST | /deployments | [togetherai/routes/deployments/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/post.json) |
-| DELETE | /deployments/{id} | [togetherai/routes/deployments/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/{id}/delete.json) |
-| GET | /deployments/{id} | [togetherai/routes/deployments/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/{id}/get.json) |
-| PATCH | /deployments/{id} | [togetherai/routes/deployments/{id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/{id}/patch.json) |
-| GET | /deployments/{id}/logs | [togetherai/routes/deployments/{id}/logs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/{id}/logs/get.json) |
-| GET | /deployments/secrets | [togetherai/routes/deployments/secrets/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/secrets/get.json) |
-| POST | /deployments/secrets | [togetherai/routes/deployments/secrets/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/secrets/post.json) |
-| DELETE | /deployments/secrets/{id} | [togetherai/routes/deployments/secrets/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/secrets/{id}/delete.json) |
-| GET | /deployments/secrets/{id} | [togetherai/routes/deployments/secrets/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/secrets/{id}/get.json) |
-| PATCH | /deployments/secrets/{id} | [togetherai/routes/deployments/secrets/{id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/secrets/{id}/patch.json) |
-| GET | /deployments/storage/{filename} | [togetherai/routes/deployments/storage/{filename}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/storage/{filename}/get.json) |
-| GET | /deployments/storage/volumes | [togetherai/routes/deployments/storage/volumes/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/storage/volumes/get.json) |
-| POST | /deployments/storage/volumes | [togetherai/routes/deployments/storage/volumes/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/storage/volumes/post.json) |
-| DELETE | /deployments/storage/volumes/{id} | [togetherai/routes/deployments/storage/volumes/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/storage/volumes/{id}/delete.json) |
-| GET | /deployments/storage/volumes/{id} | [togetherai/routes/deployments/storage/volumes/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/storage/volumes/{id}/get.json) |
-| PATCH | /deployments/storage/volumes/{id} | [togetherai/routes/deployments/storage/volumes/{id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/storage/volumes/{id}/patch.json) |
-| POST | /embeddings | [togetherai/routes/embeddings/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/embeddings/post.json) |
-| GET | /endpoints | [togetherai/routes/endpoints/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/endpoints/get.json) |
-| POST | /endpoints | [togetherai/routes/endpoints/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/endpoints/post.json) |
-| DELETE | /endpoints/{endpointId} | [togetherai/routes/endpoints/{endpointId}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/endpoints/{endpointId}/delete.json) |
-| GET | /endpoints/{endpointId} | [togetherai/routes/endpoints/{endpointId}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/endpoints/{endpointId}/get.json) |
-| PATCH | /endpoints/{endpointId} | [togetherai/routes/endpoints/{endpointId}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/endpoints/{endpointId}/patch.json) |
-| GET | /evaluation | [togetherai/routes/evaluation/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/evaluation/get.json) |
-| POST | /evaluation | [togetherai/routes/evaluation/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/evaluation/post.json) |
-| GET | /evaluation/{id} | [togetherai/routes/evaluation/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/evaluation/{id}/get.json) |
-| GET | /evaluation/{id}/status | [togetherai/routes/evaluation/{id}/status/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/evaluation/{id}/status/get.json) |
-| GET | /evaluation/model-list | [togetherai/routes/evaluation/model-list/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/evaluation/model-list/get.json) |
-| GET | /files | [togetherai/routes/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/files/get.json) |
-| DELETE | /files/{id} | [togetherai/routes/files/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/files/{id}/delete.json) |
-| GET | /files/{id} | [togetherai/routes/files/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/files/{id}/get.json) |
-| GET | /files/{id}/content | [togetherai/routes/files/{id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/files/{id}/content/get.json) |
-| POST | /files/upload | [togetherai/routes/files/upload/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/files/upload/post.json) |
-| GET | /fine-tunes | [togetherai/routes/fine-tunes/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/get.json) |
-| POST | /fine-tunes | [togetherai/routes/fine-tunes/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/post.json) |
-| DELETE | /fine-tunes/{id} | [togetherai/routes/fine-tunes/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/{id}/delete.json) |
-| GET | /fine-tunes/{id} | [togetherai/routes/fine-tunes/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/{id}/get.json) |
-| POST | /fine-tunes/{id}/cancel | [togetherai/routes/fine-tunes/{id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/{id}/cancel/post.json) |
-| GET | /fine-tunes/{id}/checkpoints | [togetherai/routes/fine-tunes/{id}/checkpoints/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/{id}/checkpoints/get.json) |
-| GET | /fine-tunes/{id}/events | [togetherai/routes/fine-tunes/{id}/events/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/{id}/events/get.json) |
-| POST | /fine-tunes/estimate-price | [togetherai/routes/fine-tunes/estimate-price/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/estimate-price/post.json) |
-| GET | /fine-tunes/models/limits | [togetherai/routes/fine-tunes/models/limits/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/models/limits/get.json) |
-| GET | /fine-tunes/models/supported | [togetherai/routes/fine-tunes/models/supported/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/models/supported/get.json) |
-| GET | /finetune/download | [togetherai/routes/finetune/download/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/finetune/download/get.json) |
-| GET | /hardware | [togetherai/routes/hardware/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/hardware/get.json) |
-| POST | /images/generations | [togetherai/routes/images/generations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/images/generations/post.json) |
-| GET | /jobs | [togetherai/routes/jobs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/jobs/get.json) |
-| GET | /jobs/{jobId} | [togetherai/routes/jobs/{jobId}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/jobs/{jobId}/get.json) |
-| GET | /models | [togetherai/routes/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/models/get.json) |
-| POST | /models | [togetherai/routes/models/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/models/post.json) |
-| POST | /queue/cancel | [togetherai/routes/queue/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/queue/cancel/post.json) |
-| GET | /queue/metrics | [togetherai/routes/queue/metrics/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/queue/metrics/get.json) |
-| GET | /queue/status | [togetherai/routes/queue/status/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/queue/status/get.json) |
-| POST | /queue/submit | [togetherai/routes/queue/submit/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/queue/submit/post.json) |
-| GET | /realtime | [togetherai/routes/realtime/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/realtime/get.json) |
-| POST | /rerank | [togetherai/routes/rerank/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rerank/post.json) |
-| GET | /rl/checkpoints/{id}/download | [togetherai/routes/rl/checkpoints/{id}/download/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/checkpoints/{id}/download/get.json) |
-| GET | /rl/training-sessions | [togetherai/routes/rl/training-sessions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/get.json) |
-| POST | /rl/training-sessions | [togetherai/routes/rl/training-sessions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/post.json) |
-| GET | /rl/training-sessions/{session_id} | [togetherai/routes/rl/training-sessions/{session_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/get.json) |
-| POST | /rl/training-sessions/{session_id}/operations/forward-backward | [togetherai/routes/rl/training-sessions/{session_id}/operations/forward-backward/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/forward-backward/post.json) |
-| GET | /rl/training-sessions/{session_id}/operations/forward-backward/{operation_id} | [togetherai/routes/rl/training-sessions/{session_id}/operations/forward-backward/{operation_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/forward-backward/{operation_id}/get.json) |
-| POST | /rl/training-sessions/{session_id}/operations/inference-checkpoint | [togetherai/routes/rl/training-sessions/{session_id}/operations/inference-checkpoint/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/inference-checkpoint/post.json) |
-| GET | /rl/training-sessions/{session_id}/operations/inference-checkpoint/{operation_id} | [togetherai/routes/rl/training-sessions/{session_id}/operations/inference-checkpoint/{operation_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/inference-checkpoint/{operation_id}/get.json) |
-| POST | /rl/training-sessions/{session_id}/operations/optim-step | [togetherai/routes/rl/training-sessions/{session_id}/operations/optim-step/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/optim-step/post.json) |
-| GET | /rl/training-sessions/{session_id}/operations/optim-step/{operation_id} | [togetherai/routes/rl/training-sessions/{session_id}/operations/optim-step/{operation_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/optim-step/{operation_id}/get.json) |
-| POST | /rl/training-sessions/{session_id}/operations/sample | [togetherai/routes/rl/training-sessions/{session_id}/operations/sample/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/sample/post.json) |
-| GET | /rl/training-sessions/{session_id}/operations/sample/{operation_id} | [togetherai/routes/rl/training-sessions/{session_id}/operations/sample/{operation_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/sample/{operation_id}/get.json) |
-| POST | /rl/training-sessions/{session_id}/stop | [togetherai/routes/rl/training-sessions/{session_id}/stop/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/stop/post.json) |
-| POST | /tci/execute | [togetherai/routes/tci/execute/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/tci/execute/post.json) |
-| GET | /tci/sessions | [togetherai/routes/tci/sessions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/tci/sessions/get.json) |
-| POST | /videos | [togetherai/routes/videos/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/videos/post.json) |
-| GET | /videos/{id} | [togetherai/routes/videos/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/videos/{id}/get.json) |
-| GET | /voices | [togetherai/routes/voices/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/voices/get.json) |
+| Route | Spec |
+| --- | --- |
+| POST /audio/speech | [togetherai/routes/audio/speech/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/audio/speech/post.json) |
+| GET /audio/speech/websocket | [togetherai/routes/audio/speech/websocket/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/audio/speech/websocket/get.json) |
+| POST /audio/transcriptions | [togetherai/routes/audio/transcriptions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/audio/transcriptions/post.json) |
+| POST /audio/translations | [togetherai/routes/audio/translations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/audio/translations/post.json) |
+| GET /batches | [togetherai/routes/batches/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/batches/get.json) |
+| POST /batches | [togetherai/routes/batches/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/batches/post.json) |
+| GET /batches/{id} | [togetherai/routes/batches/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/batches/{id}/get.json) |
+| POST /batches/{id}/cancel | [togetherai/routes/batches/{id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/batches/{id}/cancel/post.json) |
+| POST /chat/completions | [togetherai/routes/chat/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/chat/completions/post.json) |
+| GET /clusters/availability-zones | [togetherai/routes/clusters/availability-zones/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/clusters/availability-zones/get.json) |
+| POST /completions | [togetherai/routes/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/completions/post.json) |
+| GET /compute/clusters | [togetherai/routes/compute/clusters/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/get.json) |
+| POST /compute/clusters | [togetherai/routes/compute/clusters/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/post.json) |
+| DELETE /compute/clusters/{cluster_id} | [togetherai/routes/compute/clusters/{cluster_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/{cluster_id}/delete.json) |
+| GET /compute/clusters/{cluster_id} | [togetherai/routes/compute/clusters/{cluster_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/{cluster_id}/get.json) |
+| PUT /compute/clusters/{cluster_id} | [togetherai/routes/compute/clusters/{cluster_id}/put.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/{cluster_id}/put.json) |
+| GET /compute/clusters/storage/volumes | [togetherai/routes/compute/clusters/storage/volumes/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/storage/volumes/get.json) |
+| POST /compute/clusters/storage/volumes | [togetherai/routes/compute/clusters/storage/volumes/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/storage/volumes/post.json) |
+| PUT /compute/clusters/storage/volumes | [togetherai/routes/compute/clusters/storage/volumes/put.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/storage/volumes/put.json) |
+| DELETE /compute/clusters/storage/volumes/{volume_id} | [togetherai/routes/compute/clusters/storage/volumes/{volume_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/storage/volumes/{volume_id}/delete.json) |
+| GET /compute/clusters/storage/volumes/{volume_id} | [togetherai/routes/compute/clusters/storage/volumes/{volume_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/clusters/storage/volumes/{volume_id}/get.json) |
+| GET /compute/regions | [togetherai/routes/compute/regions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/compute/regions/get.json) |
+| GET /deployments | [togetherai/routes/deployments/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/get.json) |
+| POST /deployments | [togetherai/routes/deployments/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/post.json) |
+| DELETE /deployments/{id} | [togetherai/routes/deployments/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/{id}/delete.json) |
+| GET /deployments/{id} | [togetherai/routes/deployments/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/{id}/get.json) |
+| PATCH /deployments/{id} | [togetherai/routes/deployments/{id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/{id}/patch.json) |
+| GET /deployments/{id}/logs | [togetherai/routes/deployments/{id}/logs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/{id}/logs/get.json) |
+| GET /deployments/secrets | [togetherai/routes/deployments/secrets/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/secrets/get.json) |
+| POST /deployments/secrets | [togetherai/routes/deployments/secrets/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/secrets/post.json) |
+| DELETE /deployments/secrets/{id} | [togetherai/routes/deployments/secrets/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/secrets/{id}/delete.json) |
+| GET /deployments/secrets/{id} | [togetherai/routes/deployments/secrets/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/secrets/{id}/get.json) |
+| PATCH /deployments/secrets/{id} | [togetherai/routes/deployments/secrets/{id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/secrets/{id}/patch.json) |
+| GET /deployments/storage/{filename} | [togetherai/routes/deployments/storage/{filename}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/storage/{filename}/get.json) |
+| GET /deployments/storage/volumes | [togetherai/routes/deployments/storage/volumes/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/storage/volumes/get.json) |
+| POST /deployments/storage/volumes | [togetherai/routes/deployments/storage/volumes/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/storage/volumes/post.json) |
+| DELETE /deployments/storage/volumes/{id} | [togetherai/routes/deployments/storage/volumes/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/storage/volumes/{id}/delete.json) |
+| GET /deployments/storage/volumes/{id} | [togetherai/routes/deployments/storage/volumes/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/storage/volumes/{id}/get.json) |
+| PATCH /deployments/storage/volumes/{id} | [togetherai/routes/deployments/storage/volumes/{id}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/deployments/storage/volumes/{id}/patch.json) |
+| POST /embeddings | [togetherai/routes/embeddings/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/embeddings/post.json) |
+| GET /endpoints | [togetherai/routes/endpoints/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/endpoints/get.json) |
+| POST /endpoints | [togetherai/routes/endpoints/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/endpoints/post.json) |
+| DELETE /endpoints/{endpointId} | [togetherai/routes/endpoints/{endpointId}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/endpoints/{endpointId}/delete.json) |
+| GET /endpoints/{endpointId} | [togetherai/routes/endpoints/{endpointId}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/endpoints/{endpointId}/get.json) |
+| PATCH /endpoints/{endpointId} | [togetherai/routes/endpoints/{endpointId}/patch.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/endpoints/{endpointId}/patch.json) |
+| GET /evaluation | [togetherai/routes/evaluation/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/evaluation/get.json) |
+| POST /evaluation | [togetherai/routes/evaluation/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/evaluation/post.json) |
+| GET /evaluation/{id} | [togetherai/routes/evaluation/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/evaluation/{id}/get.json) |
+| GET /evaluation/{id}/status | [togetherai/routes/evaluation/{id}/status/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/evaluation/{id}/status/get.json) |
+| GET /evaluation/model-list | [togetherai/routes/evaluation/model-list/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/evaluation/model-list/get.json) |
+| GET /files | [togetherai/routes/files/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/files/get.json) |
+| DELETE /files/{id} | [togetherai/routes/files/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/files/{id}/delete.json) |
+| GET /files/{id} | [togetherai/routes/files/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/files/{id}/get.json) |
+| GET /files/{id}/content | [togetherai/routes/files/{id}/content/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/files/{id}/content/get.json) |
+| POST /files/upload | [togetherai/routes/files/upload/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/files/upload/post.json) |
+| GET /fine-tunes | [togetherai/routes/fine-tunes/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/get.json) |
+| POST /fine-tunes | [togetherai/routes/fine-tunes/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/post.json) |
+| DELETE /fine-tunes/{id} | [togetherai/routes/fine-tunes/{id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/{id}/delete.json) |
+| GET /fine-tunes/{id} | [togetherai/routes/fine-tunes/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/{id}/get.json) |
+| POST /fine-tunes/{id}/cancel | [togetherai/routes/fine-tunes/{id}/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/{id}/cancel/post.json) |
+| GET /fine-tunes/{id}/checkpoints | [togetherai/routes/fine-tunes/{id}/checkpoints/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/{id}/checkpoints/get.json) |
+| GET /fine-tunes/{id}/events | [togetherai/routes/fine-tunes/{id}/events/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/{id}/events/get.json) |
+| POST /fine-tunes/estimate-price | [togetherai/routes/fine-tunes/estimate-price/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/estimate-price/post.json) |
+| GET /fine-tunes/models/limits | [togetherai/routes/fine-tunes/models/limits/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/models/limits/get.json) |
+| GET /fine-tunes/models/supported | [togetherai/routes/fine-tunes/models/supported/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/fine-tunes/models/supported/get.json) |
+| GET /finetune/download | [togetherai/routes/finetune/download/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/finetune/download/get.json) |
+| GET /hardware | [togetherai/routes/hardware/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/hardware/get.json) |
+| POST /images/generations | [togetherai/routes/images/generations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/images/generations/post.json) |
+| GET /jobs | [togetherai/routes/jobs/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/jobs/get.json) |
+| GET /jobs/{jobId} | [togetherai/routes/jobs/{jobId}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/jobs/{jobId}/get.json) |
+| GET /models | [togetherai/routes/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/models/get.json) |
+| POST /models | [togetherai/routes/models/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/models/post.json) |
+| POST /queue/cancel | [togetherai/routes/queue/cancel/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/queue/cancel/post.json) |
+| GET /queue/metrics | [togetherai/routes/queue/metrics/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/queue/metrics/get.json) |
+| GET /queue/status | [togetherai/routes/queue/status/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/queue/status/get.json) |
+| POST /queue/submit | [togetherai/routes/queue/submit/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/queue/submit/post.json) |
+| GET /realtime | [togetherai/routes/realtime/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/realtime/get.json) |
+| POST /rerank | [togetherai/routes/rerank/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rerank/post.json) |
+| GET /rl/checkpoints/{id}/download | [togetherai/routes/rl/checkpoints/{id}/download/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/checkpoints/{id}/download/get.json) |
+| GET /rl/training-sessions | [togetherai/routes/rl/training-sessions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/get.json) |
+| POST /rl/training-sessions | [togetherai/routes/rl/training-sessions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/post.json) |
+| GET /rl/training-sessions/{session_id} | [togetherai/routes/rl/training-sessions/{session_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/get.json) |
+| POST /rl/training-sessions/{session_id}/operations/forward-backward | [togetherai/routes/rl/training-sessions/{session_id}/operations/forward-backward/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/forward-backward/post.json) |
+| GET /rl/training-sessions/{session_id}/operations/forward-backward/{operation_id} | [togetherai/routes/rl/training-sessions/{session_id}/operations/forward-backward/{operation_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/forward-backward/{operation_id}/get.json) |
+| POST /rl/training-sessions/{session_id}/operations/inference-checkpoint | [togetherai/routes/rl/training-sessions/{session_id}/operations/inference-checkpoint/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/inference-checkpoint/post.json) |
+| GET /rl/training-sessions/{session_id}/operations/inference-checkpoint/{operation_id} | [togetherai/routes/rl/training-sessions/{session_id}/operations/inference-checkpoint/{operation_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/inference-checkpoint/{operation_id}/get.json) |
+| POST /rl/training-sessions/{session_id}/operations/optim-step | [togetherai/routes/rl/training-sessions/{session_id}/operations/optim-step/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/optim-step/post.json) |
+| GET /rl/training-sessions/{session_id}/operations/optim-step/{operation_id} | [togetherai/routes/rl/training-sessions/{session_id}/operations/optim-step/{operation_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/optim-step/{operation_id}/get.json) |
+| POST /rl/training-sessions/{session_id}/operations/sample | [togetherai/routes/rl/training-sessions/{session_id}/operations/sample/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/sample/post.json) |
+| GET /rl/training-sessions/{session_id}/operations/sample/{operation_id} | [togetherai/routes/rl/training-sessions/{session_id}/operations/sample/{operation_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/operations/sample/{operation_id}/get.json) |
+| POST /rl/training-sessions/{session_id}/stop | [togetherai/routes/rl/training-sessions/{session_id}/stop/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/rl/training-sessions/{session_id}/stop/post.json) |
+| POST /tci/execute | [togetherai/routes/tci/execute/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/tci/execute/post.json) |
+| GET /tci/sessions | [togetherai/routes/tci/sessions/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/tci/sessions/get.json) |
+| POST /videos | [togetherai/routes/videos/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/videos/post.json) |
+| GET /videos/{id} | [togetherai/routes/videos/{id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/videos/{id}/get.json) |
+| GET /voices | [togetherai/routes/voices/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/togetherai/routes/voices/get.json) |
 
 ### xai
 
 Event type: `ai-provider-monitor:xai`
 
-| Method | Route | Spec |
-| --- | --- | --- |
-| GET | /v1/api-key | [xai/routes/v1/api-key/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/api-key/get.json) |
-| POST | /v1/chat/completions | [xai/routes/v1/chat/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/chat/completions/post.json) |
-| GET | /v1/chat/deferred-completion/{request_id} | [xai/routes/v1/chat/deferred-completion/{request_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/chat/deferred-completion/{request_id}/get.json) |
-| POST | /v1/complete | [xai/routes/v1/complete/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/complete/post.json) |
-| POST | /v1/completions | [xai/routes/v1/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/completions/post.json) |
-| POST | /v1/documents/search | [xai/routes/v1/documents/search/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/documents/search/post.json) |
-| GET | /v1/embedding-models | [xai/routes/v1/embedding-models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/embedding-models/get.json) |
-| GET | /v1/embedding-models/{model_id} | [xai/routes/v1/embedding-models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/embedding-models/{model_id}/get.json) |
-| POST | /v1/embeddings | [xai/routes/v1/embeddings/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/embeddings/post.json) |
-| GET | /v1/image-generation-models | [xai/routes/v1/image-generation-models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/image-generation-models/get.json) |
-| GET | /v1/image-generation-models/{model_id} | [xai/routes/v1/image-generation-models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/image-generation-models/{model_id}/get.json) |
-| POST | /v1/images/edits | [xai/routes/v1/images/edits/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/images/edits/post.json) |
-| POST | /v1/images/generations | [xai/routes/v1/images/generations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/images/generations/post.json) |
-| GET | /v1/language-models | [xai/routes/v1/language-models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/language-models/get.json) |
-| GET | /v1/language-models/{model_id} | [xai/routes/v1/language-models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/language-models/{model_id}/get.json) |
-| POST | /v1/messages | [xai/routes/v1/messages/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/messages/post.json) |
-| GET | /v1/models | [xai/routes/v1/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/models/get.json) |
-| GET | /v1/models/{model_id} | [xai/routes/v1/models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/models/{model_id}/get.json) |
-| POST | /v1/responses | [xai/routes/v1/responses/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/responses/post.json) |
-| DELETE | /v1/responses/{response_id} | [xai/routes/v1/responses/{response_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/responses/{response_id}/delete.json) |
-| GET | /v1/responses/{response_id} | [xai/routes/v1/responses/{response_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/responses/{response_id}/get.json) |
-| POST | /v1/tokenize-text | [xai/routes/v1/tokenize-text/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/tokenize-text/post.json) |
-| GET | /v1/video-generation-models | [xai/routes/v1/video-generation-models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/video-generation-models/get.json) |
-| GET | /v1/video-generation-models/{model_id} | [xai/routes/v1/video-generation-models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/video-generation-models/{model_id}/get.json) |
-| GET | /v1/videos/{request_id} | [xai/routes/v1/videos/{request_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/videos/{request_id}/get.json) |
-| POST | /v1/videos/edits | [xai/routes/v1/videos/edits/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/videos/edits/post.json) |
-| POST | /v1/videos/generations | [xai/routes/v1/videos/generations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/videos/generations/post.json) |
+| Route | Spec |
+| --- | --- |
+| GET /v1/api-key | [xai/routes/v1/api-key/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/api-key/get.json) |
+| POST /v1/chat/completions | [xai/routes/v1/chat/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/chat/completions/post.json) |
+| GET /v1/chat/deferred-completion/{request_id} | [xai/routes/v1/chat/deferred-completion/{request_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/chat/deferred-completion/{request_id}/get.json) |
+| POST /v1/complete | [xai/routes/v1/complete/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/complete/post.json) |
+| POST /v1/completions | [xai/routes/v1/completions/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/completions/post.json) |
+| POST /v1/documents/search | [xai/routes/v1/documents/search/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/documents/search/post.json) |
+| GET /v1/embedding-models | [xai/routes/v1/embedding-models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/embedding-models/get.json) |
+| GET /v1/embedding-models/{model_id} | [xai/routes/v1/embedding-models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/embedding-models/{model_id}/get.json) |
+| POST /v1/embeddings | [xai/routes/v1/embeddings/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/embeddings/post.json) |
+| GET /v1/image-generation-models | [xai/routes/v1/image-generation-models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/image-generation-models/get.json) |
+| GET /v1/image-generation-models/{model_id} | [xai/routes/v1/image-generation-models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/image-generation-models/{model_id}/get.json) |
+| POST /v1/images/edits | [xai/routes/v1/images/edits/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/images/edits/post.json) |
+| POST /v1/images/generations | [xai/routes/v1/images/generations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/images/generations/post.json) |
+| GET /v1/language-models | [xai/routes/v1/language-models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/language-models/get.json) |
+| GET /v1/language-models/{model_id} | [xai/routes/v1/language-models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/language-models/{model_id}/get.json) |
+| POST /v1/messages | [xai/routes/v1/messages/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/messages/post.json) |
+| GET /v1/models | [xai/routes/v1/models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/models/get.json) |
+| GET /v1/models/{model_id} | [xai/routes/v1/models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/models/{model_id}/get.json) |
+| POST /v1/responses | [xai/routes/v1/responses/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/responses/post.json) |
+| DELETE /v1/responses/{response_id} | [xai/routes/v1/responses/{response_id}/delete.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/responses/{response_id}/delete.json) |
+| GET /v1/responses/{response_id} | [xai/routes/v1/responses/{response_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/responses/{response_id}/get.json) |
+| POST /v1/tokenize-text | [xai/routes/v1/tokenize-text/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/tokenize-text/post.json) |
+| GET /v1/video-generation-models | [xai/routes/v1/video-generation-models/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/video-generation-models/get.json) |
+| GET /v1/video-generation-models/{model_id} | [xai/routes/v1/video-generation-models/{model_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/video-generation-models/{model_id}/get.json) |
+| GET /v1/videos/{request_id} | [xai/routes/v1/videos/{request_id}/get.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/videos/{request_id}/get.json) |
+| POST /v1/videos/edits | [xai/routes/v1/videos/edits/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/videos/edits/post.json) |
+| POST /v1/videos/generations | [xai/routes/v1/videos/generations/post.json](https://github.com/gr2m/ai-provider-monitor/blob/main/cache/xai/routes/v1/videos/generations/post.json) |
 

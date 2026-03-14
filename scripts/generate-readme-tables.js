@@ -56,12 +56,12 @@ for (const provider of providers) {
 
   console.log(`### ${provider}\n`);
   console.log(`Event type: \`ai-provider-monitor:${provider}\`\n`);
-  console.log("| Method | Route | Spec |");
-  console.log("| --- | --- | --- |");
+  console.log("| Route | Spec |");
+  console.log("| --- | --- |");
   for (const { method, routePath, specPath } of routes) {
     const specUrl = `https://github.com/gr2m/ai-provider-monitor/blob/main/cache/${specPath}`;
     const specLink = `[${specPath}](${specUrl})`;
-    console.log(`| ${method} | ${routePath} | ${specLink} |`);
+    console.log(`| ${method} ${routePath} | ${specLink} |`);
   }
   console.log();
 }
