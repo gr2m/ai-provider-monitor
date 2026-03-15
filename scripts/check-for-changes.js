@@ -29,7 +29,6 @@ import yaml from "js-yaml";
 
 import { analyzeRouteChange } from "./lib/analyze-route-change.js";
 import { appendChanges } from "./lib/append-changes.js";
-import { deriveOperationId } from "./lib/derive-operation-id.js";
 import { isIdenticalAfterNormalizingTimestamps } from "./lib/normalize-examples.js";
 
 const exec = promisify(execFile);
@@ -306,13 +305,10 @@ if (docFixes.length > 0) {
 }
 
 // --- Step 11: Build changed_routes for notifications ---
-const changed_routes = changedRoutes.map(({ relativePath, status, oldContent, newContent }, index) => {
-  // Use oldContent for deleted routes, newContent for added/modified
-  const content = status === "D" ? oldContent : newContent;
-  const operationId = deriveOperationId(relativePath, content);
+const changed_routes = changedRoutes.map(({ relativePath, status }, index) => {
   const route = deriveRoute(relativePath);
   const changes = analysisResults[index].changes;
-  return { route, status, operationId, changes };
+  return { route, changes };
 });
 
 // --- Step 12: Output result ---

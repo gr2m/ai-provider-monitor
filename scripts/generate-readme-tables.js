@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Generates Markdown tables per provider listing all routes and their
- * repository dispatch event types.
+ * Generates Markdown tables per provider listing all routes.
  *
  * Usage:
  *   node scripts/generate-readme-tables.js
@@ -13,8 +12,6 @@
 import { readFile, readdir } from "node:fs/promises";
 import { basename } from "node:path";
 import { glob } from "node:fs/promises";
-
-import { deriveOperationId } from "./lib/derive-operation-id.js";
 
 const cacheDir = "cache";
 const providers = (await readdir(cacheDir, { withFileTypes: true }))
@@ -44,15 +41,8 @@ for (const provider of providers) {
         .replaceAll("_QMARK_", "?")
         .replaceAll("_EQ_", "=");
 
-    const content = await readFile(filePath, "utf8");
-    const operationId = deriveOperationId(relativePath, content);
-
-    if (!operationId) continue;
-
-    const eventType = `api:${provider}:${operationId}`;
-
     const specPath = `${provider}/routes/${relativePath}`;
-    routes.push({ method, routePath, eventType, specPath });
+    routes.push({ method, routePath, specPath });
   }
 
   // Sort by route path, then method
@@ -65,12 +55,13 @@ for (const provider of providers) {
   if (routes.length === 0) continue;
 
   console.log(`### ${provider}\n`);
-  console.log("| Method | Route | Event Type | Spec |");
-  console.log("| --- | --- | --- | --- |");
-  for (const { method, routePath, eventType, specPath } of routes) {
+  console.log(`Event type: \`ai-provider-monitor:${provider}\`\n`);
+  console.log("| Route | Spec |");
+  console.log("| --- | --- |");
+  for (const { method, routePath, specPath } of routes) {
     const specUrl = `https://github.com/gr2m/ai-provider-monitor/blob/main/cache/${specPath}`;
     const specLink = `[${specPath}](${specUrl})`;
-    console.log(`| ${method} | ${routePath} | \`${eventType}\` | ${specLink} |`);
+    console.log(`| ${method} ${routePath} | ${specLink} |`);
   }
   console.log();
 }

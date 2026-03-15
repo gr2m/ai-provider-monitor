@@ -9,7 +9,7 @@
  *
  * Arguments:
  *   provider           - e.g. "openai"
- *   changed_routes_json - JSON array of { route, status, operationId, changes }
+ *   changed_routes_json - JSON array of { route, status, changes }
  *
  * Environment:
  *   APP_ID          - GitHub App ID
@@ -46,11 +46,13 @@ const app = new App({
   privateKey: APP_PRIVATE_KEY,
 });
 
+const eventType = `ai-provider-monitor:${provider}`;
+
 /**
  * Attempts to send a dispatch event. If the payload is too large,
  * splits the changes array into smaller batches and retries.
  */
-async function sendDispatch(octokit, repository, eventType, payload) {
+async function sendDispatch(octokit, repository, payload) {
   try {
     await octokit.request("POST /repos/{owner}/{repo}/dispatches", {
       owner: repository.owner.login,
@@ -63,21 +65,19 @@ async function sendDispatch(octokit, repository, eventType, payload) {
     // GitHub returns 422 when the payload is too large
     if (error.status === 422 && payload.changes && payload.changes.length > 1) {
       console.error(
-        `Payload too large for ${eventType} to ${repository.full_name} (${payload.changes.length} changes), splitting...`
+        `Payload too large for ${repository.full_name} (${payload.changes.length} changes), splitting...`
       );
 
       const changes = payload.changes;
       const mid = Math.ceil(changes.length / 2);
-      const firstHalf = changes.slice(0, mid);
-      const secondHalf = changes.slice(mid);
 
-      const countA = await sendDispatch(octokit, repository, eventType, {
+      const countA = await sendDispatch(octokit, repository, {
         ...payload,
-        changes: firstHalf,
+        changes: changes.slice(0, mid),
       });
-      const countB = await sendDispatch(octokit, repository, eventType, {
+      const countB = await sendDispatch(octokit, repository, {
         ...payload,
-        changes: secondHalf,
+        changes: changes.slice(mid),
       });
       return countA + countB;
     }
@@ -91,30 +91,24 @@ let errorCount = 0;
 await app.eachRepository(async ({ octokit, repository }) => {
   const repo = repository.full_name;
 
-  for (const routeEntry of changedRoutes) {
-    const { route, status, operationId, changes } = routeEntry;
-
-    if (!operationId) {
-      console.error(`Skipping ${route} — no operationId`);
-      continue;
-    }
-
-    const eventType = `api:${provider}:${operationId}`;
+  for (const { route, changes } of changedRoutes) {
+    const breaking = changes.some((c) => c.breaking);
+    const doc_only = changes.every((c) => c.doc_only);
 
     try {
-      const count = await sendDispatch(octokit, repository, eventType, {
+      const count = await sendDispatch(octokit, repository, {
         provider,
-        operationId,
-        status,
         route,
+        breaking,
+        doc_only,
         changes,
       });
       dispatchCount += count;
-      console.error(`Dispatched ${eventType} to ${repo}`);
+      console.error(`Dispatched ${eventType} (${route}) to ${repo}`);
     } catch (error) {
       errorCount++;
       console.error(
-        `Failed to dispatch ${eventType} to ${repo}: ${error.message}`
+        `Failed to dispatch ${eventType} (${route}) to ${repo}: ${error.message}`
       );
     }
   }
