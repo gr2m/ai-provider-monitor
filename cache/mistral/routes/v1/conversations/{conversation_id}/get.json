@@ -143,6 +143,7 @@
               "discriminator": {
                 "mapping": {
                   "code_interpreter": "#/components/schemas/CodeInterpreterTool",
+                  "connector": "#/components/schemas/CustomConnector",
                   "document_library": "#/components/schemas/DocumentLibraryTool",
                   "function": "#/components/schemas/FunctionTool",
                   "image_generation": "#/components/schemas/ImageGenerationTool",
@@ -169,6 +170,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/DocumentLibraryTool"
+                },
+                {
+                  "$ref": "#/components/schemas/CustomConnector"
                 }
               ]
             },
@@ -417,11 +421,18 @@
                 "type": "null"
               }
             ]
+          },
+          "moderation_llm_v2": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationLLMV2Config"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
-        "required": [
-          "moderation_llm_v1"
-        ],
         "title": "GuardrailConfig",
         "type": "object"
       },
@@ -589,8 +600,72 @@
         "title": "DocumentLibraryTool",
         "type": "object"
       },
+      "CustomConnector": {
+        "additionalProperties": false,
+        "properties": {
+          "authorization": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "api-key": "#/components/schemas/APIKeyAuth",
+                    "oauth2-token": "#/components/schemas/OAuth2TokenAuth"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OAuth2TokenAuth"
+                  },
+                  {
+                    "$ref": "#/components/schemas/APIKeyAuth"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authorization"
+          },
+          "connector_id": {
+            "title": "Connector Id",
+            "type": "string"
+          },
+          "tool_configuration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolConfiguration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "default": "connector",
+            "enum": [
+              "connector"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "connector_id"
+        ],
+        "title": "CustomConnector",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [
@@ -730,7 +805,7 @@
       "ModerationLLMV1Config": {
         "properties": {
           "action": {
-            "$ref": "#/components/schemas/ModerationLLMV1Action",
+            "$ref": "#/components/schemas/ModerationLLMAction",
             "default": "none",
             "description": "Action to take if any score is above the threshold for any category."
           },
@@ -742,8 +817,7 @@
               {
                 "type": "null"
               }
-            ],
-            "description": "Override default thresholds for specific categories."
+            ]
           },
           "ignore_other_categories": {
             "default": false,
@@ -759,6 +833,39 @@
           }
         },
         "title": "ModerationLLMV1Config",
+        "type": "object"
+      },
+      "ModerationLLMV2Config": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ModerationLLMAction",
+            "default": "none",
+            "description": "Action to take if any score is above the threshold for any category."
+          },
+          "custom_category_thresholds": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationLLMV2CategoryThresholds"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ignore_other_categories": {
+            "default": false,
+            "description": "If true, only evaluate categories in custom_category_thresholds; others are ignored.",
+            "title": "Ignore Other Categories",
+            "type": "boolean"
+          },
+          "model_name": {
+            "default": "mistral-moderation-2603",
+            "description": "Override model name. Should be omitted in general.",
+            "title": "Model Name",
+            "type": "string"
+          }
+        },
+        "title": "ModerationLLMV2Config",
         "type": "object"
       },
       "Function": {
@@ -840,6 +947,50 @@
         "title": "ToolConfiguration",
         "type": "object"
       },
+      "OAuth2TokenAuth": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "default": "oauth2-token",
+            "enum": [
+              "oauth2-token"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "title": "OAuth2TokenAuth",
+        "type": "object"
+      },
+      "APIKeyAuth": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "default": "api-key",
+            "enum": [
+              "api-key"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "title": "APIKeyAuth",
+        "type": "object"
+      },
       "JsonSchema": {
         "additionalProperties": false,
         "properties": {
@@ -885,12 +1036,12 @@
         "title": "ResponseFormats",
         "type": "string"
       },
-      "ModerationLLMV1Action": {
+      "ModerationLLMAction": {
         "enum": [
           "none",
           "block"
         ],
-        "title": "ModerationLLMV1Action",
+        "title": "ModerationLLMAction",
         "type": "string"
       },
       "ModerationLLMV1CategoryThresholds": {
@@ -996,6 +1147,133 @@
           }
         },
         "title": "ModerationLLMV1CategoryThresholds",
+        "type": "object"
+      },
+      "ModerationLLMV2CategoryThresholds": {
+        "properties": {
+          "criminal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criminal"
+          },
+          "dangerous": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dangerous"
+          },
+          "financial": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Financial"
+          },
+          "hate_and_discrimination": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hate And Discrimination"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health"
+          },
+          "jailbreaking": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jailbreaking"
+          },
+          "law": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Law"
+          },
+          "pii": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pii"
+          },
+          "selfharm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selfharm"
+          },
+          "sexual": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sexual"
+          },
+          "violence_and_threats": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Violence And Threats"
+          }
+        },
+        "title": "ModerationLLMV2CategoryThresholds",
         "type": "object"
       }
     }
