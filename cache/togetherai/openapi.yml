@@ -4906,14 +4906,54 @@ components:
           description: Base model to use for the training session
           example: meta-llama/Meta-Llama-3-8B-Instruct
           type: string
-        checkpoint_id:
-          description: Checkpoint ID to use for the training session
-          example: checkpoint-123
-          type: string
         lora_config:
           $ref: "#/components/schemas/RL.LoraConfig"
+        resume_from_checkpoint_id:
+          description: Checkpoint ID to resume from
+          example: 123e4567-e89b-12d3-a456-426614174000
+          type: string
       required:
         - base_model
+      type: object
+    RL.TrainingCheckpoint:
+      description: Saved training checkpoint
+      properties:
+        created_at:
+          description: Timestamp when the checkpoint was created
+          example: "2026-01-02T00:00:00Z"
+          format: date-time
+          type: string
+        id:
+          description: Unique identifier for the checkpoint
+          example: 123e4567-e89b-12d3-a456-426614174000
+          type: string
+        step:
+          description: Training step at time of save
+          example: 42
+          format: uint64
+          type: string
+      type: object
+    RL.TrainingCheckpointOperation:
+      properties:
+        error:
+          $ref: "#/components/schemas/RL.TrainingOperationError"
+        id:
+          description: Operation ID
+          example: 550e8400-e29b-41d4-a716-446655440000
+          type: string
+        output:
+          $ref: "#/components/schemas/RL.TrainingCheckpointResult"
+        status:
+          $ref: "#/components/schemas/RL.TrainingOperationStatus"
+          description: Operation status
+          example: TRAINING_OPERATION_STATUS_PENDING
+      type: object
+    RL.TrainingCheckpointResult:
+      properties:
+        checkpoint_id:
+          description: ID of the saved training checkpoint (use for resume via Start)
+          example: 550e8400-e29b-41d4-a716-446655440000
+          type: string
       type: object
     RL.TrainingOperationError:
       properties:
@@ -4980,6 +5020,10 @@ components:
           type: array
         lora_config:
           $ref: "#/components/schemas/RL.LoraConfig"
+        resume_from_checkpoint_id:
+          description: Checkpoint ID this session was resumed from
+          example: 123e4567-e89b-12d3-a456-426614174000
+          type: string
         status:
           $ref: "#/components/schemas/RL.TrainingSessionStatus"
           description: Status of the training session
@@ -4990,6 +5034,12 @@ components:
           example: 100
           format: uint64
           type: string
+        training_checkpoints:
+          description: List of saved training checkpoints for this session
+          items:
+            $ref: "#/components/schemas/RL.TrainingCheckpoint"
+            type: object
+          type: array
         updated_at:
           description: Timestamp when the training session was last updated
           example: "2026-01-02T00:00:05Z"
@@ -12969,6 +13019,66 @@ paths:
                 $ref: "#/components/schemas/ErrorData"
           description: An unexpected error response.
       summary: Get sample operation
+      tags:
+        - RL
+  /rl/training-sessions/{session_id}/operations/training-checkpoint:
+    post:
+      description: Submits an operation that will asynchronously save the full training state (adapter + optimizer + step).
+      operationId: createTrainingCheckpoint
+      parameters:
+        - in: path
+          name: session_id
+          required: true
+          schema:
+            description: Training session ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RL.TrainingCheckpointOperation"
+          description: Save training checkpoint operation details
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: An unexpected error response.
+      summary: Save training checkpoint
+      tags:
+        - RL
+  /rl/training-sessions/{session_id}/operations/training-checkpoint/{operation_id}:
+    get:
+      description: Retrieves the current status and result of a save training checkpoint operation.
+      operationId: getTrainingCheckpointOperation
+      parameters:
+        - in: path
+          name: session_id
+          required: true
+          schema:
+            description: Training session ID
+            type: string
+        - in: path
+          name: operation_id
+          required: true
+          schema:
+            description: Operation ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RL.TrainingCheckpointOperation"
+          description: Save training checkpoint operation details
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: An unexpected error response.
+      summary: Get save training checkpoint operation
       tags:
         - RL
   /rl/training-sessions/{session_id}/stop:
