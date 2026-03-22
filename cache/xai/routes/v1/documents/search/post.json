@@ -68,6 +68,17 @@
               "null"
             ]
           },
+          "group_by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GroupBy",
+                "description": "Optional group_by to diversify search results by metadata key(s).\nWhen set, results are grouped by the specified key(s) and only the\ntop-k records per group are returned. Applied after ranking and filtering.\nDocuments missing a group_by key are placed in a shared null group.\nGrouping is applied per-collection, not across the combined result set."
+              }
+            ]
+          },
           "instructions": {
             "description": "User-defined instructions to be included in the search query. Defaults to generic search instructions.",
             "type": [
@@ -133,6 +144,33 @@
         },
         "required": [
           "matches"
+        ],
+        "type": "object"
+      },
+      "GroupBy": {
+        "description": "Group search results by metadata key(s) and keep top-k per group.",
+        "properties": {
+          "aggregate": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GroupByAggregate",
+                "description": "Aggregation function per group. Defaults to MinK(k=1, keys=[\"#score\"])."
+              }
+            ]
+          },
+          "keys": {
+            "description": "Metadata key(s) to group results by (e.g. \"category\", \"department\").\nAt least one key is required.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "keys"
         ],
         "type": "object"
       },
@@ -298,6 +336,73 @@
           "fields"
         ],
         "type": "object"
+      },
+      "GroupByAggregate": {
+        "description": "Aggregation function to apply within each group.",
+        "oneOf": [
+          {
+            "description": "Keep the k records with the smallest values (best scores).",
+            "properties": {
+              "min_k": {
+                "description": "Keep the k records with the smallest values (best scores).",
+                "properties": {
+                  "k": {
+                    "description": "Number of records to keep per group. Must be >= 1.",
+                    "format": "int32",
+                    "type": "integer"
+                  },
+                  "keys": {
+                    "description": "Key(s) to sort by within each group. Use \"#score\" for relevance score.",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "keys",
+                  "k"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "min_k"
+            ],
+            "type": "object"
+          },
+          {
+            "description": "Keep the k records with the largest values.",
+            "properties": {
+              "max_k": {
+                "description": "Keep the k records with the largest values.",
+                "properties": {
+                  "k": {
+                    "description": "Number of records to keep per group. Must be >= 1.",
+                    "format": "int32",
+                    "type": "integer"
+                  },
+                  "keys": {
+                    "description": "Key(s) to sort by within each group.",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "keys",
+                  "k"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "max_k"
+            ],
+            "type": "object"
+          }
+        ]
       },
       "HybridRetrieval": {
         "description": "Document search using a combination of keyword and semantic search.",
