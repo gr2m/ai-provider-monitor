@@ -1339,6 +1339,42 @@
         "required": ["prompt_tokens", "total_tokens"],
         "type": "object"
       },
+      "ExtendVideoRequest": {
+        "description": "Request for extending a video for `/v1/videos/extensions` endpoint",
+        "properties": {
+          "duration": {
+            "description": "Duration of the extension segment to generate in seconds (1-10).\nDefaults to 6 seconds if not specified.",
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "model": {
+            "description": "Model to be used.",
+            "example": "grok-imagine-video",
+            "type": ["string", "null"]
+          },
+          "output": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/VideoOutput",
+                "description": "Optional output destination for generated video."
+              }
+            ]
+          },
+          "prompt": {
+            "description": "Prompt describing what should happen next in the video.",
+            "type": "string"
+          },
+          "video": {
+            "$ref": "#/components/schemas/VideoUrl",
+            "description": "Input video to extend. The extension continues from the end of this video.\nInput video must be between 2 and 30 seconds long."
+          }
+        },
+        "required": ["prompt", "video"],
+        "type": "object"
+      },
       "FileRef": {
         "properties": {
           "file_id": {
@@ -7184,6 +7220,57 @@
           }
         ],
         "summary": "Edit a video based on a prompt.\nThis is an asynchronous operation that returns a request_id for polling.",
+        "tags": ["v1"]
+      }
+    },
+    "/v1/videos/extensions": {
+      "post": {
+        "operationId": "handle_extend_video_request",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "duration": 6,
+                "model": "grok-imagine-video",
+                "prompt": "The camera slowly zooms out to reveal the city skyline",
+                "video": {
+                  "url": "https://example.com/video.mp4"
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/ExtendVideoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "request_id": "a3d1008e-4544-40d4-d075-11527e794e4a"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/StartDeferredResponse"
+                }
+              }
+            },
+            "description": "Video extension started successfully"
+          },
+          "400": {
+            "description": "Bad request. The request is invalid or an invalid API key is provided."
+          },
+          "422": {
+            "description": "Unprocessable Entity. There are missing fields in the request body."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Extend a video by generating continuation content.\nThis is an asynchronous operation that returns a request_id for polling.",
         "tags": ["v1"]
       }
     },
