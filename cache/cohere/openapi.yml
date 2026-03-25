@@ -17906,6 +17906,228 @@ paths:
                 - 8
                 - 2792
                 - 43
+  /v2/audio/transcriptions:
+    post:
+      description: Transcribe an audio file.
+      operationId: create-transcription
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              properties:
+                file:
+                  description: The audio file object to transcribe. Supported file extensions are flac, mp3, mpeg, mpga, ogg, and wav.
+                  format: binary
+                  type: string
+                  x-fern-audiences:
+                    - public
+                language:
+                  description: The language of the input audio, supplied in [ISO-639-1](https://en.wikipedia.org/wiki/List_of_ISO_639_language_codes) format.
+                  type: string
+                  x-fern-audiences:
+                    - public
+                model:
+                  description: ID of the model to use.
+                  type: string
+                  x-fern-audiences:
+                    - public
+                temperature:
+                  description: The sampling temperature, between 0 and 1. Higher values like 0.8 make the output more random, while lower values like 0.2 make it more focused and deterministic.
+                  type: number
+                  x-fern-audiences:
+                    - public
+              required:
+                - model
+                - language
+                - file
+              type: object
+              x-fern-audiences:
+                - public
+              x-fern-type-name: AudioTranscriptionsCreateRequest
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                properties:
+                  text:
+                    description: The transcribed text.
+                    type: string
+                    x-fern-audiences:
+                      - public
+                required:
+                  - text
+                type: object
+                x-fern-audiences:
+                  - public
+                x-fern-type-name: AudioTranscriptionsCreateResponse
+          description: A successful response.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/RateLimit"
+        "498":
+          $ref: "#/components/responses/InvalidToken"
+        "499":
+          $ref: "#/components/responses/RequestCancelled"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        "501":
+          $ref: "#/components/responses/NotImplemented"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+        "504":
+          $ref: "#/components/responses/GatewayTimeout"
+      summary: Create a transcription
+      tags:
+        - /audio/transcriptions
+      x-fern-audiences:
+        - public
+      x-fern-examples:
+        - code-samples:
+            - code: |
+                //go:build ignore
+                // +build ignore
+
+                package main
+
+                import (
+                	"context"
+                	"log"
+                	"os"
+
+                	audio "github.com/cohere-ai/cohere-go/v2/audio"
+                	client "github.com/cohere-ai/cohere-go/v2/client"
+                )
+
+                func main() {
+                	co := client.NewClient(client.WithToken(os.Getenv("CO_API_KEY")))
+
+                	file, err := os.Open("./sample.wav")
+                	if err != nil {
+                		log.Fatal(err)
+                	}
+                	defer file.Close()
+
+                	transcription, err := co.Audio.Transcriptions.Create(
+                		context.TODO(),
+                		file,
+                		&audio.TranscriptionsCreateRequest{
+                			Model:    "cohere-transcribe-03-2026",
+                			Language: "en",
+                		},
+                	)
+                	if err != nil {
+                		log.Fatal(err)
+                	}
+
+                	log.Printf("%+v", transcription)
+                }
+              name: Cohere Go SDK
+              sdk: go
+            - code: |
+                import cohere
+
+                co = cohere.ClientV2()
+
+                transcription = co.audio.transcriptions.create(
+                    model="cohere-transcribe-03-2026",
+                    language="en",
+                    file=open("./sample.wav", "rb"),
+                )
+
+                print(transcription)
+              name: Sync
+              sdk: python
+            - code: |
+                import asyncio
+                import cohere
+
+                co = cohere.AsyncClientV2()
+
+
+                async def main():
+                    transcription = await co.audio.transcriptions.create(
+                        model="cohere-transcribe-03-2026",
+                        language="en",
+                        file=open("./sample.wav", "rb"),
+                    )
+
+                    print(transcription)
+
+
+                asyncio.run(main())
+              name: Async
+              sdk: python
+            - code: |
+                /* (C)2024 */
+                import com.cohere.api.Cohere;
+                import com.cohere.api.resources.audio.transcriptions.requests.TranscriptionsCreateRequest;
+                import com.cohere.api.resources.audio.transcriptions.types.AudioTranscriptionsCreateResponse;
+                import java.io.File;
+
+                public class TranscriptionsPost {
+                  public static void main(String[] args) {
+                    Cohere cohere = Cohere.builder().clientName("snippet").build();
+
+                    AudioTranscriptionsCreateResponse response =
+                        cohere
+                            .audio()
+                            .transcriptions()
+                            .create(
+                                new File("./sample.wav"),
+                                TranscriptionsCreateRequest.builder()
+                                    .model("cohere-transcribe-03-2026")
+                                    .language("en")
+                                    .build());
+
+                    System.out.println(response);
+                  }
+                }
+              name: Cohere java SDK
+              sdk: java
+            - code: |
+                import { CohereClient } from 'cohere-ai';
+
+                const fs = require('fs');
+
+                const cohere = new CohereClient({});
+
+                (async () => {
+                  const transcription = await cohere.audio.transcriptions.create(
+                    fs.createReadStream('./sample.wav'),
+                    {
+                      model: 'cohere-transcribe-03-2026',
+                      language: 'en',
+                    }
+                  );
+
+                  console.log(transcription);
+                })();
+              name: Cohere TypeScript SDK
+              sdk: typescript
+            - code: |
+                curl --request POST \
+                  --url https://api.cohere.com/v2/audio/transcriptions \
+                  --header "Authorization: Bearer $CO_API_KEY" \
+                  --form model=cohere-transcribe-03-2026 \
+                  --form language=en \
+                  --form file=@./sample.wav
+              name: cURL
+              sdk: curl
+      x-fern-sdk-group-name:
+        - audio
+        - transcriptions
+      x-fern-sdk-method-name: create
   /v2/batches:
     get:
       description: List the batches for the current user
@@ -22967,6 +23189,7 @@ paths:
           Generates a text response to a user message. To learn how to use the Chat API and RAG follow our [Text Generation guides](https://docs.cohere.com/v2/docs/chat-api).
 
           Follow the [Migration Guide](https://docs.cohere.com/v2/docs/migrating-v1-to-v2) for instructions on moving from API v1 to API v2.
+        terminator: "[DONE]"
   /v2/embed:
     post:
       description: |-
