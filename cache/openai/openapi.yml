@@ -4063,6 +4063,12 @@ components:
         - output
       title: Computer tool call output
       type: object
+    ComputerCallOutputStatus:
+      enum:
+        - completed
+        - incomplete
+        - failed
+      type: string
     ComputerCallSafetyCheckParam:
       description: A pending safety check for the computer call.
       properties:
@@ -4247,12 +4253,22 @@ components:
       allOf:
         - $ref: "#/components/schemas/ComputerToolCallOutput"
         - properties:
+            created_by:
+              description: |
+                The identifier of the actor that created the item.
+              type: string
             id:
               description: |
                 The unique ID of the computer call tool output.
               type: string
+            status:
+              $ref: "#/components/schemas/ComputerCallOutputStatus"
+              description: |
+                The status of the message input. One of `in_progress`, `completed`, or
+                `incomplete`. Populated when input items are returned via API.
           required:
             - id
+            - status
           type: object
     ComputerUsePreviewTool:
       description: A tool that controls a virtual computer. Learn more about the [computer tool](https://platform.openai.com/docs/guides/tools-computer-use).
@@ -4690,6 +4706,7 @@ components:
         - $ref: "#/components/schemas/ToolSearchCall"
         - $ref: "#/components/schemas/ToolSearchOutput"
         - $ref: "#/components/schemas/ReasoningItem"
+        - $ref: "#/components/schemas/CompactionBody"
         - $ref: "#/components/schemas/CodeInterpreterToolCall"
         - $ref: "#/components/schemas/LocalShellToolCall"
         - $ref: "#/components/schemas/LocalShellToolCallOutput"
@@ -8972,6 +8989,50 @@ components:
         - output
       title: Custom tool call output
       type: object
+    CustomToolCallOutputResource:
+      allOf:
+        - $ref: "#/components/schemas/CustomToolCallOutput"
+        - properties:
+            created_by:
+              description: |
+                The identifier of the actor that created the item.
+              type: string
+            id:
+              description: |
+                The unique ID of the custom tool call output item.
+              type: string
+            status:
+              $ref: "#/components/schemas/FunctionCallOutputStatusEnum"
+              description: |
+                The status of the item. One of `in_progress`, `completed`, or
+                `incomplete`. Populated when items are returned via API.
+          required:
+            - id
+            - status
+          type: object
+      title: ResponseCustomToolCallOutputItem
+    CustomToolCallResource:
+      allOf:
+        - $ref: "#/components/schemas/CustomToolCall"
+        - properties:
+            created_by:
+              description: |
+                The identifier of the actor that created the item.
+              type: string
+            id:
+              description: |
+                The unique ID of the custom tool call item.
+              type: string
+            status:
+              $ref: "#/components/schemas/FunctionCallStatus"
+              description: |
+                The status of the item. One of `in_progress`, `completed`, or
+                `incomplete`. Populated when items are returned via API.
+          required:
+            - id
+            - status
+          type: object
+      title: ResponseCustomToolCallItem
     CustomToolChatCompletions:
       description: |
         A custom tool that processes input using a specified format.
@@ -12678,23 +12739,43 @@ components:
       allOf:
         - $ref: "#/components/schemas/FunctionToolCallOutput"
         - properties:
+            created_by:
+              description: |
+                The identifier of the actor that created the item.
+              type: string
             id:
               description: |
                 The unique ID of the function call tool output.
               type: string
+            status:
+              $ref: "#/components/schemas/FunctionCallOutputStatusEnum"
+              description: |
+                The status of the item. One of `in_progress`, `completed`, or
+                `incomplete`. Populated when items are returned via API.
           required:
             - id
+            - status
           type: object
     FunctionToolCallResource:
       allOf:
         - $ref: "#/components/schemas/FunctionToolCall"
         - properties:
+            created_by:
+              description: |
+                The identifier of the actor that created the item.
+              type: string
             id:
               description: |
                 The unique ID of the function tool call.
               type: string
+            status:
+              $ref: "#/components/schemas/FunctionCallStatus"
+              description: |
+                The status of the item. One of `in_progress`, `completed`, or
+                `incomplete`. Populated when items are returned via API.
           required:
             - id
+            - status
           type: object
     FunctionToolParam:
       properties:
@@ -14783,6 +14864,8 @@ components:
         - $ref: "#/components/schemas/FunctionToolCallOutputResource"
         - $ref: "#/components/schemas/ToolSearchCall"
         - $ref: "#/components/schemas/ToolSearchOutput"
+        - $ref: "#/components/schemas/ReasoningItem"
+        - $ref: "#/components/schemas/CompactionBody"
         - $ref: "#/components/schemas/ImageGenToolCall"
         - $ref: "#/components/schemas/CodeInterpreterToolCall"
         - $ref: "#/components/schemas/LocalShellToolCall"
@@ -14795,6 +14878,8 @@ components:
         - $ref: "#/components/schemas/MCPApprovalRequest"
         - $ref: "#/components/schemas/MCPApprovalResponseResource"
         - $ref: "#/components/schemas/MCPToolCall"
+        - $ref: "#/components/schemas/CustomToolCallResource"
+        - $ref: "#/components/schemas/CustomToolCallOutputResource"
     KeyPressAction:
       description: A collection of keypresses the model would like to perform.
       properties:
@@ -17139,12 +17224,16 @@ components:
         - $ref: "#/components/schemas/RefusalContent"
         - $ref: "#/components/schemas/ReasoningTextContent"
     OutputItem:
-      anyOf:
+      discriminator:
+        propertyName: type
+      oneOf:
         - $ref: "#/components/schemas/OutputMessage"
         - $ref: "#/components/schemas/FileSearchToolCall"
         - $ref: "#/components/schemas/FunctionToolCall"
+        - $ref: "#/components/schemas/FunctionToolCallOutputResource"
         - $ref: "#/components/schemas/WebSearchToolCall"
         - $ref: "#/components/schemas/ComputerToolCall"
+        - $ref: "#/components/schemas/ComputerToolCallOutputResource"
         - $ref: "#/components/schemas/ReasoningItem"
         - $ref: "#/components/schemas/ToolSearchCall"
         - $ref: "#/components/schemas/ToolSearchOutput"
@@ -17152,6 +17241,7 @@ components:
         - $ref: "#/components/schemas/ImageGenToolCall"
         - $ref: "#/components/schemas/CodeInterpreterToolCall"
         - $ref: "#/components/schemas/LocalShellToolCall"
+        - $ref: "#/components/schemas/LocalShellToolCallOutput"
         - $ref: "#/components/schemas/FunctionShellCall"
         - $ref: "#/components/schemas/FunctionShellCallOutput"
         - $ref: "#/components/schemas/ApplyPatchToolCall"
@@ -17159,9 +17249,9 @@ components:
         - $ref: "#/components/schemas/MCPToolCall"
         - $ref: "#/components/schemas/MCPListTools"
         - $ref: "#/components/schemas/MCPApprovalRequest"
+        - $ref: "#/components/schemas/MCPApprovalResponseResource"
         - $ref: "#/components/schemas/CustomToolCall"
-      discriminator:
-        propertyName: type
+        - $ref: "#/components/schemas/CustomToolCallOutputResource"
     OutputMessage:
       description: |
         An output message from the model.
