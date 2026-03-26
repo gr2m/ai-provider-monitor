@@ -1,0 +1,346 @@
+{
+  "description": "Generate speech from text using a saved voice or a reference audio clip.",
+  "operationId": "speech_v1_audio_speech_post",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/SpeechRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/SpeechResponse"
+          }
+        },
+        "text/event-stream": {
+          "schema": {
+            "$ref": "#/components/schemas/SpeechStreamEvents"
+          }
+        }
+      },
+      "description": "Speech audio data."
+    },
+    "422": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/HTTPValidationError"
+          }
+        }
+      },
+      "description": "Validation Error"
+    }
+  },
+  "summary": "Speech",
+  "tags": [
+    "audio.speech"
+  ],
+  "components": {
+    "schemas": {
+      "SpeechRequest": {
+        "additionalProperties": true,
+        "properties": {
+          "input": {
+            "description": "Text to generate speech from.",
+            "title": "Input",
+            "type": "string"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "ref_audio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The base64-encoded audio reference for zero-shot voice cloning.",
+            "title": "Ref Audio"
+          },
+          "response_format": {
+            "$ref": "#/components/schemas/SpeechOutputFormat",
+            "default": "mp3",
+            "description": "Output audio format. Defaults to mp3."
+          },
+          "stream": {
+            "default": false,
+            "title": "Stream",
+            "type": "boolean"
+          },
+          "voice_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The preset or custom voice to use for generating the speech.",
+            "title": "Voice Id"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "title": "SpeechRequest",
+        "type": "object"
+      },
+      "SpeechResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "audio_data": {
+            "description": "Base64 encoded audio data",
+            "title": "Audio Data",
+            "type": "string"
+          }
+        },
+        "required": [
+          "audio_data"
+        ],
+        "title": "SpeechResponse",
+        "type": "object"
+      },
+      "SpeechStreamEvents": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "discriminator": {
+              "mapping": {
+                "speech.audio.delta": "#/components/schemas/SpeechStreamAudioDelta",
+                "speech.audio.done": "#/components/schemas/SpeechStreamDone"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SpeechStreamAudioDelta"
+              },
+              {
+                "$ref": "#/components/schemas/SpeechStreamDone"
+              }
+            ],
+            "title": "Data"
+          },
+          "event": {
+            "enum": [
+              "speech.audio.delta",
+              "speech.audio.done"
+            ],
+            "title": "Event",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event",
+          "data"
+        ],
+        "title": "SpeechStreamEvents",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "SpeechOutputFormat": {
+        "enum": [
+          "pcm",
+          "wav",
+          "mp3",
+          "flac",
+          "opus"
+        ],
+        "title": "SpeechOutputFormat",
+        "type": "string"
+      },
+      "SpeechStreamAudioDelta": {
+        "additionalProperties": false,
+        "properties": {
+          "audio_data": {
+            "title": "Audio Data",
+            "type": "string"
+          },
+          "type": {
+            "const": "speech.audio.delta",
+            "default": "speech.audio.delta",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "audio_data"
+        ],
+        "title": "SpeechStreamAudioDelta",
+        "type": "object"
+      },
+      "SpeechStreamDone": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "speech.audio.done",
+            "default": "speech.audio.done",
+            "title": "Type",
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/UsageInfo"
+          }
+        },
+        "required": [
+          "usage"
+        ],
+        "title": "SpeechStreamDone",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "UsageInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "completion_tokens": {
+            "default": 0,
+            "title": "Completion Tokens",
+            "type": "integer"
+          },
+          "num_cached_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Cached Tokens"
+          },
+          "prompt_audio_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Audio Seconds"
+          },
+          "prompt_token_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PromptTokensDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prompt_tokens": {
+            "default": 0,
+            "title": "Prompt Tokens",
+            "type": "integer"
+          },
+          "prompt_tokens_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PromptTokensDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total_tokens": {
+            "default": 0,
+            "title": "Total Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "prompt_tokens",
+          "completion_tokens",
+          "total_tokens"
+        ],
+        "title": "UsageInfo",
+        "type": "object"
+      },
+      "PromptTokensDetails": {
+        "additionalProperties": false,
+        "description": "Token usage details for the prompt.",
+        "properties": {
+          "cached_tokens": {
+            "default": 0,
+            "title": "Cached Tokens",
+            "type": "integer"
+          }
+        },
+        "title": "PromptTokensDetails",
+        "type": "object"
+      }
+    }
+  }
+}
