@@ -4502,12 +4502,16 @@ components:
         loss:
           description: Loss value
           example: 2.345
+          format: double
           type: number
         metrics:
           additionalProperties:
             format: double
             type: number
           description: Loss-specific metrics (e.g., KL divergence, clip fraction for GRPO)
+          example:
+            loss/clip/high_fraction: 0.1
+            loss/kl_ref/mean: 0.05
           type: object
       type: object
     RL.GRPOLossAggregationType:
@@ -4630,6 +4634,10 @@ components:
           example: 20
           format: int32
           type: integer
+        next_cursor:
+          description: Cursor to use as the 'after' parameter for the next page. Empty when has_more is false.
+          example: 123e4567-e89b-12d3-a456-426614174000
+          type: string
       type: object
     RL.LoraConfig:
       description: LoRA adapter configuration
@@ -4807,18 +4815,21 @@ components:
       properties:
         num_samples:
           default: "1"
-          description: Number of completions to generate for this prompt
+          description: Number of completions to generate per prompt
           example: 1
           format: int64
           type: integer
-        prompt:
-          $ref: "#/components/schemas/RL.ModelInput"
-          description: Input prompt as tokenized chunks
+        prompts:
+          description: Input prompts as tokenized chunks
+          items:
+            $ref: "#/components/schemas/RL.ModelInput"
+            type: object
+          type: array
         sampling_params:
           $ref: "#/components/schemas/RL.SamplingParams"
           description: Optional sampling parameters
       required:
-        - prompt
+        - prompts
       type: object
     RL.SampleOperation:
       properties:
@@ -4837,8 +4848,17 @@ components:
       type: object
     RL.SampleResult:
       properties:
+        rollouts:
+          description: Completions grouped by prompt
+          items:
+            $ref: "#/components/schemas/RL.SampleRollout"
+            type: object
+          type: array
+      type: object
+    RL.SampleRollout:
+      properties:
         sequences:
-          description: Generated completions
+          description: Completions generated for one prompt
           items:
             $ref: "#/components/schemas/RL.SampleSequence"
             type: object
