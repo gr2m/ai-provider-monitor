@@ -55,7 +55,8 @@
               "context-management-2025-06-27",
               "model-context-window-exceeded-2025-08-26",
               "skills-2025-10-02",
-              "fast-mode-2026-02-01"
+              "fast-mode-2026-02-01",
+              "output-300k-2026-03-24"
             ],
             "type": "string",
             "x-stainless-nominal": false
@@ -3884,6 +3885,7 @@
             "id": "msg_013Zva2CMHLNnXjNJJKqJ2EF",
             "model": "claude-opus-4-6",
             "role": "assistant",
+            "stop_details": null,
             "stop_reason": "end_turn",
             "stop_sequence": null,
             "type": "message",
@@ -3951,6 +3953,18 @@
             "title": "Role",
             "type": "string"
           },
+          "stop_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaRefusalStopDetails"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Structured information about why model output stopped.\n\nThis is `null` when the `stop_reason` has no additional detail to report."
+          },
           "stop_reason": {
             "anyOf": [
               {
@@ -4002,6 +4016,7 @@
           "model",
           "stop_reason",
           "stop_sequence",
+          "stop_details",
           "usage",
           "context_management",
           "container"
@@ -4201,6 +4216,18 @@
             "default": null,
             "description": "Information about the container used in this request.\n\nThis will be non-null if a container tool (e.g. code execution) was used."
           },
+          "stop_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaRefusalStopDetails"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Structured information about why model output stopped.\n\nThis is `null` when the `stop_reason` has no additional detail to report."
+          },
           "stop_reason": {
             "anyOf": [
               {
@@ -4226,7 +4253,12 @@
             "title": "Stop Sequence"
           }
         },
-        "required": ["container", "stop_reason", "stop_sequence"],
+        "required": [
+          "container",
+          "stop_details",
+          "stop_reason",
+          "stop_sequence"
+        ],
         "title": "MessageDelta",
         "type": "object"
       },
@@ -4742,6 +4774,47 @@
         },
         "required": ["message", "type"],
         "title": "RateLimitError",
+        "type": "object"
+      },
+      "BetaRefusalStopDetails": {
+        "description": "Structured information about a refusal.",
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "enum": ["cyber", "bio"],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The policy category that triggered the refusal.\n\n`null` when the refusal doesn't map to a named category.",
+            "title": "Category"
+          },
+          "explanation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Human-readable explanation of the refusal.\n\nThis text is not guaranteed to be stable. `null` when no explanation is available for the category.",
+            "title": "Explanation"
+          },
+          "type": {
+            "const": "refusal",
+            "default": "refusal",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["category", "explanation", "type"],
+        "title": "RefusalStopDetails",
         "type": "object"
       },
       "BetaRequestBashCodeExecutionOutputBlock": {
@@ -12798,7 +12871,10 @@
               "$ref": "#/components/schemas/SkillVersion"
             },
             "title": "Data",
-            "type": "array"
+            "type": "array",
+            "x-stainless-pagination-property": {
+              "purpose": "items"
+            }
           },
           "has_more": {
             "description": "Indicates if there are more results in the requested page direction.",
@@ -12816,7 +12892,10 @@
             ],
             "description": "Token to provide in as `page` in the subsequent request to retrieve the next page of data.",
             "examples": ["page_MjAyNS0wNS0xNFQwMDowMDowMFo=", null],
-            "title": "Next Page"
+            "title": "Next Page",
+            "x-stainless-pagination-property": {
+              "purpose": "next_cursor_field"
+            }
           }
         },
         "required": ["data", "has_more", "next_page"],
@@ -12831,7 +12910,10 @@
               "$ref": "#/components/schemas/Skill"
             },
             "title": "Data",
-            "type": "array"
+            "type": "array",
+            "x-stainless-pagination-property": {
+              "purpose": "items"
+            }
           },
           "has_more": {
             "description": "Whether there are more results available.\n\nIf `true`, there are additional results that can be fetched using the `next_page` token.",
@@ -12849,7 +12931,10 @@
             ],
             "description": "Token for fetching the next page of results.\n\nIf `null`, there are no more results available. Pass this value to the `page_token` parameter in the next request to get the next page.",
             "examples": ["page_MjAyNS0wNS0xNFQwMDowMDowMFo=", null],
-            "title": "Next Page"
+            "title": "Next Page",
+            "x-stainless-pagination-property": {
+              "purpose": "next_cursor_field"
+            }
           }
         },
         "required": ["data", "has_more", "next_page"],
@@ -12937,6 +13022,7 @@
             "id": "msg_013Zva2CMHLNnXjNJJKqJ2EF",
             "model": "claude-opus-4-6",
             "role": "assistant",
+            "stop_details": null,
             "stop_reason": "end_turn",
             "stop_sequence": null,
             "type": "message",
@@ -12992,6 +13078,18 @@
             "title": "Role",
             "type": "string"
           },
+          "stop_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RefusalStopDetails"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Structured information about why model output stopped.\n\nThis is `null` when the `stop_reason` has no additional detail to report."
+          },
           "stop_reason": {
             "anyOf": [
               {
@@ -13043,6 +13141,7 @@
           "model",
           "stop_reason",
           "stop_sequence",
+          "stop_details",
           "usage",
           "container"
         ],
@@ -13241,6 +13340,18 @@
             "default": null,
             "description": "Information about the container used in this request.\n\nThis will be non-null if a container tool (e.g. code execution) was used."
           },
+          "stop_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RefusalStopDetails"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Structured information about why model output stopped.\n\nThis is `null` when the `stop_reason` has no additional detail to report."
+          },
           "stop_reason": {
             "anyOf": [
               {
@@ -13266,7 +13377,12 @@
             "title": "Stop Sequence"
           }
         },
-        "required": ["container", "stop_reason", "stop_sequence"],
+        "required": [
+          "container",
+          "stop_details",
+          "stop_reason",
+          "stop_sequence"
+        ],
         "title": "MessageDelta",
         "type": "object"
       },
@@ -13812,6 +13928,47 @@
         },
         "required": ["message", "type"],
         "title": "RateLimitError",
+        "type": "object"
+      },
+      "RefusalStopDetails": {
+        "description": "Structured information about a refusal.",
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "enum": ["cyber", "bio"],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The policy category that triggered the refusal.\n\n`null` when the refusal doesn't map to a named category.",
+            "title": "Category"
+          },
+          "explanation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Human-readable explanation of the refusal.\n\nThis text is not guaranteed to be stable. `null` when no explanation is available for the category.",
+            "title": "Explanation"
+          },
+          "type": {
+            "const": "refusal",
+            "default": "refusal",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["category", "explanation", "type"],
+        "title": "RefusalStopDetails",
         "type": "object"
       },
       "RequestBashCodeExecutionOutputBlock": {
@@ -21342,7 +21499,10 @@
                 }
               ],
               "description": "Pagination token for fetching a specific page of results.\n\nPass the value from a previous response's `next_page` field to get the next page of results.",
-              "title": "Page"
+              "title": "Page",
+              "x-stainless-pagination-property": {
+                "purpose": "next_cursor_param"
+              }
             }
           },
           {
@@ -21717,7 +21877,10 @@
                 }
               ],
               "description": "Optionally set to the `next_page` token from the previous response.",
-              "title": "Page"
+              "title": "Page",
+              "x-stainless-pagination-property": {
+                "purpose": "next_cursor_param"
+              }
             }
           },
           {
