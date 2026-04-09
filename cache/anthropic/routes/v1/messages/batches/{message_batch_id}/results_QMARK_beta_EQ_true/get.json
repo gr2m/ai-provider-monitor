@@ -649,6 +649,7 @@
       "BetaContentBlock": {
         "discriminator": {
           "mapping": {
+            "advisor_tool_result": "#/components/schemas/BetaResponseAdvisorToolResultBlock",
             "bash_code_execution_tool_result": "#/components/schemas/BetaResponseBashCodeExecutionToolResultBlock",
             "code_execution_tool_result": "#/components/schemas/BetaResponseCodeExecutionToolResultBlock",
             "compaction": "#/components/schemas/BetaResponseCompactionBlock",
@@ -688,6 +689,9 @@
           },
           {
             "$ref": "#/components/schemas/BetaResponseWebFetchToolResultBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaResponseAdvisorToolResultBlock"
           },
           {
             "$ref": "#/components/schemas/BetaResponseCodeExecutionToolResultBlock"
@@ -1266,6 +1270,7 @@
           },
           "name": {
             "enum": [
+              "advisor",
               "web_search",
               "web_fetch",
               "code_execution",
@@ -1404,6 +1409,42 @@
           "type"
         ],
         "title": "ResponseWebFetchToolResultBlock",
+        "type": "object"
+      },
+      "BetaResponseAdvisorToolResultBlock": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaResponseAdvisorToolResultError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaResponseAdvisorResultBlock"
+              },
+              {
+                "$ref": "#/components/schemas/BetaResponseAdvisorRedactedResultBlock"
+              }
+            ],
+            "title": "Content"
+          },
+          "tool_use_id": {
+            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
+            "title": "Tool Use Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "advisor_tool_result",
+            "default": "advisor_tool_result",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "tool_use_id",
+          "type"
+        ],
+        "title": "ResponseAdvisorToolResultBlock",
         "type": "object"
       },
       "BetaResponseCodeExecutionToolResultBlock": {
@@ -1770,6 +1811,7 @@
             "items": {
               "discriminator": {
                 "mapping": {
+                  "advisor_message": "#/components/schemas/BetaAdvisorMessageIterationUsage",
                   "compaction": "#/components/schemas/BetaCompactionIterationUsage",
                   "message": "#/components/schemas/BetaMessageIterationUsage"
                 },
@@ -1781,6 +1823,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/BetaCompactionIterationUsage"
+                },
+                {
+                  "$ref": "#/components/schemas/BetaAdvisorMessageIterationUsage"
                 }
               ]
             },
@@ -2292,6 +2337,66 @@
           "url"
         ],
         "title": "ResponseWebFetchResultBlock",
+        "type": "object"
+      },
+      "BetaResponseAdvisorToolResultError": {
+        "properties": {
+          "error_code": {
+            "$ref": "#/components/schemas/BetaAdvisorToolResultErrorCode"
+          },
+          "type": {
+            "const": "advisor_tool_result_error",
+            "default": "advisor_tool_result_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code",
+          "type"
+        ],
+        "title": "ResponseAdvisorToolResultError",
+        "type": "object"
+      },
+      "BetaResponseAdvisorResultBlock": {
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "type": {
+            "const": "advisor_result",
+            "default": "advisor_result",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "type"
+        ],
+        "title": "ResponseAdvisorResultBlock",
+        "type": "object"
+      },
+      "BetaResponseAdvisorRedactedResultBlock": {
+        "properties": {
+          "encrypted_content": {
+            "description": "Opaque blob containing the advisor's output. Round-trip verbatim; do not inspect or modify.",
+            "title": "Encrypted Content",
+            "type": "string"
+          },
+          "type": {
+            "const": "advisor_redacted_result",
+            "default": "advisor_redacted_result",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "encrypted_content",
+          "type"
+        ],
+        "title": "ResponseAdvisorRedactedResultBlock",
         "type": "object"
       },
       "BetaResponseCodeExecutionToolResultError": {
@@ -2826,6 +2931,70 @@
         "title": "CompactionIterationUsage",
         "type": "object"
       },
+      "BetaAdvisorMessageIterationUsage": {
+        "description": "Token usage for an advisor sub-inference iteration.",
+        "properties": {
+          "cache_creation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaCacheCreation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Breakdown of cached tokens by TTL"
+          },
+          "cache_creation_input_tokens": {
+            "default": 0,
+            "description": "The number of input tokens used to create the cache entry.",
+            "minimum": 0,
+            "title": "Cache Creation Input Tokens",
+            "type": "integer"
+          },
+          "cache_read_input_tokens": {
+            "default": 0,
+            "description": "The number of input tokens read from the cache.",
+            "minimum": 0,
+            "title": "Cache Read Input Tokens",
+            "type": "integer"
+          },
+          "input_tokens": {
+            "description": "The number of input tokens which were used.",
+            "minimum": 0,
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "model": {
+            "$ref": "#/components/schemas/Model"
+          },
+          "output_tokens": {
+            "description": "The number of output tokens which were used.",
+            "minimum": 0,
+            "title": "Output Tokens",
+            "type": "integer"
+          },
+          "type": {
+            "const": "advisor_message",
+            "default": "advisor_message",
+            "description": "Usage for an advisor sub-inference iteration",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cache_creation",
+          "cache_creation_input_tokens",
+          "cache_read_input_tokens",
+          "input_tokens",
+          "model",
+          "output_tokens",
+          "type"
+        ],
+        "title": "AdvisorMessageIterationUsage",
+        "type": "object"
+      },
       "BetaWebSearchToolResultErrorCode": {
         "enum": [
           "invalid_tool_input",
@@ -2912,6 +3081,18 @@
         ],
         "title": "ResponseDocumentBlock",
         "type": "object"
+      },
+      "BetaAdvisorToolResultErrorCode": {
+        "enum": [
+          "max_uses_exceeded",
+          "prompt_too_long",
+          "too_many_requests",
+          "overloaded",
+          "unavailable",
+          "execution_time_exceeded"
+        ],
+        "title": "AdvisorToolResultErrorCode",
+        "type": "string"
       },
       "BetaCodeExecutionToolResultErrorCode": {
         "enum": [
