@@ -1,0 +1,709 @@
+{
+  "description": "Call a tool on an MCP connector.",
+  "operationId": "connector_call_tool_v1",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "tool_name",
+      "required": true,
+      "schema": {
+        "title": "Tool Name",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "credentials_name",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Credentials Name"
+      }
+    },
+    {
+      "in": "path",
+      "name": "connector_id_or_name",
+      "required": true,
+      "schema": {
+        "title": "Connector Id Or Name",
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/ConnectorCallToolRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ConnectorToolCallResponse"
+          }
+        }
+      },
+      "description": "Successful Response"
+    },
+    "422": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/HTTPValidationError"
+          }
+        }
+      },
+      "description": "Validation Error"
+    }
+  },
+  "summary": "Call Connector Tool",
+  "tags": [
+    "beta.connectors"
+  ],
+  "components": {
+    "schemas": {
+      "ConnectorCallToolRequest": {
+        "description": "Request body for calling an MCP tool.",
+        "properties": {
+          "arguments": {
+            "additionalProperties": true,
+            "title": "Arguments",
+            "type": "object"
+          }
+        },
+        "title": "ConnectorCallToolRequest",
+        "type": "object"
+      },
+      "ConnectorToolCallResponse": {
+        "additionalProperties": true,
+        "description": "Response from calling an MCP tool.\n\nWe override mcp_types.CallToolResult because:\n- Models only support `content`, not `structuredContent` at top level\n- Downstream consumers (le-chat, etc.) need structuredContent/isError/_meta via metadata\n\nSYNC: Keep in sync with Harmattan (orchestrator) for harmonized tool result processing.",
+        "properties": {
+          "content": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TextContent"
+                },
+                {
+                  "$ref": "#/components/schemas/ImageContent"
+                },
+                {
+                  "$ref": "#/components/schemas/AudioContent"
+                },
+                {
+                  "$ref": "#/components/schemas/ResourceLink"
+                },
+                {
+                  "$ref": "#/components/schemas/EmbeddedResource"
+                }
+              ]
+            },
+            "title": "Content",
+            "type": "array"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConnectorToolCallMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "title": "ConnectorToolCallResponse",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "TextContent": {
+        "additionalProperties": true,
+        "description": "Text content for a message.",
+        "properties": {
+          "_meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          },
+          "annotations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Annotations"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "type": {
+            "const": "text",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ],
+        "title": "TextContent",
+        "type": "object"
+      },
+      "ImageContent": {
+        "additionalProperties": true,
+        "description": "Image content for a message.",
+        "properties": {
+          "_meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          },
+          "annotations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Annotations"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "data": {
+            "title": "Data",
+            "type": "string"
+          },
+          "mimeType": {
+            "title": "Mimetype",
+            "type": "string"
+          },
+          "type": {
+            "const": "image",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "data",
+          "mimeType"
+        ],
+        "title": "ImageContent",
+        "type": "object"
+      },
+      "AudioContent": {
+        "additionalProperties": true,
+        "description": "Audio content for a message.",
+        "properties": {
+          "_meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          },
+          "annotations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Annotations"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "data": {
+            "title": "Data",
+            "type": "string"
+          },
+          "mimeType": {
+            "title": "Mimetype",
+            "type": "string"
+          },
+          "type": {
+            "const": "audio",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "data",
+          "mimeType"
+        ],
+        "title": "AudioContent",
+        "type": "object"
+      },
+      "ResourceLink": {
+        "additionalProperties": true,
+        "description": "A resource that the server is capable of reading, included in a prompt or tool call result.\n\nNote: resource links returned by tools are not guaranteed to appear in the results of `resources/list` requests.",
+        "properties": {
+          "_meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          },
+          "annotations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Annotations"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "icons": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MCPServerIcon"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icons"
+          },
+          "mimeType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mimetype"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "type": {
+            "const": "resource_link",
+            "title": "Type",
+            "type": "string"
+          },
+          "uri": {
+            "format": "uri",
+            "minLength": 1,
+            "title": "Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "uri",
+          "type"
+        ],
+        "title": "ResourceLink",
+        "type": "object"
+      },
+      "EmbeddedResource": {
+        "additionalProperties": true,
+        "description": "The contents of a resource, embedded into a prompt or tool call result.\n\nIt is up to the client how best to render embedded resources for the benefit\nof the LLM and/or the user.",
+        "properties": {
+          "_meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          },
+          "annotations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Annotations"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resource": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TextResourceContents"
+              },
+              {
+                "$ref": "#/components/schemas/BlobResourceContents"
+              }
+            ],
+            "title": "Resource"
+          },
+          "type": {
+            "const": "resource",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "resource"
+        ],
+        "title": "EmbeddedResource",
+        "type": "object"
+      },
+      "ConnectorToolCallMetadata": {
+        "additionalProperties": true,
+        "description": "Metadata wrapper for MCP tool call responses.\n\nNests MCP-specific fields under `mcp_meta` to avoid collisions with other\nmetadata keys (e.g. `tool_call_result`) in Harmattan's streaming deltas.",
+        "properties": {
+          "mcp_meta": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ConnectorToolResultMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "ConnectorToolCallMetadata",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "Annotations": {
+        "additionalProperties": true,
+        "properties": {
+          "audience": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "user",
+                    "assistant"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audience"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority"
+          }
+        },
+        "title": "Annotations",
+        "type": "object"
+      },
+      "MCPServerIcon": {
+        "additionalProperties": true,
+        "description": "An icon for display in user interfaces.",
+        "properties": {
+          "mimeType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mimetype"
+          },
+          "sizes": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sizes"
+          },
+          "src": {
+            "title": "Src",
+            "type": "string"
+          }
+        },
+        "required": [
+          "src"
+        ],
+        "title": "MCPServerIcon",
+        "type": "object"
+      },
+      "TextResourceContents": {
+        "additionalProperties": true,
+        "description": "Text contents of a resource.",
+        "properties": {
+          "_meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          },
+          "mimeType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mimetype"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "uri": {
+            "format": "uri",
+            "minLength": 1,
+            "title": "Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uri",
+          "text"
+        ],
+        "title": "TextResourceContents",
+        "type": "object"
+      },
+      "BlobResourceContents": {
+        "additionalProperties": true,
+        "description": "Binary contents of a resource.",
+        "properties": {
+          "_meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          },
+          "blob": {
+            "title": "Blob",
+            "type": "string"
+          },
+          "mimeType": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mimetype"
+          },
+          "uri": {
+            "format": "uri",
+            "minLength": 1,
+            "title": "Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uri",
+          "blob"
+        ],
+        "title": "BlobResourceContents",
+        "type": "object"
+      },
+      "ConnectorToolResultMetadata": {
+        "additionalProperties": true,
+        "description": "MCP-specific result metadata (isError, structuredContent, _meta).",
+        "properties": {
+          "_meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          },
+          "isError": {
+            "default": false,
+            "title": "Iserror",
+            "type": "boolean"
+          },
+          "structuredContent": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structuredcontent"
+          }
+        },
+        "title": "ConnectorToolResultMetadata",
+        "type": "object"
+      }
+    }
+  }
+}
