@@ -4,12 +4,14 @@
  * Orchestrator script that detects, analyzes, and records API changes for a provider.
  *
  * Usage:
- *   node scripts/check-for-changes.js <provider> <openapi_url> <filename>
+ *   node scripts/check-for-changes.js <provider> <openapi_url> <filename> [openapi_url_property]
  *
  * Arguments:
  *   provider    - e.g. "openai"
  *   openapi_url - URL to download the OpenAPI spec from
  *   filename    - local filename for the spec, e.g. "openapi.yml"
+ *   openapi_url_property - optional dot-separated metadata property containing
+ *                          the actual OpenAPI URL
  *
  * Environment:
  *   AI_GATEWAY_API_KEY - AI Gateway API key (required when changes are detected)
@@ -29,6 +31,7 @@ import yaml from "js-yaml";
 
 import { analyzeRouteChange } from "./lib/analyze-route-change.js";
 import { appendChanges } from "./lib/append-changes.js";
+import { downloadText, resolveUrlFromMetadata } from "./lib/download.js";
 import { isIdenticalAfterNormalizingTimestamps } from "./lib/normalize-examples.js";
 
 const exec = promisify(execFile);
@@ -36,10 +39,11 @@ const exec = promisify(execFile);
 const provider = process.argv[2];
 const openapiUrl = process.argv[3];
 const filename = process.argv[4];
+const openapiUrlProperty = process.argv[5];
 
 if (!provider || !openapiUrl || !filename) {
   console.error(
-    "Usage: node scripts/check-for-changes.js <provider> <openapi_url> <filename>"
+    "Usage: node scripts/check-for-changes.js <provider> <openapi_url> <filename> [openapi_url_property]",
   );
   process.exit(1);
 }
@@ -64,23 +68,21 @@ try {
 
 // --- Step 3: Download fresh spec ---
 await mkdir(`cache/${provider}`, { recursive: true });
-console.error(`Downloading spec from ${openapiUrl}`);
-let response;
-for (let attempt = 1; attempt <= 3; attempt++) {
-  response = await fetch(openapiUrl);
-  if (response.ok) break;
-  if (attempt < 3) {
-    const delay = attempt === 1 ? 5000 : 30000;
-    console.error(`Attempt ${attempt} failed (${response.status}), retrying in ${delay / 1000}s...`);
-    await new Promise((resolve) => setTimeout(resolve, delay));
-  }
-}
-if (!response.ok) {
-  throw new Error(
-    `Failed to download spec after 3 attempts: ${response.status} ${response.statusText}`
+let resolvedOpenapiUrl = openapiUrl;
+if (openapiUrlProperty) {
+  console.error(
+    `Resolving spec URL from ${openapiUrl} property ${openapiUrlProperty}`,
+  );
+  const metadataContent = await downloadText(openapiUrl);
+  resolvedOpenapiUrl = resolveUrlFromMetadata(
+    metadataContent,
+    openapiUrlProperty,
+    openapiUrl,
   );
 }
-const specContent = await response.text();
+
+console.error(`Downloading spec from ${resolvedOpenapiUrl}`);
+const specContent = await downloadText(resolvedOpenapiUrl);
 await writeFile(specPath, specContent);
 
 // --- Step 4: Sort keys and format ---
@@ -125,7 +127,13 @@ console.error(`Generated ${newRoutes.size} route files`);
 if (isFirstRun) {
   console.error("First run detected, skipping analysis");
   console.log(
-    JSON.stringify({ has_changes: false, first_run: true, title: "", body: "", changed_routes: [] })
+    JSON.stringify({
+      has_changes: false,
+      first_run: true,
+      title: "",
+      body: "",
+      changed_routes: [],
+    }),
   );
   process.exit(0);
 }
@@ -146,7 +154,7 @@ for (const [relativePath, newContent] of newRoutes) {
     // Check if the only changes are timestamps in examples
     const onlyTimestampsChanged = isIdenticalAfterNormalizingTimestamps(
       oldContent,
-      newContent
+      newContent,
     );
     if (!onlyTimestampsChanged) {
       changedRoutes.push({
@@ -157,7 +165,7 @@ for (const [relativePath, newContent] of newRoutes) {
       });
     } else {
       console.error(
-        `Skipping ${relativePath} - only timestamps changed in examples`
+        `Skipping ${relativePath} - only timestamps changed in examples`,
       );
     }
   }
@@ -183,7 +191,7 @@ if (changedRoutes.length === 0) {
       title: "",
       body: "",
       changed_routes: [],
-    })
+    }),
   );
   process.exit(0);
 }
@@ -218,11 +226,7 @@ function deriveRoute(relativePath) {
   const methodFile = parts.pop();
   const method = basename(methodFile, ".json").toUpperCase();
   const routePath =
-    "/" +
-    parts
-      .join("/")
-      .replaceAll("_QMARK_", "?")
-      .replaceAll("_EQ_", "=");
+    "/" + parts.join("/").replaceAll("_QMARK_", "?").replaceAll("_EQ_", "=");
   return `${method} ${routePath}`;
 }
 
@@ -241,7 +245,7 @@ const analysisResults = await withConcurrency(
       newContent,
     });
     return result;
-  }
+  },
 );
 
 const allChanges = [];
@@ -258,7 +262,7 @@ if (allChanges.length === 0) {
       title: "",
       body: "",
       changed_routes: [],
-    })
+    }),
   );
   process.exit(0);
 }
@@ -277,7 +281,7 @@ if (allChanges.length === 1) {
 let body = "";
 const breaking = allChanges.filter((c) => c.breaking);
 const features = allChanges.filter(
-  (c) => !c.breaking && c.change !== "removed" && !c.doc_only
+  (c) => !c.breaking && c.change !== "removed" && !c.doc_only,
 );
 const docFixes = allChanges.filter((c) => c.doc_only);
 
@@ -312,7 +316,15 @@ const changed_routes = changedRoutes.map(({ relativePath, status }, index) => {
 });
 
 // --- Step 12: Output result ---
-console.log(JSON.stringify({ has_changes: true, first_run: false, title, body, changed_routes }));
+console.log(
+  JSON.stringify({
+    has_changes: true,
+    first_run: false,
+    title,
+    body,
+    changed_routes,
+  }),
+);
 
 // --- Helpers ---
 
