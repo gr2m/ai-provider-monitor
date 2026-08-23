@@ -1,0 +1,358 @@
+{
+  "description": "Creates a model response for the given chat conversation.",
+  "operationId": "createChatCompletion",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/ChatCompletionRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ChatCompletionResponse"
+          }
+        }
+      },
+      "description": "Successful response"
+    }
+  },
+  "summary": "Create Chat Completion",
+  "tags": [
+    "Chat"
+  ],
+  "components": {
+    "schemas": {
+      "ChatCompletionRequest": {
+        "properties": {
+          "frequency_penalty": {
+            "default": 0,
+            "description": "Penalizes new tokens based on their existing frequency.",
+            "maximum": 2,
+            "minimum": -2,
+            "type": "number"
+          },
+          "logprobs": {
+            "description": "Whether to return log probabilities of the output tokens.",
+            "type": "boolean"
+          },
+          "max_tokens": {
+            "description": "The maximum number of tokens to generate.",
+            "type": "integer"
+          },
+          "messages": {
+            "description": "A list of messages comprising the conversation so far.",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "type": "array"
+          },
+          "model": {
+            "description": "ID of the model to use.",
+            "enum": [
+              "deepseek-chat",
+              "deepseek-reasoner"
+            ],
+            "type": "string"
+          },
+          "presence_penalty": {
+            "default": 0,
+            "description": "Penalizes new tokens based on whether they appear in the text so far.",
+            "maximum": 2,
+            "minimum": -2,
+            "type": "number"
+          },
+          "response_format": {
+            "description": "Specifies the format that the model must output.",
+            "properties": {
+              "type": {
+                "enum": [
+                  "text",
+                  "json_object"
+                ],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "stop": {
+            "description": "Up to 16 sequences where the API will stop generating further tokens.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 16,
+                "type": "array"
+              }
+            ]
+          },
+          "stream": {
+            "default": false,
+            "description": "If set, partial message deltas will be sent as server-sent events.",
+            "type": "boolean"
+          },
+          "stream_options": {
+            "description": "Options for streaming responses.",
+            "properties": {
+              "include_usage": {
+                "description": "If set, an additional chunk will include usage statistics.",
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          },
+          "temperature": {
+            "default": 1,
+            "description": "Sampling temperature between 0 and 2.",
+            "maximum": 2,
+            "minimum": 0,
+            "type": "number"
+          },
+          "tool_choice": {
+            "description": "Controls which tool is called by the model.",
+            "oneOf": [
+              {
+                "enum": [
+                  "none",
+                  "auto",
+                  "required"
+                ],
+                "type": "string"
+              },
+              {
+                "properties": {
+                  "function": {
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "name"
+                    ],
+                    "type": "object"
+                  },
+                  "type": {
+                    "enum": [
+                      "function"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "function"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "tools": {
+            "description": "A list of tools the model may call. Up to 128 functions.",
+            "items": {
+              "$ref": "#/components/schemas/Tool"
+            },
+            "maxItems": 128,
+            "type": "array"
+          },
+          "top_logprobs": {
+            "description": "Number of most likely tokens to return at each position.",
+            "maximum": 20,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "top_p": {
+            "default": 1,
+            "description": "Nucleus sampling parameter.",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "model",
+          "messages"
+        ],
+        "type": "object"
+      },
+      "ChatCompletionResponse": {
+        "properties": {
+          "choices": {
+            "items": {
+              "properties": {
+                "finish_reason": {
+                  "enum": [
+                    "stop",
+                    "length",
+                    "content_filter",
+                    "tool_calls",
+                    "insufficient_system_resource"
+                  ],
+                  "type": "string"
+                },
+                "index": {
+                  "type": "integer"
+                },
+                "message": {
+                  "$ref": "#/components/schemas/ChatMessage"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "created": {
+            "description": "The Unix timestamp of when the completion was created.",
+            "type": "integer"
+          },
+          "id": {
+            "description": "A unique identifier for the chat completion.",
+            "type": "string"
+          },
+          "model": {
+            "description": "The model used for the completion.",
+            "type": "string"
+          },
+          "object": {
+            "enum": [
+              "chat.completion"
+            ],
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/Usage"
+          }
+        },
+        "type": "object"
+      },
+      "ChatMessage": {
+        "properties": {
+          "content": {
+            "description": "The contents of the message.",
+            "type": "string"
+          },
+          "name": {
+            "description": "An optional name for the participant.",
+            "type": "string"
+          },
+          "role": {
+            "description": "The role of the message author.",
+            "enum": [
+              "system",
+              "user",
+              "assistant",
+              "tool"
+            ],
+            "type": "string"
+          },
+          "tool_call_id": {
+            "description": "Tool call that this message is responding to (for tool role).",
+            "type": "string"
+          },
+          "tool_calls": {
+            "description": "Tool calls generated by the model (for assistant role).",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "type": "object"
+      },
+      "Tool": {
+        "properties": {
+          "function": {
+            "properties": {
+              "description": {
+                "description": "A description of what the function does.",
+                "type": "string"
+              },
+              "name": {
+                "description": "The name of the function.",
+                "type": "string"
+              },
+              "parameters": {
+                "description": "The parameters the function accepts, described as a JSON Schema object.",
+                "type": "object"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          },
+          "type": {
+            "enum": [
+              "function"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "function"
+        ],
+        "type": "object"
+      },
+      "Usage": {
+        "properties": {
+          "completion_tokens": {
+            "type": "integer"
+          },
+          "prompt_cache_hit_tokens": {
+            "type": "integer"
+          },
+          "prompt_cache_miss_tokens": {
+            "type": "integer"
+          },
+          "prompt_tokens": {
+            "type": "integer"
+          },
+          "total_tokens": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ToolCall": {
+        "properties": {
+          "function": {
+            "properties": {
+              "arguments": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "function"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    }
+  }
+}
