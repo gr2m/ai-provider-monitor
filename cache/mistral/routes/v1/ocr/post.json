@@ -139,6 +139,21 @@
             ],
             "description": "Structured output class for extracting useful information from each extracted bounding box / image from document. Only json_schema is valid for this field"
           },
+          "confidence_scores_granularity": {
+            "anyOf": [
+              {
+                "enum": [
+                  "word",
+                  "page"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Granularity for confidence scores: 'word' (per-word scores) or 'page' (aggregate only). Defaults to None (no confidence scores) to keep response payload small."
+          },
           "document": {
             "anyOf": [
               {
@@ -215,6 +230,12 @@
             "description": "Minimum height and width of image to extract",
             "title": "Image Min Size"
           },
+          "include_blocks": {
+            "default": false,
+            "description": "Return paragraph-level bounding boxes for all content blocks in the response",
+            "title": "Include Blocks",
+            "type": "boolean"
+          },
           "include_image_base64": {
             "anyOf": [
               {
@@ -241,6 +262,9 @@
           "pages": {
             "anyOf": [
               {
+                "type": "string"
+              },
+              {
                 "items": {
                   "type": "integer"
                 },
@@ -250,7 +274,7 @@
                 "type": "null"
               }
             ],
-            "description": "Specific pages user wants to process in various formats: single number, range, or list of both. Starts from 0",
+            "description": "Specific pages to process. Accepts a list of integers or a string of comma-separated numbers and ranges (e.g. '0,1,2' or '0-5' or '0,2-4'). Page numbers start from 0.",
             "title": "Pages"
           },
           "table_format": {
@@ -473,6 +497,90 @@
       "OCRPageObject": {
         "additionalProperties": false,
         "properties": {
+          "blocks": {
+            "anyOf": [
+              {
+                "items": {
+                  "discriminator": {
+                    "mapping": {
+                      "aside_text": "#/components/schemas/OCRAsideTextBlock",
+                      "caption": "#/components/schemas/OCRCaptionBlock",
+                      "code": "#/components/schemas/OCRCodeBlock",
+                      "equation": "#/components/schemas/OCREquationBlock",
+                      "footer": "#/components/schemas/OCRFooterBlock",
+                      "header": "#/components/schemas/OCRHeaderBlock",
+                      "image": "#/components/schemas/OCRImageBlock",
+                      "list": "#/components/schemas/OCRListBlock",
+                      "references": "#/components/schemas/OCRReferencesBlock",
+                      "signature": "#/components/schemas/OCRSignatureBlock",
+                      "table": "#/components/schemas/OCRTableBlock",
+                      "text": "#/components/schemas/OCRTextBlock",
+                      "title": "#/components/schemas/OCRTitleBlock"
+                    },
+                    "propertyName": "type"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/OCRTextBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OCRListBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OCRImageBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OCRTableBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OCRTitleBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OCREquationBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OCRCaptionBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OCRCodeBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OCRReferencesBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OCRAsideTextBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OCRHeaderBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OCRFooterBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/OCRSignatureBlock"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Paragraph-level bounding boxes for all content blocks in reading order (populated when include_blocks is True)",
+            "title": "Blocks"
+          },
+          "confidence_scores": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OCRPageConfidenceScores"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Confidence scores for the OCR page (populated when confidence_scores_granularity is set)"
+          },
           "dimensions": {
             "anyOf": [
               {
@@ -690,6 +798,644 @@
         "title": "ImageURL",
         "type": "object"
       },
+      "OCRTextBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "bottom_right_x": {
+            "minimum": 0,
+            "title": "Bottom Right X",
+            "type": "integer"
+          },
+          "bottom_right_y": {
+            "minimum": 0,
+            "title": "Bottom Right Y",
+            "type": "integer"
+          },
+          "content": {
+            "description": "Text/markdown/html content of this block",
+            "title": "Content",
+            "type": "string"
+          },
+          "top_left_x": {
+            "minimum": 0,
+            "title": "Top Left X",
+            "type": "integer"
+          },
+          "top_left_y": {
+            "minimum": 0,
+            "title": "Top Left Y",
+            "type": "integer"
+          },
+          "type": {
+            "const": "text",
+            "default": "text",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "top_left_x",
+          "top_left_y",
+          "bottom_right_x",
+          "bottom_right_y",
+          "content"
+        ],
+        "title": "OCRTextBlock",
+        "type": "object"
+      },
+      "OCRListBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "bottom_right_x": {
+            "minimum": 0,
+            "title": "Bottom Right X",
+            "type": "integer"
+          },
+          "bottom_right_y": {
+            "minimum": 0,
+            "title": "Bottom Right Y",
+            "type": "integer"
+          },
+          "content": {
+            "description": "Text/markdown/html content of this block",
+            "title": "Content",
+            "type": "string"
+          },
+          "top_left_x": {
+            "minimum": 0,
+            "title": "Top Left X",
+            "type": "integer"
+          },
+          "top_left_y": {
+            "minimum": 0,
+            "title": "Top Left Y",
+            "type": "integer"
+          },
+          "type": {
+            "const": "list",
+            "default": "list",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "top_left_x",
+          "top_left_y",
+          "bottom_right_x",
+          "bottom_right_y",
+          "content"
+        ],
+        "title": "OCRListBlock",
+        "type": "object"
+      },
+      "OCRImageBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "bottom_right_x": {
+            "minimum": 0,
+            "title": "Bottom Right X",
+            "type": "integer"
+          },
+          "bottom_right_y": {
+            "minimum": 0,
+            "title": "Bottom Right Y",
+            "type": "integer"
+          },
+          "content": {
+            "description": "Text/markdown/html content of this block",
+            "title": "Content",
+            "type": "string"
+          },
+          "image_id": {
+            "description": "References the corresponding entry in OCRPageObject.images",
+            "title": "Image Id",
+            "type": "string"
+          },
+          "top_left_x": {
+            "minimum": 0,
+            "title": "Top Left X",
+            "type": "integer"
+          },
+          "top_left_y": {
+            "minimum": 0,
+            "title": "Top Left Y",
+            "type": "integer"
+          },
+          "type": {
+            "const": "image",
+            "default": "image",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "top_left_x",
+          "top_left_y",
+          "bottom_right_x",
+          "bottom_right_y",
+          "content",
+          "image_id"
+        ],
+        "title": "OCRImageBlock",
+        "type": "object"
+      },
+      "OCRTableBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "bottom_right_x": {
+            "minimum": 0,
+            "title": "Bottom Right X",
+            "type": "integer"
+          },
+          "bottom_right_y": {
+            "minimum": 0,
+            "title": "Bottom Right Y",
+            "type": "integer"
+          },
+          "content": {
+            "description": "Text/markdown/html content of this block",
+            "title": "Content",
+            "type": "string"
+          },
+          "table_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "References the corresponding entry in OCRPageObject.tables, when tables are extracted",
+            "title": "Table Id"
+          },
+          "top_left_x": {
+            "minimum": 0,
+            "title": "Top Left X",
+            "type": "integer"
+          },
+          "top_left_y": {
+            "minimum": 0,
+            "title": "Top Left Y",
+            "type": "integer"
+          },
+          "type": {
+            "const": "table",
+            "default": "table",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "top_left_x",
+          "top_left_y",
+          "bottom_right_x",
+          "bottom_right_y",
+          "content"
+        ],
+        "title": "OCRTableBlock",
+        "type": "object"
+      },
+      "OCRTitleBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "bottom_right_x": {
+            "minimum": 0,
+            "title": "Bottom Right X",
+            "type": "integer"
+          },
+          "bottom_right_y": {
+            "minimum": 0,
+            "title": "Bottom Right Y",
+            "type": "integer"
+          },
+          "content": {
+            "description": "Text/markdown/html content of this block",
+            "title": "Content",
+            "type": "string"
+          },
+          "top_left_x": {
+            "minimum": 0,
+            "title": "Top Left X",
+            "type": "integer"
+          },
+          "top_left_y": {
+            "minimum": 0,
+            "title": "Top Left Y",
+            "type": "integer"
+          },
+          "type": {
+            "const": "title",
+            "default": "title",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "top_left_x",
+          "top_left_y",
+          "bottom_right_x",
+          "bottom_right_y",
+          "content"
+        ],
+        "title": "OCRTitleBlock",
+        "type": "object"
+      },
+      "OCREquationBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "bottom_right_x": {
+            "minimum": 0,
+            "title": "Bottom Right X",
+            "type": "integer"
+          },
+          "bottom_right_y": {
+            "minimum": 0,
+            "title": "Bottom Right Y",
+            "type": "integer"
+          },
+          "content": {
+            "description": "Text/markdown/html content of this block",
+            "title": "Content",
+            "type": "string"
+          },
+          "top_left_x": {
+            "minimum": 0,
+            "title": "Top Left X",
+            "type": "integer"
+          },
+          "top_left_y": {
+            "minimum": 0,
+            "title": "Top Left Y",
+            "type": "integer"
+          },
+          "type": {
+            "const": "equation",
+            "default": "equation",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "top_left_x",
+          "top_left_y",
+          "bottom_right_x",
+          "bottom_right_y",
+          "content"
+        ],
+        "title": "OCREquationBlock",
+        "type": "object"
+      },
+      "OCRCaptionBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "bottom_right_x": {
+            "minimum": 0,
+            "title": "Bottom Right X",
+            "type": "integer"
+          },
+          "bottom_right_y": {
+            "minimum": 0,
+            "title": "Bottom Right Y",
+            "type": "integer"
+          },
+          "content": {
+            "description": "Text/markdown/html content of this block",
+            "title": "Content",
+            "type": "string"
+          },
+          "top_left_x": {
+            "minimum": 0,
+            "title": "Top Left X",
+            "type": "integer"
+          },
+          "top_left_y": {
+            "minimum": 0,
+            "title": "Top Left Y",
+            "type": "integer"
+          },
+          "type": {
+            "const": "caption",
+            "default": "caption",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "top_left_x",
+          "top_left_y",
+          "bottom_right_x",
+          "bottom_right_y",
+          "content"
+        ],
+        "title": "OCRCaptionBlock",
+        "type": "object"
+      },
+      "OCRCodeBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "bottom_right_x": {
+            "minimum": 0,
+            "title": "Bottom Right X",
+            "type": "integer"
+          },
+          "bottom_right_y": {
+            "minimum": 0,
+            "title": "Bottom Right Y",
+            "type": "integer"
+          },
+          "content": {
+            "description": "Text/markdown/html content of this block",
+            "title": "Content",
+            "type": "string"
+          },
+          "top_left_x": {
+            "minimum": 0,
+            "title": "Top Left X",
+            "type": "integer"
+          },
+          "top_left_y": {
+            "minimum": 0,
+            "title": "Top Left Y",
+            "type": "integer"
+          },
+          "type": {
+            "const": "code",
+            "default": "code",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "top_left_x",
+          "top_left_y",
+          "bottom_right_x",
+          "bottom_right_y",
+          "content"
+        ],
+        "title": "OCRCodeBlock",
+        "type": "object"
+      },
+      "OCRReferencesBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "bottom_right_x": {
+            "minimum": 0,
+            "title": "Bottom Right X",
+            "type": "integer"
+          },
+          "bottom_right_y": {
+            "minimum": 0,
+            "title": "Bottom Right Y",
+            "type": "integer"
+          },
+          "content": {
+            "description": "Text/markdown/html content of this block",
+            "title": "Content",
+            "type": "string"
+          },
+          "top_left_x": {
+            "minimum": 0,
+            "title": "Top Left X",
+            "type": "integer"
+          },
+          "top_left_y": {
+            "minimum": 0,
+            "title": "Top Left Y",
+            "type": "integer"
+          },
+          "type": {
+            "const": "references",
+            "default": "references",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "top_left_x",
+          "top_left_y",
+          "bottom_right_x",
+          "bottom_right_y",
+          "content"
+        ],
+        "title": "OCRReferencesBlock",
+        "type": "object"
+      },
+      "OCRAsideTextBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "bottom_right_x": {
+            "minimum": 0,
+            "title": "Bottom Right X",
+            "type": "integer"
+          },
+          "bottom_right_y": {
+            "minimum": 0,
+            "title": "Bottom Right Y",
+            "type": "integer"
+          },
+          "content": {
+            "description": "Text/markdown/html content of this block",
+            "title": "Content",
+            "type": "string"
+          },
+          "top_left_x": {
+            "minimum": 0,
+            "title": "Top Left X",
+            "type": "integer"
+          },
+          "top_left_y": {
+            "minimum": 0,
+            "title": "Top Left Y",
+            "type": "integer"
+          },
+          "type": {
+            "const": "aside_text",
+            "default": "aside_text",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "top_left_x",
+          "top_left_y",
+          "bottom_right_x",
+          "bottom_right_y",
+          "content"
+        ],
+        "title": "OCRAsideTextBlock",
+        "type": "object"
+      },
+      "OCRHeaderBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "bottom_right_x": {
+            "minimum": 0,
+            "title": "Bottom Right X",
+            "type": "integer"
+          },
+          "bottom_right_y": {
+            "minimum": 0,
+            "title": "Bottom Right Y",
+            "type": "integer"
+          },
+          "content": {
+            "description": "Text/markdown/html content of this block",
+            "title": "Content",
+            "type": "string"
+          },
+          "top_left_x": {
+            "minimum": 0,
+            "title": "Top Left X",
+            "type": "integer"
+          },
+          "top_left_y": {
+            "minimum": 0,
+            "title": "Top Left Y",
+            "type": "integer"
+          },
+          "type": {
+            "const": "header",
+            "default": "header",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "top_left_x",
+          "top_left_y",
+          "bottom_right_x",
+          "bottom_right_y",
+          "content"
+        ],
+        "title": "OCRHeaderBlock",
+        "type": "object"
+      },
+      "OCRFooterBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "bottom_right_x": {
+            "minimum": 0,
+            "title": "Bottom Right X",
+            "type": "integer"
+          },
+          "bottom_right_y": {
+            "minimum": 0,
+            "title": "Bottom Right Y",
+            "type": "integer"
+          },
+          "content": {
+            "description": "Text/markdown/html content of this block",
+            "title": "Content",
+            "type": "string"
+          },
+          "top_left_x": {
+            "minimum": 0,
+            "title": "Top Left X",
+            "type": "integer"
+          },
+          "top_left_y": {
+            "minimum": 0,
+            "title": "Top Left Y",
+            "type": "integer"
+          },
+          "type": {
+            "const": "footer",
+            "default": "footer",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "top_left_x",
+          "top_left_y",
+          "bottom_right_x",
+          "bottom_right_y",
+          "content"
+        ],
+        "title": "OCRFooterBlock",
+        "type": "object"
+      },
+      "OCRSignatureBlock": {
+        "additionalProperties": false,
+        "description": "Signature region. ``content`` is the transcribed name when legible, else ``\"\"``.",
+        "properties": {
+          "bottom_right_x": {
+            "minimum": 0,
+            "title": "Bottom Right X",
+            "type": "integer"
+          },
+          "bottom_right_y": {
+            "minimum": 0,
+            "title": "Bottom Right Y",
+            "type": "integer"
+          },
+          "content": {
+            "description": "Text/markdown/html content of this block",
+            "title": "Content",
+            "type": "string"
+          },
+          "top_left_x": {
+            "minimum": 0,
+            "title": "Top Left X",
+            "type": "integer"
+          },
+          "top_left_y": {
+            "minimum": 0,
+            "title": "Top Left Y",
+            "type": "integer"
+          },
+          "type": {
+            "const": "signature",
+            "default": "signature",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "top_left_x",
+          "top_left_y",
+          "bottom_right_x",
+          "bottom_right_y",
+          "content"
+        ],
+        "title": "OCRSignatureBlock",
+        "type": "object"
+      },
+      "OCRPageConfidenceScores": {
+        "additionalProperties": false,
+        "description": "Confidence scores for an OCR page at various granularities.",
+        "properties": {
+          "average_page_confidence_score": {
+            "description": "Average confidence score for the page",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Average Page Confidence Score",
+            "type": "number"
+          },
+          "minimum_page_confidence_score": {
+            "description": "Minimum confidence score for the page",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Minimum Page Confidence Score",
+            "type": "number"
+          },
+          "word_confidence_scores": {
+            "description": "Word-level confidence scores (populated only for 'word' granularity)",
+            "items": {
+              "$ref": "#/components/schemas/OCRConfidenceScore"
+            },
+            "title": "Word Confidence Scores",
+            "type": "array"
+          }
+        },
+        "required": [
+          "average_page_confidence_score",
+          "minimum_page_confidence_score"
+        ],
+        "title": "OCRPageConfidenceScores",
+        "type": "object"
+      },
       "OCRPageDimensions": {
         "additionalProperties": false,
         "properties": {
@@ -836,6 +1582,21 @@
             "description": "Table ID for extracted table in a page",
             "title": "Id",
             "type": "string"
+          },
+          "word_confidence_scores": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/OCRConfidenceScore"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Per-word confidence scores for the table content. Returned when confidence_scores_granularity is set to 'word'.",
+            "title": "Word Confidence Scores"
           }
         },
         "required": [
@@ -854,6 +1615,37 @@
         ],
         "title": "ImageDetail",
         "type": "string"
+      },
+      "OCRConfidenceScore": {
+        "additionalProperties": false,
+        "description": "Confidence score for a token or word in OCR output.",
+        "properties": {
+          "confidence": {
+            "description": "Confidence score (0-1)",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "start_index": {
+            "description": "Start index of the text in the page markdown string",
+            "minimum": 0,
+            "title": "Start Index",
+            "type": "integer"
+          },
+          "text": {
+            "description": "The word or text segment",
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "confidence",
+          "start_index"
+        ],
+        "title": "OCRConfidenceScore",
+        "type": "object"
       }
     }
   }
