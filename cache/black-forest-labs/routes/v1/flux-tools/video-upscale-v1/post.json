@@ -1,11 +1,11 @@
 {
-  "description": "Submits an image generation or editing task with the FLUX.2 [klein] 9B preview endpoint, where our latest quality and speed improvements land first. For stable production use, prefer FLUX.2 [klein] 9B (/flux-2-klein-9b).",
-  "operationId": "generate_flux_2_klein_9b_kv_v1_flux_2_klein_9b_preview_post",
+  "description": "Submits a video upscaling task: 1.5x-3x super-resolution of the source clip (up to 2560x1440 in, 13.75 MP output frames). The upscale covers the first 20 seconds of the source; clips well past that are rejected. `creativity` selects precise source-faithful upscaling (0) or creative detail enhancement (1).",
+  "operationId": "generate_flux_tools_video_upscale_v1_v1_flux_tools_video_upscale_v1_post",
   "requestBody": {
     "content": {
       "application/json": {
         "schema": {
-          "$ref": "#/components/schemas/Flux2KleinInputs"
+          "$ref": "#/components/schemas/Flux3VideoUpscaleInputs"
         }
       }
     },
@@ -24,7 +24,7 @@
                 "$ref": "#/components/schemas/AsyncWebhookResponse"
               }
             ],
-            "title": "Response Generate Flux 2 Klein 9B Kv V1 Flux 2 Klein 9B Preview Post"
+            "title": "Response Generate Flux Tools Video Upscale V1 V1 Flux Tools Video Upscale V1 Post"
           }
         }
       },
@@ -46,125 +46,64 @@
       "APIKeyHeader": []
     }
   ],
-  "summary": "Generate or edit an image with FLUX.2 [klein] 9B (preview)",
+  "summary": "Upscale a video with FLUX 3.",
   "tags": [
     "Models"
   ],
   "components": {
     "schemas": {
-      "Flux2KleinInputs": {
-        "description": "Input model for FLUX.2 Klein (non-base) - like Pro but max 4 images.",
+      "Flux3VideoUpscaleInputs": {
+        "additionalProperties": false,
         "properties": {
-          "height": {
-            "anyOf": [
-              {
-                "minimum": 64,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
+          "creativity": {
+            "default": 1,
+            "description": "Upscale behavior: 0 preserves the source precisely; 1 allows creative detail enhancement.",
+            "enum": [
+              0,
+              1
             ],
-            "default": 0,
-            "description": "Height of the image",
-            "title": "Height"
+            "title": "Creativity",
+            "type": "integer"
           },
-          "input_image": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Path to the input image.",
-            "title": "Input Image"
-          },
-          "input_image_2": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Path to the second input image.",
-            "title": "Input Image 2"
-          },
-          "input_image_3": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Path to the third input image.",
-            "title": "Input Image 3"
-          },
-          "input_image_4": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Path to the fourth input image.",
-            "title": "Input Image 4"
-          },
-          "output_format": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/OutputFormat"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": "jpeg"
+          "input_video": {
+            "description": "The clip to upscale: base64-encoded mp4 (max 50MB) or an http(s) URL. The upscale covers the first 20 seconds; a clip slightly over that is upscaled up to the 20 second mark, and one well over is rejected. At most 2560x1440 (3.7 megapixels) per frame: this endpoint upscales toward 4K, so downscale a larger source before submitting it.",
+            "title": "Input Video",
+            "type": "string"
           },
           "prompt": {
-            "description": "Text prompt for image generation.",
-            "example": "ein fantastisches bild",
+            "default": "",
+            "description": "Optional description of the clip's content, steering the enhanced detail. Leave empty for a neutral upscale.",
             "title": "Prompt",
             "type": "string"
           },
           "safety_tolerance": {
             "default": 2,
-            "description": "Tolerance level for input and output moderation. Between 0 and 5, 0 being most strict, 5 being least strict. If you wish to increase the safety_tolerance beyond these levels please reach out to the team.",
-            "maximum": 5,
+            "description": "Tolerance level for harm moderation, between 0 and 4 with 0 the strictest. It bounds every harm class on the prompt, which is screened before any generation, and on the delivered frames, which are withheld when their sexual-content level exceeds what the tolerance allows. Sexual is capped at level 3 and hate at level 2 regardless of the requested tolerance.",
+            "maximum": 4,
             "minimum": 0,
             "title": "Safety Tolerance",
             "type": "integer"
           },
-          "seed": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Optional seed for reproducibility.",
-            "example": 42,
-            "title": "Seed"
+          "upscale_factor": {
+            "default": 2,
+            "description": "Output scaling relative to the source resolution, between 1.5 and 3. The output preserves the source aspect ratio and is capped at a 13.75 MP frame: very large sources are upscaled by less than the requested factor.",
+            "maximum": 3,
+            "minimum": 1.5,
+            "title": "Upscale Factor",
+            "type": "number"
           },
           "webhook_secret": {
             "anyOf": [
               {
-                "type": "string"
+                "format": "password",
+                "type": "string",
+                "writeOnly": true
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Optional secret for webhook signature verification",
+            "description": "Secret echoed in the webhook signature header.",
             "title": "Webhook Secret"
           },
           "webhook_url": {
@@ -179,28 +118,14 @@
                 "type": "null"
               }
             ],
-            "description": "URL to receive webhook notifications",
+            "description": "URL to receive the result callback.",
             "title": "Webhook Url"
-          },
-          "width": {
-            "anyOf": [
-              {
-                "minimum": 64,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": 0,
-            "description": "Width of the image",
-            "title": "Width"
           }
         },
         "required": [
-          "prompt"
+          "input_video"
         ],
-        "title": "Flux2KleinInputs",
+        "title": "Flux3VideoUpscaleInputs",
         "type": "object"
       },
       "AsyncResponse": {
@@ -328,15 +253,6 @@
         },
         "title": "HTTPValidationError",
         "type": "object"
-      },
-      "OutputFormat": {
-        "enum": [
-          "jpeg",
-          "png",
-          "webp"
-        ],
-        "title": "OutputFormat",
-        "type": "string"
       },
       "ValidationError": {
         "properties": {
