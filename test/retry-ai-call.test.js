@@ -24,6 +24,14 @@ test("isTransientAiError rejects permanent errors", (t) => {
   t.false(isTransientAiError(error));
 });
 
+test("isTransientAiError recognizes malformed AI SDK generation results", (t) => {
+  const error = new TypeError(
+    "Cannot read properties of undefined (reading 'unified')",
+  );
+
+  t.true(isTransientAiError(error));
+});
+
 test("isTransientAiError uses the final error from an exhausted retry", (t) => {
   const error = Object.assign(new Error("retry failed"), {
     errors: [
