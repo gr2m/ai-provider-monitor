@@ -1,0 +1,538 @@
+{
+  "description": "Returns the revision history for an application, newest first: every\ndeployed version with its creation time, whether it is currently serving\ntraffic, and a deployment status derived from recent deployment events.\n\n**Use cases:**\n- Incident correlation: answer \"did this regression start with a deploy?\"\n  by lining revision boundaries up against error/latency changes from the\n  analytics endpoint\n- Rollback context: identify the previous known-good revision\n\n`status` and `deployed_by` are derived from the last 30 days of\ndeployment events; older revisions return null for both. `message` and\n`annotations` are the deploy-time metadata set via `fal deploy\n--message`/`--annotation`; both are null when the deploy did not set them.\n\n**Authentication:** Required via API key. Only the app owner can query it.",
+  "operationId": "serverlessListAppRevisions",
+  "parameters": [
+    {
+      "description": "Username of the app owner",
+      "in": "path",
+      "name": "owner",
+      "required": true,
+      "schema": {
+        "description": "Username of the app owner",
+        "example": "user_123",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Application name",
+      "in": "path",
+      "name": "name",
+      "required": true,
+      "schema": {
+        "description": "Application name",
+        "example": "my-app",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Maximum number of revisions to return per page (1-100)",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "default": 50,
+        "description": "Maximum number of revisions to return per page (1-100)",
+        "example": 50,
+        "maximum": 100,
+        "minimum": 1,
+        "type": "integer"
+      }
+    },
+    {
+      "description": "Pagination cursor from previous response",
+      "in": "query",
+      "name": "cursor",
+      "required": false,
+      "schema": {
+        "description": "Pagination cursor from previous response",
+        "example": "Mg==",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "example": {
+            "endpoint_id": "user_123/my-app",
+            "has_more": false,
+            "next_cursor": null,
+            "revisions": [
+              {
+                "annotations": {
+                  "GIT_SHA": "a1b2c3d4"
+                },
+                "created_at": "2026-07-01T12:00:00Z",
+                "deployed_by": "user_123",
+                "is_current": true,
+                "message": "a1b2c3d fix cold-start",
+                "revision_id": "my-app-a1b2c3d4",
+                "status": "deployed"
+              }
+            ]
+          },
+          "schema": {
+            "additionalProperties": false,
+            "description": "Revision history for an application",
+            "properties": {
+              "endpoint_id": {
+                "description": "Canonical endpoint identifier ('<owner>/<name>')",
+                "example": "user_123/my-app",
+                "type": "string"
+              },
+              "has_more": {
+                "description": "Boolean indicating if more results are available (convenience field derived from next_cursor)",
+                "type": "boolean"
+              },
+              "next_cursor": {
+                "description": "Cursor for the next page of results, null if no more pages",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "revisions": {
+                "description": "Application revisions, newest first",
+                "items": {
+                  "additionalProperties": false,
+                  "description": "A deployed revision of a serverless application",
+                  "properties": {
+                    "annotations": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "Custom key/value annotations attached to this revision at deploy time (fal deploy --annotation KEY=VALUE). Null when the deploy did not set any.",
+                      "example": {
+                        "GIT_SHA": "a1b2c3d4"
+                      },
+                      "type": [
+                        "object",
+                        "null"
+                      ]
+                    },
+                    "created_at": {
+                      "description": "Revision creation timestamp (UTC ISO8601)",
+                      "example": "2026-07-01T12:00:00Z",
+                      "type": "string"
+                    },
+                    "deployed_by": {
+                      "description": "Nickname or display name of the user who deployed this revision, when known from recent deployment events",
+                      "example": "user_123",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "is_current": {
+                      "description": "Whether this revision is the one currently serving traffic",
+                      "example": true,
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "description": "Freeform message attached to this revision at deploy time (fal deploy --message). Null when the deploy did not set one.",
+                      "example": "a1b2c3d fix cold-start",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "revision_id": {
+                      "description": "Unique revision identifier",
+                      "example": "my-app-a1b2c3d4",
+                      "type": "string"
+                    },
+                    "status": {
+                      "description": "Deployment status derived from recent deployment events. Null when no deployment events are available for this revision (e.g. revisions older than the event retention window).",
+                      "enum": [
+                        "deployed",
+                        "failed",
+                        "deploying"
+                      ],
+                      "example": "deployed",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "revision_id",
+                    "created_at",
+                    "is_current",
+                    "message",
+                    "annotations",
+                    "status",
+                    "deployed_by"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "next_cursor",
+              "has_more",
+              "endpoint_id",
+              "revisions"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Successfully retrieved application revisions"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Invalid request parameters",
+              "type": "validation_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Authentication required",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Authentication required"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Access denied",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Access denied"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Resource not found",
+              "type": "not_found"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Resource not found"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Rate limit exceeded",
+              "type": "rate_limited"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Rate limit exceeded"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "An unexpected error occurred",
+              "type": "server_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Internal server error"
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "summary": "Application Revisions",
+  "tags": [
+    "Serverless",
+    "Apps"
+  ]
+}

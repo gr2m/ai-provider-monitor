@@ -1,5 +1,5 @@
 {
-  "description": "\nReturns paginated usage records for your workspace with filters for endpoint,\nuser, date range, and auth method. Each item includes the billed unit\nquantity and unit price used to compute cost.\n\n**Key Features:**\n- Usage data for all endpoints or filtered by specific endpoint(s)\n- Flexible date range filtering\n- User-specific usage tracking\n- Detailed usage line items with unit quantity and price\n- Paginated results for large datasets\n\n**Common Use Cases:**\n- Generate usage reports for all endpoints or specific models\n- Track usage patterns\n- Monitor endpoint usage across different auth methods\n- Build usage dashboards and visualizations\n\nSee [fal.ai docs](https://docs.fal.ai/model-apis/faq) for more details.\n    ",
+  "description": "\nReturns paginated usage records for your workspace with filters for endpoint,\nuser, date range, and auth method. Each item includes the billed unit\nquantity, the pre-discount unit price and cost_subtotal, any percentage discount\napplied, and the final cost_total (cost_subtotal − cost_discount).\n\n**Key Features:**\n- Usage data for all endpoints or filtered by specific endpoint(s)\n- Flexible date range filtering\n- User-specific usage tracking\n- Detailed usage line items with unit quantity, price, and discount breakdown\n- Paginated results for large datasets\n\n**Common Use Cases:**\n- Generate usage reports for all endpoints or specific models\n- Track usage patterns\n- Monitor endpoint usage across different auth methods\n- Build usage dashboards and visualizations\n\nSee [fal.ai docs](https://fal.ai/docs/documentation/model-apis/faq) for more details.\n    ",
   "operationId": "getUsage",
   "parameters": [
     {
@@ -137,7 +137,57 @@
       "style": "form"
     },
     {
-      "description": "Data to include in the response. Use 'time_series' for time-bucketed data, 'summary' for aggregate statistics, and 'auth_method' to include authentication method information (formatted with user key aliases). At least one of 'time_series' or 'summary' is required.",
+      "description": "Filter by specific API key ID(s). Accepts 1-50 key IDs. Supports comma-separated values: ?api_key_id=key1,key2 or array syntax: ?api_key_id=key1&api_key_id=key2",
+      "explode": true,
+      "in": "query",
+      "name": "api_key_id",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Filter by specific API key ID(s). Accepts 1-50 key IDs. Supports comma-separated values: ?api_key_id=key1,key2 or array syntax: ?api_key_id=key1&api_key_id=key2",
+        "example": [
+          "abc123"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Filter by team member login username(s) (nickname). Accepts 1-50 usernames. Supports comma-separated values: ?login_username=alice,bob or array syntax: ?login_username=alice&login_username=bob",
+      "explode": true,
+      "in": "query",
+      "name": "login_username",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Filter by team member login username(s) (nickname). Accepts 1-50 usernames. Supports comma-separated values: ?login_username=alice,bob or array syntax: ?login_username=alice&login_username=bob",
+        "example": [
+          "alice"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Data to include in the response. Use 'time_series' for time-bucketed data, 'summary' for aggregate statistics, 'auth_method' to include a formatted authentication method label, and 'auth_method_structured' to include a machine-readable auth method object (detail, api_key_id, login_username). At least one of 'time_series' or 'summary' is required.",
       "explode": true,
       "in": "query",
       "name": "expand",
@@ -157,7 +207,7 @@
         "default": [
           "time_series"
         ],
-        "description": "Data to include in the response. Use 'time_series' for time-bucketed data, 'summary' for aggregate statistics, and 'auth_method' to include authentication method information (formatted with user key aliases). At least one of 'time_series' or 'summary' is required.",
+        "description": "Data to include in the response. Use 'time_series' for time-bucketed data, 'summary' for aggregate statistics, 'auth_method' to include a formatted authentication method label, and 'auth_method_structured' to include a machine-readable auth method object (detail, api_key_id, login_username). At least one of 'time_series' or 'summary' is required.",
         "example": [
           "time_series",
           "auth_method"
@@ -179,9 +229,13 @@
                 "results": [
                   {
                     "auth_method": "Production Key",
-                    "cost": 0.4,
+                    "cost": 0.32,
+                    "cost_discount": 0.08,
+                    "cost_subtotal": 0.4,
+                    "cost_total": 0.32,
                     "currency": "USD",
                     "endpoint_id": "fal-ai/flux/dev",
+                    "percent_discount": 20,
                     "quantity": 4,
                     "unit": "image",
                     "unit_price": 0.1
@@ -213,8 +267,45 @@
                       "description": "Authentication method label (e.g., 'Key 1', 'Key 2', 'User token'). Only populated when 'auth_method' is included in expand parameter.",
                       "type": "string"
                     },
+                    "auth_method_structured": {
+                      "description": "Structured authentication method identity. Only populated when 'auth_method_structured' is included in expand parameter.",
+                      "properties": {
+                        "api_key_id": {
+                          "description": "API key ID, present when the request was made with an API key.",
+                          "type": "string"
+                        },
+                        "detail": {
+                          "description": "Human-readable summary of the authentication method (key alias, login username, or 'User token'/'None').",
+                          "type": "string"
+                        },
+                        "login_username": {
+                          "description": "Team member login username (nickname), present when the request was made with a user login token resolvable to a team member.",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "detail"
+                      ],
+                      "type": "object"
+                    },
                     "cost": {
-                      "description": "Computed cost (quantity × unit_price)",
+                      "deprecated": true,
+                      "description": "Deprecated: use cost_total. Same value as cost_total.",
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "cost_discount": {
+                      "description": "Discount applied to this line item (cost_subtotal − cost_total)",
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "cost_subtotal": {
+                      "description": "Cost before discounts (quantity × unit_price)",
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "cost_total": {
+                      "description": "Amount charged after discounts (cost_subtotal − cost_discount)",
                       "minimum": 0,
                       "type": "number"
                     },
@@ -228,6 +319,15 @@
                       "description": "Endpoint identifier that was used (e.g., 'fal-ai/flux/dev')",
                       "type": "string"
                     },
+                    "percent_discount": {
+                      "description": "Percentage discount applied to this line item (e.g., 20 = 20% discount). Null when no percentage discount applies. Usage billed at different discount rates appears as separate rows, like unit_price.",
+                      "maximum": 100,
+                      "minimum": 0,
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
                     "quantity": {
                       "description": "Quantity of usage in the specified billing unit",
                       "minimum": 0,
@@ -238,7 +338,7 @@
                       "type": "string"
                     },
                     "unit_price": {
-                      "description": "Unit price used to compute charges for this line item",
+                      "description": "Per-unit price before percentage discounts",
                       "minimum": 0,
                       "type": "number"
                     }
@@ -248,6 +348,10 @@
                     "unit",
                     "quantity",
                     "unit_price",
+                    "percent_discount",
+                    "cost_subtotal",
+                    "cost_discount",
+                    "cost_total",
                     "cost",
                     "currency"
                   ],
@@ -273,8 +377,45 @@
                             "description": "Authentication method label (e.g., 'Key 1', 'Key 2', 'User token'). Only populated when 'auth_method' is included in expand parameter.",
                             "type": "string"
                           },
+                          "auth_method_structured": {
+                            "description": "Structured authentication method identity. Only populated when 'auth_method_structured' is included in expand parameter.",
+                            "properties": {
+                              "api_key_id": {
+                                "description": "API key ID, present when the request was made with an API key.",
+                                "type": "string"
+                              },
+                              "detail": {
+                                "description": "Human-readable summary of the authentication method (key alias, login username, or 'User token'/'None').",
+                                "type": "string"
+                              },
+                              "login_username": {
+                                "description": "Team member login username (nickname), present when the request was made with a user login token resolvable to a team member.",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "detail"
+                            ],
+                            "type": "object"
+                          },
                           "cost": {
-                            "description": "Computed cost (quantity × unit_price)",
+                            "deprecated": true,
+                            "description": "Deprecated: use cost_total. Same value as cost_total.",
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "cost_discount": {
+                            "description": "Discount applied to this line item (cost_subtotal − cost_total)",
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "cost_subtotal": {
+                            "description": "Cost before discounts (quantity × unit_price)",
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "cost_total": {
+                            "description": "Amount charged after discounts (cost_subtotal − cost_discount)",
                             "minimum": 0,
                             "type": "number"
                           },
@@ -288,6 +429,15 @@
                             "description": "Endpoint identifier that was used (e.g., 'fal-ai/flux/dev')",
                             "type": "string"
                           },
+                          "percent_discount": {
+                            "description": "Percentage discount applied to this line item (e.g., 20 = 20% discount). Null when no percentage discount applies. Usage billed at different discount rates appears as separate rows, like unit_price.",
+                            "maximum": 100,
+                            "minimum": 0,
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
                           "quantity": {
                             "description": "Quantity of usage in the specified billing unit",
                             "minimum": 0,
@@ -298,7 +448,7 @@
                             "type": "string"
                           },
                           "unit_price": {
-                            "description": "Unit price used to compute charges for this line item",
+                            "description": "Per-unit price before percentage discounts",
                             "minimum": 0,
                             "type": "number"
                           }
@@ -308,6 +458,10 @@
                           "unit",
                           "quantity",
                           "unit_price",
+                          "percent_discount",
+                          "cost_subtotal",
+                          "cost_discount",
+                          "cost_total",
                           "cost",
                           "currency"
                         ],
@@ -505,63 +659,6 @@
         }
       },
       "description": "Access denied"
-    },
-    "404": {
-      "content": {
-        "application/json": {
-          "example": {
-            "error": {
-              "message": "Resource not found",
-              "type": "not_found"
-            }
-          },
-          "schema": {
-            "description": "Standard error response format",
-            "properties": {
-              "error": {
-                "description": "Error details",
-                "properties": {
-                  "docs_url": {
-                    "description": "Link to relevant documentation",
-                    "format": "uri",
-                    "type": "string"
-                  },
-                  "message": {
-                    "description": "Human-readable error message",
-                    "type": "string"
-                  },
-                  "request_id": {
-                    "description": "Unique request identifier for debugging",
-                    "type": "string"
-                  },
-                  "type": {
-                    "description": "The category of error that occurred",
-                    "enum": [
-                      "authorization_error",
-                      "validation_error",
-                      "not_found",
-                      "rate_limited",
-                      "server_error",
-                      "not_implemented"
-                    ],
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "type",
-                  "message"
-                ],
-                "type": "object"
-              }
-            },
-            "required": [
-              "error"
-            ],
-            "type": "object"
-          }
-        }
-      },
-      "description": "Resource not found"
     },
     "429": {
       "content": {

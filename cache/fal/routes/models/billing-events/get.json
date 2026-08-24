@@ -1,5 +1,5 @@
 {
-  "description": "\nReturns paginated individual billing event records with filters\nfor endpoint and date range. Each record includes the request ID, timestamp,\nendpoint, and output units billed.\n\n**Key Features:**\n- Individual billing event records for each API request\n- Flexible date range filtering\n- Optional endpoint filtering\n- Cursor-based pagination for efficient large dataset queries\n- Limited to 100 records per page for performance\n\n**Common Use Cases:**\n- Audit individual billing events\n- Track request patterns and volumes\n- Debug specific requests by ID\n- Monitor billing unit consumption per request\n\nSee [fal.ai docs](https://docs.fal.ai/model-apis/faq) for more details.\n    ",
+  "description": "\nReturns paginated individual billing event records with filters\nfor endpoint and date range. Each record includes the request ID, timestamp,\nendpoint, output units billed, and a cost breakdown in USD (cost_subtotal,\ncost_discount, cost_total; cost_estimate_nano_usd carries cost_total in nano USD).\n\n**Key Features:**\n- Individual billing event records for each API request\n- Per-request cost breakdown before and after discounts\n- Flexible date range filtering\n- Optional endpoint filtering\n- Cursor-based pagination for efficient large dataset queries\n- Limited to 10000 records per page for performance\n- Date range capped at 90 days per request\n\n**Common Use Cases:**\n- Audit individual billing events\n- Track request patterns and volumes\n- Debug specific requests by ID\n- Monitor billing unit consumption per request\n\nSee [fal.ai docs](https://fal.ai/docs/documentation/model-apis/faq) for more details.\n    ",
   "operationId": "getBillingEvents",
   "parameters": [
     {
@@ -116,7 +116,57 @@
       "style": "form"
     },
     {
-      "description": "Data to include in the response. Use 'auth_method' to include authentication method information (formatted with user key aliases).",
+      "description": "Filter by specific API key ID(s). Accepts 1-50 key IDs. Supports comma-separated values: ?api_key_id=key1,key2 or array syntax: ?api_key_id=key1&api_key_id=key2",
+      "explode": true,
+      "in": "query",
+      "name": "api_key_id",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Filter by specific API key ID(s). Accepts 1-50 key IDs. Supports comma-separated values: ?api_key_id=key1,key2 or array syntax: ?api_key_id=key1&api_key_id=key2",
+        "example": [
+          "abc123"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Filter by team member login username(s) (nickname). Accepts 1-50 usernames. Supports comma-separated values: ?login_username=alice,bob or array syntax: ?login_username=alice&login_username=bob",
+      "explode": true,
+      "in": "query",
+      "name": "login_username",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Filter by team member login username(s) (nickname). Accepts 1-50 usernames. Supports comma-separated values: ?login_username=alice,bob or array syntax: ?login_username=alice&login_username=bob",
+        "example": [
+          "alice"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Data to include in the response. Use 'auth_method' for a formatted authentication method label, and 'auth_method_structured' for a machine-readable auth method object (detail, api_key_id, login_username).",
       "explode": true,
       "in": "query",
       "name": "expand",
@@ -133,7 +183,7 @@
             "type": "array"
           }
         ],
-        "description": "Data to include in the response. Use 'auth_method' to include authentication method information (formatted with user key aliases).",
+        "description": "Data to include in the response. Use 'auth_method' for a formatted authentication method label, and 'auth_method_structured' for a machine-readable auth method object (detail, api_key_id, login_username).",
         "example": "auth_method"
       },
       "style": "form"
@@ -146,22 +196,28 @@
           "example": {
             "billing_events": [
               {
-                "cost_estimate_nano_usd": 1500000,
-                "endpoint_id": "fal-ai/flux/dev",
-                "output_units": 1.5,
-                "percent_discount": null,
-                "request_id": "abc123",
-                "timestamp": "2025-01-15T10:30:45Z",
-                "unit_price": 0.001
-              },
-              {
-                "cost_estimate_nano_usd": 1800000,
+                "cost_discount": 0.005,
+                "cost_estimate_nano_usd": 45000000,
+                "cost_subtotal": 0.05,
+                "cost_total": 0.045,
                 "endpoint_id": "fal-ai/flux/dev",
                 "output_units": 2,
                 "percent_discount": 10,
+                "request_id": "abc123",
+                "timestamp": "2025-01-15T10:30:45Z",
+                "unit_price": 0.025
+              },
+              {
+                "cost_discount": 0,
+                "cost_estimate_nano_usd": 37500000,
+                "cost_subtotal": 0.0375,
+                "cost_total": 0.0375,
+                "endpoint_id": "fal-ai/flux/dev",
+                "output_units": 1.5,
+                "percent_discount": null,
                 "request_id": "def456",
                 "timestamp": "2025-01-15T10:25:30Z",
-                "unit_price": 0.001
+                "unit_price": 0.025
               }
             ],
             "has_more": true,
@@ -179,8 +235,44 @@
                       "description": "Authentication method label (e.g., 'Key 1', 'API Key', 'User token'). Only populated when 'auth_method' is included in expand parameter.",
                       "type": "string"
                     },
+                    "auth_method_structured": {
+                      "description": "Structured authentication method identity. Only populated when 'auth_method_structured' is included in expand parameter.",
+                      "properties": {
+                        "api_key_id": {
+                          "description": "API key ID, present when the request was made with an API key.",
+                          "type": "string"
+                        },
+                        "detail": {
+                          "description": "Human-readable summary of the authentication method (key alias, login username, or 'User token'/'None').",
+                          "type": "string"
+                        },
+                        "login_username": {
+                          "description": "Team member login username (nickname), present when the request was made with a user login token resolvable to a team member.",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "detail"
+                      ],
+                      "type": "object"
+                    },
+                    "cost_discount": {
+                      "description": "Discount applied to this request in USD (cost_subtotal − cost_total)",
+                      "minimum": 0,
+                      "type": "number"
+                    },
                     "cost_estimate_nano_usd": {
-                      "description": "Estimated cost in nano USD (1 USD = 1,000,000,000 nano USD)",
+                      "description": "Amount charged after discounts in nano USD — the same charge as cost_total (1 USD = 1,000,000,000 nano USD)",
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "cost_subtotal": {
+                      "description": "Cost before discounts in USD (output_units × unit_price)",
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "cost_total": {
+                      "description": "Amount charged after discounts in USD (cost_subtotal − cost_discount)",
                       "minimum": 0,
                       "type": "number"
                     },
@@ -227,6 +319,9 @@
                     "output_units",
                     "unit_price",
                     "percent_discount",
+                    "cost_subtotal",
+                    "cost_discount",
+                    "cost_total",
                     "cost_estimate_nano_usd"
                   ],
                   "type": "object"

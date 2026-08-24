@@ -1,0 +1,868 @@
+{
+  "description": "\nReturns paginated usage records across all teams and product lines in your\norganization, with each record attributed to a specific team via the\n`username` field and a product line via the `product` field.\n\nCovers all three fal product lines:\n- `model_apis` — model API endpoint calls (e.g. `fal-ai/flux/dev`)\n- `serverless` — fal Serverless SDK billing\n- `compute` — fal Compute (raw instance time)\n\n> **Availability:** This endpoint is available to enterprise customers with organizations enabled. Contact your account team or support@fal.ai to request access.\n\nMust be called with an admin API key on the organization's root team.\n\n**Key Features:**\n- Organization-wide usage data across all teams and products\n- Filter by team(s) (`team_username`), product line (`product`), endpoint, API key (`api_key_id`), date range, and auth method\n- Per-team and per-product attribution on every usage record\n- Paginated time series and aggregate summary views\n\nSee [fal.ai docs](https://fal.ai/docs/documentation) for more details.\n    ",
+  "operationId": "getOrganizationUsage",
+  "parameters": [
+    {
+      "description": "Maximum number of items to return. Actual maximum depends on query type and expansion parameters.",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "description": "Maximum number of items to return. Actual maximum depends on query type and expansion parameters.",
+        "example": 50,
+        "minimum": 1,
+        "type": "integer"
+      }
+    },
+    {
+      "description": "Pagination cursor from previous response. Encodes the page number.",
+      "in": "query",
+      "name": "cursor",
+      "required": false,
+      "schema": {
+        "description": "Pagination cursor from previous response. Encodes the page number.",
+        "example": "Mg==",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Start date in ISO8601 format (e.g., '2025-01-01T00:00:00Z' or '2025-01-01'). Defaults to 24 hours ago.",
+      "in": "query",
+      "name": "start",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        ],
+        "description": "Start date in ISO8601 format (e.g., '2025-01-01T00:00:00Z' or '2025-01-01'). Defaults to 24 hours ago.",
+        "example": "2025-01-01T00:00:00Z"
+      }
+    },
+    {
+      "description": "End date in ISO8601 format, exclusive (e.g., '2025-02-01T00:00:00Z' or '2025-02-01'). Data up to but not including this timestamp is returned. Defaults to current time.",
+      "in": "query",
+      "name": "end",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        ],
+        "description": "End date in ISO8601 format, exclusive (e.g., '2025-02-01T00:00:00Z' or '2025-02-01'). Data up to but not including this timestamp is returned. Defaults to current time.",
+        "example": "2025-02-01T00:00:00Z"
+      }
+    },
+    {
+      "description": "Timezone for date aggregation and boundaries. All timestamps in responses are in UTC, but this controls how dates are bucketed.",
+      "in": "query",
+      "name": "timezone",
+      "required": false,
+      "schema": {
+        "default": "UTC",
+        "description": "Timezone for date aggregation and boundaries. All timestamps in responses are in UTC, but this controls how dates are bucketed.",
+        "example": "UTC",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Aggregation timeframe for timeseries data (auto-detected from date range if not specified). Auto-detection uses: minute (<2h), hour (<2d), day (<64d), week (<183d), month (>=183d).",
+      "in": "query",
+      "name": "timeframe",
+      "required": false,
+      "schema": {
+        "description": "Aggregation timeframe for timeseries data (auto-detected from date range if not specified). Auto-detection uses: minute (<2h), hour (<2d), day (<64d), week (<183d), month (>=183d).",
+        "enum": [
+          "minute",
+          "hour",
+          "day",
+          "week",
+          "month"
+        ],
+        "example": "day",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Whether to adjust start/end dates to align with timeframe boundaries and use exclusive end. Defaults to true. When true, dates are aligned to the start of the timeframe period (e.g., start of day) and end is made exclusive (e.g., start of next day). When false, uses exact dates provided.",
+      "in": "query",
+      "name": "bound_to_timeframe",
+      "required": false,
+      "schema": {
+        "default": "true",
+        "description": "Whether to adjust start/end dates to align with timeframe boundaries and use exclusive end. Defaults to true. When true, dates are aligned to the start of the timeframe period (e.g., start of day) and end is made exclusive (e.g., start of next day). When false, uses exact dates provided.",
+        "enum": [
+          "true",
+          "false"
+        ],
+        "example": "true",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Filter by specific endpoint ID(s). Accepts 1-50 endpoint IDs. Supports comma-separated values: ?endpoint_id=model1,model2 or array syntax: ?endpoint_id=model1&endpoint_id=model2",
+      "explode": true,
+      "in": "query",
+      "name": "endpoint_id",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Filter by specific endpoint ID(s). Accepts 1-50 endpoint IDs. Supports comma-separated values: ?endpoint_id=model1,model2 or array syntax: ?endpoint_id=model1&endpoint_id=model2",
+        "example": [
+          "fal-ai/flux/dev"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Filter by specific API key ID(s). Accepts 1-50 key IDs. Supports comma-separated values: ?api_key_id=key1,key2 or array syntax: ?api_key_id=key1&api_key_id=key2",
+      "explode": true,
+      "in": "query",
+      "name": "api_key_id",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Filter by specific API key ID(s). Accepts 1-50 key IDs. Supports comma-separated values: ?api_key_id=key1,key2 or array syntax: ?api_key_id=key1&api_key_id=key2",
+        "example": [
+          "abc123"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Filter by one or more team usernames within the organization. Accepts a comma-separated list or repeated parameter. If not provided, returns usage across all teams.",
+      "explode": true,
+      "in": "query",
+      "name": "team_username",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Filter by one or more team usernames within the organization. Accepts a comma-separated list or repeated parameter. If not provided, returns usage across all teams.",
+        "example": [
+          "acme-ml-team"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Restrict results to one or more product lines. Accepts a comma-separated list or repeated parameter. Defaults to all three (model_apis, serverless, compute).",
+      "explode": true,
+      "in": "query",
+      "name": "product",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Restrict results to one or more product lines. Accepts a comma-separated list or repeated parameter. Defaults to all three (model_apis, serverless, compute).",
+        "example": [
+          "model_apis",
+          "compute"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Data to include in the response. Use 'time_series' for time-bucketed data, 'summary' for aggregate statistics, 'auth_method' for a resolved authentication method label, and 'auth_method_structured' for a machine-readable auth method object (detail, api_key_id, login_username). At least one of 'time_series' or 'summary' is required.",
+      "explode": true,
+      "in": "query",
+      "name": "expand",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "default": [
+          "time_series"
+        ],
+        "description": "Data to include in the response. Use 'time_series' for time-bucketed data, 'summary' for aggregate statistics, 'auth_method' for a resolved authentication method label, and 'auth_method_structured' for a machine-readable auth method object (detail, api_key_id, login_username). At least one of 'time_series' or 'summary' is required.",
+        "example": [
+          "time_series",
+          "auth_method"
+        ]
+      },
+      "style": "form"
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "example": {
+            "has_more": false,
+            "next_cursor": null,
+            "time_series": [
+              {
+                "bucket": "2025-01-15T00:00:00-05:00",
+                "results": [
+                  {
+                    "cost": 0.4,
+                    "currency": "USD",
+                    "endpoint_id": "fal-ai/flux/dev",
+                    "product": "model_apis",
+                    "quantity": 4,
+                    "unit": "image",
+                    "unit_price": 0.1,
+                    "username": "acme-ml-team"
+                  },
+                  {
+                    "cost": 3.6,
+                    "currency": "USD",
+                    "endpoint_id": "type: gpu_1x_h100_sxm5 (my-app, production)",
+                    "product": "compute",
+                    "quantity": 3600,
+                    "unit": "second",
+                    "unit_price": 0.001,
+                    "username": "acme-ml-team"
+                  }
+                ]
+              }
+            ]
+          },
+          "schema": {
+            "description": "Response containing organization usage data with pagination support",
+            "properties": {
+              "has_more": {
+                "description": "Boolean indicating if more results are available (convenience field derived from next_cursor)",
+                "type": "boolean"
+              },
+              "next_cursor": {
+                "description": "Cursor for the next page of results, null if no more pages",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "summary": {
+                "description": "Aggregate statistics (when expand includes 'summary')",
+                "items": {
+                  "description": "Aggregate organization usage statistics for the entire date range",
+                  "properties": {
+                    "auth_method": {
+                      "description": "Authentication method label resolved across the organization (e.g., 'my-key (owner: alice)', 'alice <alice@example.com>', or 'None'). Only populated when 'auth_method' is included in the expand parameter. Falls back to the raw upstream label if the decoration service cannot resolve a row.",
+                      "example": "production-key (owner: acme-ml-team)",
+                      "type": "string"
+                    },
+                    "auth_method_structured": {
+                      "description": "Structured authentication method identity resolved across the organization. Only populated when 'auth_method_structured' is included in the expand parameter.",
+                      "properties": {
+                        "api_key_id": {
+                          "description": "API key ID, present when the request was made with an API key.",
+                          "type": "string"
+                        },
+                        "detail": {
+                          "description": "Human-readable summary of the authentication method (key alias, login username, or 'User token'/'None').",
+                          "type": "string"
+                        },
+                        "login_username": {
+                          "description": "Team member login username (nickname), present when the request was made with a user login token resolvable to a team member.",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "detail"
+                      ],
+                      "type": "object"
+                    },
+                    "cost": {
+                      "description": "Computed cost (quantity × unit_price)",
+                      "example": 0.4,
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "currency": {
+                      "description": "Three-letter currency code (ISO 4217, e.g., 'USD')",
+                      "example": "USD",
+                      "maxLength": 3,
+                      "minLength": 3,
+                      "type": "string"
+                    },
+                    "endpoint_id": {
+                      "description": "Identifier of the billed resource. For 'model_apis' this is the endpoint slug (e.g., 'fal-ai/flux/dev'); for 'serverless' it is the SDK billing line; for 'compute' it is the machine type line (e.g., 'type: gpu_1x_h100_sxm5 (my-app, prod)').",
+                      "example": "fal-ai/flux/dev",
+                      "type": "string"
+                    },
+                    "product": {
+                      "description": "Product line the usage belongs to: 'model_apis' (fal Model APIs — endpoint calls), 'serverless' (fal Serverless SDK billing), or 'compute' (fal Compute — raw instances).",
+                      "enum": [
+                        "model_apis",
+                        "serverless",
+                        "compute"
+                      ],
+                      "example": "model_apis",
+                      "type": "string"
+                    },
+                    "quantity": {
+                      "description": "Quantity of usage in the specified billing unit",
+                      "example": 4,
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "unit": {
+                      "description": "The billing unit (e.g., 'image', 'video', or a GPU/compute unit for some models)",
+                      "example": "image",
+                      "type": "string"
+                    },
+                    "unit_price": {
+                      "description": "Unit price used to compute charges for this line item",
+                      "example": 0.1,
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "username": {
+                      "description": "Team username within the organization — identifies which team incurred this line item.",
+                      "example": "acme-ml-team",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "username",
+                    "product",
+                    "endpoint_id",
+                    "unit",
+                    "quantity",
+                    "unit_price",
+                    "cost",
+                    "currency"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "time_series": {
+                "description": "Time series usage data grouped by time bucket (when expand includes 'time_series'). Each bucket contains all usage records for that time period.",
+                "items": {
+                  "description": "Time bucket with grouped usage records",
+                  "properties": {
+                    "bucket": {
+                      "description": "Time bucket timestamp in user's timezone with offset (ISO8601 datetime)",
+                      "example": "2025-01-15T00:00:00-05:00",
+                      "type": "string"
+                    },
+                    "results": {
+                      "description": "Usage records for this time bucket",
+                      "items": {
+                        "description": "Organization usage line item with team attribution",
+                        "properties": {
+                          "auth_method": {
+                            "description": "Authentication method label resolved across the organization (e.g., 'my-key (owner: alice)', 'alice <alice@example.com>', or 'None'). Only populated when 'auth_method' is included in the expand parameter. Falls back to the raw upstream label if the decoration service cannot resolve a row.",
+                            "example": "production-key (owner: acme-ml-team)",
+                            "type": "string"
+                          },
+                          "auth_method_structured": {
+                            "description": "Structured authentication method identity resolved across the organization. Only populated when 'auth_method_structured' is included in the expand parameter.",
+                            "properties": {
+                              "api_key_id": {
+                                "description": "API key ID, present when the request was made with an API key.",
+                                "type": "string"
+                              },
+                              "detail": {
+                                "description": "Human-readable summary of the authentication method (key alias, login username, or 'User token'/'None').",
+                                "type": "string"
+                              },
+                              "login_username": {
+                                "description": "Team member login username (nickname), present when the request was made with a user login token resolvable to a team member.",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "detail"
+                            ],
+                            "type": "object"
+                          },
+                          "cost": {
+                            "description": "Computed cost (quantity × unit_price)",
+                            "example": 0.4,
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "currency": {
+                            "description": "Three-letter currency code (ISO 4217, e.g., 'USD')",
+                            "example": "USD",
+                            "maxLength": 3,
+                            "minLength": 3,
+                            "type": "string"
+                          },
+                          "endpoint_id": {
+                            "description": "Identifier of the billed resource. For 'model_apis' this is the endpoint slug (e.g., 'fal-ai/flux/dev'); for 'serverless' it is the SDK billing line; for 'compute' it is the machine type line (e.g., 'type: gpu_1x_h100_sxm5 (my-app, prod)').",
+                            "example": "fal-ai/flux/dev",
+                            "type": "string"
+                          },
+                          "product": {
+                            "description": "Product line the usage belongs to: 'model_apis' (fal Model APIs — endpoint calls), 'serverless' (fal Serverless SDK billing), or 'compute' (fal Compute — raw instances).",
+                            "enum": [
+                              "model_apis",
+                              "serverless",
+                              "compute"
+                            ],
+                            "example": "model_apis",
+                            "type": "string"
+                          },
+                          "quantity": {
+                            "description": "Quantity of usage in the specified billing unit",
+                            "example": 4,
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "unit": {
+                            "description": "The billing unit (e.g., 'image', 'video', or a GPU/compute unit for some models)",
+                            "example": "image",
+                            "type": "string"
+                          },
+                          "unit_price": {
+                            "description": "Unit price used to compute charges for this line item",
+                            "example": 0.1,
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "username": {
+                            "description": "Team username within the organization — identifies which team incurred this line item.",
+                            "example": "acme-ml-team",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "username",
+                          "product",
+                          "endpoint_id",
+                          "unit",
+                          "quantity",
+                          "unit_price",
+                          "cost",
+                          "currency"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "bucket",
+                    "results"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "next_cursor",
+              "has_more"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Organization usage data retrieved successfully"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Invalid request parameters",
+              "type": "validation_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Authentication required",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Authentication required"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Access denied",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Access denied"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Resource not found",
+              "type": "not_found"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Resource not found"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Rate limit exceeded",
+              "type": "rate_limited"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Rate limit exceeded"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "An unexpected error occurred",
+              "type": "server_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Internal server error"
+    }
+  },
+  "security": [
+    {
+      "adminApiKey": []
+    }
+  ],
+  "summary": "Organization Usage",
+  "tags": [
+    "Organization"
+  ]
+}
