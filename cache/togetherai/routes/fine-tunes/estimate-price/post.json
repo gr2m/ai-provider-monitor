@@ -6,7 +6,7 @@
         "schema": {
           "properties": {
             "from_checkpoint": {
-              "description": "The checkpoint identifier to continue training from a previous fine-tuning job. Format is `{$JOB_ID}` or `{$OUTPUT_MODEL_NAME}` or `{$JOB_ID}:{$STEP}` or `{$OUTPUT_MODEL_NAME}:{$STEP}`. The step value is optional; without it, the final checkpoint will be used.",
+              "description": "The checkpoint identifier to continue training from a previous fine-tuning job. Format is `{$JOB_ID}` or `{$OUTPUT_MODEL_NAME}` or `{$JOB_ID}:{$STEP}` or `{$OUTPUT_MODEL_NAME}:{$STEP}`. The step value is optional; without it, uses the final checkpoint.",
               "type": "string"
             },
             "model": {
@@ -41,7 +41,7 @@
             },
             "training_type": {
               "default": null,
-              "description": "The training type to use. If not provided, the job will default to LoRA training type.",
+              "description": "The training type to use. Defaults to LoRA if not provided.",
               "nullable": true,
               "oneOf": [
                 {
@@ -72,30 +72,72 @@
       "content": {
         "application/json": {
           "schema": {
-            "properties": {
-              "allowed_to_proceed": {
-                "description": "Whether the user is allowed to proceed with the fine-tuning job",
-                "example": true,
-                "type": "boolean"
+            "oneOf": [
+              {
+                "properties": {
+                  "allowed_to_proceed": {
+                    "description": "Whether you are allowed to proceed with the fine-tuning job.",
+                    "example": true,
+                    "type": "boolean"
+                  },
+                  "estimated_eval_token_count": {
+                    "description": "The estimated number of tokens for evaluation",
+                    "type": "number"
+                  },
+                  "estimated_total_price": {
+                    "description": "The price of the fine-tuning job",
+                    "type": "number"
+                  },
+                  "estimated_train_token_count": {
+                    "description": "The estimated number of tokens to be trained",
+                    "type": "number"
+                  },
+                  "estimation_available": {
+                    "description": "Whether price estimation is available for the requested fine-tune job.",
+                    "enum": [
+                      true
+                    ],
+                    "type": "boolean"
+                  },
+                  "user_limit": {
+                    "description": "Your credit limit in dollars.",
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "estimation_available"
+                ],
+                "type": "object"
               },
-              "estimated_eval_token_count": {
-                "description": "The estimated number of tokens for evaluation",
-                "type": "number"
-              },
-              "estimated_total_price": {
-                "description": "The price of the fine-tuning job",
-                "type": "number"
-              },
-              "estimated_train_token_count": {
-                "description": "The estimated number of tokens to be trained",
-                "type": "number"
-              },
-              "user_limit": {
-                "description": "The user's credit limit in dollars",
-                "type": "number"
+              {
+                "properties": {
+                  "estimation_available": {
+                    "description": "Whether price estimation is available for the requested fine-tune job.",
+                    "enum": [
+                      false
+                    ],
+                    "type": "boolean"
+                  },
+                  "unavailable_reason": {
+                    "description": "Reason price estimation is unavailable for the requested fine-tune job.",
+                    "enum": [
+                      "multimodal_dataset",
+                      "train_file_not_validated",
+                      "eval_file_not_validated",
+                      "train_file_invalid",
+                      "eval_file_invalid"
+                    ],
+                    "example": "multimodal_dataset",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "estimation_available",
+                  "unavailable_reason"
+                ],
+                "type": "object"
               }
-            },
-            "type": "object"
+            ]
           }
         }
       },
@@ -128,7 +170,7 @@
           },
           "train_on_inputs": {
             "default": "auto",
-            "description": "Whether to mask the user messages in conversational data or prompts in instruction data.",
+            "description": "Whether to mask user messages in conversational data or prompts in instruction data.",
             "oneOf": [
               {
                 "type": "boolean"
@@ -153,7 +195,6 @@
         "properties": {
           "dpo_beta": {
             "default": 0.1,
-            "format": "float",
             "type": "number"
           },
           "dpo_normalize_logratios_by_length": {
@@ -172,12 +213,10 @@
           },
           "rpo_alpha": {
             "default": 0,
-            "format": "float",
             "type": "number"
           },
           "simpo_gamma": {
             "default": 0,
-            "format": "float",
             "type": "number"
           }
         },
@@ -201,23 +240,28 @@
         "type": "object"
       },
       "LoRATrainingType": {
+        "description": "LoRA training configuration for a fine-tuning job.",
         "properties": {
           "lora_alpha": {
+            "description": "Scaling factor applied to the LoRA adapter weights.",
             "type": "integer"
           },
           "lora_dropout": {
             "default": 0,
-            "format": "float",
+            "description": "Dropout probability applied to LoRA adapter inputs.",
             "type": "number"
           },
           "lora_r": {
+            "description": "Rank of the LoRA adapter matrices.",
             "type": "integer"
           },
           "lora_trainable_modules": {
             "default": "all-linear",
+            "description": "Comma-separated LoRA target modules. Use `all-linear` for model defaults; MoE expert modules (`w_up`, `w_gate`, `w_down`) can be combined with attention modules on compatible models. Fine-tunes that target any expert module produce adapter-only output.",
             "type": "string"
           },
           "type": {
+            "description": "Identifies this request as a LoRA fine-tune.",
             "enum": [
               "Lora"
             ],

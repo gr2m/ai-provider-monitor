@@ -97,10 +97,6 @@
         "enum": [
           "fine-tune",
           "eval",
-          "eval-sample",
-          "eval-output",
-          "eval-summary",
-          "batch-generated",
           "batch-api"
         ],
         "example": "fine-tune",
@@ -114,7 +110,8 @@
             "description": "The type of the file such as `jsonl`, `csv`, or `parquet`."
           },
           "Processed": {
-            "description": "Whether the file has been parsed and analyzed for correctness for fine-tuning.",
+            "deprecated": true,
+            "description": "Deprecated. Whether file has been fully uploaded.\n",
             "type": "boolean"
           },
           "bytes": {
@@ -138,9 +135,17 @@
             "const": "file",
             "description": "The object type, which is always `file`."
           },
+          "processing_status": {
+            "$ref": "#/components/schemas/FileProcessingStatus",
+            "description": "Lifecycle state of the file validation pipeline. Files for\nnon-`fine-tune` purposes skip validation.\n"
+          },
           "purpose": {
             "$ref": "#/components/schemas/FilePurpose",
             "description": "The purpose of the file as it was uploaded."
+          },
+          "validation_report": {
+            "$ref": "#/components/schemas/FileValidationReport",
+            "description": "Report produced by the file validation pipeline. Present once\nvalidation has run; absent on files that bypassed validation\n(non-`fine-tune` purposes) or have not yet been validated.\n"
           }
         },
         "required": [
@@ -187,6 +192,78 @@
         },
         "required": [
           "error"
+        ],
+        "type": "object"
+      },
+      "FileProcessingStatus": {
+        "description": "Lifecycle state of a file in the validation pipeline. The typical\nprogression is `PENDING` → `QUEUED` → `RUNNING` → `COMPLETED` /\n`FAILED`. `INVALID_FORMAT` is a terminal state for files whose\ncontents failed validation in a user-correctable way.\n",
+        "enum": [
+          "PENDING",
+          "QUEUED",
+          "RUNNING",
+          "COMPLETED",
+          "FAILED",
+          "INVALID_FORMAT"
+        ],
+        "type": "string"
+      },
+      "FileValidationReport": {
+        "description": "Validation outcome for a fine-tune training file, produced by the\nfile validation pipeline.\n",
+        "properties": {
+          "dataset_format": {
+            "description": "Detected dataset format (e.g. `CONVERSATION`, `INSTRUCTION`).",
+            "type": "string"
+          },
+          "dataset_has_message_weights": {
+            "description": "Whether the dataset carries per-message weights (only possible for `CONVERSATION` format).",
+            "type": "boolean"
+          },
+          "dataset_has_parallel_tool_calls": {
+            "description": "Whether the dataset contains parallel tool-use messages.",
+            "type": "boolean"
+          },
+          "dataset_has_reasoning": {
+            "description": "Whether the dataset contains reasoning content.",
+            "type": "boolean"
+          },
+          "dataset_has_sample_weights": {
+            "description": "Whether the dataset carries per-sample weights.",
+            "type": "boolean"
+          },
+          "dataset_has_tools": {
+            "description": "Whether the dataset contains tool-use messages.",
+            "type": "boolean"
+          },
+          "dataset_is_multimodal": {
+            "description": "Whether the dataset contains multimodal content.",
+            "type": "boolean"
+          },
+          "error": {
+            "description": "Human-readable validation error message. Only present when\n`error_type` is set (i.e. user-correctable failures).\n",
+            "type": "string"
+          },
+          "error_type": {
+            "description": "Category of validation failure.\n",
+            "enum": [
+              "INVALID_FORMAT"
+            ],
+            "type": "string"
+          },
+          "file_id": {
+            "description": "ID of the file this report describes.",
+            "type": "string"
+          },
+          "nlines": {
+            "description": "Number of lines (records) in the dataset.",
+            "type": "integer"
+          },
+          "valid": {
+            "description": "Whether the file passed validation.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "valid"
         ],
         "type": "object"
       }

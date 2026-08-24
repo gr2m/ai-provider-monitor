@@ -41,22 +41,43 @@
     "schemas": {
       "RL.StartTrainingSessionRequest": {
         "properties": {
-          "base_model": {
-            "description": "Base model to use for the training session",
-            "example": "meta-llama/Meta-Llama-3-8B-Instruct",
+          "display_name": {
+            "description": "Optional display name used to identify the training session",
+            "example": "gsm8k-experiment-2",
+            "maxLength": 128,
             "type": "string"
           },
+          "load_optimizer": {
+            "description": "Whether to restore optimizer state and step from a training checkpoint. Omitted or true restores them; false loads weights only with a fresh optimizer and step 0. Not valid for inference or HuggingFace checkpoints, which have no optimizer state.",
+            "example": true,
+            "type": "boolean"
+          },
           "lora_config": {
-            "$ref": "#/components/schemas/RL.LoraConfig"
+            "$ref": "#/components/schemas/RL.LoraConfig",
+            "description": "LoRA adapter configuration for the session"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/RL.TrainingSessionMetadata",
+            "description": "Optional auxiliary metadata to associate with the training session"
+          },
+          "model_resources_id": {
+            "description": "Model resource to attach the session to. The session runs on that resource's GPU pods.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
           },
           "resume_from_checkpoint_id": {
             "description": "Checkpoint ID to resume from",
             "example": "123e4567-e89b-12d3-a456-426614174000",
             "type": "string"
+          },
+          "resume_from_hf_checkpoint": {
+            "description": "HuggingFace repo (or hf://) to resume model weights from. Accepts either a full model or a PEFT adapter directory. Mutually exclusive with resume_from_checkpoint_id.",
+            "example": "your-org/llama-3-8b-finetuned",
+            "type": "string"
           }
         },
         "required": [
-          "base_model"
+          "model_resources_id"
         ],
         "type": "object"
       },
@@ -64,8 +85,8 @@
         "description": "A training session and its current state",
         "properties": {
           "base_model": {
-            "description": "Base model used for the training session",
-            "example": "meta-llama/Meta-Llama-3-8B-Instruct",
+            "description": "Base model the session trains, taken from the model resource it is attached to",
+            "example": "Qwen/Qwen3-0.6B",
             "type": "string"
           },
           "created_at": {
@@ -73,6 +94,21 @@
             "example": "2026-01-02T00:00:00Z",
             "format": "date-time",
             "type": "string"
+          },
+          "created_by": {
+            "description": "ID of the user who created the training session",
+            "example": "user_123",
+            "type": "string"
+          },
+          "display_name": {
+            "description": "Display name used to identify the training session",
+            "example": "gsm8k-experiment-2",
+            "maxLength": 128,
+            "type": "string"
+          },
+          "error": {
+            "$ref": "#/components/schemas/RL.TrainingSessionError",
+            "description": "Structured detail for the training session's current error. Set when the session is in an error state."
           },
           "id": {
             "description": "ID of the training session",
@@ -88,7 +124,17 @@
             "type": "array"
           },
           "lora_config": {
-            "$ref": "#/components/schemas/RL.LoraConfig"
+            "$ref": "#/components/schemas/RL.LoraConfig",
+            "description": "LoRA adapter configuration. Present only for sessions running on a LoRA-enabled model resource."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/RL.TrainingSessionMetadata",
+            "description": "Auxiliary metadata associated with the training session"
+          },
+          "model_resources_id": {
+            "description": "Model resource this session is attached to. The session runs on that resource's GPU pods.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
           },
           "resume_from_checkpoint_id": {
             "description": "Checkpoint ID this session was resumed from",
@@ -103,9 +149,15 @@
           "step": {
             "default": "0",
             "description": "Current training step",
-            "example": 100,
-            "format": "uint64",
-            "type": "string"
+            "example": "100",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
           },
           "training_checkpoints": {
             "description": "List of saved training checkpoints for this session",
@@ -124,14 +176,16 @@
         },
         "required": [
           "id",
+          "metadata",
           "status",
-          "base_model",
           "inference_checkpoints",
           "training_checkpoints",
           "step",
           "created_at",
           "updated_at",
-          "lora_config"
+          "model_resources_id",
+          "created_by",
+          "base_model"
         ],
         "type": "object"
       },
@@ -174,27 +228,79 @@
         "description": "LoRA adapter configuration",
         "properties": {
           "alpha": {
-            "default": "16",
+            "default": "64",
             "description": "Alpha of the LoRA adapter",
-            "example": 16,
-            "format": "int64",
+            "example": 64,
             "type": "integer"
           },
           "dropout": {
-            "default": "0.05",
+            "default": "0.0",
             "description": "Dropout of the LoRA adapter",
-            "example": 0.05,
-            "format": "float",
+            "example": 0,
             "type": "number"
           },
           "rank": {
-            "default": "8",
+            "default": "32",
             "description": "Rank of the LoRA adapter",
-            "example": 8,
-            "format": "int64",
+            "example": 32,
             "type": "integer"
+          },
+          "seed": {
+            "description": "Random seed for initializing LoRA adapter weights. Ignored when LoRA is disabled or the session resumes from a checkpoint.",
+            "example": "59",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "train_unembed": {
+            "default": true,
+            "description": "Whether to also train a LoRA adapter on the output head. Defaults to true.",
+            "example": true,
+            "type": "boolean"
           }
         },
+        "type": "object"
+      },
+      "RL.TrainingSessionMetadata": {
+        "description": "Auxiliary metadata associated with a training session",
+        "properties": {
+          "wandb": {
+            "$ref": "#/components/schemas/RL.WandbMetadata",
+            "description": "Weights & Biases details associated with the training session"
+          }
+        },
+        "type": "object"
+      },
+      "RL.TrainingSessionError": {
+        "description": "Structured detail for the training session's current error",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/RL.TrainingSessionErrorCode",
+            "description": "Finite machine-readable reason code for UI branching",
+            "example": "TRAINING_SESSION_ERROR_CODE_RESOURCE_AT_CAPACITY"
+          },
+          "message": {
+            "description": "User-safe human-readable detail for the current status",
+            "example": "The session could not start because the selected resource has no available capacity.",
+            "type": "string"
+          },
+          "occurred_at": {
+            "description": "Timestamp when this error was reported",
+            "example": "2026-01-02T00:00:05Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "occurred_at"
+        ],
         "type": "object"
       },
       "RL.InferenceCheckpoint": {
@@ -217,9 +323,15 @@
           },
           "step": {
             "description": "Training step at time of save",
-            "example": 42,
-            "format": "uint64",
-            "type": "string"
+            "example": "42",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
           }
         },
         "required": [
@@ -257,11 +369,21 @@
             "example": "123e4567-e89b-12d3-a456-426614174000",
             "type": "string"
           },
+          "registration": {
+            "$ref": "#/components/schemas/RL.TrainingCheckpointRegistration",
+            "description": "Together model registry details, set when the checkpoint was uploaded to the registry"
+          },
           "step": {
             "description": "Training step at time of save",
-            "example": 42,
-            "format": "uint64",
-            "type": "string"
+            "example": "42",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
           }
         },
         "required": [
@@ -271,12 +393,80 @@
         ],
         "type": "object"
       },
+      "RL.WandbMetadata": {
+        "description": "Details that associate a training session with a Weights & Biases run",
+        "properties": {
+          "entity": {
+            "description": "Weights & Biases username or team that owns the project",
+            "example": "example-org",
+            "maxLength": 256,
+            "type": "string"
+          },
+          "group": {
+            "description": "Weights & Biases group used to organize related runs",
+            "example": "gsm8k-35b-sweep",
+            "maxLength": 256,
+            "type": "string"
+          },
+          "project": {
+            "description": "Weights & Biases project containing the run",
+            "example": "grpo-gsm8k",
+            "maxLength": 256,
+            "type": "string"
+          },
+          "run_id": {
+            "description": "Unique identifier assigned to the run by Weights & Biases",
+            "example": "abc123",
+            "maxLength": 256,
+            "type": "string"
+          },
+          "run_name": {
+            "description": "Human-readable name of the Weights & Biases run",
+            "example": "exp2-thinking-4k-ctx",
+            "maxLength": 256,
+            "type": "string"
+          },
+          "url": {
+            "description": "HTTPS URL for the Weights & Biases run",
+            "example": "https://wandb.ai/example-org/example-project/runs/run-id",
+            "maxLength": 2048,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "RL.TrainingSessionErrorCode": {
+        "description": "Finite machine-readable training session lifecycle error code",
+        "enum": [
+          "TRAINING_SESSION_ERROR_CODE_RESOURCE_UNAVAILABLE",
+          "TRAINING_SESSION_ERROR_CODE_RESOURCE_AT_CAPACITY",
+          "TRAINING_SESSION_ERROR_CODE_TIMED_OUT",
+          "TRAINING_SESSION_ERROR_CODE_SESSION_FAILED"
+        ],
+        "type": "string"
+      },
       "RL.InferenceCheckpointRegistration": {
         "description": "Model registration details for an inference checkpoint",
         "properties": {
+          "adapter_object_id": {
+            "description": "Together model registry object ID for the adapter checkpoint (e.g. `ml_...`), set on LoRA training sessions",
+            "type": "string"
+          },
+          "adapter_object_revision_id": {
+            "description": "Together model registry revision ID for the adapter checkpoint (e.g. `rv_...`)",
+            "type": "string"
+          },
           "model_name": {
             "description": "Registered model name for downloading the checkpoint",
             "example": "username/Meta-Llama-3-8B-rl-step-42-20260216",
+            "type": "string"
+          },
+          "model_object_id": {
+            "description": "Together model registry object ID for the model checkpoint (e.g. `ml_...`), set on full-weight training sessions",
+            "type": "string"
+          },
+          "model_object_revision_id": {
+            "description": "Together model registry revision ID for the model checkpoint (e.g. `rv_...`)",
             "type": "string"
           },
           "registered_at": {
@@ -289,6 +479,23 @@
         "required": [
           "model_name",
           "registered_at"
+        ],
+        "type": "object"
+      },
+      "RL.TrainingCheckpointRegistration": {
+        "description": "Together model registry details for a training checkpoint",
+        "properties": {
+          "object_id": {
+            "description": "Together model registry object ID for the training checkpoint artifact (e.g. `ml_...`)",
+            "type": "string"
+          },
+          "object_revision_id": {
+            "description": "Together model registry revision ID for the training checkpoint artifact (e.g. `rv_...`), empty when the upload reported no revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object_id"
         ],
         "type": "object"
       }

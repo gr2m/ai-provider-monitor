@@ -136,11 +136,20 @@
       },
       "RL.LossConfig": {
         "properties": {
+          "cispo_params": {
+            "$ref": "#/components/schemas/RL.CISPOLossParams"
+          },
           "cross_entropy_params": {
             "$ref": "#/components/schemas/RL.CrossEntropyLossParams"
           },
+          "dro_params": {
+            "$ref": "#/components/schemas/RL.DROLossParams"
+          },
           "grpo_params": {
             "$ref": "#/components/schemas/RL.GRPOLossParams"
+          },
+          "ppo_params": {
+            "$ref": "#/components/schemas/RL.PPOLossParams"
           },
           "type": {
             "$ref": "#/components/schemas/RL.LossType",
@@ -192,12 +201,10 @@
           "loss": {
             "description": "Loss value",
             "example": 2.345,
-            "format": "double",
             "type": "number"
           },
           "metrics": {
             "additionalProperties": {
-              "format": "double",
               "type": "number"
             },
             "description": "Loss-specific metrics (e.g., KL divergence, clip fraction for GRPO)",
@@ -224,9 +231,43 @@
         ],
         "type": "string"
       },
+      "RL.CISPOLossParams": {
+        "properties": {
+          "clip_high_threshold": {
+            "default": "4.0",
+            "description": "Upper absolute bound for the importance ratio; the clipped ratio is applied as a detached coefficient",
+            "example": 4,
+            "format": "float",
+            "type": "number"
+          },
+          "clip_low_threshold": {
+            "default": "0.0",
+            "description": "Lower absolute bound for the importance ratio; the clipped ratio is applied as a detached coefficient",
+            "example": 0,
+            "format": "float",
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
       "RL.CrossEntropyLossParams": {
+        "additionalProperties": false,
         "description": "Cross-entropy loss parameters (currently empty).",
         "properties": {},
+        "type": "object"
+      },
+      "RL.DROLossParams": {
+        "properties": {
+          "beta": {
+            "description": "Coefficient on the quadratic log-ratio penalty. Required; there is no default.",
+            "example": 0.05,
+            "format": "float",
+            "type": "number"
+          }
+        },
+        "required": [
+          "beta"
+        ],
         "type": "object"
       },
       "RL.GRPOLossParams": {
@@ -241,20 +282,44 @@
             "default": "0.0",
             "description": "KL penalty coefficient",
             "example": 0.1,
+            "type": "number"
+          },
+          "clip_high_threshold": {
+            "default": "1.2",
+            "description": "Upper clip threshold for the importance-sampling ratio. The ratio is clamped to this bound; tighter clipping makes policy updates more conservative. Must be >= 1.",
+            "example": 1.2,
             "format": "float",
             "type": "number"
           },
-          "clip_high": {
-            "default": "0.28",
-            "description": "Upper clip bound for importance ratio",
-            "example": 0.28,
+          "clip_low_threshold": {
+            "default": "0.8",
+            "description": "Lower clip threshold for the importance-sampling ratio. The ratio is clamped to this bound; tighter clipping makes policy updates more conservative. Must be <= 1.",
+            "example": 0.8,
             "format": "float",
             "type": "number"
           },
-          "clip_low": {
-            "default": "0.2",
-            "description": "Lower clip bound for importance ratio",
-            "example": 0.2,
+          "ratio_type": {
+            "$ref": "#/components/schemas/RL.GRPOLossRatioType",
+            "default": "GRPO_LOSS_RATIO_TYPE_TOKEN",
+            "description": "Controls how the importance-sampling ratio is computed in GRPO loss. Defaults to token-level ratios, which is the standard GRPO behavior. Use sequence-level ratios to enable GSPO-style loss calculation instead.",
+            "example": "GRPO_LOSS_RATIO_TYPE_TOKEN"
+          }
+        },
+        "type": "object"
+      },
+      "RL.PPOLossParams": {
+        "properties": {
+          "clip_high_threshold": {
+            "default": "1.2",
+            "description": "Upper absolute bound for the importance ratio in the clipped surrogate. Must be >= 1.",
+            "example": 1.2,
+            "format": "float",
+            "type": "number"
+          },
+          "clip_low_threshold": {
+            "default": "0.8",
+            "description": "Lower absolute bound for the importance ratio in the clipped surrogate. Must be <= 1.",
+            "example": 0.8,
             "format": "float",
             "type": "number"
           }
@@ -263,25 +328,49 @@
       },
       "RL.LossType": {
         "default": "LOSS_TYPE_UNSPECIFIED",
+        "description": "Type of loss function used for RL training.",
         "enum": [
           "LOSS_TYPE_UNSPECIFIED",
           "LOSS_TYPE_CROSS_ENTROPY",
-          "LOSS_TYPE_GRPO"
+          "LOSS_TYPE_GRPO",
+          "LOSS_TYPE_IMPORTANCE_SAMPLING",
+          "LOSS_TYPE_PPO",
+          "LOSS_TYPE_CISPO",
+          "LOSS_TYPE_DRO"
         ],
         "type": "string"
       },
       "RL.LossInputs": {
+        "description": "Token-level inputs used to compute the loss for one training sample.",
         "properties": {
-          "grpo_inputs": {
-            "$ref": "#/components/schemas/RL.GRPOLossInputs"
+          "cispo_inputs": {
+            "$ref": "#/components/schemas/RL.CISPOLossInputs"
           },
-          "loss_mask": {
-            "$ref": "#/components/schemas/RL.LossMask",
-            "description": "Per-token loss mask (1=compute loss, 0=ignore)"
+          "dro_inputs": {
+            "$ref": "#/components/schemas/RL.DROLossInputs"
+          },
+          "grpo_inputs": {
+            "$ref": "#/components/schemas/RL.GRPOLossInputs",
+            "description": "Inputs required when the loss type is GRPO"
+          },
+          "importance_sampling_inputs": {
+            "$ref": "#/components/schemas/RL.ImportanceSamplingLossInputs",
+            "description": "Inputs required when the loss type is importance sampling"
+          },
+          "ppo_inputs": {
+            "$ref": "#/components/schemas/RL.PPOLossInputs"
+          },
+          "routed_experts": {
+            "$ref": "#/components/schemas/RL.RoutedExperts",
+            "description": "Optional MoE per-token routing captured at sample time. Replayed on every training operation, so expert selection matches the one used at sample time. Must cover the whole sample, or all but its last token."
           },
           "target_tokens": {
             "$ref": "#/components/schemas/RL.LossTargetTokens",
             "description": "Target tokens for loss computation"
+          },
+          "weights": {
+            "$ref": "#/components/schemas/RL.Weights",
+            "description": "Per-token loss weights (>= 0), one weight per target token. Required for cross-entropy, which honors fractional weights; other loss types treat weights as a 0/1 mask."
           }
         },
         "required": [
@@ -294,7 +383,7 @@
           "chunks": {
             "description": "Input chunks for the model",
             "items": {
-              "$ref": "#/components/schemas/RL.InputChunk",
+              "$ref": "#/components/schemas/RL.ModelInputChunk",
               "type": "object"
             },
             "type": "array"
@@ -307,13 +396,15 @@
       },
       "RL.TrainingOperationErrorCode": {
         "default": "TRAINING_OPERATION_ERROR_CODE_UNSPECIFIED",
+        "description": "Application error code for a failed training operation",
         "enum": [
           "TRAINING_OPERATION_ERROR_CODE_UNSPECIFIED",
           "TRAINING_OPERATION_ERROR_CODE_RESOURCE_EXHAUSTED",
           "TRAINING_OPERATION_ERROR_CODE_TIMEOUT",
           "TRAINING_OPERATION_ERROR_CODE_INTERNAL_ERROR",
           "TRAINING_OPERATION_ERROR_CODE_SESSION_NOT_ACTIVE",
-          "TRAINING_OPERATION_ERROR_CODE_INVALID_INPUT"
+          "TRAINING_OPERATION_ERROR_CODE_INVALID_INPUT",
+          "TRAINING_OPERATION_ERROR_CODE_NON_FINITE_LOSS"
         ],
         "type": "string"
       },
@@ -327,15 +418,58 @@
         ],
         "type": "string"
       },
+      "RL.GRPOLossRatioType": {
+        "default": "GRPO_LOSS_RATIO_TYPE_TOKEN",
+        "description": "Controls whether GRPO loss uses token-level or sequence-level importance ratios.",
+        "enum": [
+          "GRPO_LOSS_RATIO_TYPE_TOKEN",
+          "GRPO_LOSS_RATIO_TYPE_SEQUENCE"
+        ],
+        "type": "string"
+      },
+      "RL.CISPOLossInputs": {
+        "properties": {
+          "advantages": {
+            "$ref": "#/components/schemas/RL.LossAdvantages",
+            "description": "Per-token advantages for CISPO"
+          },
+          "logprobs": {
+            "$ref": "#/components/schemas/RL.LossLogprobs",
+            "description": "Log probabilities for CISPO"
+          }
+        },
+        "required": [
+          "advantages",
+          "logprobs"
+        ],
+        "type": "object"
+      },
+      "RL.DROLossInputs": {
+        "properties": {
+          "advantages": {
+            "$ref": "#/components/schemas/RL.LossAdvantages",
+            "description": "Per-token advantages for DRO"
+          },
+          "logprobs": {
+            "$ref": "#/components/schemas/RL.LossLogprobs",
+            "description": "Log probabilities for DRO"
+          }
+        },
+        "required": [
+          "advantages",
+          "logprobs"
+        ],
+        "type": "object"
+      },
       "RL.GRPOLossInputs": {
         "properties": {
           "advantages": {
             "$ref": "#/components/schemas/RL.LossAdvantages",
             "description": "Per-token advantages for GRPO"
           },
-          "generator_logprobs": {
+          "logprobs": {
             "$ref": "#/components/schemas/RL.LossLogprobs",
-            "description": "Generator log probabilities for GRPO"
+            "description": "Log probabilities for GRPO"
           },
           "reference_logprobs": {
             "$ref": "#/components/schemas/RL.LossLogprobs",
@@ -344,19 +478,64 @@
         },
         "required": [
           "advantages",
-          "generator_logprobs"
+          "logprobs"
         ],
         "type": "object"
       },
-      "RL.LossMask": {
-        "description": "Per-token loss mask (1=compute loss, 0=ignore)",
+      "RL.ImportanceSamplingLossInputs": {
+        "description": "Loss inputs for unclipped importance-sampling policy-gradient updates.",
+        "properties": {
+          "advantages": {
+            "$ref": "#/components/schemas/RL.LossAdvantages",
+            "description": "Per-token advantages for importance sampling"
+          },
+          "logprobs": {
+            "$ref": "#/components/schemas/RL.LossLogprobs",
+            "description": "Log probabilities for importance sampling"
+          }
+        },
+        "required": [
+          "advantages",
+          "logprobs"
+        ],
+        "type": "object"
+      },
+      "RL.PPOLossInputs": {
+        "properties": {
+          "advantages": {
+            "$ref": "#/components/schemas/RL.LossAdvantages",
+            "description": "Per-token advantages for PPO"
+          },
+          "logprobs": {
+            "$ref": "#/components/schemas/RL.LossLogprobs",
+            "description": "Log probabilities for PPO"
+          }
+        },
+        "required": [
+          "advantages",
+          "logprobs"
+        ],
+        "type": "object"
+      },
+      "RL.RoutedExperts": {
+        "description": "Mixture-of-experts routing decisions captured while generating, so training can reuse the same expert selection. Exactly one source is set—legacy inline `data`, or a backend-owned `object_uri` that the manager hydrates before training. The contiguous int32 buffer is reshaped by `shape`, which is always `[num_tokens, num_layers, width]`; packed buffers carry fp32-bitcast routing weights in the trailing top-k columns.",
         "properties": {
           "data": {
-            "description": "Integer array of per-token mask values (0s and 1s)",
+            "description": "Legacy base64-encoded contiguous int32 routing buffer, row-major over (token, layer, width).",
+            "format": "byte",
+            "type": "string"
+          },
+          "object_uri": {
+            "description": "Backend-owned S3/R2 object URI containing the contiguous int32 routing buffer. Clients relay this URI unchanged; the manager validates and downloads it before training.",
+            "format": "uri",
+            "type": "string"
+          },
+          "shape": {
+            "description": "Buffer shape as `[num_tokens, num_layers, width]`.",
             "example": [
-              0,
-              0,
-              1
+              "512",
+              "64",
+              "8"
             ],
             "items": {
               "oneOf": [
@@ -369,15 +548,10 @@
               ]
             },
             "type": "array"
-          },
-          "dtype": {
-            "$ref": "#/components/schemas/RL.DType",
-            "description": "Data type of the integer array (must be D_TYPE_INT64)",
-            "example": "D_TYPE_INT64"
           }
         },
         "required": [
-          "data"
+          "shape"
         ],
         "type": "object"
       },
@@ -413,12 +587,44 @@
         ],
         "type": "object"
       },
-      "RL.InputChunk": {
+      "RL.Weights": {
         "properties": {
-          "encoded_text": {
-            "$ref": "#/components/schemas/RL.EncodedText"
+          "data": {
+            "description": "Per-token loss weights, one non-negative weight per target token. A weight of 0 excludes the token from loss; fractional weights are honored only by cross-entropy.",
+            "example": [
+              0,
+              0,
+              0.5,
+              1
+            ],
+            "items": {
+              "minimum": 0,
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "dtype": {
+            "$ref": "#/components/schemas/RL.DType",
+            "description": "Data type of the weights array (must be D_TYPE_FLOAT32).",
+            "example": "D_TYPE_FLOAT32"
           }
         },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "RL.ModelInputChunk": {
+        "description": "A single chunk of model input content.",
+        "properties": {
+          "encoded_text": {
+            "$ref": "#/components/schemas/RL.EncodedTextChunk",
+            "description": "Pre-tokenized text content for this input chunk."
+          }
+        },
+        "required": [
+          "encoded_text"
+        ],
         "type": "object"
       },
       "RL.LossAdvantages": {
@@ -430,7 +636,6 @@
               0.5
             ],
             "items": {
-              "format": "float",
               "type": "number"
             },
             "type": "array"
@@ -455,7 +660,6 @@
               -0.8
             ],
             "items": {
-              "format": "float",
               "type": "number"
             },
             "type": "array"
@@ -481,7 +685,8 @@
         ],
         "type": "string"
       },
-      "RL.EncodedText": {
+      "RL.EncodedTextChunk": {
+        "description": "Pre-tokenized text content for a model input chunk.",
         "properties": {
           "tokens": {
             "description": "Pre-tokenized text input",

@@ -1,0 +1,305 @@
+{
+  "description": "Preview how sampled rows from a fine-tuning training file will be tokenized before packing.",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/FineTunePreviewRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/FineTunePreviewResponse"
+          }
+        }
+      },
+      "description": "Tokenized data preview generated successfully"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FineTunePreviewMessageError"
+              },
+              {
+                "$ref": "#/components/schemas/FineTunePreviewDetailError"
+              }
+            ]
+          }
+        }
+      },
+      "description": "Invalid request or unsupported dataset for preview."
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Unauthorized"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Training file not found."
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/FineTunePreviewMessageError"
+          }
+        }
+      },
+      "description": "Internal Server Error"
+    },
+    "502": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/FineTunePreviewMessageError"
+          }
+        }
+      },
+      "description": "Preview service unavailable."
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/FineTunePreviewDetailError"
+          }
+        }
+      },
+      "description": "Preview service is at capacity."
+    }
+  },
+  "summary": "Preview tokenized data",
+  "tags": [
+    "Fine-tuning"
+  ],
+  "components": {
+    "schemas": {
+      "FineTunePreviewRequest": {
+        "description": "Request body for previewing tokenized fine-tuning data.",
+        "properties": {
+          "model": {
+            "description": "Name of the base model whose tokenizer and chat template will be used.",
+            "type": "string"
+          },
+          "top_k": {
+            "default": 5,
+            "description": "Maximum number of rows from the start of the training file to tokenize.",
+            "maximum": 50,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "train_on_inputs": {
+            "default": false,
+            "description": "Whether prompt or user-message tokens should contribute to training loss in the preview.",
+            "type": "boolean"
+          },
+          "training_file": {
+            "description": "File-ID of the uploaded JSONL training file to sample for preview.",
+            "type": "string"
+          },
+          "training_method": {
+            "default": "sft",
+            "description": "Fine-tuning method to preview. Only supervised fine-tuning is currently supported.",
+            "enum": [
+              "sft"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "model",
+          "training_file"
+        ],
+        "type": "object"
+      },
+      "FineTunePreviewResponse": {
+        "description": "Tokenized preview for sampled rows from a fine-tuning training file.",
+        "properties": {
+          "dataset_format": {
+            "description": "Detected SFT dataset format for the sampled rows.",
+            "enum": [
+              "general",
+              "conversation",
+              "instruction"
+            ],
+            "type": "string"
+          },
+          "max_seq_length": {
+            "description": "Maximum sequence length configured for the requested model.",
+            "type": "integer"
+          },
+          "model": {
+            "description": "Name of the base model used to tokenize the sampled rows.",
+            "type": "string"
+          },
+          "rows": {
+            "description": "Tokenized preview rows, in the same order as the sampled training file rows.",
+            "items": {
+              "$ref": "#/components/schemas/FineTunePreviewRow"
+            },
+            "type": "array"
+          },
+          "train_on_inputs": {
+            "description": "Whether prompt or user-message tokens contribute to training loss.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "model",
+          "dataset_format",
+          "max_seq_length",
+          "train_on_inputs",
+          "rows"
+        ],
+        "type": "object"
+      },
+      "FineTunePreviewMessageError": {
+        "description": "Error response with a message field returned by the fine-tuning API layer.",
+        "properties": {
+          "message": {
+            "description": "Human-readable error message.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
+      "FineTunePreviewDetailError": {
+        "description": "Error response with a detail field returned by the preview tokenization service.",
+        "properties": {
+          "detail": {
+            "description": "Human-readable error detail.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "FineTunePreviewRow": {
+        "description": "Tokenized representation of one sampled fine-tuning row.",
+        "properties": {
+          "input_ids": {
+            "description": "Token IDs produced for the sampled row.",
+            "items": {
+              "description": "Token ID from the model tokenizer.",
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "labels": {
+            "description": "Training labels for each token; masked tokens use -100.",
+            "items": {
+              "description": "Label value for the token at the same position.",
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "num_tokens": {
+            "description": "Total number of tokens in the preview row after truncation.",
+            "type": "integer"
+          },
+          "num_trained_tokens": {
+            "description": "Number of tokens in the row that contribute to training loss.",
+            "type": "integer"
+          },
+          "tokens": {
+            "description": "Raw token strings produced for the sampled row.",
+            "items": {
+              "description": "Token text from the model tokenizer.",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "trained_spans": {
+            "description": "Half-open token index ranges that contribute to training loss.",
+            "items": {
+              "description": "Start and end token indexes for one trained span.",
+              "items": {
+                "description": "Token index in the row.",
+                "type": "integer"
+              },
+              "maxItems": 2,
+              "minItems": 2,
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "truncated": {
+            "description": "Whether the row was truncated to the model maximum sequence length.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "input_ids",
+          "tokens",
+          "labels",
+          "trained_spans",
+          "num_tokens",
+          "num_trained_tokens",
+          "truncated"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

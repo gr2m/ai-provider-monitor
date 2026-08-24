@@ -62,7 +62,7 @@
             "type": "string"
           },
           "output": {
-            "$ref": "#/components/schemas/RL.SampleResult",
+            "$ref": "#/components/schemas/RL.SampleBatchResult",
             "description": "Result on success"
           },
           "status": {
@@ -128,20 +128,20 @@
         },
         "type": "object"
       },
-      "RL.SampleResult": {
-        "description": "Result of a sample operation",
+      "RL.SampleBatchResult": {
+        "description": "Batched result of a sample operation",
         "properties": {
-          "rollouts": {
-            "description": "Completions grouped by prompt",
+          "results": {
+            "description": "One result per model input",
             "items": {
-              "$ref": "#/components/schemas/RL.SampleRollout",
+              "$ref": "#/components/schemas/RL.SampleResult",
               "type": "object"
             },
             "type": "array"
           }
         },
         "required": [
-          "rollouts"
+          "results"
         ],
         "type": "object"
       },
@@ -158,34 +158,88 @@
       },
       "RL.TrainingOperationErrorCode": {
         "default": "TRAINING_OPERATION_ERROR_CODE_UNSPECIFIED",
+        "description": "Application error code for a failed training operation",
         "enum": [
           "TRAINING_OPERATION_ERROR_CODE_UNSPECIFIED",
           "TRAINING_OPERATION_ERROR_CODE_RESOURCE_EXHAUSTED",
           "TRAINING_OPERATION_ERROR_CODE_TIMEOUT",
           "TRAINING_OPERATION_ERROR_CODE_INTERNAL_ERROR",
           "TRAINING_OPERATION_ERROR_CODE_SESSION_NOT_ACTIVE",
-          "TRAINING_OPERATION_ERROR_CODE_INVALID_INPUT"
+          "TRAINING_OPERATION_ERROR_CODE_INVALID_INPUT",
+          "TRAINING_OPERATION_ERROR_CODE_NON_FINITE_LOSS"
         ],
         "type": "string"
       },
-      "RL.SampleRollout": {
-        "description": "Completions generated for a single prompt",
+      "RL.SampleResult": {
+        "description": "Completions generated for a single model input",
         "properties": {
-          "sequences": {
-            "description": "Completions generated for one prompt",
+          "policy_segments": {
+            "description": "Policy versions that produced these completions",
             "items": {
-              "$ref": "#/components/schemas/RL.SampleSequence",
+              "$ref": "#/components/schemas/RL.PolicyVersionSegment",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "prompt_logprobs": {
+            "description": "Teacher-forced log-probability of each model input token. Full prompt length; entry i corresponds to prompt token i. Entry 0 is always 0 as a placeholder: the first prompt token has no conditioning context, so it has no log-probability. Present only when prompt_logprobs was set on the request.",
+            "example": [
+              0,
+              -0.5,
+              -1.2
+            ],
+            "items": {
+              "format": "double",
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "sequences": {
+            "description": "Generated completions",
+            "items": {
+              "$ref": "#/components/schemas/RL.SampledSequence",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "topk_prompt_logprobs": {
+            "description": "The most likely alternative tokens at each model input token, up to `topk_prompt_logprobs` per position. Full prompt length; entry i corresponds to prompt token i, and entry 0 is empty. Present only when topk_prompt_logprobs was set on the request.",
+            "items": {
+              "$ref": "#/components/schemas/RL.PromptTopLogprobs",
               "type": "object"
             },
             "type": "array"
           }
         },
         "required": [
-          "sequences"
+          "sequences",
+          "policy_segments"
         ],
         "type": "object"
       },
-      "RL.SampleSequence": {
+      "RL.PolicyVersionSegment": {
+        "description": "A (policy version, starting token) span within a sampled sequence. Version 0 is the initial model; each optim_step call increments the version by 1.",
+        "properties": {
+          "start_token": {
+            "description": "Index of the first token of this segment within the sampled sequence. Always 0 for the first segment.",
+            "example": 0,
+            "format": "int32",
+            "type": "integer"
+          },
+          "version": {
+            "description": "Model version under which this segment of tokens was generated",
+            "example": 5,
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "start_token"
+        ],
+        "type": "object"
+      },
+      "RL.SampledSequence": {
         "description": "A single generated completion sequence with tokens and logprobs",
         "properties": {
           "logprobs": {
@@ -196,34 +250,127 @@
               -0.3
             ],
             "items": {
-              "format": "double",
               "type": "number"
             },
             "type": "array"
           },
+          "prompt_cache_hit_tokens": {
+            "description": "Number of model input tokens served from the prefix cache while generating this sequence.",
+            "example": 1024,
+            "format": "int32",
+            "type": "integer"
+          },
+          "routed_experts": {
+            "$ref": "#/components/schemas/RL.RoutedExperts",
+            "description": "MoE per-token routing decisions captured during generation; absent for dense models or when capture is disabled."
+          },
           "stop_reason": {
+            "$ref": "#/components/schemas/RL.StopReason",
             "description": "Reason for stopping generation",
-            "example": "length",
-            "type": "string"
+            "example": "STOP_REASON_LENGTH"
           },
           "tokens": {
             "description": "Generated token IDs",
             "example": [
-              123,
-              456,
-              789
+              "123",
+              "456",
+              "789"
             ],
             "items": {
-              "format": "int64",
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
             },
             "type": "array"
           }
         },
         "required": [
-          "tokens"
+          "tokens",
+          "stop_reason",
+          "prompt_cache_hit_tokens"
         ],
         "type": "object"
+      },
+      "RL.PromptTopLogprobs": {
+        "description": "The most likely alternative tokens at a single prompt position, as two parallel arrays of equal length. Both are empty for a position with no conditioning context, such as position 0.",
+        "properties": {
+          "logprobs": {
+            "description": "Log-probability of each alternative in `token_ids`, at the same index.",
+            "example": [
+              -0.5,
+              -2.1
+            ],
+            "items": {
+              "format": "double",
+              "type": "number"
+            },
+            "type": "array"
+          },
+          "token_ids": {
+            "description": "Token IDs of the alternatives, ordered by descending log-probability.",
+            "example": [
+              123,
+              456
+            ],
+            "items": {
+              "format": "int32",
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "RL.RoutedExperts": {
+        "description": "Mixture-of-experts routing decisions captured while generating, so training can reuse the same expert selection. Exactly one source is set—legacy inline `data`, or a backend-owned `object_uri` that the manager hydrates before training. The contiguous int32 buffer is reshaped by `shape`, which is always `[num_tokens, num_layers, width]`; packed buffers carry fp32-bitcast routing weights in the trailing top-k columns.",
+        "properties": {
+          "data": {
+            "description": "Legacy base64-encoded contiguous int32 routing buffer, row-major over (token, layer, width).",
+            "format": "byte",
+            "type": "string"
+          },
+          "object_uri": {
+            "description": "Backend-owned S3/R2 object URI containing the contiguous int32 routing buffer. Clients relay this URI unchanged; the manager validates and downloads it before training.",
+            "format": "uri",
+            "type": "string"
+          },
+          "shape": {
+            "description": "Buffer shape as `[num_tokens, num_layers, width]`.",
+            "example": [
+              "512",
+              "64",
+              "8"
+            ],
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "shape"
+        ],
+        "type": "object"
+      },
+      "RL.StopReason": {
+        "description": "Reason generation stopped.",
+        "enum": [
+          "STOP_REASON_LENGTH",
+          "STOP_REASON_STOP"
+        ],
+        "type": "string"
       }
     }
   }

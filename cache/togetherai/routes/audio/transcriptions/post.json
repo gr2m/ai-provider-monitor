@@ -30,7 +30,7 @@
           }
         }
       },
-      "description": "BadRequest"
+      "description": "BadRequest. Possible error codes include `audio_too_long` (audio duration exceeds the 4 hour cap), `file_too_large` (URL-fetched audio exceeds the 1 GB server-side cap), `unsupported_format` (codec or container could not be decoded), and `invalid_params` (request parameters failed validation)."
     },
     "401": {
       "content": {
@@ -41,6 +41,16 @@
         }
       },
       "description": "Unauthorized"
+    },
+    "413": {
+      "content": {
+        "text/html": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Payload Too Large. The request body exceeded the 80 MB direct-upload limit. For larger payloads, host the file and submit an HTTPS URL via the `file` field (URL-fetched audio is capped at 1 GB server-side)."
     },
     "429": {
       "content": {
@@ -67,7 +77,7 @@
             "type": "boolean"
           },
           "file": {
-            "description": "Audio file upload or public HTTP/HTTPS URL. Supported formats .wav, .mp3, .m4a, .webm, .flac.",
+            "description": "Audio file upload or public HTTP/HTTPS URL. Supported formats: .wav, .mp3, .m4a, .webm, .flac, .ogg, .opus, .aac. Maximum duration 4 hours; longer audio is rejected with `audio_too_long`. Binary uploads are additionally capped at 80 MB (HTTP 413); URL-fetched audio is capped at 1 GB.",
             "oneOf": [
               {
                 "$ref": "#/components/schemas/AudioFileBinary"
@@ -100,7 +110,7 @@
             "type": "string"
           },
           "prompt": {
-            "description": "Optional text to bias decoding.",
+            "description": "Optional text to bias decoding. Supported only on Whisper-family models (e.g. `openai/whisper-large-v3`). Other STT models (e.g. `nvidia/parakeet-tdt-0.6b-v3`) accept the field for API compatibility but ignore it.",
             "type": "string"
           },
           "response_format": {
@@ -115,7 +125,6 @@
           "temperature": {
             "default": 0,
             "description": "Sampling temperature between 0.0 and 1.0",
-            "format": "float",
             "maximum": 1,
             "minimum": 0,
             "type": "number"
@@ -202,12 +211,12 @@
         "type": "object"
       },
       "AudioFileBinary": {
-        "description": "Audio file to transcribe",
+        "description": "Audio file uploaded as binary. Maximum upload size 80 MB (requests above this are rejected with HTTP 413). For larger payloads, host the file and submit a URL instead.",
         "format": "binary",
         "type": "string"
       },
       "AudioFileUrl": {
-        "description": "Public HTTPS URL to audio file",
+        "description": "Public HTTPS URL the server fetches the audio from. Server-side fetch limit is 1 GB; downloads exceeding the cap fail with `file_too_large`.",
         "format": "uri",
         "type": "string"
       },
@@ -229,7 +238,6 @@
           "duration": {
             "description": "The duration of the audio in seconds",
             "example": 3.5,
-            "format": "float",
             "type": "number"
           },
           "language": {
@@ -251,15 +259,6 @@
             },
             "type": "array"
           },
-          "task": {
-            "description": "The task performed",
-            "enum": [
-              "transcribe",
-              "translate"
-            ],
-            "example": "transcribe",
-            "type": "string"
-          },
           "text": {
             "description": "The transcribed text",
             "example": "Hello, world!",
@@ -274,7 +273,6 @@
           }
         },
         "required": [
-          "task",
           "language",
           "duration",
           "text",
@@ -287,7 +285,6 @@
           "end": {
             "description": "End time of the segment in seconds",
             "example": 3.5,
-            "format": "float",
             "type": "number"
           },
           "id": {
@@ -298,7 +295,6 @@
           "start": {
             "description": "Start time of the segment in seconds",
             "example": 0,
-            "format": "float",
             "type": "number"
           },
           "text": {
@@ -320,7 +316,6 @@
           "end": {
             "description": "End time of the speaker segment in seconds",
             "example": 30.02,
-            "format": "float",
             "type": "number"
           },
           "id": {
@@ -336,7 +331,6 @@
           "start": {
             "description": "Start time of the speaker segment in seconds",
             "example": 0,
-            "format": "float",
             "type": "number"
           },
           "text": {
@@ -367,7 +361,6 @@
           "end": {
             "description": "End time of the word in seconds",
             "example": 0.5,
-            "format": "float",
             "type": "number"
           },
           "speaker_id": {
@@ -378,7 +371,6 @@
           "start": {
             "description": "Start time of the word in seconds",
             "example": 0,
-            "format": "float",
             "type": "number"
           },
           "word": {

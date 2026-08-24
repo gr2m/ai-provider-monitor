@@ -1,0 +1,488 @@
+{
+  "description": "Updates the display name or metadata associated with a training session. Omitted fields remain unchanged, and empty strings clear existing values.",
+  "operationId": "updateTrainingSession",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+        "description": "ID of the training session",
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/RL.UpdateTrainingSessionRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/RL.TrainingSession"
+          }
+        }
+      },
+      "description": "Updated training session details"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "An unexpected error response."
+    }
+  },
+  "summary": "Update a training session",
+  "tags": [
+    "RL"
+  ],
+  "components": {
+    "schemas": {
+      "RL.UpdateTrainingSessionRequest": {
+        "description": "Fields to update on a training session",
+        "properties": {
+          "display_name": {
+            "description": "Display name to update. An empty string clears the existing display name.",
+            "maxLength": 128,
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/RL.TrainingSessionMetadata",
+            "description": "Metadata fields to update. Omitted fields remain unchanged, and empty strings clear existing values."
+          }
+        },
+        "type": "object"
+      },
+      "RL.TrainingSession": {
+        "description": "A training session and its current state",
+        "properties": {
+          "base_model": {
+            "description": "Base model the session trains, taken from the model resource it is attached to",
+            "example": "Qwen/Qwen3-0.6B",
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Timestamp when the training session was created",
+            "example": "2026-01-02T00:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "created_by": {
+            "description": "ID of the user who created the training session",
+            "example": "user_123",
+            "type": "string"
+          },
+          "display_name": {
+            "description": "Display name used to identify the training session",
+            "example": "gsm8k-experiment-2",
+            "maxLength": 128,
+            "type": "string"
+          },
+          "error": {
+            "$ref": "#/components/schemas/RL.TrainingSessionError",
+            "description": "Structured detail for the training session's current error. Set when the session is in an error state."
+          },
+          "id": {
+            "description": "ID of the training session",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "inference_checkpoints": {
+            "description": "List of saved inference checkpoints for this session",
+            "items": {
+              "$ref": "#/components/schemas/RL.InferenceCheckpoint",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "lora_config": {
+            "$ref": "#/components/schemas/RL.LoraConfig",
+            "description": "LoRA adapter configuration. Present only for sessions running on a LoRA-enabled model resource."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/RL.TrainingSessionMetadata",
+            "description": "Auxiliary metadata associated with the training session"
+          },
+          "model_resources_id": {
+            "description": "Model resource this session is attached to. The session runs on that resource's GPU pods.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "resume_from_checkpoint_id": {
+            "description": "Checkpoint ID this session was resumed from",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RL.TrainingSessionStatus",
+            "description": "Status of the training session",
+            "example": "TRAINING_SESSION_STATUS_RUNNING"
+          },
+          "step": {
+            "default": "0",
+            "description": "Current training step",
+            "example": "100",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "training_checkpoints": {
+            "description": "List of saved training checkpoints for this session",
+            "items": {
+              "$ref": "#/components/schemas/RL.TrainingCheckpoint",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "updated_at": {
+            "description": "Timestamp when the training session was last updated",
+            "example": "2026-01-02T00:00:05Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "metadata",
+          "status",
+          "inference_checkpoints",
+          "training_checkpoints",
+          "step",
+          "created_at",
+          "updated_at",
+          "model_resources_id",
+          "created_by",
+          "base_model"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "RL.TrainingSessionMetadata": {
+        "description": "Auxiliary metadata associated with a training session",
+        "properties": {
+          "wandb": {
+            "$ref": "#/components/schemas/RL.WandbMetadata",
+            "description": "Weights & Biases details associated with the training session"
+          }
+        },
+        "type": "object"
+      },
+      "RL.TrainingSessionError": {
+        "description": "Structured detail for the training session's current error",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/RL.TrainingSessionErrorCode",
+            "description": "Finite machine-readable reason code for UI branching",
+            "example": "TRAINING_SESSION_ERROR_CODE_RESOURCE_AT_CAPACITY"
+          },
+          "message": {
+            "description": "User-safe human-readable detail for the current status",
+            "example": "The session could not start because the selected resource has no available capacity.",
+            "type": "string"
+          },
+          "occurred_at": {
+            "description": "Timestamp when this error was reported",
+            "example": "2026-01-02T00:00:05Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "occurred_at"
+        ],
+        "type": "object"
+      },
+      "RL.InferenceCheckpoint": {
+        "description": "Saved inference checkpoint",
+        "properties": {
+          "created_at": {
+            "description": "Timestamp when the checkpoint was created",
+            "example": "2026-01-02T00:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique identifier for the checkpoint",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "registration": {
+            "$ref": "#/components/schemas/RL.InferenceCheckpointRegistration",
+            "description": "Model registration details"
+          },
+          "step": {
+            "description": "Training step at time of save",
+            "example": "42",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "step",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "RL.LoraConfig": {
+        "description": "LoRA adapter configuration",
+        "properties": {
+          "alpha": {
+            "default": "64",
+            "description": "Alpha of the LoRA adapter",
+            "example": 64,
+            "type": "integer"
+          },
+          "dropout": {
+            "default": "0.0",
+            "description": "Dropout of the LoRA adapter",
+            "example": 0,
+            "type": "number"
+          },
+          "rank": {
+            "default": "32",
+            "description": "Rank of the LoRA adapter",
+            "example": 32,
+            "type": "integer"
+          },
+          "seed": {
+            "description": "Random seed for initializing LoRA adapter weights. Ignored when LoRA is disabled or the session resumes from a checkpoint.",
+            "example": "59",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "train_unembed": {
+            "default": true,
+            "description": "Whether to also train a LoRA adapter on the output head. Defaults to true.",
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "RL.TrainingSessionStatus": {
+        "default": "TRAINING_SESSION_STATUS_UNSPECIFIED",
+        "description": "Status of the training session",
+        "enum": [
+          "TRAINING_SESSION_STATUS_UNSPECIFIED",
+          "TRAINING_SESSION_STATUS_CREATING",
+          "TRAINING_SESSION_STATUS_RUNNING",
+          "TRAINING_SESSION_STATUS_STOPPED",
+          "TRAINING_SESSION_STATUS_STOPPING",
+          "TRAINING_SESSION_STATUS_ERROR",
+          "TRAINING_SESSION_STATUS_EXPIRED"
+        ],
+        "type": "string"
+      },
+      "RL.TrainingCheckpoint": {
+        "description": "Saved training checkpoint",
+        "properties": {
+          "created_at": {
+            "description": "Timestamp when the checkpoint was created",
+            "example": "2026-01-02T00:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique identifier for the checkpoint",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "registration": {
+            "$ref": "#/components/schemas/RL.TrainingCheckpointRegistration",
+            "description": "Together model registry details, set when the checkpoint was uploaded to the registry"
+          },
+          "step": {
+            "description": "Training step at time of save",
+            "example": "42",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "step",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "RL.WandbMetadata": {
+        "description": "Details that associate a training session with a Weights & Biases run",
+        "properties": {
+          "entity": {
+            "description": "Weights & Biases username or team that owns the project",
+            "example": "example-org",
+            "maxLength": 256,
+            "type": "string"
+          },
+          "group": {
+            "description": "Weights & Biases group used to organize related runs",
+            "example": "gsm8k-35b-sweep",
+            "maxLength": 256,
+            "type": "string"
+          },
+          "project": {
+            "description": "Weights & Biases project containing the run",
+            "example": "grpo-gsm8k",
+            "maxLength": 256,
+            "type": "string"
+          },
+          "run_id": {
+            "description": "Unique identifier assigned to the run by Weights & Biases",
+            "example": "abc123",
+            "maxLength": 256,
+            "type": "string"
+          },
+          "run_name": {
+            "description": "Human-readable name of the Weights & Biases run",
+            "example": "exp2-thinking-4k-ctx",
+            "maxLength": 256,
+            "type": "string"
+          },
+          "url": {
+            "description": "HTTPS URL for the Weights & Biases run",
+            "example": "https://wandb.ai/example-org/example-project/runs/run-id",
+            "maxLength": 2048,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "RL.TrainingSessionErrorCode": {
+        "description": "Finite machine-readable training session lifecycle error code",
+        "enum": [
+          "TRAINING_SESSION_ERROR_CODE_RESOURCE_UNAVAILABLE",
+          "TRAINING_SESSION_ERROR_CODE_RESOURCE_AT_CAPACITY",
+          "TRAINING_SESSION_ERROR_CODE_TIMED_OUT",
+          "TRAINING_SESSION_ERROR_CODE_SESSION_FAILED"
+        ],
+        "type": "string"
+      },
+      "RL.InferenceCheckpointRegistration": {
+        "description": "Model registration details for an inference checkpoint",
+        "properties": {
+          "adapter_object_id": {
+            "description": "Together model registry object ID for the adapter checkpoint (e.g. `ml_...`), set on LoRA training sessions",
+            "type": "string"
+          },
+          "adapter_object_revision_id": {
+            "description": "Together model registry revision ID for the adapter checkpoint (e.g. `rv_...`)",
+            "type": "string"
+          },
+          "model_name": {
+            "description": "Registered model name for downloading the checkpoint",
+            "example": "username/Meta-Llama-3-8B-rl-step-42-20260216",
+            "type": "string"
+          },
+          "model_object_id": {
+            "description": "Together model registry object ID for the model checkpoint (e.g. `ml_...`), set on full-weight training sessions",
+            "type": "string"
+          },
+          "model_object_revision_id": {
+            "description": "Together model registry revision ID for the model checkpoint (e.g. `rv_...`)",
+            "type": "string"
+          },
+          "registered_at": {
+            "description": "Timestamp when the model was registered",
+            "example": "2026-01-02T00:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_name",
+          "registered_at"
+        ],
+        "type": "object"
+      },
+      "RL.TrainingCheckpointRegistration": {
+        "description": "Together model registry details for a training checkpoint",
+        "properties": {
+          "object_id": {
+            "description": "Together model registry object ID for the training checkpoint artifact (e.g. `ml_...`)",
+            "type": "string"
+          },
+          "object_revision_id": {
+            "description": "Together model registry revision ID for the training checkpoint artifact (e.g. `rv_...`), empty when the upload reported no revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object_id"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

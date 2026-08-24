@@ -1,0 +1,252 @@
+{
+  "description": "Attaches a LoRA adapter to a deployment. If the deployment is at adapter capacity, force can evict the oldest adapter.",
+  "operationId": "DeploymentService_AddAdapter",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "projectId",
+      "required": true,
+      "schema": {
+        "description": "Project identifier.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "path",
+      "name": "endpointId",
+      "required": true,
+      "schema": {
+        "description": "Endpoint identifier.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "path",
+      "name": "deploymentId",
+      "required": true,
+      "schema": {
+        "description": "Deployment identifier.",
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/DE.AddAdapterRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/DE.AdapterEntry"
+          }
+        }
+      },
+      "description": "OK"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Default error response"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.together.ai/v2"
+    }
+  ],
+  "summary": "Add a deployment adapter",
+  "tags": [
+    "DeploymentService"
+  ],
+  "components": {
+    "schemas": {
+      "DE.AddAdapterRequest": {
+        "description": "Configuration for attaching a LoRA adapter to a deployment that has adapter loading enabled.",
+        "properties": {
+          "adapterModelId": {
+            "description": "Adapter model identifier to attach.",
+            "type": "string"
+          },
+          "adapterRevisionId": {
+            "description": "Optional adapter revision to pin. If omitted, the latest revision is resolved at request time.",
+            "type": "string"
+          },
+          "force": {
+            "description": "Whether to evict the oldest adapter if the deployment is at adapter capacity.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "adapterModelId"
+        ],
+        "type": "object"
+      },
+      "DE.AdapterEntry": {
+        "description": "Adapter attached to a deployment with desired revision and observed load state.",
+        "properties": {
+          "adapterModel": {
+            "description": "Resource name of the adapter model, using projects/{projectId}/models/{adapterModelId}.",
+            "type": "string"
+          },
+          "adapterModelId": {
+            "description": "Adapter model identifier attached to the deployment.",
+            "type": "string"
+          },
+          "desiredRevision": {
+            "description": "Resource name of the adapter model revision pinned on the deployment, using projects/{projectId}/models/{adapterModelId}/revisions/{revisionId}.",
+            "type": "string"
+          },
+          "desiredRevisionId": {
+            "description": "Adapter revision pinned on the deployment.",
+            "type": "string"
+          },
+          "etag": {
+            "description": "Row-level etag required for UpdateAdapter and RemoveAdapter.",
+            "type": "string"
+          },
+          "perCluster": {
+            "description": "Per-cluster adapter load state reported by the controller.",
+            "items": {
+              "$ref": "#/components/schemas/DE.DeploymentAdapterStatus"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "adapterModelId",
+          "desiredRevisionId",
+          "perCluster",
+          "etag"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "DE.DeploymentAdapterStatus": {
+        "description": "Controller-reported load state for an adapter on one deployment cluster.",
+        "properties": {
+          "adapterModel": {
+            "description": "Resource name of the adapter model, using projects/{projectId}/models/{adapterModelId}.",
+            "type": "string"
+          },
+          "adapterModelId": {
+            "description": "Adapter model identifier for this status row.",
+            "type": "string"
+          },
+          "clusterId": {
+            "description": "Cluster reporting this adapter status.",
+            "type": "string"
+          },
+          "failedPodCount": {
+            "description": "Number of pods that failed to load the adapter.",
+            "type": "integer"
+          },
+          "loadedAt": {
+            "description": "Time when the adapter first reached READY in this cluster.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "message": {
+            "description": "Human-readable details about the current adapter state.",
+            "type": "string"
+          },
+          "readyPodCount": {
+            "description": "Number of pods with the adapter ready to serve.",
+            "type": "integer"
+          },
+          "realizedEtag": {
+            "description": "Adapter row etag observed by the controller when it wrote this status.",
+            "type": "string"
+          },
+          "realizedRevision": {
+            "description": "Resource name of the adapter model revision currently loaded in this cluster, using projects/{projectId}/models/{adapterModelId}/revisions/{revisionId}.",
+            "type": "string"
+          },
+          "realizedRevisionId": {
+            "description": "Adapter revision currently loaded on pods in this cluster.",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Stable reason code for the current adapter state.",
+            "type": "string"
+          },
+          "state": {
+            "description": "Current adapter load state in this cluster.",
+            "enum": [
+              "ADAPTER_LOAD_STATE_PENDING",
+              "ADAPTER_LOAD_STATE_LOADING",
+              "ADAPTER_LOAD_STATE_READY",
+              "ADAPTER_LOAD_STATE_REMOVING",
+              "ADAPTER_LOAD_STATE_FAILED"
+            ],
+            "type": "string"
+          },
+          "totalPodCount": {
+            "description": "Total pods expected to report adapter load state.",
+            "type": "integer"
+          },
+          "updatedAt": {
+            "description": "Time when this adapter status was last updated.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "adapterModelId",
+          "clusterId",
+          "state",
+          "readyPodCount",
+          "failedPodCount",
+          "totalPodCount"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

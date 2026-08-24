@@ -32,8 +32,31 @@
     "schemas": {
       "GPUClusterInfo": {
         "properties": {
+          "add_ons": {
+            "description": "Enabled add-ons on this cluster. Only add-ons with enabled=true in their config are returned.",
+            "items": {
+              "$ref": "#/components/schemas/AddOnInfo"
+            },
+            "type": "array"
+          },
+          "allocated_preemptible_gpus": {
+            "description": "Actual number of preemptible GPUs currently allocated to the cluster. Updated asynchronously by the fulfillment and reclamation workers; may be less than desired_preemptible_gpus when capacity is constrained.",
+            "type": "integer"
+          },
+          "billing_type": {
+            "description": "Billing type for the cluster (RESERVED, ON_DEMAND, or SCHEDULED_CAPACITY).",
+            "enum": [
+              "RESERVED",
+              "ON_DEMAND",
+              "SCHEDULED_CAPACITY"
+            ],
+            "type": "string"
+          },
           "capacity_pool_id": {
             "type": "string"
+          },
+          "cluster_config": {
+            "$ref": "#/components/schemas/InstanceClusterConfig"
           },
           "cluster_id": {
             "type": "string"
@@ -54,6 +77,10 @@
             },
             "type": "array"
           },
+          "control_plane_ready": {
+            "description": "Whether the control plane is currently ready.",
+            "type": "boolean"
+          },
           "created_at": {
             "format": "date-time",
             "type": "string"
@@ -61,8 +88,24 @@
           "cuda_version": {
             "type": "string"
           },
+          "deleted_gpu_worker_nodes": {
+            "description": "GPU worker nodes retained after they left the live data plane. These are separate from gpu_worker_nodes and must not be counted as live capacity.",
+            "items": {
+              "$ref": "#/components/schemas/GPUClusterGPUWorkerNode"
+            },
+            "type": "array"
+          },
+          "desired_preemptible_gpus": {
+            "description": "Customer's requested number of preemptible GPUs. Set on cluster create or update; persists until changed.",
+            "type": "integer"
+          },
           "duration_hours": {
             "type": "integer"
+          },
+          "first_ready_at": {
+            "description": "Timestamp when the cluster first reached the Ready phase.",
+            "format": "date-time",
+            "type": "string"
           },
           "gpu_type": {
             "enum": [
@@ -71,7 +114,8 @@
               "RTX_6000_PCI",
               "L40_PCIE",
               "B200_SXM",
-              "H100_SXM_INF"
+              "H100_SXM_INF",
+              "B300_SXM"
             ]
           },
           "gpu_worker_nodes": {
@@ -83,13 +127,63 @@
           "install_traefik": {
             "type": "boolean"
           },
+          "is_in_substrate": {
+            "description": "Whether the cluster is managed inside a substrate environment.",
+            "type": "boolean"
+          },
           "kube_config": {
             "type": "string"
+          },
+          "machine_cluster_id": {
+            "description": "ID of the machine cluster backing this GPU cluster.",
+            "type": "string"
+          },
+          "node_lifecycle_events": {
+            "description": "Recent node lifecycle events such as scale-up, scale-down, and preemption. Combine these with live and deleted node lists to render the cluster timeline.",
+            "items": {
+              "$ref": "#/components/schemas/GPUClusterNodeLifecycleEvent"
+            },
+            "type": "array"
+          },
+          "num_capacity_pool_gpus": {
+            "description": "Number of GPUs to draw from a capacity pool. A component of the overall num_gpus, alongside num_reserved_gpus.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "num_cpu_workers": {
+            "description": "Number of CPU-only worker nodes in the cluster.",
+            "type": "integer"
           },
           "num_gpus": {
             "type": "integer"
           },
+          "num_reserved_gpus": {
+            "description": "Number of prepaid reserved GPUs for this cluster. A component of the overall num_gpus, alongside num_capacity_pool_gpus.",
+            "format": "int32",
+            "type": "integer"
+          },
           "nvidia_driver_version": {
+            "type": "string"
+          },
+          "nvidia_driver_version_id": {
+            "description": "Internal NVIDIA version ID for this cluster's driver and CUDA combination.",
+            "type": "string"
+          },
+          "oidc_config": {
+            "$ref": "#/components/schemas/OIDCConfig"
+          },
+          "os_image": {
+            "description": "Data-volume image name for GPU worker nodes.",
+            "type": "string"
+          },
+          "phase_transitions": {
+            "description": "Cluster-level phase transition history.",
+            "items": {
+              "$ref": "#/components/schemas/ClusterPhaseTransition"
+            },
+            "type": "array"
+          },
+          "project_id": {
             "type": "string"
           },
           "region": {
@@ -122,6 +216,14 @@
               "Deleting"
             ]
           },
+          "ums_org_id": {
+            "description": "UMS organization ID associated with this cluster.",
+            "type": "string"
+          },
+          "ums_project_id": {
+            "description": "UMS project ID associated with this cluster.",
+            "type": "string"
+          },
           "volumes": {
             "items": {
               "$ref": "#/components/schemas/GPUClusterVolume"
@@ -142,7 +244,84 @@
           "control_plane_nodes",
           "gpu_worker_nodes",
           "kube_config",
-          "num_gpus"
+          "num_gpus",
+          "project_id",
+          "num_cpu_workers",
+          "phase_transitions",
+          "desired_preemptible_gpus",
+          "allocated_preemptible_gpus",
+          "num_capacity_pool_gpus",
+          "num_reserved_gpus",
+          "billing_type",
+          "add_ons"
+        ],
+        "type": "object"
+      },
+      "AddOnInfo": {
+        "description": "AddOnInfo is returned in cluster responses and add-on CRUD operations.",
+        "properties": {
+          "add_on_type": {
+            "type": "string"
+          },
+          "config": {
+            "$ref": "#/components/schemas/AddOnConfig"
+          },
+          "name": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/AddOnState"
+          }
+        },
+        "required": [
+          "name",
+          "add_on_type",
+          "config",
+          "state"
+        ],
+        "type": "object"
+      },
+      "InstanceClusterConfig": {
+        "properties": {
+          "gpu_operator_version": {
+            "description": "NVIDIA GPU Operator chart/version for the tenant cluster (e.g. v24.6.2). When omitted, a service default is applied.",
+            "type": "string"
+          },
+          "ingress": {
+            "$ref": "#/components/schemas/ClusterIngressConfig"
+          },
+          "jumphost_enabled": {
+            "type": "boolean"
+          },
+          "kubernetes_dashboard_enabled": {
+            "type": "boolean"
+          },
+          "load_balancer": {
+            "enum": [
+              "NONE",
+              "TRAEFIK",
+              "NGINX",
+              "ISTIO"
+            ],
+            "type": "string"
+          },
+          "network_operator_version": {
+            "description": "NVIDIA Network Operator chart/version for the tenant cluster (e.g. v24.7.0). When omitted, a service default is applied.",
+            "type": "string"
+          },
+          "observability": {
+            "$ref": "#/components/schemas/ObservabilityConfig"
+          },
+          "slurm_startup_scripts": {
+            "$ref": "#/components/schemas/SlurmStartupScripts"
+          },
+          "ssh_ca_enabled": {
+            "description": "Whether this cluster uses a per-cluster SSH certificate authority for OIDC-signed SSH access.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "load_balancer"
         ],
         "type": "object"
       },
@@ -160,11 +339,19 @@
           "node_id": {
             "type": "string"
           },
-          "node_name": {
-            "type": "string"
-          },
           "num_cpu_cores": {
             "type": "integer"
+          },
+          "phase_transitions": {
+            "description": "Phase transition history for this control plane node.",
+            "items": {
+              "$ref": "#/components/schemas/NodePhaseTransition"
+            },
+            "type": "array"
+          },
+          "public_ipv4": {
+            "description": "Public IPv4 address of the control plane node.",
+            "type": "string"
           },
           "status": {
             "type": "string"
@@ -172,22 +359,50 @@
         },
         "required": [
           "node_id",
-          "node_name",
           "status",
           "host_name",
           "num_cpu_cores",
           "memory_gib",
-          "network"
+          "network",
+          "phase_transitions"
         ],
         "type": "object"
       },
       "GPUClusterGPUWorkerNode": {
         "properties": {
+          "auto_remediation_enabled": {
+            "description": "Whether auto-remediation is enabled for this node's instance.",
+            "type": "boolean"
+          },
+          "deleted_at": {
+            "description": "Timestamp when the node left the live data plane. Only set for deleted_gpu_worker_nodes.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "ephemeral_storage": {
+            "description": "Ephemeral storage size, such as 1Ti.",
+            "type": "string"
+          },
           "host_name": {
+            "type": "string"
+          },
+          "ib_hca_count": {
+            "description": "Number of InfiniBand HCAs.",
+            "type": "integer"
+          },
+          "ib_hca_type": {
+            "description": "InfiniBand HCA type.",
             "type": "string"
           },
           "instance_id": {
             "type": "string"
+          },
+          "latest_remediation": {
+            "$ref": "#/components/schemas/Remediation"
+          },
+          "marked_for_deletion": {
+            "description": "Whether this node is marked for deletion by the operator.",
+            "type": "boolean"
           },
           "memory_gib": {
             "type": "number"
@@ -201,14 +416,33 @@
           "node_id": {
             "type": "string"
           },
-          "node_name": {
-            "type": "string"
-          },
           "num_cpu_cores": {
             "type": "integer"
           },
           "num_gpus": {
             "type": "integer"
+          },
+          "nvswitch_count": {
+            "description": "Number of NVSwitches.",
+            "type": "integer"
+          },
+          "nvswitch_type": {
+            "description": "NVSwitch type.",
+            "type": "string"
+          },
+          "phase_transitions": {
+            "description": "Phase transition history for this GPU worker node.",
+            "items": {
+              "$ref": "#/components/schemas/NodePhaseTransition"
+            },
+            "type": "array"
+          },
+          "public_ipv4": {
+            "description": "Public IPv4 address of the GPU worker node.",
+            "type": "string"
+          },
+          "slurm_worker_hostname": {
+            "type": "string"
           },
           "status": {
             "type": "string"
@@ -216,28 +450,139 @@
         },
         "required": [
           "node_id",
-          "node_name",
           "status",
           "host_name",
           "num_cpu_cores",
           "num_gpus",
           "memory_gib",
-          "networks"
+          "networks",
+          "phase_transitions"
+        ],
+        "type": "object"
+      },
+      "GPUClusterNodeLifecycleEvent": {
+        "description": "Node lifecycle event included in a GPU cluster timeline.",
+        "properties": {
+          "message": {
+            "description": "Human-readable lifecycle event message.",
+            "type": "string"
+          },
+          "node_id": {
+            "description": "Tenant node name this lifecycle event applies to.",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Lifecycle event reason, for example TogetherScaledUp, TogetherScaledDown, or TogetherPreempted.",
+            "type": "string"
+          },
+          "timestamp": {
+            "description": "Event timestamp.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "node_id",
+          "reason",
+          "message",
+          "timestamp"
+        ],
+        "type": "object"
+      },
+      "OIDCConfig": {
+        "properties": {
+          "ca_cert": {
+            "description": "CA certificate in PEM format to validate the OIDC issuer's TLS certificate. This field is optional but recommended if the issuer uses a private CA or self-signed certificate.",
+            "type": "string"
+          },
+          "client_id": {
+            "description": "OIDC client ID for authentication.",
+            "type": "string"
+          },
+          "group_claim": {
+            "description": "JWT claim to use for user groups. For example, 'groups'",
+            "type": "string"
+          },
+          "group_prefix": {
+            "description": "Prefix to add to the group claim to form the final group name. For example, 'oidc:'",
+            "type": "string"
+          },
+          "issuer_url": {
+            "description": "OIDC issuer URL for authentication. For example, https://accounts.google.com",
+            "type": "string"
+          },
+          "username_claim": {
+            "description": "JWT claim to use as the username. For example, 'sub' or 'email'",
+            "type": "string"
+          },
+          "username_prefix": {
+            "description": "Prefix to add to the username claim to form the final username. For example, 'oidc:'",
+            "type": "string"
+          }
+        },
+        "required": [
+          "issuer_url",
+          "client_id",
+          "username_claim",
+          "username_prefix",
+          "group_claim",
+          "group_prefix"
+        ],
+        "type": "object"
+      },
+      "ClusterPhaseTransition": {
+        "properties": {
+          "phase": {
+            "description": "Cluster phase.",
+            "enum": [
+              "CLUSTER_PHASE_QUEUED",
+              "CLUSTER_PHASE_SCHEDULED",
+              "CLUSTER_PHASE_WAITING_FOR_CONTROL_PLANE_NODES",
+              "CLUSTER_PHASE_WAITING_FOR_DATA_PLANE_NODES",
+              "CLUSTER_PHASE_WAITING_FOR_SUBNET",
+              "CLUSTER_PHASE_WAITING_FOR_SHARED_VOLUME",
+              "CLUSTER_PHASE_WAITING_FOR_AUTO_SCALER",
+              "CLUSTER_PHASE_INSTALLING_DRIVERS",
+              "CLUSTER_PHASE_RUNNING_ACCEPTANCE_TESTS",
+              "CLUSTER_PHASE_ACCEPTANCE_TESTS_FAILED",
+              "CLUSTER_PHASE_RUNNING_NCCL_TESTS",
+              "CLUSTER_PHASE_NCCL_TESTS_FAILED",
+              "CLUSTER_PHASE_READY",
+              "CLUSTER_PHASE_PAUSED",
+              "CLUSTER_PHASE_ON_DEMAND_COMPUTE_PAUSED",
+              "CLUSTER_PHASE_DEGRADED",
+              "CLUSTER_PHASE_DELETING"
+            ],
+            "type": "string"
+          },
+          "transition_time": {
+            "description": "Timestamp when the phase transition occurred.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "phase",
+          "transition_time"
         ],
         "type": "object"
       },
       "GPUClusterVolume": {
         "properties": {
           "size_tib": {
+            "description": "Size of the volume in TiB.",
             "type": "integer"
           },
           "status": {
+            "description": "Current status of the volume.",
             "type": "string"
           },
           "volume_id": {
+            "description": "ID of the volume.",
             "type": "string"
           },
           "volume_name": {
+            "description": "User provided name of the volume.",
             "type": "string"
           }
         },
@@ -246,6 +591,529 @@
           "volume_name",
           "size_tib",
           "status"
+        ],
+        "type": "object"
+      },
+      "AddOnConfig": {
+        "description": "Configuration for a cluster add-on.",
+        "properties": {
+          "dashboard": {
+            "$ref": "#/components/schemas/DashboardConfig"
+          },
+          "headlamp": {
+            "$ref": "#/components/schemas/HeadlampConfig",
+            "description": "Configuration for the Headlamp Kubernetes dashboard add-on."
+          },
+          "ingress": {
+            "$ref": "#/components/schemas/IngressConfig"
+          },
+          "slurm_web": {
+            "$ref": "#/components/schemas/SlurmWebConfig",
+            "description": "Configuration for the Slurm Web add-on."
+          },
+          "torchpass": {
+            "$ref": "#/components/schemas/TorchpassConfig",
+            "description": "Configuration for the Model Aware TorchPass add-on."
+          }
+        },
+        "type": "object"
+      },
+      "AddOnState": {
+        "description": "State for a cluster add-on.",
+        "properties": {
+          "dashboard": {
+            "$ref": "#/components/schemas/DashboardState"
+          },
+          "headlamp": {
+            "$ref": "#/components/schemas/HeadlampState",
+            "description": "State for the Headlamp Kubernetes dashboard add-on."
+          },
+          "ingress": {
+            "$ref": "#/components/schemas/IngressState"
+          },
+          "slurm_web": {
+            "$ref": "#/components/schemas/SlurmWebState",
+            "description": "State for the Slurm Web add-on."
+          },
+          "torchpass": {
+            "$ref": "#/components/schemas/TorchpassState",
+            "description": "State for the Model Aware TorchPass add-on."
+          }
+        },
+        "type": "object"
+      },
+      "ClusterIngressConfig": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "ObservabilityConfig": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "SlurmStartupScripts": {
+        "description": "SlurmStartupScripts carries optional Slurm lifecycle scripts (prolog/epilog, init, extra conf).",
+        "properties": {
+          "controller_epilog": {
+            "description": "Slurm controller epilog script.",
+            "type": "string"
+          },
+          "controller_prolog": {
+            "description": "Slurm controller prolog script.",
+            "type": "string"
+          },
+          "extra_slurm_conf": {
+            "description": "Additional slurm.conf fragments.",
+            "type": "string"
+          },
+          "login_init_script": {
+            "description": "Script run on Slurm login node init.",
+            "type": "string"
+          },
+          "nodeset_init_script": {
+            "description": "Script run on Slurm nodeset init.",
+            "type": "string"
+          },
+          "worker_epilog": {
+            "description": "Slurm worker node epilog script.",
+            "type": "string"
+          },
+          "worker_prolog": {
+            "description": "Slurm worker node prolog script.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "NodePhaseTransition": {
+        "properties": {
+          "phase": {
+            "description": "Node phase.",
+            "enum": [
+              "NODE_PHASE_PENDING",
+              "NODE_PHASE_SCHEDULING",
+              "NODE_PHASE_BOOTING",
+              "NODE_PHASE_BOOTSTRAPPING",
+              "NODE_PHASE_RUNNING",
+              "NODE_PHASE_SUCCEEDED",
+              "NODE_PHASE_FAILED",
+              "NODE_PHASE_PAUSED"
+            ],
+            "type": "string"
+          },
+          "transition_time": {
+            "description": "Timestamp when the phase transition occurred.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "phase",
+          "transition_time"
+        ],
+        "type": "object"
+      },
+      "Remediation": {
+        "description": "Remediation represents a node remediation request for an instance.\nAn instance can have multiple remediations over time (e.g., failed attempts followed by retries).",
+        "properties": {
+          "active_health_check_run_id": {
+            "description": "Active health check run ID (UUID) that triggered this remediation.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "cluster_id": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "create_time": {
+            "description": "When the remediation was created.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "end_time": {
+            "description": "When the remediation completed.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "error_message": {
+            "description": "Error message if the remediation failed.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "id": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "instance_id": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "instance_name": {
+            "description": "Display name of the targeted instance.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "linked_alerts": {
+            "description": "Passive health check alerts linked to this remediation, including resolved alerts.",
+            "items": {
+              "$ref": "#/components/schemas/PassiveHealthCheckAlert"
+            },
+            "readOnly": true,
+            "type": "array"
+          },
+          "mode": {
+            "description": "Remediation mode specifies how the remediation should be performed.\n\n- `REMEDIATION_MODE_VM_ONLY`: Deletes the VM and provisions a new one on any available host.\n- `REMEDIATION_MODE_HOST_AWARE`: Cordons the host, deletes the VM, and provisions a new one on a different host.\n- `REMEDIATION_MODE_EVICT_WITHOUT_REPLACEMENT`: Evicts the VM without provisioning a replacement.\n- `REMEDIATION_MODE_REBOOT_VM`: Reboots the VM in place.\n- `REMEDIATION_MODE_HOST_POWER_CYCLE`: Cordons and power-cycles the bare-metal host while preserving host and node identity.\n",
+            "enum": [
+              "REMEDIATION_MODE_VM_ONLY",
+              "REMEDIATION_MODE_HOST_AWARE",
+              "REMEDIATION_MODE_EVICT_WITHOUT_REPLACEMENT",
+              "REMEDIATION_MODE_REBOOT_VM",
+              "REMEDIATION_MODE_HOST_POWER_CYCLE"
+            ],
+            "type": "string"
+          },
+          "passive_health_check_event_id": {
+            "description": "Passive health check event ID that triggered this remediation.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "reason": {
+            "description": "User-provided reason for the remediation.",
+            "type": "string"
+          },
+          "requested_by": {
+            "description": "Who requested the remediation.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "review_comment": {
+            "description": "Review comment.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "review_time": {
+            "description": "When the remediation was reviewed.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "reviewed_by": {
+            "description": "Who reviewed the remediation.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "start_time": {
+            "description": "When processing started.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "state": {
+            "description": "RemediationState represents the lifecycle state of a remediation.\n\n- `PENDING_APPROVAL`: Awaiting approval before processing can begin.\n- `PENDING`: Approved and queued for processing.\n- `RUNNING`: Actively being processed.\n- `SUCCEEDED`: Successfully completed.\n- `FAILED`: Failed with an error.\n- `CANCELLED`: Cancelled by user or system.\n- `AUTO_RESOLVED`: The underlying issue was automatically resolved before processing.\n- `QUARANTINING`: Cordoning or preparing the host before remediation.\n- `QUARANTINED`: Host has been cordoned or isolated for remediation.\n",
+            "enum": [
+              "PENDING_APPROVAL",
+              "PENDING",
+              "RUNNING",
+              "SUCCEEDED",
+              "FAILED",
+              "CANCELLED",
+              "AUTO_RESOLVED",
+              "QUARANTINING",
+              "QUARANTINED"
+            ],
+            "readOnly": true,
+            "type": "string"
+          },
+          "trigger": {
+            "description": "RemediationTrigger specifies how the remediation was triggered.\n\n- `REMEDIATION_TRIGGER_MANUAL`: A user-initiated remediation (either via web UI or API call).\n- `REMEDIATION_TRIGGER_AUTOMATED`: A system-initiated remediation that requires approval.\n",
+            "enum": [
+              "REMEDIATION_TRIGGER_MANUAL",
+              "REMEDIATION_TRIGGER_AUTOMATED"
+            ],
+            "readOnly": true,
+            "type": "string"
+          },
+          "update_time": {
+            "description": "When the remediation was last updated.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "cluster_id",
+          "instance_id",
+          "mode",
+          "trigger",
+          "state"
+        ],
+        "type": "object"
+      },
+      "DashboardConfig": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "HeadlampConfig": {
+        "description": "Configuration for the Headlamp Kubernetes dashboard cluster add-on.",
+        "properties": {
+          "enabled": {
+            "description": "Whether to enable the Headlamp Kubernetes dashboard add-on.",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "IngressConfig": {
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "SlurmWebConfig": {
+        "description": "Configuration for the Slurm Web cluster add-on.",
+        "properties": {
+          "enabled": {
+            "description": "Whether to enable the Slurm Web add-on.",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "TorchpassConfig": {
+        "description": "Configuration for the Model Aware TorchPass cluster add-on.",
+        "properties": {
+          "enabled": {
+            "description": "Whether to enable the Model Aware TorchPass add-on.",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "DashboardState": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "HeadlampState": {
+        "additionalProperties": false,
+        "description": "Runtime state for the Headlamp Kubernetes dashboard cluster add-on.",
+        "properties": {},
+        "type": "object"
+      },
+      "IngressState": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "SlurmWebState": {
+        "additionalProperties": false,
+        "description": "Runtime state for the Slurm Web cluster add-on.",
+        "properties": {},
+        "type": "object"
+      },
+      "TorchpassState": {
+        "additionalProperties": false,
+        "description": "Runtime state for the Model Aware TorchPass cluster add-on.",
+        "properties": {},
+        "type": "object"
+      },
+      "PassiveHealthCheckAlert": {
+        "description": "Passive health check alert returned by the health check API.",
+        "properties": {
+          "alert_name": {
+            "description": "Alertmanager alert name.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "annotation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PHCAnnotation"
+              }
+            ],
+            "description": "Typed annotation content parsed from the legacy annotations bag.",
+            "readOnly": true
+          },
+          "annotations": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Legacy Alertmanager annotations as key-value strings.",
+            "readOnly": true,
+            "type": "object"
+          },
+          "cluster_id": {
+            "description": "Cluster UUID the alert was raised against.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "instance_id": {
+            "description": "Resolved instance UUID. Empty until the alert is joined to an instance.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "node_remediation_intent_id": {
+            "description": "Remediation intent UUID attached to this alert, if any.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "passive_health_check_alert_id": {
+            "description": "Primary key UUID for the passive health check alert.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "resolved_at": {
+            "description": "Time when the underlying alert resolved. Empty while the alert is firing.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "severity": {
+            "description": "Canonical severity tier for the alert.",
+            "enum": [
+              "PHC_SEVERITY_INFO",
+              "PHC_SEVERITY_WARNING",
+              "PHC_SEVERITY_CRITICAL"
+            ],
+            "readOnly": true,
+            "type": "string"
+          },
+          "started_at": {
+            "description": "Time when the underlying alert first fired.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "target_vm": {
+            "description": "VM name extracted from the Alertmanager labels.",
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "passive_health_check_alert_id",
+          "cluster_id",
+          "target_vm",
+          "alert_name",
+          "severity",
+          "annotations",
+          "started_at",
+          "annotation"
+        ],
+        "type": "object"
+      },
+      "PHCAnnotation": {
+        "description": "Typed content parsed from passive health check alert annotations.",
+        "properties": {
+          "description": {
+            "description": "Static explanation for the alert.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "slurm_node_unavailable": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SlurmNodeUnavailableDetail"
+              }
+            ],
+            "description": "Slurm node details when the alert was caused by unavailable Slurm nodes."
+          },
+          "summary_line": {
+            "description": "Per-firing summary line parsed from the evidence annotation.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "title": {
+            "description": "Alert title from the Alertmanager summary annotation.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "xid": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/XidDetail"
+              }
+            ],
+            "description": "Xid-specific details when the alert was caused by NVIDIA Xid errors."
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "summary_line"
+        ],
+        "type": "object"
+      },
+      "SlurmNodeUnavailableDetail": {
+        "description": "Details for a Slurm node unavailable passive health check alert.",
+        "properties": {
+          "reason": {
+            "description": "Drain reason reported for the unavailable Slurm node.",
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "type": "object"
+      },
+      "XidDetail": {
+        "description": "Details for a DmesgXidError passive health check alert.",
+        "properties": {
+          "events": {
+            "description": "Xid events observed during the alert window.",
+            "items": {
+              "$ref": "#/components/schemas/XidEvent"
+            },
+            "readOnly": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "events"
+        ],
+        "type": "object"
+      },
+      "XidEvent": {
+        "description": "One NVIDIA Xid code observed during the alert window.",
+        "properties": {
+          "count": {
+            "description": "Number of times this Xid code appeared in the alert window.",
+            "readOnly": true,
+            "type": "integer"
+          },
+          "mnemonic": {
+            "description": "Driver mnemonic for the Xid code when metadata is available.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "xid_code": {
+            "description": "NVIDIA Xid code, such as `79`.",
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "xid_code",
+          "mnemonic",
+          "count"
         ],
         "type": "object"
       }

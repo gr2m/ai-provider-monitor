@@ -191,13 +191,11 @@
           "max_score": {
             "description": "Maximum possible score",
             "example": 10,
-            "format": "float",
             "type": "number"
           },
           "min_score": {
             "description": "Minimum possible score",
             "example": 0,
-            "format": "float",
             "type": "number"
           },
           "model_to_evaluate": {
@@ -206,7 +204,6 @@
           "pass_threshold": {
             "description": "Score threshold for passing",
             "example": 7,
-            "format": "float",
             "type": "number"
           }
         },
@@ -221,18 +218,42 @@
       },
       "EvaluationCompareParameters": {
         "properties": {
+          "disable_position_bias_correction": {
+            "default": false,
+            "description": "When false (default), the judge runs twice per sample: once with model A's response first (original order) and once with model B's response first (flipped order). The two verdicts are reconciled to cancel out position bias. When true, only the original-order pass is run, halving judge cost and latency at the expense of position-bias correction. The result file will not contain flipped-order judge fields when this is true.\n",
+            "type": "boolean"
+          },
           "input_data_file_path": {
-            "description": "Data file name",
+            "description": "Data file ID",
+            "example": "file-01234567890123456789",
             "type": "string"
           },
           "judge": {
             "$ref": "#/components/schemas/EvaluationJudgeModelConfig"
           },
           "model_a": {
-            "$ref": "#/components/schemas/EvaluationModelOrString"
+            "description": "Either an EvaluationModelRequest for generation or a string column name from the dataset (when responses are pre-generated). When both model_a and model_b are EvaluationModelRequest objects, their inference runs execute in parallel to reduce total wall-clock time.\n",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EvaluationModelRequest"
+              },
+              {
+                "description": "Column name in the input data containing pre-generated responses",
+                "type": "string"
+              }
+            ]
           },
           "model_b": {
-            "$ref": "#/components/schemas/EvaluationModelOrString"
+            "description": "Either an EvaluationModelRequest for generation or a string column name from the dataset (when responses are pre-generated). When both model_a and model_b are EvaluationModelRequest objects, their inference runs execute in parallel to reduce total wall-clock time.\n",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/EvaluationModelRequest"
+              },
+              {
+                "description": "Column name in the input data containing pre-generated responses",
+                "type": "string"
+              }
+            ]
           }
         },
         "required": [
@@ -244,12 +265,18 @@
       "EvaluationJudgeModelConfig": {
         "properties": {
           "external_api_token": {
-            "description": "Bearer/API token for external judge models.",
+            "description": "Bearer/API token for the external judge model provider. Required when model_source is 'external'.",
             "type": "string"
           },
           "external_base_url": {
-            "description": "Base URL for external judge models. Must be OpenAI-compatible base URL.",
+            "description": "Base URL of the external inference API for the judge. Must be OpenAI-compatible. Required when model_source is 'external'.",
             "type": "string"
+          },
+          "max_tokens": {
+            "description": "Maximum number of tokens the judge model may generate. Defaults to 32768 if omitted. Set higher for reasoning judges (e.g. o-series, Gemini) that spend tokens on internal chain-of-thought before emitting the verdict JSON.",
+            "example": 8192,
+            "minimum": 1,
+            "type": "integer"
           },
           "model": {
             "description": "Name of the judge model",
@@ -257,7 +284,7 @@
             "type": "string"
           },
           "model_source": {
-            "description": "Source of the judge model.",
+            "description": "Source of the judge model inference: - `serverless`: Together's shared serverless inference API. Default concurrency: 25 workers. - `dedicated`: A Together dedicated deployment endpoint. Default concurrency: 5 workers\n  (minimum enforced even if num_workers is set lower).\n- `external`: An external inference API (e.g. OpenAI, Anthropic, Google, OpenRouter).\n  Requires `external_api_token` and `external_base_url`. Default concurrency: 2 workers\n  for first-party APIs, 20 for proxy/aggregator endpoints.\n",
             "enum": [
               "serverless",
               "dedicated",
@@ -266,7 +293,7 @@
             "type": "string"
           },
           "num_workers": {
-            "description": "Number of concurrent workers for inference requests. Overrides the default concurrency for this model. Useful for tuning throughput when using proxy endpoints (e.g. OpenRouter) or rate-limited external APIs.",
+            "description": "Number of concurrent inference workers for the judge. Overrides the source-specific default (serverless: 25, dedicated: 5, external: 2–20). For dedicated endpoints the value is clamped to a minimum of 5 regardless of what is set here.\n",
             "example": 5,
             "minimum": 1,
             "type": "integer"
@@ -275,6 +302,13 @@
             "description": "System prompt template for the judge",
             "example": "Imagine you are a helpful assistant",
             "type": "string"
+          },
+          "temperature": {
+            "description": "Sampling temperature for the judge model. Defaults to 0.05 if omitted.",
+            "example": 0,
+            "maximum": 2,
+            "minimum": 0,
+            "type": "number"
           }
         },
         "required": [
@@ -287,7 +321,7 @@
       "EvaluationModelOrString": {
         "oneOf": [
           {
-            "description": "Field name in the input data",
+            "description": "Column name in the input dataset containing pre-generated responses",
             "type": "string"
           },
           {
@@ -298,20 +332,20 @@
       "EvaluationModelRequest": {
         "properties": {
           "external_api_token": {
-            "description": "Bearer/API token for external models.",
+            "description": "Bearer/API token for the external model provider. Required when model_source is 'external'.",
             "type": "string"
           },
           "external_base_url": {
-            "description": "Base URL for external models. Must be OpenAI-compatible base URL",
+            "description": "Base URL of the external inference API. Must be OpenAI-compatible. Required when model_source is 'external'.",
             "type": "string"
           },
           "input_template": {
-            "description": "Input prompt template",
-            "example": "Please classify {{prompt}} based on the labels below",
+            "description": "User message template. Supports Jinja2 variables referencing dataset columns.",
+            "example": "Please answer the following question: {{ question }}",
             "type": "string"
           },
           "max_tokens": {
-            "description": "Maximum number of tokens to generate",
+            "description": "Maximum number of tokens to generate.",
             "example": 512,
             "minimum": 1,
             "type": "integer"
@@ -322,7 +356,7 @@
             "type": "string"
           },
           "model_source": {
-            "description": "Source of the model.",
+            "description": "Source of the model inference: - `serverless`: Together's shared serverless inference API. Default concurrency: 25 workers. - `dedicated`: A Together dedicated deployment endpoint. Default concurrency: 5 workers\n  (minimum enforced even if num_workers is set lower). Authentication uses the requesting\n  user's Together API token automatically.\n- `external`: An external inference API (e.g. OpenAI, Anthropic, Google, OpenRouter).\n  Requires `external_api_token` and `external_base_url`. Default concurrency: 2 workers\n  for first-party APIs (OpenAI, Anthropic, Google), 20 for proxy/aggregator endpoints.\n",
             "enum": [
               "serverless",
               "dedicated",
@@ -331,20 +365,19 @@
             "type": "string"
           },
           "num_workers": {
-            "description": "Number of concurrent workers for inference requests. Overrides the default concurrency for this model. Useful for tuning throughput when using proxy endpoints (e.g. OpenRouter) or rate-limited external APIs.",
+            "description": "Number of concurrent inference workers. Overrides the source-specific default (serverless: 25, dedicated: 5, external: 2–20). For dedicated endpoints the value is clamped to a minimum of 5 regardless of what is set here.\n",
             "example": 5,
             "minimum": 1,
             "type": "integer"
           },
           "system_template": {
-            "description": "System prompt template",
-            "example": "Imagine you are helpful assistant",
+            "description": "System prompt template. Supports Jinja2 variables referencing dataset columns.",
+            "example": "You are a helpful assistant.",
             "type": "string"
           },
           "temperature": {
-            "description": "Sampling temperature",
+            "description": "Sampling temperature for generation.",
             "example": 0.7,
-            "format": "float",
             "maximum": 2,
             "minimum": 0,
             "type": "number"
