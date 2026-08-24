@@ -1,0 +1,618 @@
+{
+  "description": "CogVideoX is a video generation large model developed by Z.AI, equipped with powerful video generation capabilities. Simply inputting text or images allows for effortless video creation.\n\nVidu: A high-performance video large model that combines high consistency and high dynamism, with precise semantic understanding and exceptional reasoning speed.",
+  "parameters": [
+    {
+      "$ref": "#/components/parameters/AcceptLanguage"
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "examples": {
+          "First Last Frame to Video": {
+            "value": {
+              "fps": 30,
+              "image_url": [
+                "https://gd-hbimg.huaban.com/ccee58d77afe8f5e17a572246b1994f7e027657fe9e6-qD66In_fw1200webp",
+                "https://gd-hbimg.huaban.com/cc2601d568a72d18d90b2cc7f1065b16b2d693f7fa3f7-hDAwNq_fw1200webp"
+              ],
+              "model": "cogvideox-3",
+              "prompt": "Make the picture move",
+              "quality": "quality",
+              "size": "1920x1080",
+              "with_audio": true
+            }
+          },
+          "Image to Video Example": {
+            "value": {
+              "fps": 30,
+              "image_url": "https://img.iplaysoft.com/wp-content/uploads/2019/free-images/free_stock_photo.jpg",
+              "model": "cogvideox-3",
+              "prompt": "Make the picture move",
+              "quality": "quality",
+              "size": "1920x1080",
+              "with_audio": true
+            }
+          },
+          "Text to Video Example": {
+            "value": {
+              "fps": 30,
+              "model": "cogvideox-3",
+              "prompt": "A cat is playing with a ball.",
+              "quality": "quality",
+              "size": "1920x1080",
+              "with_audio": true
+            }
+          }
+        },
+        "schema": {
+          "oneOf": [
+            {
+              "$ref": "#/components/schemas/CogVideoX3Request",
+              "title": "CogVideoX-3"
+            },
+            {
+              "$ref": "#/components/schemas/ViduText2VideoRequest",
+              "title": "Vidu: Text to Video"
+            },
+            {
+              "$ref": "#/components/schemas/ViduImage2VideoRequest",
+              "title": "Vidu: Image to Video"
+            },
+            {
+              "$ref": "#/components/schemas/ViduFrames2VideoRequest",
+              "title": "Vidu: First & Last Frame to Video"
+            },
+            {
+              "$ref": "#/components/schemas/ViduReference2VideoRequest",
+              "title": "Vidu: Ref to Video"
+            }
+          ]
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/VideoResponse"
+          }
+        }
+      },
+      "description": "Processing successful."
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/Error"
+          }
+        }
+      },
+      "description": "The request has failed."
+    }
+  },
+  "components": {
+    "parameters": {
+      "AcceptLanguage": {
+        "in": "header",
+        "name": "Accept-Language",
+        "required": false,
+        "schema": {
+          "default": "en-US,en",
+          "description": "Config desired response language for HTTP requests.",
+          "enum": [
+            "en-US,en"
+          ],
+          "example": "en-US,en",
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "CogVideoX3Request": {
+        "allOf": [
+          {
+            "properties": {
+              "duration": {
+                "description": "Video duration, default is 5 seconds, supports `5` and `10` seconds.",
+                "enum": [
+                  5,
+                  10
+                ],
+                "example": 5,
+                "type": "integer"
+              },
+              "fps": {
+                "description": "Video frame rate (FPS), optional values are `30` or `60`. Default: `30`.",
+                "enum": [
+                  30,
+                  60
+                ],
+                "example": 30,
+                "type": "integer"
+              },
+              "image_url": {
+                "description": "Provide an image based on which content will be generated. If this parameter is passed, the system will operate based on this image. Supports passing images via URL or Base64 encoding. Image requirements: images support `.png`, `.jpeg`, `.jpg` formats; image size: no more than `5M`. Either image_url and prompt can be used, or both can be passed simultaneously.\nFirst and last frames: supports inputting two images. The first uploaded image is regarded as the first frame, and the second image is regarded as the last frame. The model will generate the video based on the images passed in this parameter.\nFirst and last frame mode only supports `speed` mode",
+                "items": {
+                  "oneOf": [
+                    {
+                      "example": "https://example.com/image.png",
+                      "format": "uri",
+                      "title": "Image URL",
+                      "type": "string"
+                    },
+                    {
+                      "example": "data:image/png;base64, XXX",
+                      "format": "byte",
+                      "title": "Base64 Encoded Image",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              "model": {
+                "description": "The model code to be called.",
+                "enum": [
+                  "cogvideox-3"
+                ],
+                "type": "string"
+              },
+              "prompt": {
+                "description": "Text description of the video, maximum input length of 512 characters. Either image_url or prompt must be provided, or both.",
+                "type": "string"
+              },
+              "quality": {
+                "description": "Output mode, default is `speed`.\n- `quality`: Prioritizes quality, higher generation quality. \n- `speed`: Prioritizes speed, faster generation time, relatively lower quality.",
+                "enum": [
+                  "speed",
+                  "quality"
+                ],
+                "example": "speed",
+                "type": "string"
+              },
+              "size": {
+                "description": "Default value: if not specified, the short side of the generated video is 1080 by default, and the long side is determined according to the original image ratio. Maximum support for 4K resolution. Resolution options: \"1280x720\", \"720x1280\", \"1024x1024\", \"1080x1920\", \"2048x1080\", \"3840x2160\"",
+                "enum": [
+                  "1280x720",
+                  "720x1280",
+                  "1024x1024",
+                  "1920x1080",
+                  "1080x1920",
+                  "2048x1080",
+                  "3840x2160"
+                ],
+                "example": "1920x1080",
+                "type": "string"
+              },
+              "with_audio": {
+                "description": "Whether to generate AI sound effects. Default: `false` (no sound effects).",
+                "example": false,
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "model"
+            ],
+            "type": "object"
+          },
+          {
+            "$ref": "#/components/schemas/VideoCommonRequest"
+          }
+        ]
+      },
+      "ViduText2VideoRequest": {
+        "allOf": [
+          {
+            "properties": {
+              "aspect_ratio": {
+                "description": "Aspect ratio\nDefault: `16:9`, Optional values: `16:9`, `9:16`, `1:1`",
+                "enum": [
+                  "16:9",
+                  "9:16",
+                  "1:1"
+                ],
+                "example": "16:9",
+                "type": "string"
+              },
+              "duration": {
+                "description": "Video duration parameter.\nDefault: `5` , Optional: `5`.",
+                "enum": [
+                  5
+                ],
+                "example": 5,
+                "type": "integer"
+              },
+              "model": {
+                "description": "The model code to be called.",
+                "enum": [
+                  "viduq1-text"
+                ],
+                "type": "string"
+              },
+              "movement_amplitude": {
+                "description": "Motion amplitude\nDefault: `auto` , Optional values:  `auto` ,`small` ,`medium` ,`large`",
+                "enum": [
+                  "auto",
+                  "small",
+                  "medium",
+                  "large"
+                ],
+                "example": "auto",
+                "type": "string"
+              },
+              "prompt": {
+                "description": "Text description of the video, maximum input length of 512 characters.",
+                "type": "string"
+              },
+              "size": {
+                "description": "Resolution parameter\nDefault: `1920x1080`, Optional: `1920x1080`",
+                "enum": [
+                  "1920x1080"
+                ],
+                "example": "1920x1080",
+                "type": "string"
+              },
+              "style": {
+                "description": "Style\nDefault: `general`\nOptional values: `general` , `anime`\n- `general`: General style, can be controlled using prompts to define the style.\n- `anime`: Anime style, optimized for anime-specific visuals. The style can be controlled using different anime-themed prompts.",
+                "enum": [
+                  "general",
+                  "anime"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "model",
+              "prompt"
+            ],
+            "type": "object"
+          },
+          {
+            "$ref": "#/components/schemas/VideoCommonRequest"
+          }
+        ]
+      },
+      "ViduImage2VideoRequest": {
+        "allOf": [
+          {
+            "properties": {
+              "duration": {
+                "oneOf": [
+                  {
+                    "description": "Video duration parameter.\nDefault: `5` , Optional: `5`.",
+                    "enum": [
+                      5
+                    ],
+                    "example": 5,
+                    "title": "viduq1-image",
+                    "type": "integer"
+                  },
+                  {
+                    "description": "Video duration parameter.\nDefault: `4` , Optional: `4`.",
+                    "enum": [
+                      4
+                    ],
+                    "example": 4,
+                    "title": "viduq2-image",
+                    "type": "integer"
+                  }
+                ]
+              },
+              "image_url": {
+                "description": "The model will use the image provided in this parameter as the first frame to generate the video.\nOnly `1` image is supported.\nSupported formats: `png` , `jpeg` , `jpg` , `webp` .\nImage aspect ratio must be less than `1:4` or `4:1`.\nImage file size must not exceed `50MB`.\nNote: After Base64 decoding, the byte length must be less than 50 MB, and the encoding must include the appropriate content type string (e.g., `data:image/png;base64,{base64_encode}`).",
+                "oneOf": [
+                  {
+                    "example": "https://example.com/image.png",
+                    "format": "uri",
+                    "title": "Image URL",
+                    "type": "string"
+                  },
+                  {
+                    "example": "data:image/png;base64, XXX",
+                    "format": "byte",
+                    "title": "Base64 Encoded Image",
+                    "type": "string"
+                  }
+                ],
+                "type": "string"
+              },
+              "model": {
+                "description": "The model code to be called.",
+                "enum": [
+                  "viduq1-image",
+                  "vidu2-image"
+                ],
+                "type": "string"
+              },
+              "movement_amplitude": {
+                "description": "Motion amplitude\nDefault: `auto` , Optional values:  `auto` ,`small` ,`medium` ,`large`",
+                "enum": [
+                  "auto",
+                  "small",
+                  "medium",
+                  "large"
+                ],
+                "example": "auto",
+                "type": "string"
+              },
+              "prompt": {
+                "description": "Text description of the video, maximum input length of 512 characters. Either image_url or prompt must be provided, or both.",
+                "type": "string"
+              },
+              "size": {
+                "oneOf": [
+                  {
+                    "description": "Resolution parameter\nDefault: `1920x1080`, Optional: `1920x1080`",
+                    "enum": [
+                      "1920x1080"
+                    ],
+                    "example": "1920x1080",
+                    "title": "viduq1-image",
+                    "type": "string"
+                  },
+                  {
+                    "default": "1280x720",
+                    "description": "Resolution parameter\nDefault: `1280x720`, Optional: `1280x720`",
+                    "enum": [
+                      "1280x720"
+                    ],
+                    "example": "1280x720",
+                    "title": "viduq2-image",
+                    "type": "string"
+                  }
+                ]
+              },
+              "with_audio": {
+                "description": "Add background music to the generated video.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "model"
+            ],
+            "type": "object"
+          },
+          {
+            "$ref": "#/components/schemas/VideoCommonRequest"
+          }
+        ]
+      },
+      "ViduFrames2VideoRequest": {
+        "allOf": [
+          {
+            "properties": {
+              "duration": {
+                "oneOf": [
+                  {
+                    "description": "Video duration parameter.\nDefault: `5` , Optional: `5`.",
+                    "enum": [
+                      5
+                    ],
+                    "example": 5,
+                    "title": "viduq1-start-end",
+                    "type": "integer"
+                  },
+                  {
+                    "description": "Video duration parameter.\nDefault: `4` , Optional: `4`.",
+                    "enum": [
+                      4
+                    ],
+                    "example": 4,
+                    "title": "vidu2-start-end",
+                    "type": "integer"
+                  }
+                ]
+              },
+              "image_url": {
+                "description": "Images\nSupports input of two images: the first uploaded image will be treated as the first frame, and the second image as the last frame. The model will use the images provided in this parameter to generate a video.\nThe resolutions of the two input images (first and last frame) must be similar, with the ratio between the resolution of the first frame and the resolution of the last frame falling within `0.8–1.25`. Additionally, the image aspect ratio must be less than `1:4` or `4:1`.\nSupports image URLs or images encoded in Base64 (ensure accessibility; using image URLs is recommended).\nSupported formats: `png`, `jpeg`, `.jpg`, `webp`.\nImage file size must not exceed `50 MB`.\nNote: After Base64 decoding, the byte length must be less than 50 MB, and the encoding must include the appropriate content type string, such as `data:image/png;base64,{base64_encode}`.",
+                "items": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 2,
+                "minItems": 1,
+                "type": "array"
+              },
+              "model": {
+                "description": "The model code to be called.",
+                "enum": [
+                  "viduq1-start-end",
+                  "vidu2-start-end"
+                ],
+                "type": "string"
+              },
+              "movement_amplitude": {
+                "description": "Motion amplitude\nDefault: `auto` , Optional values:  `auto` ,`small` ,`medium` ,`large`",
+                "enum": [
+                  "auto",
+                  "small",
+                  "medium",
+                  "large"
+                ],
+                "example": "auto",
+                "type": "string"
+              },
+              "prompt": {
+                "description": "Text description of the video, maximum input length of 512 characters. Either image_url or prompt must be provided, or both.",
+                "type": "string"
+              },
+              "size": {
+                "oneOf": [
+                  {
+                    "description": "Resolution parameter\nDefault: `1920x1080`, Optional: `1920x1080`",
+                    "enum": [
+                      "1920x1080"
+                    ],
+                    "example": "1920x1080",
+                    "title": "viduq1-start-end",
+                    "type": "string"
+                  },
+                  {
+                    "default": "1280x720",
+                    "description": "Resolution parameter\nDefault: `1280x720`, Optional: `1280x720`",
+                    "enum": [
+                      "1280x720"
+                    ],
+                    "example": "1280x720",
+                    "title": "vidu2-start-end",
+                    "type": "string"
+                  }
+                ]
+              },
+              "with_audio": {
+                "description": "Add background music to the generated video.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "model"
+            ],
+            "type": "object"
+          },
+          {
+            "$ref": "#/components/schemas/VideoCommonRequest"
+          }
+        ]
+      },
+      "ViduReference2VideoRequest": {
+        "allOf": [
+          {
+            "properties": {
+              "aspect_ratio": {
+                "description": "Aspect ratio\nDefault: `16:9`, Optional values: `16:9`, `9:16`, `1:1`",
+                "enum": [
+                  "16:9",
+                  "9:16",
+                  "1:1"
+                ],
+                "example": "16:9",
+                "type": "string"
+              },
+              "duration": {
+                "description": "Video duration parameter.\nDefault: `4` , Optional: `4`.",
+                "enum": [
+                  4
+                ],
+                "example": 4,
+                "title": "vidu2-reference",
+                "type": "integer"
+              },
+              "image_url": {
+                "description": "Image reference\nSupports input of 1 to 3 images. The model will use the themes from the images provided in this parameter as references to generate a video with consistent subjects.\n1. Supports image URLs or images encoded in Base64 (ensure accessibility; it is recommended to prioritize using image URLs).\n2. Supported formats: `png`, `jpeg`, `.jpg`, `webp`.\n3. Image resolution must not be smaller than `128x128`, and the aspect ratio must be less than `1:4` or `4:1`.\n4. Image file size must not exceed `50 MB`.\n5. Note: After Base64 decoding, the byte length must be less than 50 MB, and the encoding must include the proper content-type string, such as `data:image/png;base64,{base64_encode}`.",
+                "items": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 3,
+                "minItems": 1,
+                "type": "array"
+              },
+              "model": {
+                "description": "The model code to be called.",
+                "enum": [
+                  "vidu2-reference"
+                ],
+                "type": "string"
+              },
+              "movement_amplitude": {
+                "description": "Motion amplitude\nDefault: `auto` , Optional values:  `auto` ,`small` ,`medium` ,`large`",
+                "enum": [
+                  "auto",
+                  "small",
+                  "medium",
+                  "large"
+                ],
+                "example": "auto",
+                "type": "string"
+              },
+              "prompt": {
+                "description": "Text description of the video, maximum input length of 512 characters. Either image_url or prompt must be provided, or both.",
+                "type": "string"
+              },
+              "size": {
+                "description": "Resolution parameter\nDefault: `1280x720`, Optional: `1280x720`",
+                "enum": [
+                  "1280x720"
+                ],
+                "example": "1280x720",
+                "title": "vidu2-reference ",
+                "type": "string"
+              },
+              "with_audio": {
+                "description": "Add background music to the generated video.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "model"
+            ],
+            "type": "object"
+          },
+          {
+            "$ref": "#/components/schemas/VideoCommonRequest"
+          }
+        ]
+      },
+      "VideoResponse": {
+        "properties": {
+          "id": {
+            "description": "Task order number generated by the Z.AI, use this order number when calling the request result interface.",
+            "type": "string"
+          },
+          "model": {
+            "description": "Model name used in this call.",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Task number submitted by the user during the client request or generated by the platform.",
+            "type": "string"
+          },
+          "task_status": {
+            "description": "Processing status, `PROCESSING (processing)`,` SUCCESS (success)`, `FAIL (failure)`. Results need to be obtained via query.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Error": {
+        "description": "The request has failed.",
+        "properties": {
+          "code": {
+            "description": "Error code.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "message": {
+            "description": "Error message.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "VideoCommonRequest": {
+        "properties": {
+          "request_id": {
+            "description": "Passed by the user side, needs to be unique; used to distinguish each request, 6–64 characters. If not provided by the user side, the platform will generate one by default.",
+            "maxLength": 64,
+            "minLength": 6,
+            "type": "string"
+          },
+          "user_id": {
+            "description": "Unique ID of the end-user, assists the platform in intervening in end-user violations, generating illegal or inappropriate information, or other abusive behaviors. ID length requirement: minimum `6` characters, maximum `128` characters.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    }
+  }
+}

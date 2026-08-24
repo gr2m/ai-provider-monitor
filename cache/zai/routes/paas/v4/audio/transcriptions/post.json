@@ -1,0 +1,175 @@
+{
+  "description": "Use the [GLM-ASR-2512](/guides/audio/glm-asr-2512) model to transcribe audio files into text, supporting multiple languages and real-time streaming transcription.",
+  "requestBody": {
+    "content": {
+      "multipart/form-data": {
+        "example": {
+          "model": "glm-asr-2512",
+          "stream": false
+        },
+        "schema": {
+          "$ref": "#/components/schemas/AudioTranscriptionRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AudioTranscriptionResponse"
+          }
+        },
+        "text/event-stream": {
+          "schema": {
+            "$ref": "#/components/schemas/AudioTranscriptionStreamResponse"
+          }
+        }
+      },
+      "description": "Request processed successfully"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/Error"
+          }
+        }
+      },
+      "description": "Request failed."
+    }
+  },
+  "summary": "Speech to Text",
+  "components": {
+    "schemas": {
+      "AudioTranscriptionRequest": {
+        "properties": {
+          "file": {
+            "description": "The audio file to be transcribed. Supported audio file formats: `.wav / .mp3`. Specifications: file size ≤ `25 MB`, audio duration ≤ `30 seconds`.",
+            "format": "binary",
+            "type": "string"
+          },
+          "file_base64": {
+            "description": "Base64 encoded audio file. Only one of file_base64 or file needs to be provided (if both are provided, file takes precedence).",
+            "type": "string"
+          },
+          "hotwords": {
+            "description": "Hotword list to improve recognition accuracy for domain-specific vocabulary. Format example: [\"person_name\",\"place_name\"]. Recommended not to exceed 100 items.",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "model": {
+            "default": "glm-asr-2512",
+            "description": "The model ID to invoke.",
+            "enum": [
+              "glm-asr-2512"
+            ],
+            "type": "string"
+          },
+          "prompt": {
+            "description": "In long text scenarios, you can provide previous transcription results as context. Recommended to be less than 8000 characters.",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Passed by the user side, needs to be unique; used to distinguish each request, 6–64 characters. If not provided by the user side, the platform will generate one by default.",
+            "maxLength": 64,
+            "minLength": 6,
+            "type": "string"
+          },
+          "stream": {
+            "default": false,
+            "description": "This parameter should be set to `false` or omitted when using synchronous calls. It indicates that the model returns all content at once after generating all content. Default is `false`. If set to `true`, the model will return generated content in chunks via standard `Event Stream`. When the `Event Stream` ends, a `data: [DONE]` message will be returned.",
+            "type": "boolean"
+          },
+          "user_id": {
+            "description": "Unique ID for the end user, 6–128 characters. Avoid using sensitive information.",
+            "maxLength": 128,
+            "minLength": 6,
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "model"
+        ],
+        "type": "object"
+      },
+      "AudioTranscriptionResponse": {
+        "properties": {
+          "created": {
+            "description": "Request creation time, as a `Unix` timestamp in seconds.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "description": "Task ID",
+            "type": "string"
+          },
+          "model": {
+            "description": "Model name",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Passed by the client, must be unique. A unique identifier to distinguish each request. If not provided by the client, the platform will generate one by default.",
+            "type": "string"
+          },
+          "text": {
+            "description": "The complete transcribed content of the audio.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "AudioTranscriptionStreamResponse": {
+        "properties": {
+          "created": {
+            "description": "Request creation time, as a `Unix` timestamp in seconds.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "delta": {
+            "description": "Incremental audio transcription information returned by the model.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Task ID",
+            "type": "string"
+          },
+          "model": {
+            "description": "Model name",
+            "type": "string"
+          },
+          "type": {
+            "description": "Audio transcription event type. `transcript.text.delta` indicates transcription in progress, `transcript.text.done` indicates transcription completed.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Error": {
+        "description": "The request has failed.",
+        "properties": {
+          "code": {
+            "description": "Error code.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "message": {
+            "description": "Error message.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}
