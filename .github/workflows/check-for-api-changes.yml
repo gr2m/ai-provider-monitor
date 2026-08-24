@@ -188,12 +188,19 @@ jobs:
       - name: Merge the pull request
         if: steps.create-pr.outputs.pull-request-url != ''
         run: |
-          for attempt in 1 2 3 4 5 6; do
-            mergeable=$(gh pr view ${{ steps.create-pr.outputs.pull-request-number }} --repo ${{ github.repository }} --json mergeable --jq .mergeable)
+          for attempt in {1..12}; do
+            read -r state mergeable <<< "$(gh pr view ${{ steps.create-pr.outputs.pull-request-number }} --repo ${{ github.repository }} --json state,mergeable --jq '[.state, .mergeable] | @tsv')"
+
+            if [ "$state" = "MERGED" ]; then
+              exit 0
+            fi
 
             if [ "$mergeable" = "MERGEABLE" ]; then
-              gh pr merge ${{ steps.create-pr.outputs.pull-request-number }} --squash --delete-branch --repo ${{ github.repository }}
-              exit 0
+              if gh pr merge ${{ steps.create-pr.outputs.pull-request-number }} --squash --delete-branch --repo ${{ github.repository }}; then
+                exit 0
+              fi
+
+              echo "Merge raced with a base-branch update; refreshing mergeability"
             fi
 
             if [ "$mergeable" = "CONFLICTING" ]; then
@@ -201,11 +208,11 @@ jobs:
               exit 1
             fi
 
-            echo "Mergeability is $mergeable; retrying in 5 seconds (attempt $attempt/6)"
+            echo "Mergeability is $mergeable; retrying in 5 seconds (attempt $attempt/12)"
             sleep 5
           done
 
-          echo "Timed out waiting for GitHub to determine mergeability"
+          echo "Timed out waiting to merge the pull request"
           exit 1
         env:
           GH_TOKEN: ${{ github.token }}
