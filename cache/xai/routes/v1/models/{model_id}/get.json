@@ -16,10 +16,14 @@
       "content": {
         "application/json": {
           "example": {
-            "created": 1743724800,
-            "id": "grok-4-0709",
+            "cached_prompt_text_token_price": 2000,
+            "completion_text_token_price": 25000,
+            "created": 1776556800,
+            "id": "latest",
             "object": "model",
-            "owned_by": "xai"
+            "owned_by": "xai",
+            "prompt_image_token_price": 12500,
+            "prompt_text_token_price": 12500
           },
           "schema": {
             "$ref": "#/components/schemas/Model"
@@ -40,15 +44,62 @@
       "bearerAuth": []
     }
   ],
-  "summary": "Get minimalized information about a model with its model_id.",
+  "summary": "Get information about a model with its model_id, including pricing.",
   "tags": [
     "v1"
   ],
   "components": {
     "schemas": {
       "Model": {
-        "description": "Same as `LanguageModel` but fully compliant with the OpenAI API.",
+        "description": "OpenAI-compatible model response returned by `/v1/models`.\nIncludes optional pricing fields populated based on the model type.",
         "properties": {
+          "aliases": {
+            "description": "Alias ID(s) of the model that user can use in a request's model field.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "cached_prompt_text_token_price": {
+            "description": "Price of a prompt text token (in USD cents per 100 million tokens) that was cached previously.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "cached_prompt_text_token_price_long_context": {
+            "description": "Price of the cached prompt text token for long context requests (USD cents per 100 million tokens).",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "completion_text_token_price": {
+            "description": "Price of the completion text token in USD cents per 100 million tokens.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "completion_text_token_price_long_context": {
+            "description": "Price of the completion text token for long context requests (USD cents per 100 million tokens).",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "context_length": {
+            "description": "The maximum context length supported by the model, in tokens.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
           "created": {
             "description": "Model creation time in Unix timestamp.",
             "format": "int64",
@@ -58,6 +109,22 @@
             "description": "Model ID. Obtainable from <https://console.x.ai/team/default/models> or <https://docs.x.ai/docs/models>.",
             "type": "string"
           },
+          "image_price": {
+            "description": "Price per image in USD cents (image generation models).\nThe default tier: medium quality at the default (1k) resolution. See\n`pricing` for the full quality/resolution matrix.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "long_context_threshold": {
+            "description": "Token count at or above which the long context prices apply.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
           "object": {
             "description": "The object type, which is always `\"model\"`.",
             "type": "string"
@@ -65,13 +132,69 @@
           "owned_by": {
             "description": "Owner of the model.",
             "type": "string"
+          },
+          "pricing": {
+            "description": "Per-image prices by (quality, resolution) tier (image generation\nmodels). Omitted when the model prices all qualities identically\n(see `image_price`).",
+            "items": {
+              "$ref": "#/components/schemas/ImagePricingTier"
+            },
+            "type": "array"
+          },
+          "prompt_image_token_price": {
+            "description": "Price of the prompt image token in USD cents per 100 million tokens.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "prompt_text_token_price": {
+            "description": "Price of the prompt text token in USD cents per 100 million tokens.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "prompt_text_token_price_long_context": {
+            "description": "Price of the prompt text token for long context requests (USD cents per 100 million tokens).",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
           }
         },
         "required": [
           "id",
+          "aliases",
           "created",
           "object",
           "owned_by"
+        ],
+        "type": "object"
+      },
+      "ImagePricingTier": {
+        "description": "Per-image price for one (quality, resolution) tier of an image generation\nmodel.",
+        "properties": {
+          "price_per_image": {
+            "description": "Price per generated image, in 1/100,000,000ths of a USD cent.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "quality": {
+            "description": "Quality tier this price applies to: `\"low\"`, `\"medium\"`, or `\"high\"`.\nMedium is the default quality a request serves at when it leaves\n`quality` unset.",
+            "type": "string"
+          },
+          "resolution": {
+            "description": "Output resolution this price applies to: `\"1k\"` or `\"2k\"`. 1k is the\ndefault when a request leaves `resolution` unset.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "quality",
+          "resolution",
+          "price_per_image"
         ],
         "type": "object"
       }

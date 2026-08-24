@@ -1,0 +1,97 @@
+{
+  "operationId": "handle_create_public_url_request",
+  "parameters": [
+    {
+      "description": "The file's `id`.",
+      "in": "path",
+      "name": "file_id",
+      "required": true,
+      "schema": {
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/CreatePublicUrlRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "example": {
+            "expires_at": 1755600000,
+            "public_url": "https://files-cdn.x.ai/ZsqeMtdcSYWPPHTQdxXDKQ/file_a128090d-f0c9-4873-bd84-e499777e7417.png"
+          },
+          "schema": {
+            "$ref": "#/components/schemas/CreatePublicUrlResponse"
+          }
+        }
+      },
+      "description": "Success"
+    },
+    "400": {
+      "description": "Bad request. Common causes: `expires_after` outside [3600, 2592000], `expires_after` greater than the file's remaining lifetime, unsupported content type, file is empty or larger than 50 MiB."
+    },
+    "404": {
+      "description": "File not found, deleted, or belongs to another team."
+    },
+    "429": {
+      "description": "Per-team active-URL quota exhausted (1000 max) or rate limit exceeded."
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "summary": "Create a permanent, unauthenticated public URL for an existing file. The\nunderlying file is unaffected and can still be fetched through the\nauthenticated content endpoint. Use this when you want to share a stored\nasset (image, video, PDF) outside your API-keyed environment. Public URLs\ncan be revoked at any time via `POST /v1/files/{file_id}/public-url/revoke`.",
+  "tags": [
+    "v1"
+  ],
+  "components": {
+    "schemas": {
+      "CreatePublicUrlRequest": {
+        "description": "Request body for `POST /v1/files/{file_id}/public-url`.",
+        "properties": {
+          "expires_after": {
+            "description": "Seconds from now until the public URL expires. Must be between `3600` (1\nhour) and `2592000` (30 days). Omit to inherit the file's expiry (if it\nhas one) or to make the URL valid indefinitely.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "CreatePublicUrlResponse": {
+        "description": "Response for creating a public URL for a file.",
+        "properties": {
+          "expires_at": {
+            "description": "Unix timestamp (seconds) when the public URL expires. Present when\nthe public URL has an expiry, either from an explicit `expires_after`\nin the request or inherited from the file's TTL. Absent when the\npublic URL is valid indefinitely.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "public_url": {
+            "description": "The full public URL.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "public_url"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

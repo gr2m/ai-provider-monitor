@@ -23,11 +23,9 @@
           "example": {
             "data": [
               {
-                "revised_prompt": "",
                 "url": "..."
               },
               {
-                "revised_prompt": "",
                 "url": "..."
               }
             ]
@@ -66,7 +64,7 @@
               },
               {
                 "$ref": "#/components/schemas/ImageAspectRatio",
-                "description": "Aspect ratio of the generated image. Can be `1:1`, `3:4`, `4:3`, `9:16`, `16:9`, `2:3`, `3:2`, `9:19.5`, `19.5:9`, `9:20`, `20:9`, `1:2`, `2:1`, or `auto`.\nDefaults to `auto` for automatically selecting the best ratio for the prompt.\nOnly supported by grok-imagine models."
+                "description": "Aspect ratio of the generated image. Can be `1:1`, `3:4`, `4:3`, `9:16`, `16:9`, `2:3`, `3:2`, `9:19.5`, `19.5:9`, `9:20`, `20:9`, `1:2`, `2:1`, `21:9`, `5:2`, or `auto`.\nDefaults to `auto` for automatically selecting the best ratio for the prompt.\nOnly supported by grok-imagine models."
               }
             ]
           },
@@ -93,17 +91,6 @@
             "description": "Prompt for image generation.",
             "type": "string"
           },
-          "quality": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/ImageQuality",
-                "description": "Quality of the output image. Can be `low`, `medium`, or `high`. Currently a no-op, reserved for future use."
-              }
-            ]
-          },
           "resolution": {
             "oneOf": [
               {
@@ -123,18 +110,15 @@
               "null"
             ]
           },
-          "size": {
-            "description": "(Not supported) Size of the image.",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "style": {
-            "description": "(Not supported) Style of the image.",
-            "type": [
-              "string",
-              "null"
+          "storage_options": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StorageOptions",
+                "description": "Optional output storage configuration. When present, the generated\nimage(s) are stored in the Files API and a `file_output` reference is\nreturned in the response alongside the ephemeral URL."
+              }
             ]
           },
           "user": {
@@ -190,16 +174,9 @@
           "20:9",
           "1:2",
           "2:1",
+          "21:9",
+          "5:2",
           "auto"
-        ],
-        "type": "string"
-      },
-      "ImageQuality": {
-        "description": "Request to generate image for `/v1/image/generations` endpoint\nQuality level for image generation.\nNote: Currently a no-op, reserved for future use.",
-        "enum": [
-          "low",
-          "medium",
-          "high"
         ],
         "type": "string"
       },
@@ -211,6 +188,38 @@
         ],
         "type": "string"
       },
+      "StorageOptions": {
+        "description": "Configuration for storing generation output in the Files API.\nWhen provided in a generation request, the output is stored as a\npermanent file and a `file_output` reference is included in the response.",
+        "properties": {
+          "expires_after": {
+            "description": "Seconds from now until the file auto-expires. Maximum 2592000 (30 days).\nIf omitted, the file does not expire.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "filename": {
+            "description": "Filename for the stored file.",
+            "type": "string"
+          },
+          "public_url": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicUrlInput",
+                "description": "`true` = create public URL with default options (no independent expiry).\nObject = create public URL with explicit configuration.\nOmit = no public URL (file stored privately)."
+              }
+            ]
+          }
+        },
+        "required": [
+          "filename"
+        ],
+        "type": "object"
+      },
       "GeneratedImage": {
         "description": "Generated images",
         "properties": {
@@ -221,6 +230,17 @@
               "null"
             ]
           },
+          "file_output": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FileOutput",
+                "description": "Storage info for the generated image. Only present when the request\nincluded a `storage_options` configuration and the upload succeeded."
+              }
+            ]
+          },
           "mime_type": {
             "description": "The MIME type of the generated image (e.g. `image/png`, `image/jpeg`, `image/webp`).",
             "type": [
@@ -228,10 +248,12 @@
               "null"
             ]
           },
-          "revised_prompt": {
-            "deprecated": true,
-            "description": "(Deprecated: Always return empty string) The revised prompt generated by a chat model from the original prompt. This prompt is used in the final image generation.",
-            "type": "string"
+          "storage_error": {
+            "description": "Human-readable error when `storage_options` was set but the upload\nfailed. Absent on success or when storage was not requested.",
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "url": {
             "description": "A url to the generated image, if `response_format` is not specified or with `url` in the request.",
@@ -241,23 +263,193 @@
             ]
           }
         },
-        "required": [
-          "revised_prompt"
-        ],
         "type": "object"
       },
       "MediaUsage": {
-        "description": "Billing and cost information for media generation requests (image and video).",
+        "description": "Billing and cost information for media generation requests (image and video).\n\nThe optional token fields follow the OpenAI Images API shape\n(`input_tokens` / `output_tokens` / `total_tokens` with per-side detail\nobjects) and are populated only for image models with token-based usage\nreporting. They are omitted entirely for models billed per image and for\nvideo requests.",
         "properties": {
           "cost_in_usd_ticks": {
             "description": "The cost of this request expressed in USD ticks.\nOne USD cent equals 100,000,000 ticks, so one US dollar equals\n10,000,000,000 ticks.",
             "format": "int64",
             "type": "integer"
+          },
+          "input_tokens": {
+            "description": "Total input tokens: prompt text tokens + input image tokens\n(the sum of `input_tokens_details`, where `cached_tokens` is a subset\nof `text_tokens`, not additive).",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "input_tokens_details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaInputTokensDetails",
+                "description": "Breakdown of `input_tokens`."
+              }
+            ]
+          },
+          "output_tokens": {
+            "description": "Total output tokens: rewritten-prompt text tokens + reasoning tokens\n+ generated image tokens (the sum of `output_tokens_details`).",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "output_tokens_details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaOutputTokensDetails",
+                "description": "Breakdown of `output_tokens`."
+              }
+            ]
+          },
+          "total_tokens": {
+            "description": "Total tokens (input + output).",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
           }
         },
         "required": [
           "cost_in_usd_ticks"
         ],
+        "type": "object"
+      },
+      "PublicUrlInput": {
+        "description": "Accepts either `true` (create public URL with defaults) or a configuration\nobject with explicit options.\n\n**Variant order matters for `#[serde(untagged)]`:** `Flag` must come before\n`Options` so that JSON `true`/`false` match `Flag` rather than falling\nthrough to the object variant.\n\n**Serialization note:** Proto→REST readback always constructs\n`Options(...)`, never `Flag`, so responses always emit the object form.\n`Flag` only appears on the deserialization (request) path.",
+        "oneOf": [
+          {
+            "description": "`true` = create public URL with default options (no independent expiry).\n`false` = no public URL (equivalent to omitting the field).",
+            "type": "boolean"
+          },
+          {
+            "$ref": "#/components/schemas/PublicUrlOptions",
+            "description": "Full configuration object."
+          }
+        ]
+      },
+      "FileOutput": {
+        "description": "Information about a generated file stored in the Files API.",
+        "properties": {
+          "expires_at": {
+            "description": "Unix timestamp (seconds) when the stored file expires and will be\nautomatically deleted. Only present when the file has an expiration.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "file_id": {
+            "description": "Files API file_id of the stored file.",
+            "type": "string"
+          },
+          "filename": {
+            "description": "Filename of the stored file.",
+            "type": "string"
+          },
+          "public_url": {
+            "description": "Public URL for the stored file. Only present when the request included\n`storage_options.public_url` and creation succeeded.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "public_url_error": {
+            "description": "Human-readable error when `storage_options.public_url` was set but\npublic URL creation failed. The file was stored successfully.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "public_url_expires_at": {
+            "description": "Unix timestamp (seconds) when the public URL expires. Present when\nthe public URL has an expiry, either from an explicit `expires_after`\nin the request or inherited from the file's TTL.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "file_id",
+          "filename"
+        ],
+        "type": "object"
+      },
+      "MediaInputTokensDetails": {
+        "description": "Breakdown of media generation input tokens.",
+        "properties": {
+          "cached_tokens": {
+            "description": "Text tokens served from cache from previous requests (a subset of\n`text_tokens`).",
+            "format": "int32",
+            "type": "integer"
+          },
+          "image_tokens": {
+            "description": "Input image tokens, as reported by the image engine.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "text_tokens": {
+            "description": "Prompt text tokens consumed by the prompt-rewriting (upsampler) LLM,\nincluding any served from cache.",
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "text_tokens",
+          "image_tokens",
+          "cached_tokens"
+        ],
+        "type": "object"
+      },
+      "MediaOutputTokensDetails": {
+        "description": "Breakdown of media generation output tokens.",
+        "properties": {
+          "image_tokens": {
+            "description": "Generated image tokens, as reported by the image engine.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "reasoning_tokens": {
+            "description": "Reasoning (thinking) tokens generated by the prompt-rewriting\n(upsampler) LLM.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "text_tokens": {
+            "description": "Rewritten-prompt text tokens generated by the prompt-rewriting\n(upsampler) LLM, excluding reasoning tokens.",
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "reasoning_tokens",
+          "text_tokens",
+          "image_tokens"
+        ],
+        "type": "object"
+      },
+      "PublicUrlOptions": {
+        "description": "Configuration for creating a public URL alongside file storage.",
+        "properties": {
+          "expires_after": {
+            "description": "Seconds from now until the public URL expires. Must be between\n3600 (1 hour) and 2592000 (30 days).\n\nIf omitted and the file has a TTL (`expires_after` on the file),\nthe public URL inherits the file's expiry. If omitted and the file\nhas no TTL, the public URL remains valid indefinitely until the\nfile is deleted or the URL is explicitly revoked via\n`POST /v1/files/{file_id}/public-url/revoke`.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
         "type": "object"
       }
     }
