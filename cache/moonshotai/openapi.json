@@ -1,0 +1,2210 @@
+{
+  "components": {
+    "schemas": {
+      "BalanceResponse": {
+        "properties": {
+          "code": {
+            "description": "Response code. 0 indicates success.",
+            "type": "integer"
+          },
+          "data": {
+            "properties": {
+              "available_balance": {
+                "description": "The available balance (unit: USD), including cash balance and voucher balance. When it is less than or equal to 0, the user cannot call the inference API",
+                "example": 49.58894,
+                "format": "float",
+                "type": "number"
+              },
+              "cash_balance": {
+                "description": "The cash balance (unit: USD), which can be negative, indicating that the user owes money. When it is negative, available_balance is equal to the value of voucher_balance",
+                "example": 3.00001,
+                "format": "float",
+                "type": "number"
+              },
+              "voucher_balance": {
+                "description": "The voucher balance (unit: USD), which cannot be negative",
+                "example": 46.58893,
+                "format": "float",
+                "type": "number"
+              }
+            },
+            "required": [
+              "available_balance",
+              "voucher_balance",
+              "cash_balance"
+            ],
+            "type": "object"
+          },
+          "scode": {
+            "description": "Status code",
+            "example": "0x0",
+            "type": "string"
+          },
+          "status": {
+            "description": "Request status",
+            "example": true,
+            "type": "boolean"
+          }
+        },
+        "required": ["code", "data", "scode", "status"],
+        "type": "object"
+      },
+      "BatchCreateRequest": {
+        "properties": {
+          "completion_window": {
+            "description": "Time window for task processing, supports formats like 12h, 1d, 3d, minimum 12h, maximum 7d",
+            "type": "string"
+          },
+          "endpoint": {
+            "description": "Request endpoint, currently only /v1/chat/completions is supported",
+            "enum": ["/v1/chat/completions"],
+            "type": "string"
+          },
+          "input_file_id": {
+            "description": "ID of the input file, must be a .jsonl file uploaded with purpose=\"batch\"",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "maxLength": 512,
+              "type": "string"
+            },
+            "description": "Custom metadata, up to 16 key-value pairs, key max 64 chars, value max 512 chars",
+            "type": "object"
+          }
+        },
+        "required": ["input_file_id", "endpoint", "completion_window"],
+        "type": "object"
+      },
+      "BatchListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/BatchObject"
+            },
+            "type": "array"
+          },
+          "has_more": {
+            "description": "Whether there are more results",
+            "type": "boolean"
+          },
+          "object": {
+            "example": "list",
+            "type": "string"
+          }
+        },
+        "required": ["object", "data"],
+        "type": "object"
+      },
+      "BatchObject": {
+        "properties": {
+          "cancelled_at": {
+            "description": "Cancellation completion timestamp (Unix)",
+            "type": ["integer", "null"]
+          },
+          "cancelling_at": {
+            "description": "Cancellation request timestamp (Unix)",
+            "type": ["integer", "null"]
+          },
+          "completed_at": {
+            "description": "Completion timestamp (Unix)",
+            "type": ["integer", "null"]
+          },
+          "completion_window": {
+            "description": "Processing time window",
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Creation timestamp (Unix)",
+            "type": "integer"
+          },
+          "endpoint": {
+            "description": "Request endpoint",
+            "type": "string"
+          },
+          "error_file_id": {
+            "description": "Error file ID for failed results",
+            "type": ["string", "null"]
+          },
+          "expires_at": {
+            "description": "Expiration timestamp (Unix)",
+            "type": ["integer", "null"]
+          },
+          "failed_at": {
+            "description": "Validation failure timestamp (Unix)",
+            "type": ["integer", "null"]
+          },
+          "finalizing_at": {
+            "description": "Result preparation start timestamp (Unix)",
+            "type": ["integer", "null"]
+          },
+          "id": {
+            "description": "Unique identifier for the batch task",
+            "type": "string"
+          },
+          "in_progress_at": {
+            "description": "Execution start timestamp (Unix)",
+            "type": ["integer", "null"]
+          },
+          "input_file_id": {
+            "description": "Input file ID",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Custom metadata",
+            "type": ["object", "null"]
+          },
+          "object": {
+            "description": "Object type, always batch",
+            "example": "batch",
+            "type": "string"
+          },
+          "output_file_id": {
+            "description": "Output file ID for successful results",
+            "type": ["string", "null"]
+          },
+          "request_counts": {
+            "$ref": "#/components/schemas/BatchRequestCounts"
+          },
+          "status": {
+            "description": "Current status: validating, failed, in_progress, finalizing, completed, expired, cancelling, cancelled",
+            "enum": [
+              "validating",
+              "failed",
+              "in_progress",
+              "finalizing",
+              "completed",
+              "expired",
+              "cancelling",
+              "cancelled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "endpoint",
+          "input_file_id",
+          "completion_window",
+          "status",
+          "created_at",
+          "request_counts"
+        ],
+        "type": "object"
+      },
+      "BatchRequestCounts": {
+        "properties": {
+          "completed": {
+            "description": "Number of completed requests",
+            "type": "integer"
+          },
+          "failed": {
+            "description": "Number of failed requests",
+            "type": "integer"
+          },
+          "total": {
+            "description": "Total number of requests",
+            "type": "integer"
+          }
+        },
+        "required": ["completed", "failed", "total"],
+        "type": "object"
+      },
+      "ChatCompletionChunk": {
+        "properties": {
+          "choices": {
+            "description": "List of completion choices",
+            "items": {
+              "$ref": "#/components/schemas/ChoiceDelta"
+            },
+            "type": "array"
+          },
+          "created": {
+            "description": "Unix timestamp of when the completion was created",
+            "type": "integer"
+          },
+          "id": {
+            "description": "Unique identifier for the completion",
+            "type": "string"
+          },
+          "model": {
+            "description": "Model used for the completion",
+            "type": "string"
+          },
+          "object": {
+            "description": "Object type",
+            "example": "chat.completion.chunk",
+            "type": "string"
+          },
+          "usage": {
+            "description": "Token usage statistics. Object in the final chunk with usage, null in ordinary chunks",
+            "properties": {
+              "cached_tokens": {
+                "description": "Number of tokens served from cache",
+                "type": "integer"
+              },
+              "completion_tokens": {
+                "description": "Number of tokens in the completion",
+                "type": "integer"
+              },
+              "prompt_tokens": {
+                "description": "Number of tokens in the prompt",
+                "type": "integer"
+              },
+              "total_tokens": {
+                "description": "Total number of tokens used",
+                "type": "integer"
+              }
+            },
+            "type": ["object", "null"]
+          }
+        },
+        "type": "object"
+      },
+      "ChatCompletionResponse": {
+        "properties": {
+          "choices": {
+            "description": "List of completion choices",
+            "items": {
+              "properties": {
+                "finish_reason": {
+                  "enum": ["stop", "length", "tool_calls"],
+                  "type": "string"
+                },
+                "index": {
+                  "type": "integer"
+                },
+                "message": {
+                  "properties": {
+                    "content": {
+                      "description": "The assistant's message content",
+                      "type": ["string", "null"]
+                    },
+                    "reasoning_content": {
+                      "description": "Reasoning process (returned only when thinking mode is enabled)",
+                      "type": ["string", "null"]
+                    },
+                    "role": {
+                      "enum": ["assistant"],
+                      "type": "string"
+                    },
+                    "tool_calls": {
+                      "description": "Tool calls made by the model",
+                      "items": {
+                        "properties": {
+                          "function": {
+                            "properties": {
+                              "arguments": {
+                                "description": "JSON string of function arguments",
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "id": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "enum": ["function"],
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "created": {
+            "description": "Unix timestamp of when the completion was created",
+            "type": "integer"
+          },
+          "id": {
+            "description": "Unique identifier for the completion",
+            "type": "string"
+          },
+          "model": {
+            "description": "Model used for the completion",
+            "type": "string"
+          },
+          "object": {
+            "description": "Object type",
+            "example": "chat.completion",
+            "type": "string"
+          },
+          "usage": {
+            "properties": {
+              "cached_tokens": {
+                "description": "Number of tokens served from cache",
+                "type": "integer"
+              },
+              "completion_tokens": {
+                "description": "Number of tokens in the completion",
+                "type": "integer"
+              },
+              "prompt_tokens": {
+                "description": "Number of tokens in the prompt",
+                "type": "integer"
+              },
+              "total_tokens": {
+                "description": "Total number of tokens used",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "ChatRequestBase": {
+        "properties": {
+          "logprobs": {
+            "default": false,
+            "description": "Whether to return log probabilities of the output tokens. If true, the log probability of each output token is returned in the logprobs field of the response message.",
+            "type": "boolean"
+          },
+          "max_completion_tokens": {
+            "description": "The maximum number of tokens to generate for the chat completion. The default varies by model: for Kimi K3 it defaults to 131072 and can be set up to 1048576. If the result reaches the maximum number of tokens without ending, the finish reason will be \"length\"; otherwise, it will be \"stop\". This refers to the length of tokens you expect us to return, not the total length of input plus output. If input plus max_completion_tokens exceeds the model context window, the API returns invalid_request_error.",
+            "type": "integer"
+          },
+          "max_tokens": {
+            "deprecated": true,
+            "description": "Deprecated, please refer to max_completion_tokens",
+            "type": "integer"
+          },
+          "messages": {
+            "description": "A list of messages in the conversation so far. Each element has the format {\"role\": \"user\", \"content\": \"Hello\"}. role supports system, user, assistant, or tool. content must not be empty. The content field can be a string or an array[object] (for multimodal input).",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "type": "array"
+          },
+          "prediction": {
+            "description": "Configuration for a Predicted Output, which can greatly improve response times when large parts of the model response are known ahead of time (for example, regenerating a file with only minor changes).",
+            "properties": {
+              "content": {
+                "description": "The static predicted output content that should be matched when generating the model response, such as the content of a text file being regenerated. Accepts a string or an array of content parts (text parts only).",
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "items": {
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                ]
+              },
+              "type": {
+                "description": "The type of the predicted content. Currently only content is supported.",
+                "enum": ["content"],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "prompt_cache_key": {
+            "default": null,
+            "description": "Used to cache responses for similar requests to optimize cache hit rates. For Coding Agents, this is typically a session id or task id representing a single session; if the session is exited and later resumed, this value should remain the same. For Kimi Code Plan, this field is required to improve cache hit rates. For other agents involving multi-turn conversations, it is also recommended to implement this field",
+            "type": "string"
+          },
+          "response_format": {
+            "description": "Controls the model output format. Default is {\"type\": \"text\"} for plain text output. Set to {\"type\": \"json_object\"} to enable JSON mode, ensuring output is a valid JSON object (you must guide the model to output JSON in the prompt). Set to {\"type\": \"json_schema\"} to enable Structured Output, constraining output to match a specified JSON Schema (recommended, requires the json_schema field). If you encounter schema validation issues, please submit feedback at walle GitHub Issues (https://github.com/MoonshotAI/walle/issues).",
+            "properties": {
+              "json_schema": {
+                "description": "Used when type is json_schema. Defines the JSON Schema that the output should conform to.",
+                "properties": {
+                  "name": {
+                    "description": "Schema name for identification",
+                    "type": "string"
+                  },
+                  "schema": {
+                    "additionalProperties": true,
+                    "description": "The JSON Schema object defining the structure the output should conform to. Must conform to MFJS (Moonshot Flavored JSON Schema) specification. You can use the walle CLI tool to validate: go install github.com/moonshotai/walle/cmd/walle@latest && walle -schema 'your_schema' -level strict",
+                    "type": "object"
+                  },
+                  "strict": {
+                    "default": true,
+                    "description": "Whether to strictly constrain output according to the schema. Defaults to true. When true, the schema must conform to the MFJS specification; non-conforming schemas will return errors or warnings. When false, only guarantees the output is a valid JSON object without enforcing internal structure.",
+                    "type": "boolean"
+                  }
+                },
+                "required": ["name", "schema"],
+                "type": "object"
+              },
+              "type": {
+                "description": "Output format type. text: default, plain text output; json_object: ensures output is a valid JSON object; json_schema: constrains output to match a specified JSON Schema (recommended, requires the json_schema field)",
+                "enum": ["text", "json_object", "json_schema"],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "safety_identifier": {
+            "description": "A stable identifier used to help detect users of your application that may be violating usage policies. The ID should be a string that uniquely identifies each user. It is recommended to hash the username or email address to avoid sending any identifying information",
+            "type": "string"
+          },
+          "stop": {
+            "default": null,
+            "description": "Stop words, which will halt the output when a full match is found. The matched words themselves will not be output. A maximum of 5 strings is allowed, and each string must not exceed 32 bytes",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 5,
+                "type": "array"
+              }
+            ]
+          },
+          "stream": {
+            "default": false,
+            "description": "Whether to return the response in a streaming fashion. Default is false.",
+            "type": "boolean"
+          },
+          "stream_options": {
+            "description": "Options for streaming responses",
+            "properties": {
+              "include_usage": {
+                "default": false,
+                "description": "If set, an additional chunk will be streamed before the data: [DONE] message. The usage field on this chunk shows the token usage statistics for the entire request, and the choices field will always be an empty array. All other chunks will also include a usage field, but with a null value. NOTE: If the stream is interrupted, you may not receive the final usage chunk which contains the total token usage for the request",
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          },
+          "tool_choice": {
+            "description": "Controls whether the model calls tools. `auto` (default): the model decides whether to call tools; `none`: no tool calls; `required`: force a tool call; or pass an object specifying a particular function to force that tool call.",
+            "oneOf": [
+              {
+                "description": "auto: the model decides whether to call tools; none: no tool calls; required: force a tool call",
+                "enum": ["auto", "none", "required"],
+                "type": "string"
+              },
+              {
+                "description": "Force a specific tool call",
+                "properties": {
+                  "function": {
+                    "properties": {
+                      "name": {
+                        "description": "The name of the function to call",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["name"],
+                    "type": "object"
+                  },
+                  "type": {
+                    "enum": ["function"],
+                    "type": "string"
+                  }
+                },
+                "required": ["type", "function"],
+                "type": "object"
+              }
+            ]
+          },
+          "tools": {
+            "description": "A list of tools the model may call",
+            "items": {
+              "$ref": "#/components/schemas/ToolDefinition"
+            },
+            "type": "array"
+          },
+          "top_logprobs": {
+            "description": "An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. logprobs must be set to true when this parameter is used.",
+            "maximum": 20,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": ["messages"],
+        "type": "object"
+      },
+      "ChatRequestCommon": {
+        "properties": {
+          "logprobs": {
+            "default": false,
+            "description": "Whether to return log probabilities of the output tokens. If true, the log probability of each output token is returned in the logprobs field of the response message.",
+            "type": "boolean"
+          },
+          "max_completion_tokens": {
+            "description": "The maximum number of tokens to generate for the chat completion. The default varies by model: for Kimi K3 it defaults to 131072 and can be set up to 1048576. If the result reaches the maximum number of tokens without ending, the finish reason will be \"length\"; otherwise, it will be \"stop\". This refers to the length of tokens you expect us to return, not the total length of input plus output. If input plus max_completion_tokens exceeds the model context window, the API returns invalid_request_error.",
+            "type": "integer"
+          },
+          "max_tokens": {
+            "deprecated": true,
+            "description": "Deprecated, please refer to max_completion_tokens",
+            "type": "integer"
+          },
+          "prediction": {
+            "description": "Configuration for a Predicted Output, which can greatly improve response times when large parts of the model response are known ahead of time (for example, regenerating a file with only minor changes).",
+            "properties": {
+              "content": {
+                "description": "The static predicted output content that should be matched when generating the model response, such as the content of a text file being regenerated. Accepts a string or an array of content parts (text parts only).",
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "items": {
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                ]
+              },
+              "type": {
+                "description": "The type of the predicted content. Currently only content is supported.",
+                "enum": ["content"],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "prompt_cache_key": {
+            "default": null,
+            "description": "Used to cache responses for similar requests to optimize cache hit rates. For Coding Agents, this is typically a session id or task id representing a single session; if the session is exited and later resumed, this value should remain the same. For Kimi Code Plan, this field is required to improve cache hit rates. For other agents involving multi-turn conversations, it is also recommended to implement this field",
+            "type": "string"
+          },
+          "response_format": {
+            "description": "Controls the model output format. Default is {\"type\": \"text\"} for plain text output. Set to {\"type\": \"json_object\"} to enable JSON mode, ensuring output is a valid JSON object (you must guide the model to output JSON in the prompt). Set to {\"type\": \"json_schema\"} to enable Structured Output, constraining output to match a specified JSON Schema (recommended, requires the json_schema field). If you encounter schema validation issues, please submit feedback at walle GitHub Issues (https://github.com/MoonshotAI/walle/issues).",
+            "properties": {
+              "json_schema": {
+                "description": "Used when type is json_schema. Defines the JSON Schema that the output should conform to.",
+                "properties": {
+                  "name": {
+                    "description": "Schema name for identification",
+                    "type": "string"
+                  },
+                  "schema": {
+                    "additionalProperties": true,
+                    "description": "The JSON Schema object defining the structure the output should conform to. Must conform to MFJS (Moonshot Flavored JSON Schema) specification. You can use the walle CLI tool to validate: go install github.com/moonshotai/walle/cmd/walle@latest && walle -schema 'your_schema' -level strict",
+                    "type": "object"
+                  },
+                  "strict": {
+                    "default": true,
+                    "description": "Whether to strictly constrain output according to the schema. Defaults to true. When true, the schema must conform to the MFJS specification; non-conforming schemas will return errors or warnings. When false, only guarantees the output is a valid JSON object without enforcing internal structure.",
+                    "type": "boolean"
+                  }
+                },
+                "required": ["name", "schema"],
+                "type": "object"
+              },
+              "type": {
+                "description": "Output format type. text: default, plain text output; json_object: ensures output is a valid JSON object; json_schema: constrains output to match a specified JSON Schema (recommended, requires the json_schema field)",
+                "enum": ["text", "json_object", "json_schema"],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "safety_identifier": {
+            "description": "A stable identifier used to help detect users of your application that may be violating usage policies. The ID should be a string that uniquely identifies each user. It is recommended to hash the username or email address to avoid sending any identifying information",
+            "type": "string"
+          },
+          "stop": {
+            "default": null,
+            "description": "Stop words, which will halt the output when a full match is found. The matched words themselves will not be output. A maximum of 5 strings is allowed, and each string must not exceed 32 bytes",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 5,
+                "type": "array"
+              }
+            ]
+          },
+          "stream": {
+            "default": false,
+            "description": "Whether to return the response in a streaming fashion. Default is false.",
+            "type": "boolean"
+          },
+          "stream_options": {
+            "description": "Options for streaming responses",
+            "properties": {
+              "include_usage": {
+                "default": false,
+                "description": "If set, an additional chunk will be streamed before the data: [DONE] message. The usage field on this chunk shows the token usage statistics for the entire request, and the choices field will always be an empty array. All other chunks will also include a usage field, but with a null value. NOTE: If the stream is interrupted, you may not receive the final usage chunk which contains the total token usage for the request",
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          },
+          "tool_choice": {
+            "description": "Controls whether the model calls tools. `auto` (default): the model decides whether to call tools; `none`: no tool calls; `required`: force a tool call; or pass an object specifying a particular function to force that tool call.",
+            "oneOf": [
+              {
+                "description": "auto: the model decides whether to call tools; none: no tool calls; required: force a tool call",
+                "enum": ["auto", "none", "required"],
+                "type": "string"
+              },
+              {
+                "description": "Force a specific tool call",
+                "properties": {
+                  "function": {
+                    "properties": {
+                      "name": {
+                        "description": "The name of the function to call",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["name"],
+                    "type": "object"
+                  },
+                  "type": {
+                    "enum": ["function"],
+                    "type": "string"
+                  }
+                },
+                "required": ["type", "function"],
+                "type": "object"
+              }
+            ]
+          },
+          "tools": {
+            "description": "A list of tools the model may call",
+            "items": {
+              "$ref": "#/components/schemas/ToolDefinition"
+            },
+            "type": "array"
+          },
+          "top_logprobs": {
+            "description": "An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. logprobs must be set to true when this parameter is used.",
+            "maximum": 20,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ChoiceDelta": {
+        "properties": {
+          "delta": {
+            "description": "Incremental content object",
+            "properties": {
+              "content": {
+                "description": "Message content fragment",
+                "type": "string"
+              },
+              "role": {
+                "description": "Message role (only present in the first chunk)",
+                "type": "string"
+              },
+              "tool_calls": {
+                "description": "Tool calls initiated by the model",
+                "items": {
+                  "properties": {
+                    "function": {
+                      "properties": {
+                        "arguments": {
+                          "description": "JSON string of function arguments",
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "enum": ["function"],
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
+          "finish_reason": {
+            "description": "Stop reason, only present in the final chunk",
+            "enum": ["stop", "length", "tool_calls", null],
+            "type": ["string", "null"]
+          },
+          "index": {
+            "description": "Choice index",
+            "type": "integer"
+          },
+          "usage": {
+            "description": "Token usage statistics (optional)",
+            "properties": {
+              "completion_tokens": {
+                "description": "Number of tokens in the completion",
+                "type": "integer"
+              },
+              "prompt_tokens": {
+                "description": "Number of tokens in the prompt",
+                "type": "integer"
+              },
+              "total_tokens": {
+                "description": "Total number of tokens used",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "Error code",
+                "type": "string"
+              },
+              "message": {
+                "description": "Error message describing what went wrong",
+                "type": "string"
+              },
+              "type": {
+                "description": "Error type",
+                "type": "string"
+              }
+            },
+            "required": ["message"],
+            "type": "object"
+          }
+        },
+        "required": ["error"],
+        "type": "object"
+      },
+      "EstimateTokenRequest": {
+        "properties": {
+          "messages": {
+            "description": "A list of messages in the conversation so far. Each element has the format {\"role\": \"user\", \"content\": \"Hello\"}. role supports system, user, assistant, or tool. content must not be empty",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "type": "array"
+          },
+          "model": {
+            "default": "kimi-k3",
+            "description": "Model ID",
+            "enum": [
+              "kimi-k3",
+              "kimi-k2.7-code",
+              "kimi-k2.7-code-highspeed",
+              "kimi-k2.6",
+              "kimi-k2.5",
+              "moonshot-v1-8k",
+              "moonshot-v1-32k",
+              "moonshot-v1-128k",
+              "moonshot-v1-auto",
+              "moonshot-v1-8k-vision-preview",
+              "moonshot-v1-32k-vision-preview",
+              "moonshot-v1-128k-vision-preview"
+            ],
+            "type": "string"
+          }
+        },
+        "required": ["model", "messages"],
+        "type": "object"
+      },
+      "EstimateTokenResponse": {
+        "properties": {
+          "data": {
+            "properties": {
+              "total_tokens": {
+                "description": "Estimated total number of tokens",
+                "example": 80,
+                "type": "integer"
+              }
+            },
+            "required": ["total_tokens"],
+            "type": "object"
+          }
+        },
+        "required": ["data"],
+        "type": "object"
+      },
+      "FileDeleteResponse": {
+        "properties": {
+          "deleted": {
+            "description": "Whether the file was deleted successfully",
+            "type": "boolean"
+          },
+          "id": {
+            "description": "Deleted file identifier",
+            "type": "string"
+          },
+          "object": {
+            "example": "file",
+            "type": "string"
+          }
+        },
+        "required": ["id", "object", "deleted"],
+        "type": "object"
+      },
+      "FileListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/FileObject"
+            },
+            "type": "array"
+          },
+          "object": {
+            "example": "list",
+            "type": "string"
+          }
+        },
+        "required": ["object", "data"],
+        "type": "object"
+      },
+      "FileObject": {
+        "properties": {
+          "bytes": {
+            "description": "File size in bytes",
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "Unix timestamp when the file was created",
+            "type": "integer"
+          },
+          "filename": {
+            "description": "Original file name",
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique file identifier",
+            "type": "string"
+          },
+          "object": {
+            "description": "Object type",
+            "example": "file",
+            "type": "string"
+          },
+          "purpose": {
+            "description": "Purpose used when uploading the file. file-extract: extract file contents; image: upload images for vision understanding; video: upload videos for video understanding; batch: upload JSONL files for batch processing",
+            "enum": ["file-extract", "image", "video", "batch"],
+            "type": "string"
+          },
+          "status": {
+            "description": "Processing status of the file",
+            "example": "ready",
+            "type": "string"
+          },
+          "status_details": {
+            "description": "Additional status details when processing fails or returns warnings",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "bytes",
+          "created_at",
+          "filename",
+          "purpose",
+          "status"
+        ],
+        "type": "object"
+      },
+      "KimiK25ChatRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ChatRequestBase"
+          },
+          {
+            "properties": {
+              "model": {
+                "default": "kimi-k2.5",
+                "description": "Model ID",
+                "enum": ["kimi-k2.5"],
+                "type": "string"
+              },
+              "thinking": {
+                "additionalProperties": false,
+                "description": "Controls whether thinking is enabled for the model. Optional parameter. Default value is {\"type\": \"enabled\"}.",
+                "properties": {
+                  "type": {
+                    "description": "Enable or disable thinking capability",
+                    "enum": ["enabled", "disabled"],
+                    "type": "string"
+                  }
+                },
+                "required": ["type"],
+                "type": "object"
+              }
+            },
+            "required": ["model"],
+            "type": "object"
+          }
+        ],
+        "title": "kimi-k2.5"
+      },
+      "KimiK26ChatRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ChatRequestBase"
+          },
+          {
+            "properties": {
+              "model": {
+                "default": "kimi-k2.6",
+                "description": "Model ID",
+                "enum": ["kimi-k2.6"],
+                "type": "string"
+              },
+              "thinking": {
+                "additionalProperties": false,
+                "description": "Controls whether thinking is enabled for the kimi-k2.6 model, and whether to fully preserve reasoning_content across multi-turn conversations. Optional parameter. Default value is {\"type\": \"enabled\"}.",
+                "properties": {
+                  "keep": {
+                    "description": "Controls whether reasoning_content from previous turns is preserved across a multi-turn conversation, i.e. whether to enable Preserved Thinking. Defaults to `null`, meaning historical thinking is NOT preserved.\n\n- `null` (default) or omitted: The server ignores reasoning_content from historical turns.\n- `\"all\"`: Preserves reasoning_content from historical turns and provides it to the model as part of the context, enabling Preserved Thinking. When using this, keep the reasoning_content from every historical assistant message in messages as-is. Recommended to use together with `type: \"enabled\"`.\n- Note: This parameter only affects reasoning_content from historical turns; it does not change whether the model produces/outputs thinking within the current turn (that is controlled by `type`). For best practices, see [Preserved Thinking](/guide/use-thinking-models#preserved-thinking).",
+                    "enum": ["all", null],
+                    "type": ["string", "null"]
+                  },
+                  "type": {
+                    "description": "Enable or disable thinking capability",
+                    "enum": ["enabled", "disabled"],
+                    "type": "string"
+                  }
+                },
+                "required": ["type"],
+                "type": "object"
+              }
+            },
+            "required": ["model"],
+            "type": "object"
+          }
+        ],
+        "title": "kimi-k2.6"
+      },
+      "KimiK27CodeChatRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ChatRequestBase"
+          },
+          {
+            "properties": {
+              "model": {
+                "default": "kimi-k2.7-code",
+                "description": "Model ID. Either `kimi-k2.7-code` or its high-speed variant `kimi-k2.7-code-highspeed`; the two are the same model with identical parameters, while the high-speed variant outputs at approximately 180 Tokens/s (up to 260 Tokens/s in short-context scenarios).",
+                "enum": ["kimi-k2.7-code", "kimi-k2.7-code-highspeed"],
+                "type": "string"
+              },
+              "thinking": {
+                "additionalProperties": false,
+                "description": "Controls thinking for the kimi-k2.7-code model, and whether to fully preserve reasoning_content across multi-turn conversations. Optional parameter. Default value is {\"type\": \"enabled\", \"keep\": \"all\"}.\n\nDifferences from kimi-k2.6:\n- `type` only accepts `\"enabled\"`. Unlike kimi-k2.6, `\"disabled\"` is NOT supported — passing it returns an error. Thinking is always on for this model.\n- `keep` only accepts the valid value `\"all\"`; omitting it or passing `\"all\"` is treated as `\"all\"` on the server, while any other invalid value returns an error. Preserved Thinking is therefore always enabled for this model.",
+                "properties": {
+                  "keep": {
+                    "description": "Controls whether reasoning_content from previous turns is preserved across a multi-turn conversation, i.e. whether to enable Preserved Thinking.\n\n- For kimi-k2.7-code this parameter only accepts the valid value `\"all\"`: passing `\"all\"`, passing `null`, or omitting it all behave identically and are treated as `\"all\"` on the server — reasoning_content from historical turns is always preserved; passing any other invalid value returns an error. This differs from kimi-k2.6, whose default is `null` (historical thinking NOT preserved unless you explicitly set `\"all\"`).\n- Because Preserved Thinking is always on, keep the reasoning_content from every historical assistant message in messages as-is.\n- Note: This parameter only affects reasoning_content from historical turns; it does not change whether the model produces/outputs thinking within the current turn (that is controlled by `type`). For best practices, see [Preserved Thinking](/guide/use-thinking-models#preserved-thinking).",
+                    "enum": ["all", null],
+                    "type": ["string", "null"]
+                  },
+                  "type": {
+                    "description": "Enable thinking capability. For kimi-k2.7-code, only `\"enabled\"` is accepted; passing `\"disabled\"` returns an error. This differs from kimi-k2.6, which also supports `\"disabled\"`.",
+                    "enum": ["enabled"],
+                    "type": "string"
+                  }
+                },
+                "required": ["type"],
+                "type": "object"
+              }
+            },
+            "required": ["model"],
+            "type": "object"
+          }
+        ],
+        "title": "kimi-k2.7-code"
+      },
+      "KimiK3ChatRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ChatRequestCommon"
+          },
+          {
+            "properties": {
+              "messages": {
+                "description": "A list of Kimi K3 conversation messages. In addition to standard messages, you can insert a {\"role\": \"system\", \"tools\": [...]} message at any conversation position to dynamically load tools. A dynamic tool message omits content and only affects subsequent conversation turns.",
+                "items": {
+                  "$ref": "#/components/schemas/KimiK3Message"
+                },
+                "type": "array"
+              },
+              "model": {
+                "default": "kimi-k3",
+                "description": "Model ID",
+                "enum": ["kimi-k3"],
+                "type": "string"
+              },
+              "reasoning_effort": {
+                "default": "max",
+                "description": "Kimi K3 always enables thinking with Preserved Thinking. Reasoning effort supports low, high, and max, with max as the default.",
+                "enum": ["low", "high", "max"],
+                "type": "string"
+              }
+            },
+            "required": ["model", "messages"],
+            "type": "object"
+          }
+        ],
+        "title": "kimi-k3"
+      },
+      "KimiK3DynamicToolMessage": {
+        "additionalProperties": false,
+        "description": "A Kimi K3 dynamic tool loading message. This message must use the system role, declares tools available to subsequent conversation turns from its position, and does not include a content field.",
+        "properties": {
+          "role": {
+            "description": "The role of a dynamic tool loading message. Always system.",
+            "enum": ["system"],
+            "type": "string"
+          },
+          "tools": {
+            "description": "Tools available for the model to call from this message onward",
+            "items": {
+              "$ref": "#/components/schemas/ToolDefinition"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["role", "tools"],
+        "type": "object"
+      },
+      "KimiK3Message": {
+        "description": "A Kimi K3 conversation message. Supports both standard messages and system messages that omit content and declare dynamically loaded tools through tools.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Message",
+            "title": "Standard message"
+          },
+          {
+            "$ref": "#/components/schemas/KimiK3DynamicToolMessage",
+            "title": "Dynamic tool message"
+          }
+        ]
+      },
+      "Message": {
+        "properties": {
+          "content": {
+            "description": "The content of the message. Can be a plain text string, or an array of objects with text/image_url/video_url types (for multimodal input)",
+            "example": "Hello",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "text": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": ["text"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["type", "text"],
+                      "title": "text",
+                      "type": "object"
+                    },
+                    {
+                      "properties": {
+                        "image_url": {
+                          "oneOf": [
+                            {
+                              "properties": {
+                                "url": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["url"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        },
+                        "type": {
+                          "enum": ["image_url"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["type", "image_url"],
+                      "title": "image_url",
+                      "type": "object"
+                    },
+                    {
+                      "properties": {
+                        "type": {
+                          "enum": ["video_url"],
+                          "type": "string"
+                        },
+                        "video_url": {
+                          "oneOf": [
+                            {
+                              "properties": {
+                                "url": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": ["url"],
+                              "type": "object"
+                            },
+                            {
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "required": ["type", "video_url"],
+                      "title": "video_url",
+                      "type": "object"
+                    }
+                  ]
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "name": {
+            "default": null,
+            "description": "Optional name for the message sender",
+            "type": "string"
+          },
+          "partial": {
+            "default": false,
+            "description": "Enable Partial Mode by setting this to true in the last assistant message",
+            "type": "boolean"
+          },
+          "role": {
+            "description": "The role of the message sender. Supports system, user, assistant, tool.",
+            "enum": ["system", "user", "assistant", "tool"],
+            "example": "user",
+            "type": "string"
+          }
+        },
+        "required": ["role", "content"],
+        "type": "object"
+      },
+      "MoonshotV1ChatRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ChatRequestBase"
+          },
+          {
+            "properties": {
+              "frequency_penalty": {
+                "default": 0,
+                "description": "Frequency penalty, a number between -2.0 and 2.0. A positive value will penalize new tokens based on their existing frequency in the text, reducing the likelihood of the model repeating the same phrases verbatim",
+                "format": "float",
+                "maximum": 2,
+                "minimum": -2,
+                "type": "number"
+              },
+              "model": {
+                "default": "moonshot-v1-128k",
+                "description": "Model ID",
+                "enum": [
+                  "moonshot-v1-8k",
+                  "moonshot-v1-32k",
+                  "moonshot-v1-128k",
+                  "moonshot-v1-auto",
+                  "moonshot-v1-8k-vision-preview",
+                  "moonshot-v1-32k-vision-preview",
+                  "moonshot-v1-128k-vision-preview"
+                ],
+                "type": "string"
+              },
+              "n": {
+                "default": 1,
+                "description": "The number of results to generate for each input message. Default is 1, must not exceed 5. When the temperature is very close to 0, only 1 result can be returned.",
+                "maximum": 5,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "presence_penalty": {
+                "default": 0,
+                "description": "Presence penalty, a number between -2.0 and 2.0. A positive value will penalize new tokens based on whether they appear in the text, increasing the likelihood of the model discussing new topics",
+                "format": "float",
+                "maximum": 2,
+                "minimum": -2,
+                "type": "number"
+              },
+              "temperature": {
+                "default": 0,
+                "description": "The sampling temperature to use, ranging from 0 to 1. A higher value (e.g., 0.7) will make the output more random, while a lower value (e.g., 0.2) will make it more focused and deterministic. Default is 0.0.",
+                "format": "float",
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              },
+              "top_p": {
+                "default": 1,
+                "description": "Another sampling method, where the model considers the results of tokens with a cumulative probability mass of top_p. Thus, 0.1 means only considering the top 10% of tokens by probability mass. Generally, we suggest changing either this or the temperature, but not both at the same time. Default is 1.0.",
+                "format": "float",
+                "maximum": 1,
+                "minimum": 0,
+                "type": "number"
+              }
+            },
+            "required": ["model"],
+            "type": "object"
+          }
+        ],
+        "title": "moonshot-v1"
+      },
+      "ToolDefinition": {
+        "properties": {
+          "function": {
+            "properties": {
+              "description": {
+                "description": "Description of what the function does",
+                "type": "string"
+              },
+              "name": {
+                "description": "Function name. Must follow the regex: ^[a-zA-Z_][a-zA-Z0-9-_]{0,255}$",
+                "pattern": "^[a-zA-Z_][a-zA-Z0-9-_]{0,255}$",
+                "type": "string"
+              },
+              "parameters": {
+                "additionalProperties": true,
+                "description": "Function parameters as JSON Schema. Must conform to the [MFJS (Moonshot Flavored JSON Schema) specification](https://github.com/MoonshotAI/walle/blob/main/docs/mfjs-spec.md).",
+                "type": "object"
+              },
+              "strict": {
+                "default": true,
+                "description": "Whether to strictly constrain tool call arguments according to the parameters schema. Defaults to true. When false, only guarantees the output is a valid JSON object without enforcing internal structure.",
+                "type": "boolean"
+              }
+            },
+            "required": ["name", "parameters"],
+            "type": "object"
+          },
+          "type": {
+            "enum": ["function"],
+            "type": "string"
+          }
+        },
+        "required": ["type", "function"],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "description": "The Authorization header expects a Bearer token. Use an MOONSHOT_API_KEY as the token. This is a server-side secret key. Generate one on the [API keys page](https://platform.kimi.ai/console/api-keys) in your dashboard.",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "API for Moonshot AI / Kimi large language model services",
+    "title": "Moonshot AI API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/v1/batches": {
+      "get": {
+        "description": "List batch tasks for your organization.",
+        "parameters": [
+          {
+            "description": "Pagination cursor, pass the ID of the last batch from the previous page",
+            "in": "query",
+            "name": "after",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Number of results per page, default 20",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchListResponse"
+                }
+              }
+            },
+            "description": "List of batch tasks"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Server error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Batches",
+        "tags": ["Batch"]
+      },
+      "post": {
+        "description": "Create a batch task. You need to first upload a JSONL file with purpose=\"batch\" via the Files API, then use the returned file_id to create the task.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchObject"
+                }
+              }
+            },
+            "description": "The created batch task"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad request - Invalid parameters"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Server error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Create Batch",
+        "tags": ["Batch"]
+      }
+    },
+    "/v1/batches/{batch_id}": {
+      "get": {
+        "description": "Retrieve the status and details of a specific batch task.",
+        "parameters": [
+          {
+            "description": "The ID of the batch task",
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchObject"
+                }
+              }
+            },
+            "description": "Batch task details"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Batch task not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Server error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Retrieve Batch",
+        "tags": ["Batch"]
+      }
+    },
+    "/v1/batches/{batch_id}/cancel": {
+      "post": {
+        "description": "Cancel an in-progress batch task. The status will change to cancelling and then to cancelled. Only tasks in validating, in_progress, or finalizing status can be cancelled.",
+        "parameters": [
+          {
+            "description": "The ID of the batch task",
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchObject"
+                }
+              }
+            },
+            "description": "The cancelled batch task"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad request - Task status does not allow cancellation"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Batch task not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Server error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Cancel Batch",
+        "tags": ["Batch"]
+      }
+    },
+    "/v1/chat/completions": {
+      "post": {
+        "description": "Creates a completion for the chat message. Supports standard chat, Partial Mode, and Tool Use (Function Calling).",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "discriminator": {
+                  "mapping": {
+                    "kimi-k2.5": "#/components/schemas/KimiK25ChatRequest",
+                    "kimi-k2.6": "#/components/schemas/KimiK26ChatRequest",
+                    "kimi-k2.7-code": "#/components/schemas/KimiK27CodeChatRequest",
+                    "kimi-k2.7-code-highspeed": "#/components/schemas/KimiK27CodeChatRequest",
+                    "kimi-k3": "#/components/schemas/KimiK3ChatRequest",
+                    "moonshot-v1-128k": "#/components/schemas/MoonshotV1ChatRequest",
+                    "moonshot-v1-128k-vision-preview": "#/components/schemas/MoonshotV1ChatRequest",
+                    "moonshot-v1-32k": "#/components/schemas/MoonshotV1ChatRequest",
+                    "moonshot-v1-32k-vision-preview": "#/components/schemas/MoonshotV1ChatRequest",
+                    "moonshot-v1-8k": "#/components/schemas/MoonshotV1ChatRequest",
+                    "moonshot-v1-8k-vision-preview": "#/components/schemas/MoonshotV1ChatRequest",
+                    "moonshot-v1-auto": "#/components/schemas/MoonshotV1ChatRequest"
+                  },
+                  "propertyName": "model"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/KimiK3ChatRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/KimiK27CodeChatRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/KimiK26ChatRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/KimiK25ChatRequest"
+                  },
+                  {
+                    "$ref": "#/components/schemas/MoonshotV1ChatRequest"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatCompletionResponse"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatCompletionChunk"
+                }
+              }
+            },
+            "description": "Chat completion response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad request - Invalid parameters"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Server error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Create Chat Completion",
+        "tags": ["Chat"]
+      }
+    },
+    "/v1/files": {
+      "get": {
+        "description": "Lists all files uploaded by the current user.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileListResponse"
+                }
+              }
+            },
+            "description": "List of uploaded files"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Server error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Files",
+        "tags": ["Files"]
+      },
+      "post": {
+        "description": "Uploads a file for extraction, image understanding, or video understanding.",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "description": "The file to upload",
+                    "format": "binary",
+                    "type": "string"
+                  },
+                  "purpose": {
+                    "description": "Specifies how the uploaded file will be processed. file-extract: extract file contents; image: upload images for vision understanding; video: upload videos for video understanding; batch: upload JSONL files for batch processing",
+                    "enum": ["file-extract", "image", "video", "batch"],
+                    "type": "string"
+                  }
+                },
+                "required": ["file", "purpose"],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileObject"
+                }
+              }
+            },
+            "description": "Uploaded file metadata"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad request - Invalid upload parameters"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Server error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Upload File",
+        "tags": ["Files"]
+      }
+    },
+    "/v1/files/{file_id}": {
+      "delete": {
+        "description": "Deletes a previously uploaded file.",
+        "parameters": [
+          {
+            "description": "The file identifier",
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileDeleteResponse"
+                }
+              }
+            },
+            "description": "Deletion result"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "File not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Server error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Delete File",
+        "tags": ["Files"]
+      },
+      "get": {
+        "description": "Retrieves metadata for a specific uploaded file.",
+        "parameters": [
+          {
+            "description": "The file identifier",
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileObject"
+                }
+              }
+            },
+            "description": "File metadata"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "File not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Server error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Get File Information",
+        "tags": ["Files"]
+      }
+    },
+    "/v1/files/{file_id}/content": {
+      "get": {
+        "description": "Retrieves extracted text content for files uploaded with purpose `file-extract`.",
+        "parameters": [
+          {
+            "description": "The file identifier",
+            "in": "path",
+            "name": "file_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "description": "Extracted file content as plain text",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Extracted file content"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "File not found"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Server error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Get File Content",
+        "tags": ["Files"]
+      }
+    },
+    "/v1/models": {
+      "get": {
+        "description": "List all currently available models.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "properties": {
+                          "context_length": {
+                            "description": "Maximum context length (tokens)",
+                            "type": "integer"
+                          },
+                          "created": {
+                            "description": "Creation timestamp",
+                            "type": "integer"
+                          },
+                          "id": {
+                            "description": "Model ID",
+                            "example": "kimi-k2.5",
+                            "type": "string"
+                          },
+                          "object": {
+                            "example": "model",
+                            "type": "string"
+                          },
+                          "owned_by": {
+                            "example": "moonshot",
+                            "type": "string"
+                          },
+                          "supports_image_in": {
+                            "description": "Whether the model supports image input",
+                            "type": "boolean"
+                          },
+                          "supports_reasoning": {
+                            "description": "Whether the model supports deep thinking",
+                            "type": "boolean"
+                          },
+                          "supports_video_in": {
+                            "description": "Whether the model supports video input",
+                            "type": "boolean"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "object": {
+                      "example": "list",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Model list"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing API key"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "List Models",
+        "tags": ["Models"]
+      }
+    },
+    "/v1/tokenizers/estimate-token-count": {
+      "post": {
+        "description": "Estimates the number of tokens that would be used for a given set of messages and model. The input structure is almost identical to that of chat completion.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EstimateTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EstimateTokenResponse"
+                }
+              }
+            },
+            "description": "Token count estimation"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Bad request - Invalid parameters"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Server error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Estimate Token Count",
+        "tags": ["Utilities"]
+      }
+    },
+    "/v1/users/me/balance": {
+      "get": {
+        "description": "REST API to check your available, voucher, and cash balances on Kimi OpenPlatform.",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalanceResponse"
+                }
+              }
+            },
+            "description": "Balance information"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized - Invalid or missing API key"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Server error"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Check Balance",
+        "tags": ["Billing"]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Production",
+      "url": "https://api.moonshot.ai"
+    }
+  ],
+  "webhooks": {}
+}
