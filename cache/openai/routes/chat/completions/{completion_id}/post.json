@@ -69,7 +69,7 @@
             "items": {
               "properties": {
                 "finish_reason": {
-                  "description": "The reason the model stopped generating tokens. This will be `stop` if the model hit a natural stop point or a provided stop sequence,\n`length` if the maximum number of tokens specified in the request was reached,\n`content_filter` if content was omitted due to a flag from our content filters,\n`tool_calls` if the model called a tool, or `function_call` (deprecated) if the model called a function.\n",
+                  "description": "The reason the model stopped generating tokens. This will be `stop` if the model hit a natural stop point or a provided stop sequence,\n`length` if the maximum number of tokens specified in the request was reached,\n`content_filter` if content was omitted due to a flag from our content filters,\n`tool_calls` if the model called a tool, or `function_call` (deprecated) if the model called a function.\nRead the [Model Spec](https://model-spec.openai.com/2025-12-18.html) for more.\n",
                   "enum": [
                     "stop",
                     "length",
@@ -144,6 +144,7 @@
           },
           "created": {
             "description": "The Unix timestamp (in seconds) of when the chat completion was created.",
+            "format": "unixtime",
             "type": "integer"
           },
           "id": {
@@ -153,6 +154,17 @@
           "model": {
             "description": "The model used for the chat completion.",
             "type": "string"
+          },
+          "moderation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompletionModeration",
+                "description": "Moderation results for the request input and generated output, if moderated\ncompletions were requested.\n"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "object": {
             "description": "The object type, which is always `chat.completion`.",
@@ -207,7 +219,7 @@
             "type": "string"
           },
           "top_logprobs": {
-            "description": "List of the most likely tokens and their log probability, at this token position. In rare cases, there may be fewer than the number of requested `top_logprobs` returned.",
+            "description": "List of the most likely tokens and their log probability, at this token position. The number of entries may be fewer than the requested `top_logprobs`.",
             "items": {
               "properties": {
                 "bytes": {
@@ -283,6 +295,7 @@
                     },
                     "url": {
                       "description": "The URL of the web resource.",
+                      "format": "uri",
                       "type": "string"
                     }
                   },
@@ -314,6 +327,7 @@
                   },
                   "expires_at": {
                     "description": "The Unix timestamp (in seconds) for when this audio response will\nno longer be accessible on the server for use in multi-turn\nconversations.\n",
+                    "format": "unixtime",
                     "type": "integer"
                   },
                   "id": {
@@ -397,17 +411,56 @@
         ],
         "type": "object"
       },
+      "ChatCompletionModeration": {
+        "description": "Moderation results or errors for the request input and generated output.",
+        "properties": {
+          "input": {
+            "description": "Moderation for the request input.",
+            "discriminator": {
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompletionModerationResults"
+              },
+              {
+                "$ref": "#/components/schemas/ChatCompletionModerationError"
+              }
+            ]
+          },
+          "output": {
+            "description": "Moderation for the generated output.",
+            "discriminator": {
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompletionModerationResults"
+              },
+              {
+                "$ref": "#/components/schemas/ChatCompletionModerationError"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input",
+          "output"
+        ],
+        "type": "object"
+      },
       "ServiceTier": {
         "anyOf": [
           {
             "default": "auto",
-            "description": "Specifies the processing type used for serving the request.\n  - If set to 'auto', then the request will be processed with the service tier configured in the Project settings. Unless otherwise configured, the Project will use 'default'.\n  - If set to 'default', then the request will be processed with the standard pricing and performance for the selected model.\n  - If set to '[flex](/docs/guides/flex-processing)' or '[priority](https://openai.com/api-priority-processing/)', then the request will be processed with the corresponding service tier.\n  - When not set, the default behavior is 'auto'.\n\n  When the `service_tier` parameter is set, the response body will include the `service_tier` value based on the processing mode actually used to serve the request. This response value may be different from the value set in the parameter.\n",
+            "description": "Specifies the processing type used for serving the request.\n  - If set to 'auto', then the request will be processed with the service tier configured in the Project settings. Unless otherwise configured, the Project will use 'default'.\n  - If set to 'default', then the request will be processed with the standard pricing and performance for the selected model.\n  - If set to '[flex](/docs/guides/flex-processing)', then the request will be processed with the Flex Processing service tier.\n  - To opt-in to [Fast mode](/api/docs/guides/fast-mode) at the request level, include the `service_tier=fast` or `service_tier=priority` parameter for Responses or Chat Completions. The response will show `service_tier=priority` regardless of if you specify `service_tier=fast` or `priority` in your request.\n  - When not set, the default behavior is 'auto'.\n\n  When the `service_tier` parameter is set, the response body will include the `service_tier` value based on the processing mode actually used to serve the request. This response value may be different from the value set in the parameter.\n",
             "enum": [
               "auto",
               "default",
               "flex",
               "scale",
-              "priority"
+              "priority",
+              "fast"
             ],
             "type": "string"
           },
@@ -463,6 +516,11 @@
                 "description": "Audio input tokens present in the prompt.",
                 "type": "integer"
               },
+              "cache_write_tokens": {
+                "default": 0,
+                "description": "The unadjusted number of prompt tokens written to cache.",
+                "type": "integer"
+              },
               "cached_tokens": {
                 "default": 0,
                 "description": "Cached tokens present in the prompt.",
@@ -500,6 +558,61 @@
           ]
         },
         "type": "array"
+      },
+      "ChatCompletionModerationResults": {
+        "description": "Successful moderation results for the request input or generated output.",
+        "properties": {
+          "model": {
+            "description": "The moderation model used to generate the results.",
+            "type": "string"
+          },
+          "results": {
+            "description": "A list of moderation results.",
+            "items": {
+              "$ref": "#/components/schemas/ModerationResultBody"
+            },
+            "type": "array"
+          },
+          "type": {
+            "description": "The object type, which is always `moderation_results`.",
+            "enum": [
+              "moderation_results"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "model",
+          "results"
+        ],
+        "type": "object"
+      },
+      "ChatCompletionModerationError": {
+        "description": "An error produced while attempting moderation.",
+        "properties": {
+          "code": {
+            "description": "The error code.",
+            "type": "string"
+          },
+          "message": {
+            "description": "The error message.",
+            "type": "string"
+          },
+          "type": {
+            "description": "The object type, which is always `error`.",
+            "enum": [
+              "error"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "code",
+          "message"
+        ],
+        "type": "object"
       },
       "ChatCompletionMessageToolCall": {
         "description": "A call to a function tool created by the model.\n",
@@ -582,6 +695,68 @@
         ],
         "title": "Custom tool call",
         "type": "object"
+      },
+      "ModerationResultBody": {
+        "description": "A moderation result produced for the response input or output.",
+        "properties": {
+          "categories": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "A dictionary of moderation categories to booleans, True if the input is flagged under this category.",
+            "type": "object"
+          },
+          "category_applied_input_types": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/ModerationInputType"
+              },
+              "type": "array"
+            },
+            "description": "Which modalities of input are reflected by the score for each category.",
+            "type": "object"
+          },
+          "category_scores": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "A dictionary of moderation categories to scores.",
+            "type": "object"
+          },
+          "flagged": {
+            "description": "A boolean indicating whether the content was flagged by any category.",
+            "type": "boolean"
+          },
+          "model": {
+            "description": "The moderation model that produced this result.",
+            "type": "string"
+          },
+          "type": {
+            "default": "moderation_result",
+            "description": "The object type, which was always `moderation_result` for successful moderation results.",
+            "enum": [
+              "moderation_result"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "model",
+          "flagged",
+          "categories",
+          "category_scores",
+          "category_applied_input_types"
+        ],
+        "title": "Moderation result",
+        "type": "object"
+      },
+      "ModerationInputType": {
+        "enum": [
+          "text",
+          "image"
+        ],
+        "type": "string"
       }
     }
   }

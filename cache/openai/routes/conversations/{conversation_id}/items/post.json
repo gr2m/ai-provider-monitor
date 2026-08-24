@@ -65,7 +65,7 @@
   "components": {
     "schemas": {
       "IncludeEnum": {
-        "description": "Specify additional output data to include in the model response. Currently supported values are:\n- `web_search_call.action.sources`: Include the sources of the web search tool call.\n- `code_interpreter_call.outputs`: Includes the outputs of python code execution in code interpreter tool call items.\n- `computer_call_output.output.image_url`: Include image urls from the computer call output.\n- `file_search_call.results`: Include the search results of the file search tool call.\n- `message.input_image.image_url`: Include image urls from the input message.\n- `message.output_text.logprobs`: Include logprobs with assistant messages.\n- `reasoning.encrypted_content`: Includes an encrypted version of reasoning tokens in reasoning item outputs. This enables reasoning items to be used in multi-turn conversations when using the Responses API statelessly (like when the `store` parameter is set to `false`, or when an organization is enrolled in the zero data retention program).",
+        "description": "Specify additional output data to include in the model response. Currently supported values are:\n- `web_search_call.results`: Include the search results of the web search tool call.\n- `web_search_call.action.sources`: Include the sources of the web search tool call.\n- `code_interpreter_call.outputs`: Includes the outputs of python code execution in code interpreter tool call items.\n- `computer_call_output.output.image_url`: Include image urls from the computer call output.\n- `file_search_call.results`: Include the search results of the file search tool call.\n- `message.input_image.image_url`: Include image urls from the input message.\n- `message.output_text.logprobs`: Include logprobs with assistant messages.\n- `reasoning.encrypted_content`: Includes an encrypted version of reasoning tokens in reasoning item outputs. This enables reasoning items to be used in multi-turn conversations when using the Responses API statelessly (like when the `store` parameter is set to `false`, or when an organization is enrolled in the zero data retention program).",
         "enum": [
           "file_search_call.results",
           "web_search_call.results",
@@ -93,7 +93,16 @@
             "type": "object"
           },
           {
+            "$ref": "#/components/schemas/CompactionTriggerItemParam"
+          },
+          {
             "$ref": "#/components/schemas/ItemReferenceParam"
+          },
+          {
+            "$ref": "#/components/schemas/ProgramItemParam"
+          },
+          {
+            "$ref": "#/components/schemas/ProgramOutputItemParam"
           }
         ]
       },
@@ -225,6 +234,9 @@
             "$ref": "#/components/schemas/ToolSearchOutputItemParam"
           },
           {
+            "$ref": "#/components/schemas/AdditionalToolsItemParam"
+          },
+          {
             "$ref": "#/components/schemas/ReasoningItem"
           },
           {
@@ -275,6 +287,24 @@
         ],
         "type": "object"
       },
+      "CompactionTriggerItemParam": {
+        "description": "Compacts the current context. Must be the final input item.",
+        "properties": {
+          "type": {
+            "default": "compaction_trigger",
+            "description": "The type of the item. Always `compaction_trigger`.",
+            "enum": [
+              "compaction_trigger"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "Compaction trigger",
+        "type": "object"
+      },
       "ItemReferenceParam": {
         "description": "An internal identifier for an item to reference.",
         "properties": {
@@ -302,6 +332,87 @@
           "id"
         ],
         "title": "Item reference",
+        "type": "object"
+      },
+      "ProgramItemParam": {
+        "properties": {
+          "call_id": {
+            "description": "The stable call ID of the program item.",
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "code": {
+            "description": "The JavaScript source executed by programmatic tool calling.",
+            "maxLength": 10485760,
+            "type": "string"
+          },
+          "fingerprint": {
+            "description": "Opaque program replay fingerprint that must be round-tripped.",
+            "maxLength": 10485760,
+            "type": "string"
+          },
+          "id": {
+            "description": "The unique ID of this program item.",
+            "example": "cm_123",
+            "type": "string"
+          },
+          "type": {
+            "default": "program",
+            "description": "The item type. Always `program`.",
+            "enum": [
+              "program"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "call_id",
+          "code",
+          "fingerprint"
+        ],
+        "type": "object"
+      },
+      "ProgramOutputItemParam": {
+        "properties": {
+          "call_id": {
+            "description": "The call ID of the program item.",
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "id": {
+            "description": "The unique ID of this program output item.",
+            "example": "cmo_123",
+            "type": "string"
+          },
+          "result": {
+            "description": "The result produced by the program item.",
+            "maxLength": 10485760,
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProgramOutputItemStatus",
+            "description": "The terminal status of the program output."
+          },
+          "type": {
+            "default": "program_output",
+            "description": "The item type. Always `program_output`.",
+            "enum": [
+              "program_output"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "call_id",
+          "result",
+          "status"
+        ],
         "type": "object"
       },
       "ConversationItem": {
@@ -341,7 +452,16 @@
             "$ref": "#/components/schemas/ToolSearchOutput"
           },
           {
+            "$ref": "#/components/schemas/AdditionalTools"
+          },
+          {
             "$ref": "#/components/schemas/ReasoningItem"
+          },
+          {
+            "$ref": "#/components/schemas/Program"
+          },
+          {
+            "$ref": "#/components/schemas/ProgramOutput"
           },
           {
             "$ref": "#/components/schemas/CompactionBody"
@@ -760,6 +880,16 @@
             "description": "The unique ID of the function tool call generated by the model.\n",
             "type": "string"
           },
+          "caller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolCallCaller"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "description": "The unique ID of the function tool call.\n",
             "type": "string"
@@ -807,11 +937,49 @@
             "minLength": 1,
             "type": "string"
           },
+          "caller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolCallCallerParam",
+                "description": "The execution context that produced this tool call."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "anyOf": [
               {
                 "description": "The unique ID of the function tool call output. Populated when this item is returned via API.",
                 "example": "fc_123",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "description": "The name of the tool that produced the output.",
+                "maxLength": 128,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "namespace": {
+            "anyOf": [
+              {
+                "description": "The namespace of the tool that produced the output.",
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[a-zA-Z0-9_-]+$",
                 "type": "string"
               },
               {
@@ -1003,6 +1171,51 @@
         ],
         "type": "object"
       },
+      "AdditionalToolsItemParam": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "description": "The unique ID of this additional tools item.",
+                "example": "at_123",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "default": "developer",
+            "description": "The role that provided the additional tools. Only `developer` is supported.",
+            "enum": [
+              "developer"
+            ],
+            "type": "string"
+          },
+          "tools": {
+            "description": "A list of additional tools made available at this item.",
+            "items": {
+              "$ref": "#/components/schemas/Tool"
+            },
+            "type": "array"
+          },
+          "type": {
+            "default": "additional_tools",
+            "description": "The item type. Always `additional_tools`.",
+            "enum": [
+              "additional_tools"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "role",
+          "tools"
+        ],
+        "type": "object"
+      },
       "ReasoningItem": {
         "description": "A description of the chain of thought used by a reasoning model while generating\na response. Be sure to include these items in your `input` to the Responses API\nfor subsequent turns of a conversation if you are manually\n[managing context](/docs/guides/conversation-state).\n",
         "properties": {
@@ -1016,7 +1229,7 @@
           "encrypted_content": {
             "anyOf": [
               {
-                "description": "The encrypted content of the reasoning item - populated when a response is\ngenerated with `reasoning.encrypted_content` in the `include` parameter.\n",
+                "description": "The encrypted content of the reasoning item. This is populated by default\nfor reasoning items returned by `POST /v1/responses` and WebSocket\n`response.create` requests.\n",
                 "type": "string"
               },
               {
@@ -1319,6 +1532,17 @@
             "minLength": 1,
             "type": "string"
           },
+          "caller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolCallCallerParam",
+                "description": "The execution context that produced this tool call."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "environment": {
             "anyOf": [
               {
@@ -1389,6 +1613,17 @@
             "minLength": 1,
             "type": "string"
           },
+          "caller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolCallCallerParam",
+                "description": "The execution context that produced this tool call."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "anyOf": [
               {
@@ -1456,6 +1691,17 @@
             "minLength": 1,
             "type": "string"
           },
+          "caller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolCallCallerParam",
+                "description": "The execution context that produced this tool call."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "anyOf": [
               {
@@ -1502,6 +1748,17 @@
             "maxLength": 64,
             "minLength": 1,
             "type": "string"
+          },
+          "caller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolCallCallerParam",
+                "description": "The execution context that produced this tool call."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "id": {
             "anyOf": [
@@ -1762,6 +2019,16 @@
             "description": "The call ID, used to map this custom tool call output to a custom tool call.\n",
             "type": "string"
           },
+          "caller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolCallCallerParam"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "description": "The unique ID of the custom tool call output in the OpenAI platform.\n",
             "type": "string"
@@ -1807,6 +2074,16 @@
             "description": "An identifier used to map this custom tool call to a tool call output.\n",
             "type": "string"
           },
+          "caller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolCallCaller"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "description": "The unique ID of the custom tool call in the OpenAI platform.\n",
             "type": "string"
@@ -1839,6 +2116,13 @@
         ],
         "title": "Custom tool call",
         "type": "object"
+      },
+      "ProgramOutputItemStatus": {
+        "enum": [
+          "completed",
+          "incomplete"
+        ],
+        "type": "string"
       },
       "Message": {
         "description": "A message to or from the model.",
@@ -2114,6 +2398,112 @@
         ],
         "type": "object"
       },
+      "AdditionalTools": {
+        "properties": {
+          "id": {
+            "description": "The unique ID of the additional tools item.",
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/MessageRole",
+            "description": "The role that provided the additional tools."
+          },
+          "tools": {
+            "description": "The additional tool definitions made available at this item.",
+            "items": {
+              "$ref": "#/components/schemas/Tool"
+            },
+            "type": "array"
+          },
+          "type": {
+            "default": "additional_tools",
+            "description": "The type of the item. Always `additional_tools`.",
+            "enum": [
+              "additional_tools"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "role",
+          "tools"
+        ],
+        "type": "object"
+      },
+      "Program": {
+        "properties": {
+          "call_id": {
+            "description": "The stable call ID of the program item.",
+            "type": "string"
+          },
+          "code": {
+            "description": "The JavaScript source executed by programmatic tool calling.",
+            "type": "string"
+          },
+          "fingerprint": {
+            "description": "Opaque program replay fingerprint that must be round-tripped.",
+            "type": "string"
+          },
+          "id": {
+            "description": "The unique ID of the program item.",
+            "type": "string"
+          },
+          "type": {
+            "default": "program",
+            "description": "The type of the item. Always `program`.",
+            "enum": [
+              "program"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "call_id",
+          "code",
+          "fingerprint"
+        ],
+        "type": "object"
+      },
+      "ProgramOutput": {
+        "properties": {
+          "call_id": {
+            "description": "The call ID of the program item.",
+            "type": "string"
+          },
+          "id": {
+            "description": "The unique ID of the program output item.",
+            "type": "string"
+          },
+          "result": {
+            "description": "The result produced by the program item.",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProgramOutputStatus",
+            "description": "The terminal status of the program output item."
+          },
+          "type": {
+            "default": "program_output",
+            "description": "The type of the item. Always `program_output`.",
+            "enum": [
+              "program_output"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "call_id",
+          "result",
+          "status"
+        ],
+        "type": "object"
+      },
       "CompactionBody": {
         "description": "A compaction item generated by the [`v1/responses/compact` API](/docs/api-reference/responses/compact).",
         "properties": {
@@ -2157,6 +2547,17 @@
             "description": "The unique ID of the shell tool call generated by the model.",
             "type": "string"
           },
+          "caller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolCallCaller",
+                "description": "The execution context that produced this tool call."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "created_by": {
             "description": "The ID of the entity that created this tool call.",
             "type": "string"
@@ -2186,7 +2587,7 @@
             "type": "string"
           },
           "status": {
-            "$ref": "#/components/schemas/LocalShellCallStatus",
+            "$ref": "#/components/schemas/FunctionShellCallStatus",
             "description": "The status of the shell call. One of `in_progress`, `completed`, or `incomplete`."
           },
           "type": {
@@ -2216,6 +2617,17 @@
             "description": "The unique ID of the shell tool call generated by the model.",
             "type": "string"
           },
+          "caller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolCallCaller",
+                "description": "The execution context that produced this tool call."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "created_by": {
             "description": "The identifier of the actor that created the item.",
             "type": "string"
@@ -2243,7 +2655,7 @@
             "type": "array"
           },
           "status": {
-            "$ref": "#/components/schemas/LocalShellCallOutputStatusEnum",
+            "$ref": "#/components/schemas/FunctionShellCallOutputStatusEnum",
             "description": "The status of the shell call output. One of `in_progress`, `completed`, or `incomplete`."
           },
           "type": {
@@ -2272,6 +2684,17 @@
           "call_id": {
             "description": "The unique ID of the apply patch tool call generated by the model.",
             "type": "string"
+          },
+          "caller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolCallCaller",
+                "description": "The execution context that produced this tool call."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "created_by": {
             "description": "The ID of the entity that created this tool call.",
@@ -2328,6 +2751,17 @@
           "call_id": {
             "description": "The unique ID of the apply patch tool call generated by the model.",
             "type": "string"
+          },
+          "caller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolCallCaller",
+                "description": "The execution context that produced this tool call."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "created_by": {
             "description": "The ID of the entity that created this tool call output.",
@@ -2559,6 +2993,7 @@
           },
           "image_url": {
             "description": "The URL of the screenshot image.",
+            "format": "uri",
             "type": "string"
           },
           "type": {
@@ -2596,7 +3031,8 @@
             "type": "array"
           },
           "query": {
-            "description": "[DEPRECATED] The search query.\n",
+            "deprecated": true,
+            "description": "The search query.\n",
             "type": "string"
           },
           "sources": {
@@ -2613,6 +3049,7 @@
                 },
                 "url": {
                   "description": "The URL of the source.\n",
+                  "format": "uri",
                   "type": "string"
                 }
               },
@@ -2635,8 +3072,7 @@
           }
         },
         "required": [
-          "type",
-          "query"
+          "type"
         ],
         "title": "Search action",
         "type": "object"
@@ -2698,9 +3134,47 @@
         "title": "Find action",
         "type": "object"
       },
+      "ToolCallCaller": {
+        "description": "The execution context that produced this tool call.",
+        "discriminator": {
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DirectToolCallCaller"
+          },
+          {
+            "$ref": "#/components/schemas/ProgramToolCallCaller"
+          }
+        ]
+      },
+      "ToolCallCallerParam": {
+        "description": "The execution context that produced this tool call.",
+        "discriminator": {
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DirectToolCallCallerParam"
+          },
+          {
+            "$ref": "#/components/schemas/ProgramToolCallCallerParam"
+          }
+        ]
+      },
       "InputTextContentParam": {
         "description": "A text input to the model.",
         "properties": {
+          "prompt_cache_breakpoint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PromptCacheBreakpointParam"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "text": {
             "description": "The text input to the model.",
             "maxLength": 10485760,
@@ -2752,8 +3226,19 @@
             "anyOf": [
               {
                 "description": "The URL of the image to be sent to the model. A fully qualified URL or base64 encoded image in a data URL.",
+                "format": "uri",
                 "maxLength": 20971520,
                 "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prompt_cache_breakpoint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PromptCacheBreakpointParam"
               },
               {
                 "type": "null"
@@ -2780,7 +3265,7 @@
         "properties": {
           "detail": {
             "$ref": "#/components/schemas/FileDetailEnum",
-            "description": "The detail level of the file to be sent to the model. Use `low` for the default rendering behavior, or `high` to render the file at higher quality. Defaults to `low`."
+            "description": "The detail level of the file to be sent to the model. Use `auto` to let the system select the detail level; for GPT-5.6 and later models, `auto` uses high-quality rendering, which may increase input token usage. Use `low` for lower-cost rendering, or `high` to render the file at higher quality. Defaults to `auto`."
           },
           "file_data": {
             "anyOf": [
@@ -2810,6 +3295,7 @@
             "anyOf": [
               {
                 "description": "The URL of the file to be sent to the model.",
+                "format": "uri",
                 "type": "string"
               },
               {
@@ -2822,6 +3308,16 @@
               {
                 "description": "The name of the file to be sent to the model.",
                 "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prompt_cache_breakpoint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PromptCacheBreakpointParam"
               },
               {
                 "type": "null"
@@ -2881,6 +3377,9 @@
           },
           {
             "$ref": "#/components/schemas/CodeInterpreterTool"
+          },
+          {
+            "$ref": "#/components/schemas/ProgrammaticToolCallingParam"
           },
           {
             "$ref": "#/components/schemas/ImageGenTool"
@@ -2990,6 +3489,7 @@
           },
           "url": {
             "description": "The URL of the image output from the code interpreter.",
+            "format": "uri",
             "type": "string"
           }
         },
@@ -3294,6 +3794,9 @@
       "InputTextContent": {
         "description": "A text input to the model.",
         "properties": {
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointConfig"
+          },
           "text": {
             "description": "The text input to the model.",
             "type": "string"
@@ -3418,12 +3921,16 @@
             "anyOf": [
               {
                 "description": "The URL of the image to be sent to the model. A fully qualified URL or base64 encoded image in a data URL.",
+                "format": "uri",
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ]
+          },
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointConfig"
           },
           "type": {
             "default": "input_image",
@@ -3463,12 +3970,16 @@
             "anyOf": [
               {
                 "description": "The URL of the screenshot image.",
+                "format": "uri",
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ]
+          },
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointConfig"
           },
           "type": {
             "default": "computer_screenshot",
@@ -3493,7 +4004,7 @@
         "properties": {
           "detail": {
             "$ref": "#/components/schemas/FileInputDetail",
-            "description": "The detail level of the file to be sent to the model. Use `low` for the default rendering behavior, or `high` to render the file at higher quality. Defaults to `low`."
+            "description": "The detail level of the file to be sent to the model. Use `auto` to let the system select the detail level; for GPT-5.6 and later models, `auto` uses high-quality rendering, which may increase input token usage. Use `low` for lower-cost rendering, or `high` to render the file at higher quality. Defaults to `auto`."
           },
           "file_data": {
             "description": "The content of the file to be sent to the model.\n",
@@ -3512,11 +4023,15 @@
           },
           "file_url": {
             "description": "The URL of the file to be sent to the model.",
+            "format": "uri",
             "type": "string"
           },
           "filename": {
             "description": "The name of the file to be sent to the model.",
             "type": "string"
+          },
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointConfig"
           },
           "type": {
             "default": "input_file",
@@ -3576,8 +4091,26 @@
             "description": "The unique ID of the function tool call generated by the model.\n",
             "type": "string"
           },
+          "caller": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolCallCallerParam"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "description": "The unique ID of the function tool call output. Populated when this item\nis returned via API.\n",
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the tool that produced the output.\n",
+            "type": "string"
+          },
+          "namespace": {
+            "description": "The namespace of the tool that produced the output.\n",
             "type": "string"
           },
           "output": {
@@ -3686,6 +4219,13 @@
         ],
         "type": "string"
       },
+      "ProgramOutputStatus": {
+        "enum": [
+          "completed",
+          "incomplete"
+        ],
+        "type": "string"
+      },
       "FunctionShellAction": {
         "description": "Execute a shell command.",
         "properties": {
@@ -3767,7 +4307,7 @@
         "title": "Container Reference",
         "type": "object"
       },
-      "LocalShellCallStatus": {
+      "FunctionShellCallStatus": {
         "enum": [
           "in_progress",
           "completed",
@@ -3814,7 +4354,7 @@
         "title": "Shell call output content",
         "type": "object"
       },
-      "LocalShellCallOutputStatusEnum": {
+      "FunctionShellCallOutputStatusEnum": {
         "enum": [
           "in_progress",
           "completed",
@@ -4225,6 +4765,98 @@
         "title": "Wait",
         "type": "object"
       },
+      "DirectToolCallCaller": {
+        "properties": {
+          "type": {
+            "default": "direct",
+            "enum": [
+              "direct"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "ProgramToolCallCaller": {
+        "properties": {
+          "caller_id": {
+            "description": "The call ID of the program item that produced this tool call.",
+            "type": "string"
+          },
+          "type": {
+            "default": "program",
+            "enum": [
+              "program"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "caller_id"
+        ],
+        "type": "object"
+      },
+      "DirectToolCallCallerParam": {
+        "properties": {
+          "type": {
+            "default": "direct",
+            "description": "The caller type. Always `direct`.",
+            "enum": [
+              "direct"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "ProgramToolCallCallerParam": {
+        "properties": {
+          "caller_id": {
+            "description": "The call ID of the program item that produced this tool call.",
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": {
+            "default": "program",
+            "description": "The caller type. Always `program`.",
+            "enum": [
+              "program"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "caller_id"
+        ],
+        "type": "object"
+      },
+      "PromptCacheBreakpointParam": {
+        "description": "Marks the exact end of a reusable prompt prefix. The breakpoint inherits its TTL from the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
+        "properties": {
+          "mode": {
+            "default": "explicit",
+            "description": "The breakpoint mode. Always `explicit`.",
+            "enum": [
+              "explicit"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "Prompt cache breakpoint",
+        "type": "object"
+      },
       "DetailEnum": {
         "enum": [
           "low",
@@ -4236,6 +4868,7 @@
       },
       "FileDetailEnum": {
         "enum": [
+          "auto",
           "low",
           "high"
         ],
@@ -4244,6 +4877,20 @@
       "FunctionTool": {
         "description": "Defines a function in your own code the model can choose to call. Learn more about [function calling](https://platform.openai.com/docs/guides/function-calling).",
         "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "defer_loading": {
             "description": "Whether this function is deferred and loaded via tool search.",
             "type": "boolean"
@@ -4263,6 +4910,18 @@
             "description": "The name of the function to call.",
             "type": "string"
           },
+          "output_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": {},
+                "description": "A JSON schema object describing the JSON value encoded in string outputs for this function.",
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "parameters": {
             "anyOf": [
               {
@@ -4278,7 +4937,7 @@
           "strict": {
             "anyOf": [
               {
-                "description": "Whether to enforce strict parameter validation. Default `true`.",
+                "description": "Whether strict parameter validation is enforced for this function tool.",
                 "type": "boolean"
               },
               {
@@ -4465,6 +5124,21 @@
       "MCPTool": {
         "description": "Give the model access to additional tools via remote Model Context Protocol\n(MCP) servers. [Learn more about MCP](/docs/guides/tools-remote-mcp).\n",
         "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "allowed_tools": {
             "anyOf": [
               {
@@ -4493,7 +5167,7 @@
             "type": "string"
           },
           "connector_id": {
-            "description": "Identifier for service connectors, like those available in ChatGPT. One of\n`server_url` or `connector_id` must be provided. Learn more about service\nconnectors [here](/docs/guides/tools-remote-mcp#connectors).\n\nCurrently supported `connector_id` values are:\n\n- Dropbox: `connector_dropbox`\n- Gmail: `connector_gmail`\n- Google Calendar: `connector_googlecalendar`\n- Google Drive: `connector_googledrive`\n- Microsoft Teams: `connector_microsoftteams`\n- Outlook Calendar: `connector_outlookcalendar`\n- Outlook Email: `connector_outlookemail`\n- SharePoint: `connector_sharepoint`\n",
+            "description": "Identifier for service connectors, like those available in ChatGPT. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided. Learn more\nabout service connectors [here](/docs/guides/tools-remote-mcp#connectors).\n\nCurrently supported `connector_id` values are:\n\n- Dropbox: `connector_dropbox`\n- Gmail: `connector_gmail`\n- Google Calendar: `connector_googlecalendar`\n- Google Drive: `connector_googledrive`\n- Microsoft Teams: `connector_microsoftteams`\n- Outlook Calendar: `connector_outlookcalendar`\n- Outlook Email: `connector_outlookemail`\n- SharePoint: `connector_sharepoint`\n",
             "enum": [
               "connector_dropbox",
               "connector_gmail",
@@ -4569,7 +5243,13 @@
             "type": "string"
           },
           "server_url": {
-            "description": "The URL for the MCP server. One of `server_url` or `connector_id` must be\nprovided.\n",
+            "description": "The URL for the MCP server. One of `server_url`, `connector_id`, or\n`tunnel_id` must be provided.\n",
+            "format": "uri",
+            "type": "string"
+          },
+          "tunnel_id": {
+            "description": "The Secure MCP Tunnel ID to use instead of a direct server URL. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided.\n",
+            "pattern": "^tunnel_[a-z0-9]{32}$",
             "type": "string"
           },
           "type": {
@@ -4590,6 +5270,21 @@
       "CodeInterpreterTool": {
         "description": "A tool that runs Python code to help generate a response to a prompt.\n",
         "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "container": {
             "description": "The code interpreter container. Can be a container ID or an object that\nspecifies uploaded file IDs to make available to your code, along with an\noptional `memory_limit` setting.\n",
             "oneOf": [
@@ -4615,6 +5310,22 @@
           "container"
         ],
         "title": "Code interpreter",
+        "type": "object"
+      },
+      "ProgrammaticToolCallingParam": {
+        "properties": {
+          "type": {
+            "default": "programmatic_tool_calling",
+            "description": "The type of the tool. Always `programmatic_tool_calling`.",
+            "enum": [
+              "programmatic_tool_calling"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
         "type": "object"
       },
       "ImageGenTool": {
@@ -4722,15 +5433,22 @@
             "type": "string"
           },
           "size": {
-            "default": "auto",
-            "description": "The size of the generated image. One of `1024x1024`, `1024x1536`,\n`1536x1024`, or `auto`. Default: `auto`.\n",
-            "enum": [
-              "1024x1024",
-              "1024x1536",
-              "1536x1024",
-              "auto"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "enum": [
+                  "1024x1024",
+                  "1024x1536",
+                  "1536x1024",
+                  "auto"
+                ],
+                "type": "string"
+              }
             ],
-            "type": "string"
+            "default": "auto",
+            "description": "The size of the generated images. For `gpt-image-2` and `gpt-image-2-2026-04-21`, arbitrary resolutions are supported as `WIDTHxHEIGHT` strings, for example `1536x864`. Width and height must both be divisible by 16 and the requested aspect ratio must be between 1:3 and 3:1. Resolutions above `2560x1440` are experimental, and the maximum supported resolution is `3840x2160`. The requested size must also satisfy the model's current pixel and edge limits. The standard sizes `1024x1024`, `1536x1024`, and `1024x1536` are supported by the GPT image models; `auto` is supported for models that allow automatic sizing. For `dall-e-2`, use one of `256x256`, `512x512`, or `1024x1024`. For `dall-e-3`, use one of `1024x1024`, `1792x1024`, or `1024x1792`."
           },
           "type": {
             "description": "The type of the image generation tool. Always `image_generation`.\n",
@@ -4767,6 +5485,21 @@
       "FunctionShellToolParam": {
         "description": "A tool that allows the model to execute shell commands.",
         "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "environment": {
             "anyOf": [
               {
@@ -4808,6 +5541,21 @@
       "CustomToolParam": {
         "description": "A custom tool that processes input using a specified format. Learn more about   [custom tools](/docs/guides/function-calling#custom-tools)",
         "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "defer_loading": {
             "description": "Whether this tool should be deferred and discovered via tool search.",
             "type": "boolean"
@@ -4987,6 +5735,21 @@
       "ApplyPatchToolParam": {
         "description": "Allows the assistant to create, delete, or update files using unified diffs.",
         "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "default": "apply_patch",
             "description": "The type of the tool. Always `apply_patch`.",
@@ -5123,6 +5886,24 @@
         "title": "Apply patch update file operation",
         "type": "object"
       },
+      "PromptCacheBreakpointConfig": {
+        "description": "Marks the exact end of a reusable prompt prefix. The breakpoint inherits its TTL from the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
+        "properties": {
+          "mode": {
+            "default": "explicit",
+            "description": "The breakpoint mode. Always `explicit`.",
+            "enum": [
+              "explicit"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "Prompt cache breakpoint",
+        "type": "object"
+      },
       "Annotation": {
         "description": "An annotation that applies to a span of output text.",
         "discriminator": {
@@ -5185,6 +5966,7 @@
       },
       "FileInputDetail": {
         "enum": [
+          "auto",
           "low",
           "high"
         ],
@@ -5259,6 +6041,13 @@
         ],
         "title": "Coordinate",
         "type": "object"
+      },
+      "CallableToolAllowedCaller": {
+        "enum": [
+          "direct",
+          "programmatic"
+        ],
+        "type": "string"
       },
       "Filters": {
         "anyOf": [
@@ -5569,6 +6358,21 @@
       },
       "FunctionToolParam": {
         "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "defer_loading": {
             "description": "Whether this function should be deferred and discovered via tool search.",
             "type": "boolean"
@@ -5589,6 +6393,18 @@
             "pattern": "^[a-zA-Z0-9_-]+$",
             "type": "string"
           },
+          "output_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": {},
+                "description": "A JSON Schema describing the JSON value encoded in string outputs for this function tool. This does not describe content-array outputs.",
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "parameters": {
             "anyOf": [
               {
@@ -5602,6 +6418,7 @@
           "strict": {
             "anyOf": [
               {
+                "description": "Whether to enforce strict parameter validation. If omitted, Responses attempts to use strict validation when the schema is compatible, and falls back to non-strict validation otherwise.",
                 "type": "boolean"
               },
               {
@@ -5797,6 +6614,7 @@
           },
           "url": {
             "description": "The URL of the web resource.",
+            "format": "uri",
             "type": "string"
           }
         },
