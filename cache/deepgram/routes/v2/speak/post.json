@@ -1,0 +1,545 @@
+{
+  "description": "Synthesize a complete block of text into a single audio response using Deepgram's Flux TTS batch (REST) API. Use this for pre-rendering fixed audio (IVR prompts, notifications, narration) where the whole text is known up front and you don't need incremental playback or interruption.",
+  "operationId": "generate",
+  "parameters": [
+    {
+      "description": "URL to which we'll make the callback request",
+      "in": "query",
+      "name": "callback",
+      "required": false,
+      "schema": {
+        "type": "string"
+      }
+    },
+    {
+      "description": "HTTP method by which the callback request will be made",
+      "in": "query",
+      "name": "callback_method",
+      "required": false,
+      "schema": {
+        "$ref": "#/components/schemas/V2SpeakPostParametersCallbackMethod",
+        "default": "POST"
+      }
+    },
+    {
+      "description": "Opts out requests from the Deepgram Model Improvement Program. Refer to our Docs for pricing impacts before setting this to true. https://dpgr.am/deepgram-mip",
+      "in": "query",
+      "name": "mip_opt_out",
+      "required": false,
+      "schema": {
+        "default": false,
+        "type": "boolean"
+      }
+    },
+    {
+      "description": "Label your requests for the purpose of identification during usage reporting",
+      "in": "query",
+      "name": "tag",
+      "required": false,
+      "schema": {
+        "$ref": "#/components/schemas/V2SpeakPostParametersTag"
+      }
+    },
+    {
+      "description": "The bitrate of the audio in bits per second. Choose from predefined ranges or specific values based on the encoding type.",
+      "in": "query",
+      "name": "bit_rate",
+      "required": false,
+      "schema": {
+        "$ref": "#/components/schemas/V2SpeakPostParametersBitRate",
+        "default": 48000
+      }
+    },
+    {
+      "description": "Container specifies the file format wrapper for the output audio. The available options depend on the encoding type.",
+      "in": "query",
+      "name": "container",
+      "required": false,
+      "schema": {
+        "$ref": "#/components/schemas/V2SpeakPostParametersContainer",
+        "default": "wav"
+      }
+    },
+    {
+      "description": "Encoding allows you to specify the expected encoding of your audio output",
+      "in": "query",
+      "name": "encoding",
+      "required": false,
+      "schema": {
+        "$ref": "#/components/schemas/V2SpeakPostParametersEncoding",
+        "default": "mp3"
+      }
+    },
+    {
+      "description": "Expressive range of the generated speech, on a calm-to-animated axis. Accepted values: `-2`, `-1`, `0`, `1`, `2`. `0` (the default) is the voice's tuned delivery and the production-validated setting, with `-2` the calm end of the range and `2` the animated end. Supported on all Flux voices; applies to the whole request. Beta: behavior may change in future model versions, and non-default values increase the risk of hallucinations and pronunciation errors; audition before shipping. An invalid value is rejected with a `400` — `EXPRESSIVITY_OUT_OF_RANGE` for a value outside the range, `EXPRESSIVITY_INCREMENT_INVALID` for a fractional value. See [Expressivity](/docs/tts-expressivity).",
+      "in": "query",
+      "name": "expressivity",
+      "required": false,
+      "schema": {
+        "$ref": "#/components/schemas/V2SpeakPostParametersExpressivity",
+        "default": 0
+      }
+    },
+    {
+      "description": "Flux TTS model used to synthesize the submitted text, in the form `flux-{voice}-{language}` (for example, `flux-alexis-en`). Required; unlike the v1 (Aura) endpoint there is no default and only flux models are accepted. English-only at launch.",
+      "in": "query",
+      "name": "model",
+      "required": true,
+      "schema": {
+        "type": "string"
+      }
+    },
+    {
+      "description": "Sample Rate specifies the sample rate for the output audio. Based on the encoding, different sample rates are supported. For some encodings, the sample rate is not configurable",
+      "in": "query",
+      "name": "sample_rate",
+      "required": false,
+      "schema": {
+        "$ref": "#/components/schemas/V2SpeakPostParametersSampleRate",
+        "default": 24000
+      }
+    },
+    {
+      "description": "Speaking rate multiplier that adjusts the pace of generated speech while preserving natural prosody and voice quality. Accepted values run `0.85` to `1.15` in `0.05` increments. Not yet supported in all languages.",
+      "in": "query",
+      "name": "speed",
+      "required": false,
+      "schema": {
+        "$ref": "#/components/schemas/V2SpeakPostParametersSpeed",
+        "default": 1
+      }
+    },
+    {
+      "description": "Processing priority for asynchronous (callback) requests. The only supported value is low.",
+      "in": "query",
+      "name": "priority",
+      "required": false,
+      "schema": {
+        "$ref": "#/components/schemas/V2SpeakPostParametersPriority"
+      }
+    },
+    {
+      "description": "Use `Authorization: Token <API_KEY>`\nExample: `Authorization: Token 12345abcdef`\n",
+      "in": "header",
+      "name": "Authorization",
+      "required": true,
+      "schema": {
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/SpeakV2Request"
+        }
+      }
+    },
+    "description": "Transform text to speech"
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/SpeakV2AcceptedResponse"
+          }
+        }
+      },
+      "description": "Returns the synthesized audio in the requested encoding as a binary stream. When a `callback` URL is supplied, the request is processed asynchronously and the response body is instead a JSON acknowledgement (Content-Type `application/json`) of the form {\"request_id\": \"...\"}, with the audio delivered to the callback URL. Because this endpoint is typed as a binary audio stream, SDK callers that set `callback` receive this JSON acknowledgement through the audio byte iterator as raw bytes and must join the chunks and parse `request_id` themselves."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Invalid Request. Inline pause and pronunciation controls are not applied and are stripped rather than rejected."
+    }
+  },
+  "summary": "Flux Text to Speech (batch)",
+  "tags": [
+    "audio"
+  ],
+  "components": {
+    "schemas": {
+      "V2SpeakPostParametersCallbackMethod": {
+        "default": "POST",
+        "enum": [
+          "POST",
+          "PUT"
+        ],
+        "title": "V2SpeakPostParametersCallbackMethod",
+        "type": "string"
+      },
+      "V2SpeakPostParametersTag": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "title": "V2SpeakPostParametersTag"
+      },
+      "V2SpeakPostParametersBitRate": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersBitRate0"
+          },
+          {
+            "maximum": 650000,
+            "minimum": 4000,
+            "type": "integer"
+          },
+          {
+            "maximum": 192000,
+            "minimum": 4000,
+            "type": "integer"
+          }
+        ],
+        "title": "V2SpeakPostParametersBitRate"
+      },
+      "V2SpeakPostParametersContainer": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersContainer0"
+          },
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersContainer1"
+          },
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersContainer2"
+          },
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersContainer3"
+          },
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersContainer4"
+          }
+        ],
+        "title": "V2SpeakPostParametersContainer"
+      },
+      "V2SpeakPostParametersEncoding": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersEncoding0"
+          },
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersEncoding1"
+          },
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersEncoding2"
+          },
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersEncoding3"
+          },
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersEncoding4"
+          },
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersEncoding5"
+          },
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersEncoding6"
+          }
+        ],
+        "title": "V2SpeakPostParametersEncoding"
+      },
+      "V2SpeakPostParametersExpressivity": {
+        "enum": [
+          "-2",
+          "-1",
+          "0",
+          "1",
+          "2"
+        ],
+        "title": "V2SpeakPostParametersExpressivity",
+        "type": "string"
+      },
+      "V2SpeakPostParametersSampleRate": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersSampleRate0"
+          },
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersSampleRate1"
+          },
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersSampleRate2"
+          },
+          {
+            "$ref": "#/components/schemas/V2SpeakPostParametersSampleRate3"
+          }
+        ],
+        "title": "V2SpeakPostParametersSampleRate"
+      },
+      "V2SpeakPostParametersSpeed": {
+        "enum": [
+          "0.85",
+          "0.9",
+          "0.95",
+          "1",
+          "1.05",
+          "1.1",
+          "1.15"
+        ],
+        "title": "V2SpeakPostParametersSpeed",
+        "type": "string"
+      },
+      "V2SpeakPostParametersPriority": {
+        "enum": [
+          "low"
+        ],
+        "title": "V2SpeakPostParametersPriority",
+        "type": "string"
+      },
+      "SpeakV2Request": {
+        "description": "Request body for Flux TTS batch (REST) text-to-speech conversion. The full block of text is synthesized in a single request and returned as one audio response.",
+        "properties": {
+          "text": {
+            "description": "The text content to be converted to speech. The server normalizes and preprocesses the text before synthesis. Inline pause and pronunciation controls are not yet applied; they are stripped from the text before synthesis.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "SpeakV2Request",
+        "type": "object"
+      },
+      "SpeakV2AcceptedResponse": {
+        "description": "Accepted response returned when a callback URL is supplied; the audio is delivered asynchronously to that URL.",
+        "properties": {
+          "request_id": {
+            "description": "Unique identifier for tracking the asynchronous request",
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id"
+        ],
+        "title": "SpeakV2AcceptedResponse",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ErrorResponseTextError"
+          },
+          {
+            "$ref": "#/components/schemas/ErrorResponseLegacyError"
+          },
+          {
+            "$ref": "#/components/schemas/ErrorResponseModernError"
+          }
+        ],
+        "title": "ErrorResponse"
+      },
+      "V2SpeakPostParametersBitRate0": {
+        "description": "Encoding - mp3(default). Supported bitrates - 8000, 16000, 24000, 32000, 40000, 48000(default) bps.",
+        "enum": [
+          "8000",
+          "16000",
+          "24000",
+          "32000",
+          "40000",
+          "48000"
+        ],
+        "title": "V2SpeakPostParametersBitRate0",
+        "type": "string"
+      },
+      "V2SpeakPostParametersContainer0": {
+        "description": "No container.",
+        "enum": [
+          "none"
+        ],
+        "title": "V2SpeakPostParametersContainer0",
+        "type": "string"
+      },
+      "V2SpeakPostParametersContainer1": {
+        "description": "Encoding - linear16. Supported container - wav (default), or no container.",
+        "enum": [
+          "wav"
+        ],
+        "title": "V2SpeakPostParametersContainer1",
+        "type": "string"
+      },
+      "V2SpeakPostParametersContainer2": {
+        "description": "Encoding - mulaw. Supported container - wav (default), or no container.",
+        "enum": [
+          "wav"
+        ],
+        "title": "V2SpeakPostParametersContainer2",
+        "type": "string"
+      },
+      "V2SpeakPostParametersContainer3": {
+        "description": "Encoding - alaw. Supported container - wav (default), or no container.",
+        "enum": [
+          "wav"
+        ],
+        "title": "V2SpeakPostParametersContainer3",
+        "type": "string"
+      },
+      "V2SpeakPostParametersContainer4": {
+        "description": "Encoding - opus. Supported container - ogg (default).",
+        "enum": [
+          "ogg"
+        ],
+        "title": "V2SpeakPostParametersContainer4",
+        "type": "string"
+      },
+      "V2SpeakPostParametersEncoding0": {
+        "description": "Encoding - linear16. Uncompressed, high-quality audio format often used for telephony or audio processing.",
+        "enum": [
+          "linear16"
+        ],
+        "title": "V2SpeakPostParametersEncoding0",
+        "type": "string"
+      },
+      "V2SpeakPostParametersEncoding1": {
+        "description": "Encoding - flac. Lossless audio format for high-quality compression.",
+        "enum": [
+          "flac"
+        ],
+        "title": "V2SpeakPostParametersEncoding1",
+        "type": "string"
+      },
+      "V2SpeakPostParametersEncoding2": {
+        "description": "Encoding - mulaw. Compressed audio format commonly used in telephony.",
+        "enum": [
+          "mulaw"
+        ],
+        "title": "V2SpeakPostParametersEncoding2",
+        "type": "string"
+      },
+      "V2SpeakPostParametersEncoding3": {
+        "description": "Encoding - alaw. Similar to mulaw but used in international telephony.",
+        "enum": [
+          "alaw"
+        ],
+        "title": "V2SpeakPostParametersEncoding3",
+        "type": "string"
+      },
+      "V2SpeakPostParametersEncoding4": {
+        "description": "Encoding - mp3. Popular compressed audio format for music and streaming.",
+        "enum": [
+          "mp3"
+        ],
+        "title": "V2SpeakPostParametersEncoding4",
+        "type": "string"
+      },
+      "V2SpeakPostParametersEncoding5": {
+        "description": "Encoding - opus. High-compression audio format optimized for real-time communications.",
+        "enum": [
+          "opus"
+        ],
+        "title": "V2SpeakPostParametersEncoding5",
+        "type": "string"
+      },
+      "V2SpeakPostParametersEncoding6": {
+        "description": "Encoding - aac. Advanced audio format offering better quality at smaller file sizes than mp3.",
+        "enum": [
+          "aac"
+        ],
+        "title": "V2SpeakPostParametersEncoding6",
+        "type": "string"
+      },
+      "V2SpeakPostParametersSampleRate0": {
+        "description": "Encoding - linear16. Supported sample rates - 8000, 16000, 24000, 32000, 44100, 48000 Hz.",
+        "enum": [
+          "8000",
+          "16000",
+          "24000",
+          "32000",
+          "44100",
+          "48000"
+        ],
+        "title": "V2SpeakPostParametersSampleRate0",
+        "type": "string"
+      },
+      "V2SpeakPostParametersSampleRate1": {
+        "description": "Encoding - mulaw. Supported sample rates - 8000, 16000 Hz.",
+        "enum": [
+          "8000",
+          "16000"
+        ],
+        "title": "V2SpeakPostParametersSampleRate1",
+        "type": "string"
+      },
+      "V2SpeakPostParametersSampleRate2": {
+        "description": "Encoding - alaw. Supported sample rates - 8000, 16000 Hz.",
+        "enum": [
+          "8000",
+          "16000"
+        ],
+        "title": "V2SpeakPostParametersSampleRate2",
+        "type": "string"
+      },
+      "V2SpeakPostParametersSampleRate3": {
+        "description": "Encoding - flac. Supported sample rates - 8000, 16000, 22050, 32000, 48000 Hz.",
+        "enum": [
+          "8000",
+          "16000",
+          "22050",
+          "32000",
+          "48000"
+        ],
+        "title": "V2SpeakPostParametersSampleRate3",
+        "type": "string"
+      },
+      "ErrorResponseTextError": {
+        "title": "ErrorResponseTextError",
+        "type": "string"
+      },
+      "ErrorResponseLegacyError": {
+        "properties": {
+          "err_code": {
+            "description": "The error code",
+            "type": "string"
+          },
+          "err_msg": {
+            "description": "The error message",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "The request ID",
+            "type": "string"
+          }
+        },
+        "title": "ErrorResponseLegacyError",
+        "type": "object"
+      },
+      "ErrorResponseModernError": {
+        "properties": {
+          "category": {
+            "description": "The category of the error",
+            "type": "string"
+          },
+          "details": {
+            "description": "A description of the error",
+            "type": "string"
+          },
+          "message": {
+            "description": "A message about the error",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "The unique identifier of the request",
+            "type": "string"
+          }
+        },
+        "title": "ErrorResponseModernError",
+        "type": "object"
+      }
+    }
+  }
+}
