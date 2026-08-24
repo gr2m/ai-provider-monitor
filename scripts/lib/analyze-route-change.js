@@ -1,6 +1,6 @@
 import { generateText, Output, jsonSchema } from "ai";
 import { isIdenticalAfterNormalizingTimestamps } from "./normalize-examples.js";
-import { retryAiCall } from "./retry-ai-call.js";
+import { isTransientAiError, retryAiCall } from "./retry-ai-call.js";
 
 /**
  * Recursively strips "description", "example", and "examples" keys from an object.
@@ -264,6 +264,10 @@ export async function analyzeRouteChange({
         prompt,
         output: Output.object({ schema: SCHEMA }),
         temperature: 0.1,
+        // Keep retry ownership in retryAiCall. The SDK's default retries can
+        // each wait for the five-minute headers timeout before this wrapper
+        // gets a chance to use a smaller prompt.
+        maxRetries: 0,
       }),
       {
         onRetry: ({ attempt, attempts, delayMs, error }) => {
@@ -279,31 +283,59 @@ export async function analyzeRouteChange({
   try {
     result = await generateAnalysis(prompt);
   } catch (error) {
-    if (!error.message?.includes("exceeds the context window")) {
+    if (isTransientAiError(error)) {
+      // A large route can repeatedly hit the Gateway's headers timeout even
+      // though the request itself is valid. Retry the already-supported
+      // structural-diff representation instead of resending the full specs.
+      console.error(
+        `Transient AI failures exhausted for ${route}, retrying with compact diff`,
+      );
+      result = await generateAnalysis(
+        buildDiffPrompt(status, route, oldContent, newContent),
+      );
+    } else if (!error.message?.includes("exceeds the context window")) {
       throw error;
-    }
+    } else {
+      // Tier 2: Retry with stripped descriptions/examples to fit within context window
+      console.error(
+        `Context window exceeded for ${route}, retrying with stripped spec`,
+      );
 
-    // Tier 2: Retry with stripped descriptions/examples to fit within context window
-    console.error(`Context window exceeded for ${route}, retrying with stripped spec`);
+      const oldSpec = oldContent
+        ? JSON.stringify(stripDocsFromSpec(JSON.parse(oldContent)), null, 2)
+        : "";
+      const newSpec = newContent
+        ? JSON.stringify(stripDocsFromSpec(JSON.parse(newContent)), null, 2)
+        : "";
 
-    const oldSpec = oldContent ? JSON.stringify(stripDocsFromSpec(JSON.parse(oldContent)), null, 2) : "";
-    const newSpec = newContent ? JSON.stringify(stripDocsFromSpec(JSON.parse(newContent)), null, 2) : "";
+      const strippedPrompt = buildPrompt(status, route, oldSpec, newSpec);
 
-    const strippedPrompt = buildPrompt(status, route, oldSpec, newSpec);
+      try {
+        result = await generateAnalysis(strippedPrompt);
+      } catch (strippedError) {
+        if (
+          !strippedError.message?.includes("exceeds the context window") &&
+          !isTransientAiError(strippedError)
+        ) {
+          throw strippedError;
+        }
 
-    try {
-      result = await generateAnalysis(strippedPrompt);
-    } catch (strippedError) {
-      if (!strippedError.message?.includes("exceeds the context window")) {
-        throw strippedError;
+        // Tier 3: Compute a structural diff and send only that. A transient
+        // failure after stripping can also indicate that the prompt is still
+        // too slow for the Gateway's response-header timeout.
+        console.error(
+          `Stripped analysis failed for ${route}, retrying with diff-only`,
+        );
+
+        const diffPrompt = buildDiffPrompt(
+          status,
+          route,
+          oldContent,
+          newContent,
+        );
+
+        result = await generateAnalysis(diffPrompt);
       }
-
-      // Tier 3: Compute a structural diff and send only that
-      console.error(`Context window still exceeded for ${route}, retrying with diff-only`);
-
-      const diffPrompt = buildDiffPrompt(status, route, oldContent, newContent);
-
-      result = await generateAnalysis(diffPrompt);
     }
   }
 
