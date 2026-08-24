@@ -215,9 +215,10 @@
             "foo": "bar"
           },
           "model": {
-            "id": "claude-sonnet-4-6",
+            "id": "claude-opus-5",
             "speed": "standard"
           },
+          "multiagent": null,
           "name": "My First Agent",
           "skills": [
             {
@@ -250,16 +251,18 @@
         },
         "properties": {
           "archived_at": {
-            "allOf": [
+            "anyOf": [
               {
                 "$ref": "#/components/schemas/BetaTimestamp"
+              },
+              {
+                "type": "null"
               }
             ],
             "description": "When the agent was archived. Null if not archived.",
             "examples": [
               null
-            ],
-            "nullable": true
+            ]
           },
           "created_at": {
             "$ref": "#/components/schemas/BetaTimestamp",
@@ -268,11 +271,17 @@
             ]
           },
           "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "examples": [
               "A general-purpose starter agent."
-            ],
-            "nullable": true,
-            "type": "string"
+            ]
           },
           "id": {
             "examples": [
@@ -310,9 +319,23 @@
             "$ref": "#/components/schemas/BetaManagedAgentsModelConfig",
             "examples": [
               {
-                "id": "claude-sonnet-4-6",
+                "id": "claude-opus-5",
                 "speed": "standard"
               }
+            ]
+          },
+          "multiagent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaManagedAgentsMultiagent"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Multiagent orchestration configuration. Null when the agent is single-threaded.",
+            "examples": [
+              null
             ]
           },
           "name": {
@@ -342,11 +365,17 @@
             "type": "array"
           },
           "system": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "examples": [
               "You are a general-purpose agent that can research, write code, run commands, and use connected tools to complete the user's task end to end."
-            ],
-            "nullable": true,
-            "type": "string"
+            ]
           },
           "tools": {
             "examples": [
@@ -406,7 +435,8 @@
           "metadata",
           "created_at",
           "updated_at",
-          "archived_at"
+          "archived_at",
+          "multiagent"
         ],
         "type": "object"
       },
@@ -509,12 +539,24 @@
         "additionalProperties": false,
         "description": "Model identifier and configuration.",
         "example": {
-          "id": "claude-opus-4-6",
+          "id": "claude-opus-5",
           "speed": "standard"
         },
         "properties": {
+          "effort": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BetaManagedAgentsEffort"
+              }
+            ],
+            "description": "How hard Claude works on each inference call. One of `low`, `medium`, `high`, `xhigh`, `max`. Always present; resolved to the per-model default at save time when not supplied."
+          },
           "id": {
             "$ref": "#/components/schemas/BetaManagedAgentsModel"
+          },
+          "inference_geo": {
+            "description": "Geographic region for model inference. When unset, requests fall through to the workspace's default_inference_geo.",
+            "type": "string"
           },
           "speed": {
             "allOf": [
@@ -532,6 +574,20 @@
           "id"
         ],
         "type": "object"
+      },
+      "BetaManagedAgentsMultiagent": {
+        "description": "Resolved multiagent orchestration configuration as returned in API responses.",
+        "discriminator": {
+          "mapping": {
+            "coordinator": "#/components/schemas/BetaManagedAgentsMultiagentCoordinator"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsMultiagentCoordinator"
+          }
+        ]
       },
       "BetaManagedAgentsSkill": {
         "description": "Resolved skill as returned in API responses.",
@@ -801,18 +857,65 @@
         ],
         "type": "object"
       },
+      "BetaManagedAgentsEffort": {
+        "description": "How hard Claude works on each turn. Sets `output_config.effort` on every Messages call the session makes.",
+        "discriminator": {
+          "mapping": {
+            "high": "#/components/schemas/BetaManagedAgentsEffortHigh",
+            "low": "#/components/schemas/BetaManagedAgentsEffortLow",
+            "max": "#/components/schemas/BetaManagedAgentsEffortMax",
+            "medium": "#/components/schemas/BetaManagedAgentsEffortMedium",
+            "xhigh": "#/components/schemas/BetaManagedAgentsEffortXhigh"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsEffortLow"
+          },
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsEffortMedium"
+          },
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsEffortHigh"
+          },
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsEffortXhigh"
+          },
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsEffortMax"
+          }
+        ],
+        "type": "object"
+      },
       "BetaManagedAgentsModel": {
         "anyOf": [
           {
             "type": "string"
           },
           {
+            "const": "claude-sonnet-5",
+            "description": "High-performance model for coding and agents"
+          },
+          {
+            "const": "claude-fable-5",
+            "description": "Next generation of intelligence for the hardest knowledge work and coding problems"
+          },
+          {
+            "const": "claude-opus-5",
+            "description": "Powerful intelligence for long-running agents and coding"
+          },
+          {
+            "const": "claude-opus-4-8",
+            "description": "Powerful intelligence for long-running agents and coding"
+          },
+          {
             "const": "claude-opus-4-7",
-            "description": "Frontier intelligence for long-running agents and coding"
+            "description": "Powerful intelligence for long-running agents and coding"
           },
           {
             "const": "claude-opus-4-6",
-            "description": "Most intelligent model for building agents and coding"
+            "description": "Powerful intelligence for long-running agents and coding"
           },
           {
             "const": "claude-sonnet-4-6",
@@ -828,11 +931,11 @@
           },
           {
             "const": "claude-opus-4-5",
-            "description": "Premium model combining maximum intelligence with practical performance"
+            "description": "Powerful intelligence for long-running agents and coding"
           },
           {
             "const": "claude-opus-4-5-20251101",
-            "description": "Premium model combining maximum intelligence with practical performance"
+            "description": "Powerful intelligence for long-running agents and coding"
           },
           {
             "const": "claude-sonnet-4-5",
@@ -843,7 +946,7 @@
             "description": "High-performance model for agents and coding"
           }
         ],
-        "description": "The model that will power your agent.\\n\\nSee [models](https://docs.anthropic.com/en/docs/models-overview) for additional details and options.",
+        "description": "The model that will power your agent.\n\nSee [models](https://docs.anthropic.com/en/docs/models-overview) for additional details and options.",
         "title": "BetaManagedAgentsModel"
       },
       "BetaManagedAgentsSpeed": {
@@ -853,6 +956,30 @@
           "fast"
         ],
         "type": "string"
+      },
+      "BetaManagedAgentsMultiagentCoordinator": {
+        "additionalProperties": false,
+        "description": "Resolved coordinator topology with a concrete agent roster.",
+        "properties": {
+          "agents": {
+            "description": "Agents the coordinator may spawn as session threads, each resolved to a specific version.",
+            "items": {
+              "$ref": "#/components/schemas/BetaManagedAgentsMultiagentRosterEntry"
+            },
+            "type": "array"
+          },
+          "type": {
+            "enum": [
+              "coordinator"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "agents"
+        ],
+        "type": "object"
       },
       "BetaManagedAgentsAnthropicSkill": {
         "additionalProperties": false,
@@ -935,7 +1062,7 @@
         "properties": {
           "configs": {
             "items": {
-              "$ref": "#/components/schemas/BetaManagedAgentsAgentToolConfig"
+              "$ref": "#/components/schemas/BetaManagedAgentsAgentToolConfigUnion"
             },
             "type": "array"
           },
@@ -1014,24 +1141,144 @@
         ],
         "type": "object"
       },
-      "BetaManagedAgentsAgentToolConfig": {
+      "BetaManagedAgentsEffortLow": {
         "additionalProperties": false,
-        "description": "Configuration for a specific agent tool.",
+        "description": "Low effort. Favors latency over reasoning depth.",
         "properties": {
-          "enabled": {
-            "type": "boolean"
-          },
-          "name": {
-            "$ref": "#/components/schemas/BetaManagedAgentsAgentToolName"
-          },
-          "permission_policy": {
-            "$ref": "#/components/schemas/BetaManagedAgentsPermissionPolicy"
+          "type": {
+            "enum": [
+              "low"
+            ],
+            "type": "string"
           }
         },
         "required": [
-          "name",
-          "enabled",
-          "permission_policy"
+          "type"
+        ],
+        "type": "object"
+      },
+      "BetaManagedAgentsEffortMedium": {
+        "additionalProperties": false,
+        "description": "Medium effort. Balances latency and reasoning depth.",
+        "properties": {
+          "type": {
+            "enum": [
+              "medium"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "BetaManagedAgentsEffortHigh": {
+        "additionalProperties": false,
+        "description": "High effort. Favors reasoning depth.",
+        "properties": {
+          "type": {
+            "enum": [
+              "high"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "BetaManagedAgentsEffortXhigh": {
+        "additionalProperties": false,
+        "description": "Extra-high effort. Not all models accept this level.",
+        "properties": {
+          "type": {
+            "enum": [
+              "xhigh"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "BetaManagedAgentsEffortMax": {
+        "additionalProperties": false,
+        "description": "Maximum effort. Favors reasoning depth over latency.",
+        "properties": {
+          "type": {
+            "enum": [
+              "max"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "BetaManagedAgentsMultiagentRosterEntry": {
+        "description": "A resolved multiagent roster entry.",
+        "discriminator": {
+          "mapping": {
+            "advisor": "#/components/schemas/BetaManagedAgentsAdvisor",
+            "agent": "#/components/schemas/BetaManagedAgentsAgentReference"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsAgentReference"
+          },
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsAdvisor"
+          }
+        ]
+      },
+      "BetaManagedAgentsAgentToolConfigUnion": {
+        "description": "Configuration for a specific agent tool.",
+        "discriminator": {
+          "mapping": {
+            "bash": "#/components/schemas/BetaManagedAgentsBashToolConfig",
+            "edit": "#/components/schemas/BetaManagedAgentsEditToolConfig",
+            "glob": "#/components/schemas/BetaManagedAgentsGlobToolConfig",
+            "grep": "#/components/schemas/BetaManagedAgentsGrepToolConfig",
+            "read": "#/components/schemas/BetaManagedAgentsReadToolConfig",
+            "web_fetch": "#/components/schemas/BetaManagedAgentsWebFetchToolConfig",
+            "web_search": "#/components/schemas/BetaManagedAgentsWebSearchToolConfig",
+            "write": "#/components/schemas/BetaManagedAgentsWriteToolConfig"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsBashToolConfig"
+          },
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsEditToolConfig"
+          },
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsReadToolConfig"
+          },
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsWriteToolConfig"
+          },
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsGlobToolConfig"
+          },
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsGrepToolConfig"
+          },
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsWebFetchToolConfig"
+          },
+          {
+            "$ref": "#/components/schemas/BetaManagedAgentsWebSearchToolConfig"
+          }
         ],
         "type": "object"
       },
@@ -1091,48 +1338,366 @@
         "type": "object"
       },
       "BetaManagedAgentsCustomToolInputSchema": {
-        "additionalProperties": false,
+        "additionalProperties": true,
         "description": "JSON Schema for custom tool input parameters.",
         "properties": {
           "properties": {
-            "allOf": [
+            "anyOf": [
               {
-                "$ref": "#/components/schemas/BetaManagedAgentsStruct"
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
               }
             ],
-            "description": "JSON Schema properties defining the tool's input parameters.",
-            "nullable": true
+            "title": "Properties"
           },
           "required": {
-            "description": "List of required property names.",
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required"
+          },
+          "type": {
+            "const": "object",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "BetaManagedAgentsAgentReference": {
+        "additionalProperties": false,
+        "description": "A resolved agent reference with a concrete version.",
+        "example": {
+          "id": "agent_011CZkYqphY8vELVzwCUpqiQ",
+          "type": "agent",
+          "version": 1
+        },
+        "properties": {
+          "id": {
+            "examples": [
+              "agent_011CZkYqphY8vELVzwCUpqiQ"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "agent"
+            ],
+            "examples": [
+              "agent"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "examples": [
+              1
+            ],
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "version"
+        ],
+        "type": "object"
+      },
+      "BetaManagedAgentsAdvisor": {
+        "additionalProperties": false,
+        "description": "Platform advisor roster entry: a model the session's primary thread may consult mid-turn.",
+        "properties": {
+          "model": {
+            "description": "The advisor model id.",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "advisor"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "model"
+        ],
+        "type": "object"
+      },
+      "BetaManagedAgentsBashToolConfig": {
+        "additionalProperties": false,
+        "description": "Configuration for the bash tool.",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "name": {
+            "const": "bash",
+            "type": "string"
+          },
+          "permission_policy": {
+            "$ref": "#/components/schemas/BetaManagedAgentsPermissionPolicy"
+          },
+          "type": {
+            "const": "bash",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "enabled",
+          "permission_policy"
+        ],
+        "type": "object"
+      },
+      "BetaManagedAgentsEditToolConfig": {
+        "additionalProperties": false,
+        "description": "Configuration for the edit tool.",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "name": {
+            "const": "edit",
+            "type": "string"
+          },
+          "permission_policy": {
+            "$ref": "#/components/schemas/BetaManagedAgentsPermissionPolicy"
+          },
+          "type": {
+            "const": "edit",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "enabled",
+          "permission_policy"
+        ],
+        "type": "object"
+      },
+      "BetaManagedAgentsReadToolConfig": {
+        "additionalProperties": false,
+        "description": "Configuration for the read tool.",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "name": {
+            "const": "read",
+            "type": "string"
+          },
+          "permission_policy": {
+            "$ref": "#/components/schemas/BetaManagedAgentsPermissionPolicy"
+          },
+          "type": {
+            "const": "read",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "enabled",
+          "permission_policy"
+        ],
+        "type": "object"
+      },
+      "BetaManagedAgentsWriteToolConfig": {
+        "additionalProperties": false,
+        "description": "Configuration for the write tool.",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "name": {
+            "const": "write",
+            "type": "string"
+          },
+          "permission_policy": {
+            "$ref": "#/components/schemas/BetaManagedAgentsPermissionPolicy"
+          },
+          "type": {
+            "const": "write",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "enabled",
+          "permission_policy"
+        ],
+        "type": "object"
+      },
+      "BetaManagedAgentsGlobToolConfig": {
+        "additionalProperties": false,
+        "description": "Configuration for the glob tool.",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "name": {
+            "const": "glob",
+            "type": "string"
+          },
+          "permission_policy": {
+            "$ref": "#/components/schemas/BetaManagedAgentsPermissionPolicy"
+          },
+          "type": {
+            "const": "glob",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "enabled",
+          "permission_policy"
+        ],
+        "type": "object"
+      },
+      "BetaManagedAgentsGrepToolConfig": {
+        "additionalProperties": false,
+        "description": "Configuration for the grep tool.",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "name": {
+            "const": "grep",
+            "type": "string"
+          },
+          "permission_policy": {
+            "$ref": "#/components/schemas/BetaManagedAgentsPermissionPolicy"
+          },
+          "type": {
+            "const": "grep",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "enabled",
+          "permission_policy"
+        ],
+        "type": "object"
+      },
+      "BetaManagedAgentsWebFetchToolConfig": {
+        "additionalProperties": false,
+        "description": "Configuration for the web_fetch tool.",
+        "properties": {
+          "allowed_domains": {
             "items": {
               "type": "string"
             },
             "type": "array"
           },
+          "blocked_domains": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "max_content_tokens": {
+            "anyOf": [
+              {
+                "format": "int32",
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "const": "web_fetch",
+            "type": "string"
+          },
+          "permission_policy": {
+            "$ref": "#/components/schemas/BetaManagedAgentsPermissionPolicy"
+          },
           "type": {
-            "description": "Must be 'object' for tool input schemas.",
-            "enum": [
-              "object"
-            ],
+            "const": "web_fetch",
             "type": "string"
           }
         },
+        "required": [
+          "type",
+          "name",
+          "enabled",
+          "permission_policy"
+        ],
         "type": "object"
       },
-      "BetaManagedAgentsAgentToolName": {
-        "description": "Built-in agent tool identifier.",
-        "enum": [
-          "bash",
-          "edit",
-          "read",
-          "write",
-          "glob",
-          "grep",
-          "web_fetch",
-          "web_search"
+      "BetaManagedAgentsWebSearchToolConfig": {
+        "additionalProperties": false,
+        "description": "Configuration for the web_search tool.",
+        "properties": {
+          "allowed_domains": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "blocked_domains": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "name": {
+            "const": "web_search",
+            "type": "string"
+          },
+          "permission_policy": {
+            "$ref": "#/components/schemas/BetaManagedAgentsPermissionPolicy"
+          },
+          "type": {
+            "const": "web_search",
+            "type": "string"
+          },
+          "user_location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaManagedAgentsUserLocation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "enabled",
+          "permission_policy"
         ],
-        "type": "string"
+        "type": "object"
       },
       "BetaManagedAgentsPermissionPolicy": {
         "description": "Permission policy for tool execution.",
@@ -1153,8 +1718,69 @@
         ],
         "type": "object"
       },
-      "BetaManagedAgentsStruct": {
-        "additionalProperties": true,
+      "BetaManagedAgentsUserLocation": {
+        "additionalProperties": false,
+        "description": "Approximate user location for search result localization.",
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "City name."
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Two-letter ISO 3166-1 country code, uppercase."
+          },
+          "region": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Region or state name."
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "IANA timezone identifier, e.g. \"America/Los_Angeles\"."
+          },
+          "type": {
+            "const": "approximate",
+            "description": "Location precision. Only \"approximate\" is supported.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
         "type": "object"
       },
       "BetaManagedAgentsAlwaysAllowPolicy": {
