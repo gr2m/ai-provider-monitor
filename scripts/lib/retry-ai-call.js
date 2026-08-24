@@ -54,11 +54,11 @@ export function isTransientAiError(error) {
       return true;
     }
 
-    // A malformed Gateway generation can omit finishReason and make AI SDK v6
-    // throw before it can surface a typed provider error.
+    // A malformed Gateway generation can omit finishReason or usage and make
+    // AI SDK v6 throw before it can surface a typed provider error.
     if (
       typeof value.message === "string" &&
-      /Cannot read properties of undefined \(reading ['"]unified['"]\)/.test(
+      /Cannot read properties of undefined \(reading ['"](?:unified|inputTokens)['"]\)/.test(
         value.message,
       )
     ) {

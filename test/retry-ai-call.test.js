@@ -25,11 +25,15 @@ test("isTransientAiError rejects permanent errors", (t) => {
 });
 
 test("isTransientAiError recognizes malformed AI SDK generation results", (t) => {
-  const error = new TypeError(
+  const missingFinishReason = new TypeError(
     "Cannot read properties of undefined (reading 'unified')",
   );
+  const missingUsage = new TypeError(
+    "Cannot read properties of undefined (reading 'inputTokens')",
+  );
 
-  t.true(isTransientAiError(error));
+  t.true(isTransientAiError(missingFinishReason));
+  t.true(isTransientAiError(missingUsage));
 });
 
 test("isTransientAiError uses the final error from an exhausted retry", (t) => {
