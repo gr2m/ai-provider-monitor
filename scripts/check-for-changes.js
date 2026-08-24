@@ -31,6 +31,7 @@ import yaml from "js-yaml";
 
 import { analyzeRouteChange } from "./lib/analyze-route-change.js";
 import { appendChanges } from "./lib/append-changes.js";
+import { buildPullRequestBody } from "./lib/build-pull-request-body.js";
 import { downloadText, resolveUrlFromMetadata } from "./lib/download.js";
 import { isIdenticalAfterNormalizingTimestamps } from "./lib/normalize-examples.js";
 
@@ -278,35 +279,7 @@ if (allChanges.length === 1) {
   title = `update ${provider} API specification (${allChanges.length} changes)`;
 }
 
-let body = "";
-const breaking = allChanges.filter((c) => c.breaking);
-const features = allChanges.filter(
-  (c) => !c.breaking && c.change !== "removed" && !c.doc_only,
-);
-const docFixes = allChanges.filter((c) => c.doc_only);
-
-if (breaking.length > 0) {
-  body += "### Breaking changes\n\n";
-  for (const c of breaking) {
-    body += `- **${c.route}**: ${c.note}\n`;
-  }
-  body += "\n";
-}
-
-if (features.length > 0) {
-  body += "### New features\n\n";
-  for (const c of features) {
-    body += `- **${c.route}**: ${c.note}\n`;
-  }
-  body += "\n";
-}
-
-if (docFixes.length > 0) {
-  body += "### Documentation fixes\n\n";
-  for (const c of docFixes) {
-    body += `- **${c.route}**: ${c.note}\n`;
-  }
-}
+const body = buildPullRequestBody(provider, allChanges);
 
 // --- Step 11: Build changed_routes for notifications ---
 const changed_routes = changedRoutes.map(({ relativePath, status }, index) => {
