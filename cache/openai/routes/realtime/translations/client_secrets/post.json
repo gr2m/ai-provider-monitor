@@ -1,0 +1,268 @@
+{
+  "operationId": "create-realtime-translation-client-secret",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/RealtimeTranslationClientSecretCreateRequest"
+        }
+      }
+    },
+    "description": "Create a client secret with the given translation session configuration.",
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/RealtimeTranslationClientSecretCreateResponse"
+          }
+        }
+      },
+      "description": "Translation client secret created successfully."
+    }
+  },
+  "summary": "Create a Realtime translation client secret with an associated translation session configuration.\n\nClient secrets are short-lived tokens that can be passed to a client app,\nsuch as a web frontend or mobile client, which grants access to the Realtime\nTranslation API without leaking your main API key. You can configure a custom\nTTL for each client secret.\n\nReturns the created client secret and the effective translation session object.\nThe client secret is a string that looks like `ek_1234`.\n",
+  "tags": [
+    "Realtime"
+  ],
+  "components": {
+    "schemas": {
+      "RealtimeTranslationClientSecretCreateRequest": {
+        "description": "Create a translation session and client secret for the Realtime API.\n",
+        "properties": {
+          "expires_after": {
+            "description": "Configuration for the client secret expiration. Expiration refers to the time after which\na client secret will no longer be valid for creating sessions. The session itself may\ncontinue after that time once started. A secret can be used to create multiple sessions\nuntil it expires.\n",
+            "properties": {
+              "anchor": {
+                "default": "created_at",
+                "description": "The anchor point for the client secret expiration, meaning that `seconds` will be added to the `created_at` time of the client secret to produce an expiration timestamp. Only `created_at` is currently supported.\n",
+                "enum": [
+                  "created_at"
+                ],
+                "type": "string"
+              },
+              "seconds": {
+                "default": 600,
+                "description": "The number of seconds from the anchor point to the expiration. Select a value between `10` and `7200` (2 hours). This default to 600 seconds (10 minutes) if not specified.\n",
+                "format": "int64",
+                "maximum": 7200,
+                "minimum": 10,
+                "type": "integer"
+              }
+            },
+            "title": "Client secret expiration",
+            "type": "object"
+          },
+          "session": {
+            "$ref": "#/components/schemas/RealtimeTranslationSessionCreateRequest"
+          }
+        },
+        "required": [
+          "session"
+        ],
+        "title": "Realtime translation client secret creation request",
+        "type": "object"
+      },
+      "RealtimeTranslationClientSecretCreateResponse": {
+        "description": "Response from creating a translation session and client secret for the Realtime API.\n",
+        "properties": {
+          "expires_at": {
+            "description": "Expiration timestamp for the client secret, in seconds since epoch.",
+            "format": "unixtime",
+            "type": "integer"
+          },
+          "session": {
+            "$ref": "#/components/schemas/RealtimeTranslationSession"
+          },
+          "value": {
+            "description": "The generated client secret value.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "expires_at",
+          "session"
+        ],
+        "title": "Realtime translation session and client secret",
+        "type": "object"
+      },
+      "RealtimeTranslationSessionCreateRequest": {
+        "description": "Realtime translation session configuration. Translation sessions stream source\naudio in and translated audio plus transcript deltas out continuously.\n",
+        "properties": {
+          "audio": {
+            "description": "Configuration for translation input and output audio.\n",
+            "properties": {
+              "input": {
+                "properties": {
+                  "noise_reduction": {
+                    "anyOf": [
+                      {
+                        "description": "Optional input noise reduction. Set to `null` to disable it.\n",
+                        "properties": {
+                          "type": {
+                            "$ref": "#/components/schemas/NoiseReductionType"
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "transcription": {
+                    "anyOf": [
+                      {
+                        "description": "Optional source-language transcription. When configured, the server emits\n`session.input_transcript.delta` events. Translation itself still runs from\nthe input audio stream.\n",
+                        "properties": {
+                          "model": {
+                            "description": "The transcription model to use for source transcript deltas.",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "model"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              "output": {
+                "properties": {
+                  "language": {
+                    "description": "Target language for translated output audio and transcript deltas.\n",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "model": {
+            "description": "The Realtime translation model used for this session.\n",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "title": "Realtime translation session configuration",
+        "type": "object"
+      },
+      "RealtimeTranslationSession": {
+        "description": "A Realtime translation session. Translation sessions continuously translate input\naudio into the configured output language.\n",
+        "properties": {
+          "audio": {
+            "description": "Configuration for translation input and output audio.\n",
+            "properties": {
+              "input": {
+                "properties": {
+                  "noise_reduction": {
+                    "anyOf": [
+                      {
+                        "description": "Optional input noise reduction.\n",
+                        "properties": {
+                          "type": {
+                            "$ref": "#/components/schemas/NoiseReductionType"
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "transcription": {
+                    "anyOf": [
+                      {
+                        "description": "Optional source-language transcription. When configured, the server emits\n`session.input_transcript.delta` events. Translation itself still runs from\nthe input audio stream.\n",
+                        "properties": {
+                          "model": {
+                            "description": "The transcription model used for source transcript deltas.",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "model"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              "output": {
+                "properties": {
+                  "language": {
+                    "description": "Target language for translated output audio and transcript deltas.\n",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "expires_at": {
+            "description": "Expiration timestamp for the session, in seconds since epoch.",
+            "format": "unixtime",
+            "type": "integer"
+          },
+          "id": {
+            "description": "Unique identifier for the session that looks like `sess_1234567890abcdef`.\n",
+            "type": "string"
+          },
+          "model": {
+            "description": "The Realtime translation model used for this session. This field is set at\nsession creation and cannot be changed with `session.update`.\n",
+            "type": "string"
+          },
+          "type": {
+            "description": "The session type. Always `translation` for Realtime translation sessions.\n",
+            "enum": [
+              "translation"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "expires_at",
+          "model",
+          "audio"
+        ],
+        "title": "Realtime translation session",
+        "type": "object"
+      },
+      "NoiseReductionType": {
+        "description": "Type of noise reduction. `near_field` is for close-talking microphones such as headphones, `far_field` is for far-field microphones such as laptop or conference room microphones.\n",
+        "enum": [
+          "near_field",
+          "far_field"
+        ],
+        "type": "string"
+      }
+    }
+  }
+}

@@ -37,6 +37,7 @@
             "properties": {
               "expires_at": {
                 "description": "Timestamp for when the token expires. Currently, all tokens expire\nafter one minute.\n",
+                "format": "unixtime",
                 "type": "integer"
               },
               "value": {
@@ -231,7 +232,7 @@
                     "type": "object"
                   },
                   "transcription": {
-                    "$ref": "#/components/schemas/AudioTranscription",
+                    "$ref": "#/components/schemas/AudioTranscriptionResponse",
                     "description": "Configuration for input audio transcription.\n"
                   },
                   "turn_detection": {
@@ -275,6 +276,7 @@
           },
           "expires_at": {
             "description": "Expiration timestamp for the session, in seconds since epoch.",
+            "format": "unixtime",
             "type": "integer"
           },
           "id": {
@@ -565,11 +567,19 @@
         ],
         "type": "string"
       },
-      "AudioTranscription": {
+      "AudioTranscriptionResponse": {
         "properties": {
           "language": {
-            "description": "The language of the input audio. Supplying the input language in\n[ISO-639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) (e.g. `en`) format\nwill improve accuracy and latency.\n",
+            "description": "The language of the input audio.\n",
             "type": "string"
+          },
+          "languages": {
+            "description": "The possible input audio languages configured for transcription, in [ISO-639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) format.\n",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
           },
           "model": {
             "anyOf": [
@@ -579,18 +589,21 @@
               {
                 "enum": [
                   "whisper-1",
+                  "gpt-transcribe",
+                  "gpt-live-transcribe",
                   "gpt-4o-mini-transcribe",
                   "gpt-4o-mini-transcribe-2025-12-15",
                   "gpt-4o-transcribe",
-                  "gpt-4o-transcribe-diarize"
+                  "gpt-4o-transcribe-diarize",
+                  "gpt-realtime-whisper"
                 ],
                 "type": "string"
               }
             ],
-            "description": "The model to use for transcription. Current options are `whisper-1`, `gpt-4o-mini-transcribe`, `gpt-4o-mini-transcribe-2025-12-15`, `gpt-4o-transcribe`, and `gpt-4o-transcribe-diarize`. Use `gpt-4o-transcribe-diarize` when you need diarization with speaker labels.\n"
+            "description": "The model used for transcription. Current options are `whisper-1`, `gpt-transcribe`, `gpt-live-transcribe`, `gpt-4o-mini-transcribe`, `gpt-4o-mini-transcribe-2025-12-15`, `gpt-4o-transcribe`, `gpt-4o-transcribe-diarize`, and `gpt-realtime-whisper`.\n"
           },
           "prompt": {
-            "description": "An optional text to guide the model's style or continue a previous audio\nsegment.\nFor `whisper-1`, the [prompt is a list of keywords](/docs/guides/speech-to-text#prompting).\nFor `gpt-4o-transcribe` models (excluding `gpt-4o-transcribe-diarize`), the prompt is a free text string, for example \"expect words related to technology\".\n",
+            "description": "The prompt configured for input audio transcription, when present.\n",
             "type": "string"
           }
         },
@@ -675,6 +688,9 @@
       "InputTextContent": {
         "description": "A text input to the model.",
         "properties": {
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointConfig"
+          },
           "text": {
             "description": "The text input to the model.",
             "type": "string"
@@ -717,12 +733,16 @@
             "anyOf": [
               {
                 "description": "The URL of the image to be sent to the model. A fully qualified URL or base64 encoded image in a data URL.",
+                "format": "uri",
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ]
+          },
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointConfig"
           },
           "type": {
             "default": "input_image",
@@ -745,7 +765,7 @@
         "properties": {
           "detail": {
             "$ref": "#/components/schemas/FileInputDetail",
-            "description": "The detail level of the file to be sent to the model. Use `low` for the default rendering behavior, or `high` to render the file at higher quality. Defaults to `low`."
+            "description": "The detail level of the file to be sent to the model. Use `auto` to let the system select the detail level; for GPT-5.6 and later models, `auto` uses high-quality rendering, which may increase input token usage. Use `low` for lower-cost rendering, or `high` to render the file at higher quality. Defaults to `auto`."
           },
           "file_data": {
             "description": "The content of the file to be sent to the model.\n",
@@ -764,11 +784,15 @@
           },
           "file_url": {
             "description": "The URL of the file to be sent to the model.",
+            "format": "uri",
             "type": "string"
           },
           "filename": {
             "description": "The name of the file to be sent to the model.",
             "type": "string"
+          },
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointConfig"
           },
           "type": {
             "default": "input_file",
@@ -785,6 +809,24 @@
         "title": "Input file",
         "type": "object"
       },
+      "PromptCacheBreakpointConfig": {
+        "description": "Marks the exact end of a reusable prompt prefix. The breakpoint inherits its TTL from the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
+        "properties": {
+          "mode": {
+            "default": "explicit",
+            "description": "The breakpoint mode. Always `explicit`.",
+            "enum": [
+              "explicit"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "Prompt cache breakpoint",
+        "type": "object"
+      },
       "ImageDetail": {
         "enum": [
           "low",
@@ -796,6 +838,7 @@
       },
       "FileInputDetail": {
         "enum": [
+          "auto",
           "low",
           "high"
         ],

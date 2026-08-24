@@ -85,6 +85,7 @@
         "properties": {
           "created_at": {
             "description": "Unix timestamp (in seconds) when the evaluation run was created.",
+            "format": "unixtime",
             "type": "integer"
           },
           "data_source": {
@@ -201,6 +202,7 @@
           },
           "report_url": {
             "description": "The URL to the rendered evaluation run report on the UI dashboard.",
+            "format": "uri",
             "type": "string"
           },
           "result_counts": {
@@ -795,14 +797,15 @@
         "anyOf": [
           {
             "default": "medium",
-            "description": "Constrains effort on reasoning for\n[reasoning models](https://platform.openai.com/docs/guides/reasoning).\nCurrently supported values are `none`, `minimal`, `low`, `medium`, `high`, and `xhigh`. Reducing\nreasoning effort can result in faster responses and fewer tokens used\non reasoning in a response.\n\n- `gpt-5.1` defaults to `none`, which does not perform reasoning. The supported reasoning values for `gpt-5.1` are `none`, `low`, `medium`, and `high`. Tool calls are supported for all reasoning values in gpt-5.1.\n- All models before `gpt-5.1` default to `medium` reasoning effort, and do not support `none`.\n- The `gpt-5-pro` model defaults to (and only supports) `high` reasoning effort.\n- `xhigh` is supported for all models after `gpt-5.1-codex-max`.\n",
+            "description": "Constrains effort on reasoning for reasoning models. Currently supported\nvalues are `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`.\nReducing reasoning effort can result in faster responses and fewer tokens\nused on reasoning in a response. Not all reasoning models support every\nvalue. See the\n[reasoning guide](https://platform.openai.com/docs/guides/reasoning)\nfor model-specific support.\n",
             "enum": [
               "none",
               "minimal",
               "low",
               "medium",
               "high",
-              "xhigh"
+              "xhigh",
+              "max"
             ],
             "type": "string"
           },
@@ -1022,6 +1025,9 @@
           },
           {
             "$ref": "#/components/schemas/CodeInterpreterTool"
+          },
+          {
+            "$ref": "#/components/schemas/ProgrammaticToolCallingParam"
           },
           {
             "$ref": "#/components/schemas/ImageGenTool"
@@ -1294,6 +1300,20 @@
       "FunctionTool": {
         "description": "Defines a function in your own code the model can choose to call. Learn more about [function calling](https://platform.openai.com/docs/guides/function-calling).",
         "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "defer_loading": {
             "description": "Whether this function is deferred and loaded via tool search.",
             "type": "boolean"
@@ -1313,6 +1333,18 @@
             "description": "The name of the function to call.",
             "type": "string"
           },
+          "output_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": {},
+                "description": "A JSON schema object describing the JSON value encoded in string outputs for this function.",
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "parameters": {
             "anyOf": [
               {
@@ -1328,7 +1360,7 @@
           "strict": {
             "anyOf": [
               {
-                "description": "Whether to enforce strict parameter validation. Default `true`.",
+                "description": "Whether strict parameter validation is enforced for this function tool.",
                 "type": "boolean"
               },
               {
@@ -1515,6 +1547,21 @@
       "MCPTool": {
         "description": "Give the model access to additional tools via remote Model Context Protocol\n(MCP) servers. [Learn more about MCP](/docs/guides/tools-remote-mcp).\n",
         "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "allowed_tools": {
             "anyOf": [
               {
@@ -1543,7 +1590,7 @@
             "type": "string"
           },
           "connector_id": {
-            "description": "Identifier for service connectors, like those available in ChatGPT. One of\n`server_url` or `connector_id` must be provided. Learn more about service\nconnectors [here](/docs/guides/tools-remote-mcp#connectors).\n\nCurrently supported `connector_id` values are:\n\n- Dropbox: `connector_dropbox`\n- Gmail: `connector_gmail`\n- Google Calendar: `connector_googlecalendar`\n- Google Drive: `connector_googledrive`\n- Microsoft Teams: `connector_microsoftteams`\n- Outlook Calendar: `connector_outlookcalendar`\n- Outlook Email: `connector_outlookemail`\n- SharePoint: `connector_sharepoint`\n",
+            "description": "Identifier for service connectors, like those available in ChatGPT. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided. Learn more\nabout service connectors [here](/docs/guides/tools-remote-mcp#connectors).\n\nCurrently supported `connector_id` values are:\n\n- Dropbox: `connector_dropbox`\n- Gmail: `connector_gmail`\n- Google Calendar: `connector_googlecalendar`\n- Google Drive: `connector_googledrive`\n- Microsoft Teams: `connector_microsoftteams`\n- Outlook Calendar: `connector_outlookcalendar`\n- Outlook Email: `connector_outlookemail`\n- SharePoint: `connector_sharepoint`\n",
             "enum": [
               "connector_dropbox",
               "connector_gmail",
@@ -1619,7 +1666,13 @@
             "type": "string"
           },
           "server_url": {
-            "description": "The URL for the MCP server. One of `server_url` or `connector_id` must be\nprovided.\n",
+            "description": "The URL for the MCP server. One of `server_url`, `connector_id`, or\n`tunnel_id` must be provided.\n",
+            "format": "uri",
+            "type": "string"
+          },
+          "tunnel_id": {
+            "description": "The Secure MCP Tunnel ID to use instead of a direct server URL. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided.\n",
+            "pattern": "^tunnel_[a-z0-9]{32}$",
             "type": "string"
           },
           "type": {
@@ -1640,6 +1693,21 @@
       "CodeInterpreterTool": {
         "description": "A tool that runs Python code to help generate a response to a prompt.\n",
         "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "container": {
             "description": "The code interpreter container. Can be a container ID or an object that\nspecifies uploaded file IDs to make available to your code, along with an\noptional `memory_limit` setting.\n",
             "oneOf": [
@@ -1665,6 +1733,22 @@
           "container"
         ],
         "title": "Code interpreter",
+        "type": "object"
+      },
+      "ProgrammaticToolCallingParam": {
+        "properties": {
+          "type": {
+            "default": "programmatic_tool_calling",
+            "description": "The type of the tool. Always `programmatic_tool_calling`.",
+            "enum": [
+              "programmatic_tool_calling"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
         "type": "object"
       },
       "ImageGenTool": {
@@ -1772,15 +1856,22 @@
             "type": "string"
           },
           "size": {
-            "default": "auto",
-            "description": "The size of the generated image. One of `1024x1024`, `1024x1536`,\n`1536x1024`, or `auto`. Default: `auto`.\n",
-            "enum": [
-              "1024x1024",
-              "1024x1536",
-              "1536x1024",
-              "auto"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "enum": [
+                  "1024x1024",
+                  "1024x1536",
+                  "1536x1024",
+                  "auto"
+                ],
+                "type": "string"
+              }
             ],
-            "type": "string"
+            "default": "auto",
+            "description": "The size of the generated images. For `gpt-image-2` and `gpt-image-2-2026-04-21`, arbitrary resolutions are supported as `WIDTHxHEIGHT` strings, for example `1536x864`. Width and height must both be divisible by 16 and the requested aspect ratio must be between 1:3 and 3:1. Resolutions above `2560x1440` are experimental, and the maximum supported resolution is `3840x2160`. The requested size must also satisfy the model's current pixel and edge limits. The standard sizes `1024x1024`, `1536x1024`, and `1024x1536` are supported by the GPT image models; `auto` is supported for models that allow automatic sizing. For `dall-e-2`, use one of `256x256`, `512x512`, or `1024x1024`. For `dall-e-3`, use one of `1024x1024`, `1792x1024`, or `1024x1792`."
           },
           "type": {
             "description": "The type of the image generation tool. Always `image_generation`.\n",
@@ -1817,6 +1908,21 @@
       "FunctionShellToolParam": {
         "description": "A tool that allows the model to execute shell commands.",
         "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "environment": {
             "anyOf": [
               {
@@ -1858,6 +1964,21 @@
       "CustomToolParam": {
         "description": "A custom tool that processes input using a specified format. Learn more about   [custom tools](/docs/guides/function-calling#custom-tools)",
         "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "defer_loading": {
             "description": "Whether this tool should be deferred and discovered via tool search.",
             "type": "boolean"
@@ -2037,6 +2158,21 @@
       "ApplyPatchToolParam": {
         "description": "Allows the assistant to create, delete, or update files using unified diffs.",
         "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "default": "apply_patch",
             "description": "The type of the tool. Always `apply_patch`.",
@@ -2101,6 +2237,13 @@
         "additionalProperties": true,
         "description": "The parameters the functions accepts, described as a JSON Schema object. See the [guide](/docs/guides/function-calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for documentation about the format. \n\nOmitting `parameters` defines a function with an empty parameter list.",
         "type": "object"
+      },
+      "CallableToolAllowedCaller": {
+        "enum": [
+          "direct",
+          "programmatic"
+        ],
+        "type": "string"
       },
       "Filters": {
         "anyOf": [
@@ -2457,6 +2600,21 @@
       },
       "FunctionToolParam": {
         "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "defer_loading": {
             "description": "Whether this function should be deferred and discovered via tool search.",
             "type": "boolean"
@@ -2477,6 +2635,18 @@
             "pattern": "^[a-zA-Z0-9_-]+$",
             "type": "string"
           },
+          "output_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": {},
+                "description": "A JSON Schema describing the JSON value encoded in string outputs for this function tool. This does not describe content-array outputs.",
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "parameters": {
             "anyOf": [
               {
@@ -2490,6 +2660,7 @@
           "strict": {
             "anyOf": [
               {
+                "description": "Whether to enforce strict parameter validation. If omitted, Responses attempts to use strict validation when the schema is compatible, and falls back to non-strict validation otherwise.",
                 "type": "boolean"
               },
               {
@@ -2601,6 +2772,9 @@
       "InputTextContent": {
         "description": "A text input to the model.",
         "properties": {
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointConfig"
+          },
           "text": {
             "description": "The text input to the model.",
             "type": "string"
@@ -2643,12 +2817,16 @@
             "anyOf": [
               {
                 "description": "The URL of the image to be sent to the model. A fully qualified URL or base64 encoded image in a data URL.",
+                "format": "uri",
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ]
+          },
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointConfig"
           },
           "type": {
             "default": "input_image",
@@ -2671,7 +2849,7 @@
         "properties": {
           "detail": {
             "$ref": "#/components/schemas/FileInputDetail",
-            "description": "The detail level of the file to be sent to the model. Use `low` for the default rendering behavior, or `high` to render the file at higher quality. Defaults to `low`."
+            "description": "The detail level of the file to be sent to the model. Use `auto` to let the system select the detail level; for GPT-5.6 and later models, `auto` uses high-quality rendering, which may increase input token usage. Use `low` for lower-cost rendering, or `high` to render the file at higher quality. Defaults to `auto`."
           },
           "file_data": {
             "description": "The content of the file to be sent to the model.\n",
@@ -2690,11 +2868,15 @@
           },
           "file_url": {
             "description": "The URL of the file to be sent to the model.",
+            "format": "uri",
             "type": "string"
           },
           "filename": {
             "description": "The name of the file to be sent to the model.",
             "type": "string"
+          },
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointConfig"
           },
           "type": {
             "default": "input_file",
@@ -2747,6 +2929,7 @@
           },
           "image_url": {
             "description": "The URL of the image input.\n",
+            "format": "uri",
             "type": "string"
           },
           "type": {
@@ -3069,6 +3252,24 @@
         ],
         "type": "string"
       },
+      "PromptCacheBreakpointConfig": {
+        "description": "Marks the exact end of a reusable prompt prefix. The breakpoint inherits its TTL from the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
+        "properties": {
+          "mode": {
+            "default": "explicit",
+            "description": "The breakpoint mode. Always `explicit`.",
+            "enum": [
+              "explicit"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "Prompt cache breakpoint",
+        "type": "object"
+      },
       "ImageDetail": {
         "enum": [
           "low",
@@ -3080,6 +3281,7 @@
       },
       "FileInputDetail": {
         "enum": [
+          "auto",
           "low",
           "high"
         ],

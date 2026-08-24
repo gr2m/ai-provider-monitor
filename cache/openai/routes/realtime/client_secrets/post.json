@@ -46,6 +46,7 @@
               "seconds": {
                 "default": 600,
                 "description": "The number of seconds from the anchor point to the expiration. Select a value between `10` and `7200` (2 hours). This default to 600 seconds (10 minutes) if not specified.\n",
+                "format": "int64",
                 "maximum": 7200,
                 "minimum": 10,
                 "type": "integer"
@@ -75,6 +76,7 @@
         "properties": {
           "expires_at": {
             "description": "Expiration timestamp for the client secret, in seconds since epoch.",
+            "format": "unixtime",
             "type": "integer"
           },
           "session": {
@@ -198,6 +200,9 @@
                 "enum": [
                   "gpt-realtime",
                   "gpt-realtime-1.5",
+                  "gpt-realtime-2",
+                  "gpt-realtime-2.1",
+                  "gpt-realtime-2.1-mini",
                   "gpt-realtime-2025-08-28",
                   "gpt-4o-realtime-preview",
                   "gpt-4o-realtime-preview-2024-10-01",
@@ -232,8 +237,15 @@
             },
             "type": "array"
           },
+          "parallel_tool_calls": {
+            "description": "Whether the model may call multiple tools in parallel. Only supported by\nreasoning Realtime models such as `gpt-realtime-2`.\n",
+            "type": "boolean"
+          },
           "prompt": {
             "$ref": "#/components/schemas/Prompt"
+          },
+          "reasoning": {
+            "$ref": "#/components/schemas/RealtimeReasoning"
           },
           "tool_choice": {
             "default": "auto",
@@ -376,7 +388,7 @@
         "type": "object"
       },
       "RealtimeSessionCreateResponseGA": {
-        "description": "A new Realtime session configuration, with an ephemeral key. Default TTL\nfor keys is one minute.\n",
+        "description": "A Realtime session configuration object.\n",
         "properties": {
           "audio": {
             "description": "Configuration for input and output audio.\n",
@@ -398,7 +410,7 @@
                     "type": "object"
                   },
                   "transcription": {
-                    "$ref": "#/components/schemas/AudioTranscription",
+                    "$ref": "#/components/schemas/AudioTranscriptionResponse",
                     "description": "Configuration for input audio transcription, defaults to off and can be set to `null` to turn off once on. Input audio transcription is not native to the model, since the model consumes audio directly. Transcription runs asynchronously through [the /audio/transcriptions endpoint](/docs/api-reference/audio/createTranscription) and should be treated as guidance of input audio content rather than precisely what the model heard. The client can optionally set the language and prompt for transcription, these offer additional guidance to the transcription service.\n"
                   },
                   "turn_detection": {
@@ -431,23 +443,14 @@
             },
             "type": "object"
           },
-          "client_secret": {
-            "description": "Ephemeral key returned by the API.",
-            "properties": {
-              "expires_at": {
-                "description": "Timestamp for when the token expires. Currently, all tokens expire\nafter one minute.\n",
-                "type": "integer"
-              },
-              "value": {
-                "description": "Ephemeral key usable in client environments to authenticate connections to the Realtime API. Use this in client-side environments rather than a standard API token, which should only be used server-side.\n",
-                "type": "string"
-              }
-            },
-            "required": [
-              "value",
-              "expires_at"
-            ],
-            "type": "object"
+          "expires_at": {
+            "description": "Expiration timestamp for the session, in seconds since epoch.",
+            "format": "unixtime",
+            "type": "integer"
+          },
+          "id": {
+            "description": "Unique identifier for the session that looks like `sess_1234567890abcdef`.\n",
+            "type": "string"
           },
           "include": {
             "description": "Additional fields to include in server outputs.\n\n`item.input_audio_transcription.logprobs`: Include logprobs for input audio transcription.\n",
@@ -486,6 +489,9 @@
                 "enum": [
                   "gpt-realtime",
                   "gpt-realtime-1.5",
+                  "gpt-realtime-2",
+                  "gpt-realtime-2.1",
+                  "gpt-realtime-2.1-mini",
                   "gpt-realtime-2025-08-28",
                   "gpt-4o-realtime-preview",
                   "gpt-4o-realtime-preview-2024-10-01",
@@ -506,6 +512,13 @@
             ],
             "description": "The Realtime model used for this session.\n"
           },
+          "object": {
+            "description": "The object type. Always `realtime.session`.",
+            "enum": [
+              "realtime.session"
+            ],
+            "type": "string"
+          },
           "output_modalities": {
             "default": [
               "audio"
@@ -522,6 +535,9 @@
           },
           "prompt": {
             "$ref": "#/components/schemas/Prompt"
+          },
+          "reasoning": {
+            "$ref": "#/components/schemas/RealtimeReasoning"
           },
           "tool_choice": {
             "default": "auto",
@@ -606,9 +622,11 @@
           }
         },
         "required": [
-          "client_secret",
-          "type"
+          "type",
+          "id",
+          "object"
         ],
+        "title": "Realtime session configuration object",
         "type": "object"
       },
       "RealtimeTranscriptionSessionCreateResponseGA": {
@@ -632,30 +650,38 @@
                     "type": "object"
                   },
                   "transcription": {
-                    "$ref": "#/components/schemas/AudioTranscription",
+                    "$ref": "#/components/schemas/AudioTranscriptionResponse",
                     "description": "Configuration of the transcription model.\n"
                   },
                   "turn_detection": {
-                    "description": "Configuration for turn detection. Can be set to `null` to turn off. Server\nVAD means that the model will detect the start and end of speech based on\naudio volume and respond at the end of user speech.\n",
-                    "properties": {
-                      "prefix_padding_ms": {
-                        "description": "Amount of audio to include before the VAD detected speech (in\nmilliseconds). Defaults to 300ms.\n",
-                        "type": "integer"
+                    "anyOf": [
+                      {
+                        "description": "Configuration for turn detection. Can be set to `null` to turn off. Server\nVAD means that the model will detect the start and end of speech based on\naudio volume and respond at the end of user speech. For `gpt-realtime-whisper`, this must be `null`; VAD is not supported.\n",
+                        "properties": {
+                          "prefix_padding_ms": {
+                            "description": "Amount of audio to include before the VAD detected speech (in\nmilliseconds). Defaults to 300ms.\n",
+                            "type": "integer"
+                          },
+                          "silence_duration_ms": {
+                            "description": "Duration of silence to detect speech stop (in milliseconds). Defaults\nto 500ms. With shorter values the model will respond more quickly,\nbut may jump in on short pauses from the user.\n",
+                            "type": "integer"
+                          },
+                          "threshold": {
+                            "description": "Activation threshold for VAD (0.0 to 1.0), this defaults to 0.5. A\nhigher threshold will require louder audio to activate the model, and\nthus might perform better in noisy environments.\n",
+                            "type": "number"
+                          },
+                          "type": {
+                            "description": "Type of turn detection, only `server_vad` is currently supported.\n",
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
                       },
-                      "silence_duration_ms": {
-                        "description": "Duration of silence to detect speech stop (in milliseconds). Defaults\nto 500ms. With shorter values the model will respond more quickly,\nbut may jump in on short pauses from the user.\n",
-                        "type": "integer"
-                      },
-                      "threshold": {
-                        "description": "Activation threshold for VAD (0.0 to 1.0), this defaults to 0.5. A\nhigher threshold will require louder audio to activate the model, and\nthus might perform better in noisy environments.\n",
-                        "type": "number"
-                      },
-                      "type": {
-                        "description": "Type of turn detection, only `server_vad` is currently supported.\n",
-                        "type": "string"
+                      {
+                        "type": "null"
                       }
-                    },
-                    "type": "object"
+                    ],
+                    "description": "Configuration for turn detection. For `gpt-realtime-whisper`, this must be `null`; VAD is not supported.\n"
                   }
                 },
                 "type": "object"
@@ -665,6 +691,7 @@
           },
           "expires_at": {
             "description": "Expiration timestamp for the session, in seconds since epoch.",
+            "format": "unixtime",
             "type": "integer"
           },
           "id": {
@@ -764,9 +791,35 @@
       },
       "AudioTranscription": {
         "properties": {
+          "delay": {
+            "description": "Controls how long the model waits before emitting transcription text.\nHigher values can improve transcription accuracy at the cost of latency.\nOnly supported with `gpt-realtime-whisper` in GA Realtime sessions.\n",
+            "enum": [
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh"
+            ],
+            "type": "string"
+          },
+          "keywords": {
+            "description": "Words or phrases to guide transcription of the input audio. Supported by `gpt-transcribe` and `gpt-live-transcribe`.\n",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "language": {
             "description": "The language of the input audio. Supplying the input language in\n[ISO-639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) (e.g. `en`) format\nwill improve accuracy and latency.\n",
             "type": "string"
+          },
+          "languages": {
+            "description": "Possible languages of the input audio, in [ISO-639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) format. Supported by `gpt-transcribe` and `gpt-live-transcribe`.\n",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
           },
           "model": {
             "anyOf": [
@@ -776,18 +829,21 @@
               {
                 "enum": [
                   "whisper-1",
+                  "gpt-transcribe",
+                  "gpt-live-transcribe",
                   "gpt-4o-mini-transcribe",
                   "gpt-4o-mini-transcribe-2025-12-15",
                   "gpt-4o-transcribe",
-                  "gpt-4o-transcribe-diarize"
+                  "gpt-4o-transcribe-diarize",
+                  "gpt-realtime-whisper"
                 ],
                 "type": "string"
               }
             ],
-            "description": "The model to use for transcription. Current options are `whisper-1`, `gpt-4o-mini-transcribe`, `gpt-4o-mini-transcribe-2025-12-15`, `gpt-4o-transcribe`, and `gpt-4o-transcribe-diarize`. Use `gpt-4o-transcribe-diarize` when you need diarization with speaker labels.\n"
+            "description": "The model to use for transcription. Current options are `whisper-1`, `gpt-transcribe`, `gpt-live-transcribe`, `gpt-4o-mini-transcribe`, `gpt-4o-mini-transcribe-2025-12-15`, `gpt-4o-transcribe`, `gpt-4o-transcribe-diarize`, and `gpt-realtime-whisper`. Use `gpt-4o-transcribe-diarize` when you need diarization with speaker labels.\n"
           },
           "prompt": {
-            "description": "An optional text to guide the model's style or continue a previous audio\nsegment.\nFor `whisper-1`, the [prompt is a list of keywords](/docs/guides/speech-to-text#prompting).\nFor `gpt-4o-transcribe` models (excluding `gpt-4o-transcribe-diarize`), the prompt is a free text string, for example \"expect words related to technology\".\n",
+            "description": "An optional text to guide the model's style or continue a previous audio\nsegment.\nFor `whisper-1`, the [prompt is a list of keywords](/docs/guides/speech-to-text#prompting).\nFor `gpt-4o-transcribe` models (excluding `gpt-4o-transcribe-diarize`), the prompt is a free text string, for example \"expect words related to technology\".\nPrompt is not supported with `gpt-realtime-whisper` in GA Realtime sessions.\n",
             "type": "string"
           }
         },
@@ -796,7 +852,7 @@
       "RealtimeTurnDetection": {
         "anyOf": [
           {
-            "description": "Configuration for turn detection, ether Server VAD or Semantic VAD. This can be set to `null` to turn off, in which case the client must manually trigger model response.\n\nServer VAD means that the model will detect the start and end of speech based on audio volume and respond at the end of user speech.\n\nSemantic VAD is more advanced and uses a turn detection model (in conjunction with VAD) to semantically estimate whether the user has finished speaking, then dynamically sets a timeout based on this probability. For example, if user audio trails off with \"uhhm\", the model will score a low probability of turn end and wait longer for the user to continue speaking. This can be useful for more natural conversations, but may have a higher latency.\n",
+            "description": "Configuration for turn detection, ether Server VAD or Semantic VAD. This can be set to `null` to turn off, in which case the client must manually trigger model response.\n\nServer VAD means that the model will detect the start and end of speech based on audio volume and respond at the end of user speech.\n\nSemantic VAD is more advanced and uses a turn detection model (in conjunction with VAD) to semantically estimate whether the user has finished speaking, then dynamically sets a timeout based on this probability. For example, if user audio trails off with \"uhhm\", the model will score a low probability of turn end and wait longer for the user to continue speaking. This can be useful for more natural conversations, but may have a higher latency.\n\nFor `gpt-realtime-whisper` transcription sessions, turn detection must be\nset to `null`; VAD is not supported.\n",
             "discriminator": {
               "propertyName": "type"
             },
@@ -954,6 +1010,16 @@
           }
         ]
       },
+      "RealtimeReasoning": {
+        "description": "Configuration for reasoning-capable Realtime models such as `gpt-realtime-2`.\n",
+        "properties": {
+          "effort": {
+            "$ref": "#/components/schemas/RealtimeReasoningEffort"
+          }
+        },
+        "title": "Realtime reasoning configuration",
+        "type": "object"
+      },
       "ToolChoiceOptions": {
         "description": "Controls which (if any) tool is called by the model.\n\n`none` means the model will not call any tool and instead generates a message.\n\n`auto` means the model can pick between generating a message or calling one or\nmore tools.\n\n`required` means the model must call one or more tools.\n",
         "enum": [
@@ -1047,6 +1113,21 @@
       "MCPTool": {
         "description": "Give the model access to additional tools via remote Model Context Protocol\n(MCP) servers. [Learn more about MCP](/docs/guides/tools-remote-mcp).\n",
         "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "allowed_tools": {
             "anyOf": [
               {
@@ -1075,7 +1156,7 @@
             "type": "string"
           },
           "connector_id": {
-            "description": "Identifier for service connectors, like those available in ChatGPT. One of\n`server_url` or `connector_id` must be provided. Learn more about service\nconnectors [here](/docs/guides/tools-remote-mcp#connectors).\n\nCurrently supported `connector_id` values are:\n\n- Dropbox: `connector_dropbox`\n- Gmail: `connector_gmail`\n- Google Calendar: `connector_googlecalendar`\n- Google Drive: `connector_googledrive`\n- Microsoft Teams: `connector_microsoftteams`\n- Outlook Calendar: `connector_outlookcalendar`\n- Outlook Email: `connector_outlookemail`\n- SharePoint: `connector_sharepoint`\n",
+            "description": "Identifier for service connectors, like those available in ChatGPT. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided. Learn more\nabout service connectors [here](/docs/guides/tools-remote-mcp#connectors).\n\nCurrently supported `connector_id` values are:\n\n- Dropbox: `connector_dropbox`\n- Gmail: `connector_gmail`\n- Google Calendar: `connector_googlecalendar`\n- Google Drive: `connector_googledrive`\n- Microsoft Teams: `connector_microsoftteams`\n- Outlook Calendar: `connector_outlookcalendar`\n- Outlook Email: `connector_outlookemail`\n- SharePoint: `connector_sharepoint`\n",
             "enum": [
               "connector_dropbox",
               "connector_gmail",
@@ -1151,7 +1232,13 @@
             "type": "string"
           },
           "server_url": {
-            "description": "The URL for the MCP server. One of `server_url` or `connector_id` must be\nprovided.\n",
+            "description": "The URL for the MCP server. One of `server_url`, `connector_id`, or\n`tunnel_id` must be provided.\n",
+            "format": "uri",
+            "type": "string"
+          },
+          "tunnel_id": {
+            "description": "The Secure MCP Tunnel ID to use instead of a direct server URL. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided.\n",
+            "pattern": "^tunnel_[a-z0-9]{32}$",
             "type": "string"
           },
           "type": {
@@ -1218,6 +1305,48 @@
         ],
         "title": "Realtime Truncation Controls"
       },
+      "AudioTranscriptionResponse": {
+        "properties": {
+          "language": {
+            "description": "The language of the input audio.\n",
+            "type": "string"
+          },
+          "languages": {
+            "description": "The possible input audio languages configured for transcription, in [ISO-639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) format.\n",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "enum": [
+                  "whisper-1",
+                  "gpt-transcribe",
+                  "gpt-live-transcribe",
+                  "gpt-4o-mini-transcribe",
+                  "gpt-4o-mini-transcribe-2025-12-15",
+                  "gpt-4o-transcribe",
+                  "gpt-4o-transcribe-diarize",
+                  "gpt-realtime-whisper"
+                ],
+                "type": "string"
+              }
+            ],
+            "description": "The model used for transcription. Current options are `whisper-1`, `gpt-transcribe`, `gpt-live-transcribe`, `gpt-4o-mini-transcribe`, `gpt-4o-mini-transcribe-2025-12-15`, `gpt-4o-transcribe`, `gpt-4o-transcribe-diarize`, and `gpt-realtime-whisper`.\n"
+          },
+          "prompt": {
+            "description": "The prompt configured for input audio transcription, when present.\n",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "VoiceIdsShared": {
         "anyOf": [
           {
@@ -1269,6 +1398,25 @@
           }
         ]
       },
+      "RealtimeReasoningEffort": {
+        "default": "low",
+        "description": "Constrains effort on reasoning for reasoning-capable Realtime models such as\n`gpt-realtime-2`.\n",
+        "enum": [
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh"
+        ],
+        "type": "string"
+      },
+      "CallableToolAllowedCaller": {
+        "enum": [
+          "direct",
+          "programmatic"
+        ],
+        "type": "string"
+      },
       "MCPToolFilter": {
         "additionalProperties": false,
         "description": "A filter object to specify which tools are allowed.\n",
@@ -1293,6 +1441,9 @@
       "InputTextContent": {
         "description": "A text input to the model.",
         "properties": {
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointConfig"
+          },
           "text": {
             "description": "The text input to the model.",
             "type": "string"
@@ -1335,12 +1486,16 @@
             "anyOf": [
               {
                 "description": "The URL of the image to be sent to the model. A fully qualified URL or base64 encoded image in a data URL.",
+                "format": "uri",
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ]
+          },
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointConfig"
           },
           "type": {
             "default": "input_image",
@@ -1363,7 +1518,7 @@
         "properties": {
           "detail": {
             "$ref": "#/components/schemas/FileInputDetail",
-            "description": "The detail level of the file to be sent to the model. Use `low` for the default rendering behavior, or `high` to render the file at higher quality. Defaults to `low`."
+            "description": "The detail level of the file to be sent to the model. Use `auto` to let the system select the detail level; for GPT-5.6 and later models, `auto` uses high-quality rendering, which may increase input token usage. Use `low` for lower-cost rendering, or `high` to render the file at higher quality. Defaults to `auto`."
           },
           "file_data": {
             "description": "The content of the file to be sent to the model.\n",
@@ -1382,11 +1537,15 @@
           },
           "file_url": {
             "description": "The URL of the file to be sent to the model.",
+            "format": "uri",
             "type": "string"
           },
           "filename": {
             "description": "The name of the file to be sent to the model.",
             "type": "string"
+          },
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointConfig"
           },
           "type": {
             "default": "input_file",
@@ -1403,6 +1562,24 @@
         "title": "Input file",
         "type": "object"
       },
+      "PromptCacheBreakpointConfig": {
+        "description": "Marks the exact end of a reusable prompt prefix. The breakpoint inherits its TTL from the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
+        "properties": {
+          "mode": {
+            "default": "explicit",
+            "description": "The breakpoint mode. Always `explicit`.",
+            "enum": [
+              "explicit"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "Prompt cache breakpoint",
+        "type": "object"
+      },
       "ImageDetail": {
         "enum": [
           "low",
@@ -1414,6 +1591,7 @@
       },
       "FileInputDetail": {
         "enum": [
+          "auto",
           "low",
           "high"
         ],
