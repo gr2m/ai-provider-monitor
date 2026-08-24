@@ -1,0 +1,980 @@
+{
+  "description": "Get the derivation lineage of an asset by asset ID: the inputs it was generated from, the generation requests along the way, and any referenced characters, traversed recursively up to `depth` levels. Deleted or expired ancestors stay in the graph flagged as tombstones; inputs that were never captured appear as external inputs.",
+  "operationId": "getAssetLineage",
+  "parameters": [
+    {
+      "description": "Asset ID",
+      "in": "path",
+      "name": "asset_id",
+      "required": true,
+      "schema": {
+        "description": "Asset ID",
+        "example": "d8b6elcregj72v34jr8g",
+        "minLength": 1,
+        "type": "string"
+      }
+    },
+    {
+      "description": "Maximum traversal depth (levels of derivation edges)",
+      "in": "query",
+      "name": "depth",
+      "required": false,
+      "schema": {
+        "default": 5,
+        "description": "Maximum traversal depth (levels of derivation edges)",
+        "example": 5,
+        "maximum": 5,
+        "minimum": 1,
+        "type": "integer"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "example": {
+            "lineage": {
+              "edges": [
+                {
+                  "from": "external:9e107d9d372bb6826bd81d3542a419d6",
+                  "kind": "input_to",
+                  "role": "source",
+                  "to": "request:019e6d0a-e5be-7b82-b329-35ae64296902"
+                },
+                {
+                  "from": "request:019e6d0a-e5be-7b82-b329-35ae64296902",
+                  "kind": "generated_by",
+                  "role": null,
+                  "to": "asset:0f343b0931126a20f133d67c2b018a3b"
+                },
+                {
+                  "from": "entity:43ce3411-1a25-4d14-875e-3562d341b090",
+                  "kind": "referenced_entity",
+                  "role": "content_ref",
+                  "to": "request:019e6d0a-e5be-7b82-b329-35ae64296902"
+                }
+              ],
+              "focus": "asset:0f343b0931126a20f133d67c2b018a3b",
+              "nodes": [
+                {
+                  "asset_id": "d8b6elcregj72v34jr8g",
+                  "id": "asset:0f343b0931126a20f133d67c2b018a3b",
+                  "kind": "asset",
+                  "output_key": "0f343b0931126a20f133d67c2b018a3b",
+                  "request_id": "019e6d0a-e5be-7b82-b329-35ae64296902",
+                  "tombstone": false,
+                  "type": "image",
+                  "url": "https://v3b.fal.media/files/b/0a9b4900/portrait.png"
+                },
+                {
+                  "created_at": "2026-05-23T20:00:00.000Z",
+                  "endpoint": "fal-ai/flux/dev",
+                  "id": "request:019e6d0a-e5be-7b82-b329-35ae64296902",
+                  "kind": "request",
+                  "prompt": "cinematic portrait of a character",
+                  "request_id": "019e6d0a-e5be-7b82-b329-35ae64296902"
+                },
+                {
+                  "id": "external:9e107d9d372bb6826bd81d3542a419d6",
+                  "kind": "external_input",
+                  "output_key": "9e107d9d372bb6826bd81d3542a419d6",
+                  "url": "https://fal.media/files/source.png"
+                },
+                {
+                  "entity_id": "43ce3411-1a25-4d14-875e-3562d341b090",
+                  "entity_type": "character",
+                  "handle": "alice",
+                  "id": "entity:43ce3411-1a25-4d14-875e-3562d341b090",
+                  "kind": "entity",
+                  "name": "Alice",
+                  "tombstone": false
+                }
+              ]
+            }
+          },
+          "schema": {
+            "description": "Asset lineage response",
+            "properties": {
+              "lineage": {
+                "description": "Derivation lineage graph of the asset",
+                "properties": {
+                  "edges": {
+                    "description": "Lineage graph edges",
+                    "items": {
+                      "description": "A directed edge in the lineage graph",
+                      "properties": {
+                        "entities": {
+                          "description": "input_to edges only: smart entities this input is the reference image of and that the request referenced",
+                          "items": {
+                            "properties": {
+                              "entity_id": {
+                                "description": "Smart entity ID",
+                                "example": "43ce3411-1a25-4d14-875e-3562d341b090",
+                                "type": "string"
+                              },
+                              "entity_type": {
+                                "description": "Smart entity type",
+                                "enum": [
+                                  "character"
+                                ],
+                                "example": "character",
+                                "type": "string"
+                              },
+                              "handle": {
+                                "description": "Entity @mention handle; null when the entity is deleted",
+                                "example": "alice",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "name": {
+                                "description": "Entity display name; null when the entity is deleted",
+                                "example": "Alice",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "entity_id",
+                              "entity_type",
+                              "name",
+                              "handle"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "from": {
+                          "description": "Source node ID; edges point in generation-flow direction",
+                          "example": "external:9e107d9d372bb6826bd81d3542a419d6",
+                          "type": "string"
+                        },
+                        "kind": {
+                          "description": "How one lineage node relates to another",
+                          "enum": [
+                            "input_to",
+                            "generated_by",
+                            "referenced_entity"
+                          ],
+                          "type": "string"
+                        },
+                        "role": {
+                          "anyOf": [
+                            {
+                              "description": "How an input was used by the consuming generation",
+                              "enum": [
+                                "source",
+                                "content_ref",
+                                "mask",
+                                "control"
+                              ],
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "description": "Input role for input_to / referenced_entity edges; null for generated_by"
+                        },
+                        "to": {
+                          "description": "Target node ID",
+                          "example": "request:019e6d0a-e5be-7b82-b329-35ae64296902",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to",
+                        "kind",
+                        "role"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "focus": {
+                    "description": "Node ID of the queried asset",
+                    "example": "asset:0f343b0931126a20f133d67c2b018a3b",
+                    "type": "string"
+                  },
+                  "nodes": {
+                    "description": "Lineage graph nodes",
+                    "items": {
+                      "description": "A node in the lineage graph",
+                      "oneOf": [
+                        {
+                          "description": "An asset in the user's library",
+                          "properties": {
+                            "asset_id": {
+                              "description": "Asset ID (navigable handle); null when the asset is deleted or expired",
+                              "example": "d8b6elcregj72v34jr8g",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "id": {
+                              "description": "Graph node ID",
+                              "example": "asset:0f343b0931126a20f133d67c2b018a3b",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "description": "Node kind",
+                              "enum": [
+                                "asset"
+                              ],
+                              "type": "string"
+                            },
+                            "output_key": {
+                              "description": "Content-addressed asset identity (md5 of the media URL)",
+                              "example": "0f343b0931126a20f133d67c2b018a3b",
+                              "type": "string"
+                            },
+                            "request_id": {
+                              "description": "Request that generated this asset",
+                              "example": "019e6d0a-e5be-7b82-b329-35ae64296902",
+                              "type": "string"
+                            },
+                            "tombstone": {
+                              "description": "Whether the asset has been deleted or has expired",
+                              "example": false,
+                              "type": "boolean"
+                            },
+                            "type": {
+                              "description": "Asset media type",
+                              "enum": [
+                                "image",
+                                "video",
+                                "audio",
+                                "text",
+                                "3d"
+                              ],
+                              "type": "string"
+                            },
+                            "url": {
+                              "description": "Media URL; null when the asset is deleted or expired",
+                              "example": "https://v3b.fal.media/files/b/0a9b4900/portrait.png",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "output_key",
+                            "url",
+                            "type",
+                            "request_id",
+                            "asset_id",
+                            "tombstone"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "description": "An input that is not (or no longer) in the asset library",
+                          "properties": {
+                            "id": {
+                              "description": "Graph node ID",
+                              "example": "external:9e107d9d372bb6826bd81d3542a419d6",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "description": "Node kind",
+                              "enum": [
+                                "external_input"
+                              ],
+                              "type": "string"
+                            },
+                            "output_key": {
+                              "description": "Content-addressed asset identity (md5 of the media URL)",
+                              "example": "9e107d9d372bb6826bd81d3542a419d6",
+                              "type": "string"
+                            },
+                            "url": {
+                              "description": "Source media URL when known",
+                              "example": "https://fal.media/files/source.png",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "output_key",
+                            "url"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "description": "A generation request in the lineage",
+                          "properties": {
+                            "created_at": {
+                              "description": "Request time when captured",
+                              "example": "2026-05-23T20:00:00.000Z",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "endpoint": {
+                              "description": "Model endpoint that ran the request",
+                              "example": "fal-ai/flux/dev",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "id": {
+                              "description": "Graph node ID",
+                              "example": "request:019e6d0a-e5be-7b82-b329-35ae64296902",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "description": "Node kind",
+                              "enum": [
+                                "request"
+                              ],
+                              "type": "string"
+                            },
+                            "prompt": {
+                              "description": "Prompt used by the request when captured",
+                              "example": "cinematic portrait",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "request_id": {
+                              "description": "Request ID",
+                              "example": "019e6d0a-e5be-7b82-b329-35ae64296902",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "request_id",
+                            "endpoint",
+                            "prompt",
+                            "created_at"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "description": "A smart entity (e.g. character) referenced by a request",
+                          "properties": {
+                            "entity_id": {
+                              "description": "Smart entity ID",
+                              "example": "43ce3411-1a25-4d14-875e-3562d341b090",
+                              "type": "string"
+                            },
+                            "entity_type": {
+                              "description": "Smart entity type",
+                              "enum": [
+                                "character"
+                              ],
+                              "example": "character",
+                              "type": "string"
+                            },
+                            "handle": {
+                              "description": "Entity @mention handle; null when the entity is deleted",
+                              "example": "alice",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "id": {
+                              "description": "Graph node ID",
+                              "example": "entity:43ce3411-1a25-4d14-875e-3562d341b090",
+                              "type": "string"
+                            },
+                            "kind": {
+                              "description": "Node kind",
+                              "enum": [
+                                "entity"
+                              ],
+                              "type": "string"
+                            },
+                            "name": {
+                              "description": "Entity display name; null when the entity is deleted",
+                              "example": "Alice",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "tombstone": {
+                              "description": "Whether the entity has been deleted",
+                              "example": false,
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "kind",
+                            "id",
+                            "entity_id",
+                            "entity_type",
+                            "name",
+                            "handle",
+                            "tombstone"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "focus",
+                  "nodes",
+                  "edges"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "lineage"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Asset lineage graph"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Invalid request parameters",
+              "type": "validation_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Authentication required",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Authentication required"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Access denied",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Access denied"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Resource not found",
+              "type": "not_found"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Resource not found"
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Invalid request parameters",
+              "type": "validation_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "422": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Invalid request parameters",
+              "type": "validation_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Rate limit exceeded",
+              "type": "rate_limited"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Rate limit exceeded"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "An unexpected error occurred",
+              "type": "server_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Internal server error"
+    },
+    "502": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Upstream asset service failed",
+              "type": "server_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Upstream asset service error"
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "summary": "Get asset lineage",
+  "tags": [
+    "Assets"
+  ]
+}

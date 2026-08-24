@@ -1,0 +1,713 @@
+{
+  "description": "\nReturns paginated individual billing event records across all teams in your\norganization, with each record attributed to a specific team via the\n`username` field. Each record includes a per-request cost breakdown in USD\n(cost_subtotal, cost_discount, cost_total; cost_estimate_nano_usd carries\ncost_total in nano USD).\n\nScoped to fal Model API billing events. Must be called with an admin API key on\nthe organization's root team.\n\n> **Availability:** This endpoint is available to enterprise customers with organizations enabled. Contact your account team or support@fal.ai to request access.\n\n**Key Features:**\n- Organization-wide model-API billing event records across all teams\n- Filter by team(s) (`team_username`), endpoint, API key (`api_key_id`), request ID, and date range\n- Per-team attribution and per-request cost breakdown on every record\n- Cursor-based pagination for efficient large dataset queries\n- Limited to 100 records per page for performance\n- Date range capped at 90 days per request\n\nSee [fal.ai docs](https://fal.ai/docs/documentation/model-apis/faq) for more details.\n    ",
+  "operationId": "getOrganizationBillingEvents",
+  "parameters": [
+    {
+      "description": "Maximum number of items to return. Actual maximum depends on query type and expansion parameters.",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "description": "Maximum number of items to return. Actual maximum depends on query type and expansion parameters.",
+        "example": 50,
+        "minimum": 1,
+        "type": "integer"
+      }
+    },
+    {
+      "description": "Pagination cursor from previous response. Encodes the page number.",
+      "in": "query",
+      "name": "cursor",
+      "required": false,
+      "schema": {
+        "description": "Pagination cursor from previous response. Encodes the page number.",
+        "example": "Mg==",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Start date in ISO8601 format (e.g., '2025-01-01T00:00:00Z' or '2025-01-01'). Defaults to 24 hours ago.",
+      "in": "query",
+      "name": "start",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        ],
+        "description": "Start date in ISO8601 format (e.g., '2025-01-01T00:00:00Z' or '2025-01-01'). Defaults to 24 hours ago.",
+        "example": "2025-01-01T00:00:00Z"
+      }
+    },
+    {
+      "description": "End date in ISO8601 format, exclusive (e.g., '2025-02-01T00:00:00Z' or '2025-02-01'). Data up to but not including this timestamp is returned. Defaults to current time.",
+      "in": "query",
+      "name": "end",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        ],
+        "description": "End date in ISO8601 format, exclusive (e.g., '2025-02-01T00:00:00Z' or '2025-02-01'). Data up to but not including this timestamp is returned. Defaults to current time.",
+        "example": "2025-02-01T00:00:00Z"
+      }
+    },
+    {
+      "description": "Filter by specific endpoint ID(s). Accepts 1-50 endpoint IDs. Supports comma-separated values: ?endpoint_id=model1,model2 or array syntax: ?endpoint_id=model1&endpoint_id=model2",
+      "explode": true,
+      "in": "query",
+      "name": "endpoint_id",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Filter by specific endpoint ID(s). Accepts 1-50 endpoint IDs. Supports comma-separated values: ?endpoint_id=model1,model2 or array syntax: ?endpoint_id=model1&endpoint_id=model2",
+        "example": [
+          "fal-ai/flux/dev"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Filter by specific request ID(s). Accepts 1-50 request IDs. Supports comma-separated values: ?request_id=req1,req2 or array syntax: ?request_id=req1&request_id=req2",
+      "explode": true,
+      "in": "query",
+      "name": "request_id",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Filter by specific request ID(s). Accepts 1-50 request IDs. Supports comma-separated values: ?request_id=req1,req2 or array syntax: ?request_id=req1&request_id=req2",
+        "example": [
+          "req-abc123"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Filter by specific API key ID(s). Accepts 1-50 key IDs. Supports comma-separated values: ?api_key_id=key1,key2 or array syntax: ?api_key_id=key1&api_key_id=key2",
+      "explode": true,
+      "in": "query",
+      "name": "api_key_id",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Filter by specific API key ID(s). Accepts 1-50 key IDs. Supports comma-separated values: ?api_key_id=key1,key2 or array syntax: ?api_key_id=key1&api_key_id=key2",
+        "example": [
+          "abc123"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Filter billing events by one or more team usernames within the organization. Accepts a comma-separated list or repeated parameter. If not provided, returns billing events across all teams.",
+      "explode": true,
+      "in": "query",
+      "name": "team_username",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Filter billing events by one or more team usernames within the organization. Accepts a comma-separated list or repeated parameter. If not provided, returns billing events across all teams.",
+        "example": [
+          "acme-ml-team"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Data to include in the response. Use 'auth_method' for a resolved authentication method label, and 'auth_method_structured' for a machine-readable auth method object (detail, api_key_id, login_username).",
+      "explode": true,
+      "in": "query",
+      "name": "expand",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Data to include in the response. Use 'auth_method' for a resolved authentication method label, and 'auth_method_structured' for a machine-readable auth method object (detail, api_key_id, login_username).",
+        "example": "auth_method"
+      },
+      "style": "form"
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "example": {
+            "billing_events": [
+              {
+                "cost_discount": 0.005,
+                "cost_estimate_nano_usd": 45000000,
+                "cost_subtotal": 0.05,
+                "cost_total": 0.045,
+                "endpoint_id": "fal-ai/flux/dev",
+                "output_units": 2,
+                "percent_discount": 10,
+                "request_id": "abc123",
+                "timestamp": "2025-01-15T10:30:45Z",
+                "unit_price": 0.025,
+                "username": "acme-ml-team"
+              },
+              {
+                "cost_discount": 0,
+                "cost_estimate_nano_usd": 37500000,
+                "cost_subtotal": 0.0375,
+                "cost_total": 0.0375,
+                "endpoint_id": "fal-ai/flux/dev",
+                "output_units": 1.5,
+                "percent_discount": null,
+                "request_id": "def456",
+                "timestamp": "2025-01-15T10:25:30Z",
+                "unit_price": 0.025,
+                "username": "acme-research"
+              }
+            ],
+            "has_more": true,
+            "next_cursor": "MjAyNS0wMS0xNVQxMDoyNTozMFp8ZGVmNDU2"
+          },
+          "schema": {
+            "description": "Response containing organization billing event data with pagination support",
+            "properties": {
+              "billing_events": {
+                "description": "List of billing event records with team attribution",
+                "items": {
+                  "description": "Individual organization billing event record with team attribution",
+                  "properties": {
+                    "auth_method": {
+                      "description": "Authentication method label resolved across the organization (e.g., 'my-key (owner: acme-ml-team)', 'alice <alice@example.com>', or 'None'). Only populated when 'auth_method' is included in the expand parameter.",
+                      "type": "string"
+                    },
+                    "auth_method_structured": {
+                      "description": "Structured authentication method identity resolved across the organization. Only populated when 'auth_method_structured' is included in the expand parameter.",
+                      "properties": {
+                        "api_key_id": {
+                          "description": "API key ID, present when the request was made with an API key.",
+                          "type": "string"
+                        },
+                        "detail": {
+                          "description": "Human-readable summary of the authentication method (key alias, login username, or 'User token'/'None').",
+                          "type": "string"
+                        },
+                        "login_username": {
+                          "description": "Team member login username (nickname), present when the request was made with a user login token resolvable to a team member.",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "detail"
+                      ],
+                      "type": "object"
+                    },
+                    "cost_discount": {
+                      "description": "Discount applied to this request in USD (cost_subtotal − cost_total)",
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "cost_estimate_nano_usd": {
+                      "description": "Amount charged after discounts in nano USD — the same charge as cost_total (1 USD = 1,000,000,000 nano USD)",
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "cost_subtotal": {
+                      "description": "Cost before discounts in USD (output_units × unit_price)",
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "cost_total": {
+                      "description": "Amount charged after discounts in USD (cost_subtotal − cost_discount)",
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "endpoint_id": {
+                      "description": "Endpoint identifier that was used (e.g., 'fal-ai/flux/dev')",
+                      "type": "string"
+                    },
+                    "output_units": {
+                      "description": "Custom billing units for this request",
+                      "minimum": 0,
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "percent_discount": {
+                      "description": "Discount percentage applied to this request (e.g., 10 = 10% discount)",
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "request_id": {
+                      "description": "Unique identifier for the request",
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "description": "Request timestamp in ISO8601 format",
+                      "type": "string"
+                    },
+                    "unit_price": {
+                      "description": "Unit price for this request",
+                      "minimum": 0,
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "username": {
+                      "description": "Team username that generated this billing event",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "username",
+                    "request_id",
+                    "endpoint_id",
+                    "timestamp",
+                    "output_units",
+                    "unit_price",
+                    "percent_discount",
+                    "cost_subtotal",
+                    "cost_discount",
+                    "cost_total",
+                    "cost_estimate_nano_usd"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "has_more": {
+                "description": "Boolean indicating if more results are available (convenience field derived from next_cursor)",
+                "type": "boolean"
+              },
+              "next_cursor": {
+                "description": "Cursor for the next page of results, null if no more pages",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "next_cursor",
+              "has_more",
+              "billing_events"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Organization billing event data retrieved successfully"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Invalid request parameters",
+              "type": "validation_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Authentication required",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Authentication required"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Access denied",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Access denied"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Resource not found",
+              "type": "not_found"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Resource not found"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Rate limit exceeded",
+              "type": "rate_limited"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Rate limit exceeded"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "An unexpected error occurred",
+              "type": "server_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Internal server error"
+    }
+  },
+  "security": [
+    {
+      "adminApiKey": []
+    }
+  ],
+  "summary": "Organization Billing Events",
+  "tags": [
+    "Organization"
+  ]
+}

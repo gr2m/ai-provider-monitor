@@ -1,5 +1,5 @@
 {
-  "description": "Lists requests for one or more endpoints owned by the authenticated user.\nUse repeated or comma-separated `endpoint_id` (same as other platform list APIs).\n\n**Authentication:** Requires API key.\n\n**Filters:**\n- Time range via start / end. If `start` is omitted, defaults to the last 24 hours — unless `request_id` is provided, in which case the default start bound is widened to 90 days.\n- Status (success, error, user_error)\n- Request ID\n- Pagination via cursor/limit (limit defaults to 50, max 100)\n\n**Sorting:**\n- By end time (default) or duration\n\n**Expansions:**\n- Include payloads by adding expand=payloads",
+  "description": "Lists requests for one or more endpoints owned by the authenticated user.\nUse repeated or comma-separated `endpoint_id` (same as other platform list APIs).\n\nA bare app id ('<owner>/<name>') automatically includes the app's registered\nroute-level endpoints (e.g. '<owner>/<name>/turbo'); each returned row keeps\nthe route-level `endpoint_id` it was recorded under. Pass a route-level id\nto filter to that route exactly.\n\n**Authentication:** Requires API key.\n\n**Filters:**\n- Time range via start / end. If `start` is omitted, defaults to the last 24 hours — unless `request_id` is provided, in which case the default start bound is widened to 90 days.\n- Status (success, error, user_error)\n- Request ID\n- Pagination via cursor/limit (limit defaults to 50, max 100)\n\n**Sorting:**\n- By end time (default) or duration\n\n**Expansions:**\n- Include payloads by adding expand=payloads\n- Include per-request `billable_units` by adding expand=billing (endpoint owner only)",
   "operationId": "serverlessListRequestsByEndpoint",
   "parameters": [
     {
@@ -121,7 +121,7 @@
       }
     },
     {
-      "description": "Fields to expand in the response. Use payloads to include input and output payloads.",
+      "description": "Fields to expand in the response. Use payloads to include input and output payloads. Use billing to include billable_units per request.",
       "explode": true,
       "in": "query",
       "name": "expand",
@@ -138,9 +138,10 @@
             "type": "array"
           }
         ],
-        "description": "Fields to expand in the response. Use payloads to include input and output payloads.",
+        "description": "Fields to expand in the response. Use payloads to include input and output payloads. Use billing to include billable_units per request.",
         "example": [
-          "payloads"
+          "payloads",
+          "billing"
         ]
       },
       "style": "form"
@@ -170,6 +171,7 @@
             "has_more": true,
             "items": [
               {
+                "billable_units": 1.5,
                 "duration": 7.8,
                 "ended_at": "2025-01-01T00:00:08Z",
                 "endpoint_id": "fal-ai/flux/dev",
@@ -200,6 +202,14 @@
                 "items": {
                   "description": "Serverless request item",
                   "properties": {
+                    "billable_units": {
+                      "description": "Billable units for this request (only present when expand=billing). Null if a billing event has not yet been recorded for this request.",
+                      "example": 1.5,
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
                     "duration": {
                       "description": "Total request duration in seconds",
                       "example": 7.8,
@@ -235,10 +245,13 @@
                       "type": "string"
                     },
                     "runner_id": {
-                      "description": "Unique identifier for the runner execution instance",
+                      "description": "Unique identifier for the runner execution instance. Null if no runner was assigned (e.g. the request failed before dispatch).",
                       "example": "f1e2d3c4-b5a6-7890-dcba-0987654321fe",
                       "format": "uuid",
-                      "type": "string"
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "sent_at": {
                       "description": "Time when request was sent to the backend",

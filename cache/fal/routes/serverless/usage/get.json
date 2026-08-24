@@ -1,0 +1,800 @@
+{
+  "description": "\nTime-bucketed, aggregated serverless compute usage for **your own account** —\nthe machine-seconds your deployed serverless apps consumed, priced with your\nmachine prices and net of discounts. This matches the serverless portion of the\ndashboard usage view. Unlike `/v1/models/usage` (which reports model API\nendpoint calls), this reports the `sdk_billing_event` compute spend of the apps\nyou run on fal Serverless. Requires an `ADMIN`-scoped API key (this endpoint\nreturns billing and usage data, which the standard `API` key scope does not\ninclude); results are always scoped to the apps you own.\n\n**Filtering by app:**\n- `app` — exact match on one or more app names (comma-separated or repeated,\n  up to 50): `?app=my-app-dev,my-app-prod`. Use the value exactly as it appears\n  in the response `app` field.\n- `search` — case-insensitive substring match on the app name, for when you\n  know the name but not the exact environment/version suffix: `?search=my-app`\n  returns every `my-app*` variant.\n- Provide both to AND them. Omit both to return every app you own — useful for\n  discovering the exact app names to filter on.\n\n**Expansions:**\n- `time_series`: usage grouped into time buckets (default)\n- `summary`: a single aggregate row per app × machine type across the window\n\n**Notes:**\n- Each row is machine-seconds (`unit` is always `\"second\"`); surge and\n  non-surge usage of the same app/machine come back as separate rows\n  (`is_surge`), so sum across them for a per-app total.\n- Time-series `bucket` timestamps are returned in the `timezone` you request\n  (ISO 8601 with offset, e.g. `2025-01-15T00:00:00-05:00`), which also controls\n  how usage is grouped into buckets.\n\n**Common Use Cases:**\n- Track your serverless apps' compute consumption and cost over time\n- Break down spend per app, environment, and machine type\n- Export usage to your own billing/observability tooling\n    ",
+  "operationId": "serverlessGetUsage",
+  "parameters": [
+    {
+      "description": "Maximum number of items to return. Actual maximum depends on query type and expansion parameters.",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "description": "Maximum number of items to return. Actual maximum depends on query type and expansion parameters.",
+        "example": 50,
+        "minimum": 1,
+        "type": "integer"
+      }
+    },
+    {
+      "description": "Pagination cursor from previous response. Encodes the page number.",
+      "in": "query",
+      "name": "cursor",
+      "required": false,
+      "schema": {
+        "description": "Pagination cursor from previous response. Encodes the page number.",
+        "example": "Mg==",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Start date in ISO8601 format (e.g., '2025-01-01T00:00:00Z' or '2025-01-01'). Defaults to 24 hours ago.",
+      "in": "query",
+      "name": "start",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        ],
+        "description": "Start date in ISO8601 format (e.g., '2025-01-01T00:00:00Z' or '2025-01-01'). Defaults to 24 hours ago.",
+        "example": "2025-01-01T00:00:00Z"
+      }
+    },
+    {
+      "description": "End date in ISO8601 format, exclusive (e.g., '2025-02-01T00:00:00Z' or '2025-02-01'). Data up to but not including this timestamp is returned. Defaults to current time.",
+      "in": "query",
+      "name": "end",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        ],
+        "description": "End date in ISO8601 format, exclusive (e.g., '2025-02-01T00:00:00Z' or '2025-02-01'). Data up to but not including this timestamp is returned. Defaults to current time.",
+        "example": "2025-02-01T00:00:00Z"
+      }
+    },
+    {
+      "description": "Timezone for date aggregation and boundaries. All timestamps in responses are in UTC, but this controls how dates are bucketed.",
+      "in": "query",
+      "name": "timezone",
+      "required": false,
+      "schema": {
+        "default": "UTC",
+        "description": "Timezone for date aggregation and boundaries. All timestamps in responses are in UTC, but this controls how dates are bucketed.",
+        "example": "UTC",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Aggregation timeframe for timeseries data (auto-detected from date range if not specified). Auto-detection uses: minute (<2h), hour (<2d), day (<64d), week (<183d), month (>=183d).",
+      "in": "query",
+      "name": "timeframe",
+      "required": false,
+      "schema": {
+        "description": "Aggregation timeframe for timeseries data (auto-detected from date range if not specified). Auto-detection uses: minute (<2h), hour (<2d), day (<64d), week (<183d), month (>=183d).",
+        "enum": [
+          "minute",
+          "hour",
+          "day",
+          "week",
+          "month"
+        ],
+        "example": "day",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Whether to adjust start/end dates to align with timeframe boundaries and use exclusive end. Defaults to true. When true, dates are aligned to the start of the timeframe period (e.g., start of day) and end is made exclusive (e.g., start of next day). When false, uses exact dates provided.",
+      "in": "query",
+      "name": "bound_to_timeframe",
+      "required": false,
+      "schema": {
+        "default": "true",
+        "description": "Whether to adjust start/end dates to align with timeframe boundaries and use exclusive end. Defaults to true. When true, dates are aligned to the start of the timeframe period (e.g., start of day) and end is made exclusive (e.g., start of next day). When false, uses exact dates provided.",
+        "enum": [
+          "true",
+          "false"
+        ],
+        "example": "true",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Filter to one or more serverless apps, matched exactly against the `app` value in the response (deployed name, owner prefix stripped). Accepts a comma-separated list or repeated parameter (1-50). For partial/name-only matching use `search`.",
+      "explode": true,
+      "in": "query",
+      "name": "app",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Filter to one or more serverless apps, matched exactly against the `app` value in the response (deployed name, owner prefix stripped). Accepts a comma-separated list or repeated parameter (1-50). For partial/name-only matching use `search`.",
+        "example": [
+          "autohdr-raw-to-jpg-dev"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Case-insensitive substring match on the app name — returns every app whose name contains this term (e.g. `search=autohdr` matches all `autohdr-*` apps across environments). Combined with `app` via AND when both are given.",
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+        "description": "Case-insensitive substring match on the app name — returns every app whose name contains this term (e.g. `search=autohdr` matches all `autohdr-*` apps across environments). Combined with `app` via AND when both are given.",
+        "example": "autohdr-raw-to-jpg",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Data to include in the response. Use 'time_series' for time-bucketed data and 'summary' for aggregate statistics across the entire window. At least one is required.",
+      "explode": true,
+      "in": "query",
+      "name": "expand",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "default": [
+          "time_series"
+        ],
+        "description": "Data to include in the response. Use 'time_series' for time-bucketed data and 'summary' for aggregate statistics across the entire window. At least one is required.",
+        "example": [
+          "time_series",
+          "summary"
+        ]
+      },
+      "style": "form"
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "example": {
+            "has_more": false,
+            "next_cursor": null,
+            "time_series": [
+              {
+                "bucket": "2025-01-15T00:00:00-05:00",
+                "results": [
+                  {
+                    "app": "my-app-prod",
+                    "cost": 1.188,
+                    "cost_discount": 0,
+                    "cost_subtotal": 1.188,
+                    "cost_total": 1.188,
+                    "currency": "USD",
+                    "environment": null,
+                    "is_surge": false,
+                    "machine_type": "GPU-H100",
+                    "percent_discount": null,
+                    "quantity": 1200,
+                    "unit": "second",
+                    "unit_price": 0.00099
+                  }
+                ]
+              }
+            ]
+          },
+          "schema": {
+            "description": "Response containing serverless usage data with pagination support",
+            "properties": {
+              "has_more": {
+                "description": "Boolean indicating if more results are available (convenience field derived from next_cursor)",
+                "type": "boolean"
+              },
+              "next_cursor": {
+                "description": "Cursor for the next page of results, null if no more pages",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "summary": {
+                "description": "Aggregate statistics (when expand includes 'summary')",
+                "items": {
+                  "description": "Aggregate usage statistics for the entire date range",
+                  "properties": {
+                    "app": {
+                      "description": "Deployed serverless app name (the billing owner prefix is stripped, e.g. 'autohdr-raw-to-jpg-dev'). May include an environment/version suffix. Null for line items without an app attribution.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "cost": {
+                      "deprecated": true,
+                      "description": "Deprecated: use cost_total. Same value as cost_total.",
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "cost_discount": {
+                      "description": "Discount applied to this line item (cost_subtotal − cost_total)",
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "cost_subtotal": {
+                      "description": "Cost before discounts (quantity × unit_price)",
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "cost_total": {
+                      "description": "Amount charged after discounts (cost_subtotal − cost_discount)",
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "currency": {
+                      "description": "Three-letter currency code (ISO 4217, e.g., 'USD')",
+                      "maxLength": 3,
+                      "minLength": 3,
+                      "type": "string"
+                    },
+                    "environment": {
+                      "description": "Deployment environment of the app (e.g., 'production') when present on the billing line item, null otherwise.",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "is_surge": {
+                      "description": "Whether this usage was billed at surge pricing. Surge and non-surge usage of the same machine type appear as separate rows.",
+                      "type": "boolean"
+                    },
+                    "machine_type": {
+                      "description": "Machine type the usage ran on (e.g., 'GPU-H100', 'L')",
+                      "type": "string"
+                    },
+                    "percent_discount": {
+                      "description": "Percentage discount applied to this line item (e.g., 20 = 20% discount). Null when no percentage discount applies. Usage billed at different discount rates appears as separate rows, like unit_price.",
+                      "maximum": 100,
+                      "minimum": 0,
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "quantity": {
+                      "description": "Quantity of usage in the specified billing unit",
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    "unit": {
+                      "description": "The billing unit — always 'second' (machine-seconds)",
+                      "type": "string"
+                    },
+                    "unit_price": {
+                      "description": "Per-second price for this machine type before percentage discounts, including any customer-specific machine pricing",
+                      "minimum": 0,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "app",
+                    "environment",
+                    "machine_type",
+                    "unit",
+                    "quantity",
+                    "unit_price",
+                    "percent_discount",
+                    "cost_subtotal",
+                    "cost_discount",
+                    "cost_total",
+                    "cost",
+                    "currency",
+                    "is_surge"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "time_series": {
+                "description": "Time series usage data grouped by time bucket (when expand includes 'time_series').",
+                "items": {
+                  "description": "Time bucket with grouped serverless usage records",
+                  "properties": {
+                    "bucket": {
+                      "description": "Time bucket timestamp in user's timezone with offset (ISO8601 datetime)",
+                      "type": "string"
+                    },
+                    "results": {
+                      "description": "Usage records for this time bucket",
+                      "items": {
+                        "description": "Serverless compute usage line item with billing details",
+                        "properties": {
+                          "app": {
+                            "description": "Deployed serverless app name (the billing owner prefix is stripped, e.g. 'autohdr-raw-to-jpg-dev'). May include an environment/version suffix. Null for line items without an app attribution.",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "cost": {
+                            "deprecated": true,
+                            "description": "Deprecated: use cost_total. Same value as cost_total.",
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "cost_discount": {
+                            "description": "Discount applied to this line item (cost_subtotal − cost_total)",
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "cost_subtotal": {
+                            "description": "Cost before discounts (quantity × unit_price)",
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "cost_total": {
+                            "description": "Amount charged after discounts (cost_subtotal − cost_discount)",
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "currency": {
+                            "description": "Three-letter currency code (ISO 4217, e.g., 'USD')",
+                            "maxLength": 3,
+                            "minLength": 3,
+                            "type": "string"
+                          },
+                          "environment": {
+                            "description": "Deployment environment of the app (e.g., 'production') when present on the billing line item, null otherwise.",
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "is_surge": {
+                            "description": "Whether this usage was billed at surge pricing. Surge and non-surge usage of the same machine type appear as separate rows.",
+                            "type": "boolean"
+                          },
+                          "machine_type": {
+                            "description": "Machine type the usage ran on (e.g., 'GPU-H100', 'L')",
+                            "type": "string"
+                          },
+                          "percent_discount": {
+                            "description": "Percentage discount applied to this line item (e.g., 20 = 20% discount). Null when no percentage discount applies. Usage billed at different discount rates appears as separate rows, like unit_price.",
+                            "maximum": 100,
+                            "minimum": 0,
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "quantity": {
+                            "description": "Quantity of usage in the specified billing unit",
+                            "minimum": 0,
+                            "type": "number"
+                          },
+                          "unit": {
+                            "description": "The billing unit — always 'second' (machine-seconds)",
+                            "type": "string"
+                          },
+                          "unit_price": {
+                            "description": "Per-second price for this machine type before percentage discounts, including any customer-specific machine pricing",
+                            "minimum": 0,
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "app",
+                          "environment",
+                          "machine_type",
+                          "unit",
+                          "quantity",
+                          "unit_price",
+                          "percent_discount",
+                          "cost_subtotal",
+                          "cost_discount",
+                          "cost_total",
+                          "cost",
+                          "currency",
+                          "is_surge"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "bucket",
+                    "results"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "next_cursor",
+              "has_more"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Usage data retrieved successfully"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Invalid request parameters",
+              "type": "validation_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Authentication required",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Authentication required"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Access denied",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Access denied"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Resource not found",
+              "type": "not_found"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Resource not found"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Rate limit exceeded",
+              "type": "rate_limited"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Rate limit exceeded"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "An unexpected error occurred",
+              "type": "server_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Internal server error"
+    }
+  },
+  "security": [
+    {
+      "adminApiKey": []
+    }
+  ],
+  "summary": "Usage",
+  "tags": [
+    "Serverless",
+    "Usage"
+  ]
+}

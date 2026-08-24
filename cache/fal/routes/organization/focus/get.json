@@ -1,0 +1,505 @@
+{
+  "description": "\nReturns a FOCUS compliant billing report as a CSV download, spanning every team\nin your organization. Each invoiced billing customer is reported as a\n`BillingAccount`. Under shared (pooled) billing — one billing customer covering\nmultiple teams — each row is additionally attributed to the calling team via the\n`SubAccountId` / `SubAccountName` columns. `SubAccountId` is that team's own\nbilling customer ID, so both account columns share one identifier namespace.\n\n> **Availability:** This endpoint is available to enterprise customers with FOCUS reports and organizations enabled. Contact your account team or support@fal.ai to request access.\n\nMust be called with an admin API key on the organization's root team.\n\nSupports two data sources:\n- **estimate**: Real-time usage estimates for a date range. Under pooled billing every row is attributed to the calling team.\n- **invoice**: Finalized invoice data for a billing month. Under pooled billing, per-team `SubAccount` attribution is available on endpoint (Model API) lines that carry a caller; app and compute lines carry no caller and have no SubAccount.\n\nUse `team_username` to restrict the report to a single team. Under shared\n(pooled) billing this is rejected for `source=invoice` — the invoice is issued\nto one billing customer shared across teams and cannot be split per team; use\n`source=estimate` for per-team figures.\n\n**Invoice reports** default to the most recently available billing month.\n**Usage estimates** default to the last 24 hours, with a maximum 90-day date range.\n    ",
+  "operationId": "getOrganizationFocusReport",
+  "parameters": [
+    {
+      "description": "Report source. 'invoice' returns finalized invoice data for a billing month. 'estimate' returns real-time usage estimates for a date range.",
+      "in": "query",
+      "name": "source",
+      "required": true,
+      "schema": {
+        "description": "Report source. 'invoice' returns finalized invoice data for a billing month. 'estimate' returns real-time usage estimates for a date range.",
+        "enum": [
+          "invoice",
+          "estimate"
+        ],
+        "example": "estimate",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Invoice billing month (YYYY-MM). The month the invoice was issued (e.g. '2025-02' for January charges). Used with source=invoice. Defaults to most recent available billing month.",
+      "in": "query",
+      "name": "billing_month",
+      "required": false,
+      "schema": {
+        "description": "Invoice billing month (YYYY-MM). The month the invoice was issued (e.g. '2025-02' for January charges). Used with source=invoice. Defaults to most recent available billing month.",
+        "example": "2025-02",
+        "pattern": "^\\d{4}-\\d{2}$",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Charge month (YYYY-MM) — selects line items by the period charges were incurred, capturing them even when split across invoices issued in different months. Alternative to billing_month. Used with source=invoice.",
+      "in": "query",
+      "name": "charge_month",
+      "required": false,
+      "schema": {
+        "description": "Charge month (YYYY-MM) — selects line items by the period charges were incurred, capturing them even when split across invoices issued in different months. Alternative to billing_month. Used with source=invoice.",
+        "example": "2025-01",
+        "pattern": "^\\d{4}-\\d{2}$",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Restrict the report to a single team (workspace nickname) in the organization. Omit to report across all teams.",
+      "in": "query",
+      "name": "team_username",
+      "required": false,
+      "schema": {
+        "description": "Restrict the report to a single team (workspace nickname) in the organization. Omit to report across all teams.",
+        "example": "acme-ml-team",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Start date in ISO8601 format (e.g., '2025-01-01T00:00:00Z' or '2025-01-01'). Defaults to 24 hours ago.",
+      "in": "query",
+      "name": "start",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        ],
+        "description": "Start date in ISO8601 format (e.g., '2025-01-01T00:00:00Z' or '2025-01-01'). Defaults to 24 hours ago.",
+        "example": "2025-01-01T00:00:00Z"
+      }
+    },
+    {
+      "description": "End date in ISO8601 format, exclusive (e.g., '2025-02-01T00:00:00Z' or '2025-02-01'). Data up to but not including this timestamp is returned. Defaults to current time.",
+      "in": "query",
+      "name": "end",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        ],
+        "description": "End date in ISO8601 format, exclusive (e.g., '2025-02-01T00:00:00Z' or '2025-02-01'). Data up to but not including this timestamp is returned. Defaults to current time.",
+        "example": "2025-02-01T00:00:00Z"
+      }
+    },
+    {
+      "description": "Timezone for date aggregation and boundaries. All timestamps in responses are in UTC, but this controls how dates are bucketed.",
+      "in": "query",
+      "name": "timezone",
+      "required": false,
+      "schema": {
+        "default": "UTC",
+        "description": "Timezone for date aggregation and boundaries. All timestamps in responses are in UTC, but this controls how dates are bucketed.",
+        "example": "UTC",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Aggregation timeframe for timeseries data (auto-detected from date range if not specified). Auto-detection uses: minute (<2h), hour (<2d), day (<64d), week (<183d), month (>=183d).",
+      "in": "query",
+      "name": "timeframe",
+      "required": false,
+      "schema": {
+        "description": "Aggregation timeframe for timeseries data (auto-detected from date range if not specified). Auto-detection uses: minute (<2h), hour (<2d), day (<64d), week (<183d), month (>=183d).",
+        "enum": [
+          "minute",
+          "hour",
+          "day",
+          "week",
+          "month"
+        ],
+        "example": "day",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Whether to adjust start/end dates to align with timeframe boundaries and use exclusive end. Defaults to true. When true, dates are aligned to the start of the timeframe period (e.g., start of day) and end is made exclusive (e.g., start of next day). When false, uses exact dates provided.",
+      "in": "query",
+      "name": "bound_to_timeframe",
+      "required": false,
+      "schema": {
+        "default": "true",
+        "description": "Whether to adjust start/end dates to align with timeframe boundaries and use exclusive end. Defaults to true. When true, dates are aligned to the start of the timeframe period (e.g., start of day) and end is made exclusive (e.g., start of next day). When false, uses exact dates provided.",
+        "enum": [
+          "true",
+          "false"
+        ],
+        "example": "true",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "text/csv": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "FOCUS compliant CSV report"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Invalid request parameters",
+              "type": "validation_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Authentication required",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Authentication required"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Access denied",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Access denied"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Resource not found",
+              "type": "not_found"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Resource not found"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Rate limit exceeded",
+              "type": "rate_limited"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Rate limit exceeded"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "An unexpected error occurred",
+              "type": "server_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Internal server error"
+    }
+  },
+  "security": [
+    {
+      "adminApiKey": []
+    }
+  ],
+  "summary": "Organization FOCUS Report",
+  "tags": [
+    "Organization"
+  ]
+}

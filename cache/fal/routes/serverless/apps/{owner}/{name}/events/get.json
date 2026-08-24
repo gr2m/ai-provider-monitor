@@ -1,0 +1,685 @@
+{
+  "description": "Returns the operational event history for an application: deployments,\nconfiguration changes, and runner lifecycle transitions (started, failed,\ndraining, etc.), newest first.\n\n**Use cases:**\n- Incident correlation: answer \"what changed around this time?\" — did a\n  deploy, config change, or runner failure coincide with an error spike?\n- Deployment audit: see when revisions went out and who triggered them\n\n**Time range:** defaults to the last 24 hours when `start`/`end` are\nomitted. Use `category` filters to narrow to specific event types.\n\n**Authentication:** Required via API key. Only the app owner can query it.",
+  "operationId": "serverlessListAppEvents",
+  "parameters": [
+    {
+      "description": "Username of the app owner",
+      "in": "path",
+      "name": "owner",
+      "required": true,
+      "schema": {
+        "description": "Username of the app owner",
+        "example": "user_123",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Application name",
+      "in": "path",
+      "name": "name",
+      "required": true,
+      "schema": {
+        "description": "Application name",
+        "example": "my-app",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Start date in ISO8601 format (e.g., '2025-01-01T00:00:00Z' or '2025-01-01'). Defaults to 24 hours ago.",
+      "in": "query",
+      "name": "start",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        ],
+        "description": "Start date in ISO8601 format (e.g., '2025-01-01T00:00:00Z' or '2025-01-01'). Defaults to 24 hours ago.",
+        "example": "2025-01-01T00:00:00Z"
+      }
+    },
+    {
+      "description": "End date in ISO8601 format, exclusive (e.g., '2025-02-01T00:00:00Z' or '2025-02-01'). Data up to but not including this timestamp is returned. Defaults to current time.",
+      "in": "query",
+      "name": "end",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        ],
+        "description": "End date in ISO8601 format, exclusive (e.g., '2025-02-01T00:00:00Z' or '2025-02-01'). Data up to but not including this timestamp is returned. Defaults to current time.",
+        "example": "2025-02-01T00:00:00Z"
+      }
+    },
+    {
+      "description": "Filter by event category. Repeat the parameter to include multiple categories: ?category=deployment_started&category=config_changed",
+      "explode": true,
+      "in": "query",
+      "name": "category",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "enum": [
+              "runner_started",
+              "runner_failed",
+              "runner_finished",
+              "runner_pending",
+              "runner_startup_failure",
+              "runner_docker_pull",
+              "runner_setup",
+              "runner_draining",
+              "runner_stopping",
+              "deployment_started",
+              "deployment_failed",
+              "deployment_ended",
+              "deployment_rolling_started",
+              "deployment_rolling_failed",
+              "deployment_rolling_ended",
+              "deployment_recreate_applied",
+              "config_changed"
+            ],
+            "type": "string"
+          },
+          {
+            "items": {
+              "enum": [
+                "runner_started",
+                "runner_failed",
+                "runner_finished",
+                "runner_pending",
+                "runner_startup_failure",
+                "runner_docker_pull",
+                "runner_setup",
+                "runner_draining",
+                "runner_stopping",
+                "deployment_started",
+                "deployment_failed",
+                "deployment_ended",
+                "deployment_rolling_started",
+                "deployment_rolling_failed",
+                "deployment_rolling_ended",
+                "deployment_recreate_applied",
+                "config_changed"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Filter by event category. Repeat the parameter to include multiple categories: ?category=deployment_started&category=config_changed",
+        "example": [
+          "deployment_started"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Maximum number of events to return per page (1-1000)",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "default": 50,
+        "description": "Maximum number of events to return per page (1-1000)",
+        "example": 50,
+        "maximum": 1000,
+        "minimum": 1,
+        "type": "integer"
+      }
+    },
+    {
+      "description": "Pagination cursor from previous response",
+      "in": "query",
+      "name": "cursor",
+      "required": false,
+      "schema": {
+        "description": "Pagination cursor from previous response",
+        "example": "Mg==",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "example": {
+            "endpoint_id": "user_123/my-app",
+            "events": [
+              {
+                "category": "deployment_started",
+                "created_at": "2026-07-01T12:00:00Z",
+                "event_id": "a1b2c3d4-0000-0000-0000-000000000000",
+                "payload": {
+                  "actor": {
+                    "nickname": "user_123"
+                  },
+                  "new_application_id": "app-rev-2",
+                  "old_application_id": "app-rev-1"
+                }
+              }
+            ],
+            "has_more": true,
+            "next_cursor": "Mg=="
+          },
+          "schema": {
+            "additionalProperties": false,
+            "description": "Operational event history for an application",
+            "properties": {
+              "endpoint_id": {
+                "description": "Canonical endpoint identifier ('<owner>/<name>')",
+                "example": "user_123/my-app",
+                "type": "string"
+              },
+              "events": {
+                "description": "Operational events, newest first",
+                "items": {
+                  "additionalProperties": false,
+                  "description": "An operational event on a serverless application",
+                  "properties": {
+                    "category": {
+                      "description": "Event category",
+                      "enum": [
+                        "runner_started",
+                        "runner_failed",
+                        "runner_finished",
+                        "runner_pending",
+                        "runner_startup_failure",
+                        "runner_docker_pull",
+                        "runner_setup",
+                        "runner_draining",
+                        "runner_stopping",
+                        "deployment_started",
+                        "deployment_failed",
+                        "deployment_ended",
+                        "deployment_rolling_started",
+                        "deployment_rolling_failed",
+                        "deployment_rolling_ended",
+                        "deployment_recreate_applied",
+                        "config_changed"
+                      ],
+                      "example": "deployment_started",
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "description": "Event timestamp (UTC ISO8601)",
+                      "example": "2026-07-01T12:00:00Z",
+                      "type": "string"
+                    },
+                    "event_id": {
+                      "description": "Unique event identifier",
+                      "example": "a1b2c3d4-0000-0000-0000-000000000000",
+                      "type": "string"
+                    },
+                    "payload": {
+                      "additionalProperties": false,
+                      "description": "Event details; populated fields depend on the event category (runner_*, deployment_*, config_changed)",
+                      "properties": {
+                        "actor": {
+                          "additionalProperties": false,
+                          "description": "User who triggered the event, when known",
+                          "properties": {
+                            "full_name": {
+                              "description": "Display name of the user who triggered the change",
+                              "example": "Ada Lovelace",
+                              "type": "string"
+                            },
+                            "nickname": {
+                              "description": "Nickname of the user who triggered the change",
+                              "example": "user_123",
+                              "type": "string"
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "job_id": {
+                          "description": "Runner identifier (runner_* events)",
+                          "example": "5f8e9c2a",
+                          "type": "string"
+                        },
+                        "machine_type": {
+                          "description": "Machine type of the runner (runner_* events)",
+                          "example": "GPU-H100",
+                          "type": "string"
+                        },
+                        "new_app_auth_mode": {
+                          "description": "Endpoint auth mode after the change (config_changed events)",
+                          "type": "string"
+                        },
+                        "new_application_id": {
+                          "description": "Revision deployed by this event (deployment_* events)",
+                          "type": "string"
+                        },
+                        "new_config": {
+                          "additionalProperties": {},
+                          "description": "Application config after the change (config_changed events)",
+                          "type": "object"
+                        },
+                        "old_app_auth_mode": {
+                          "description": "Endpoint auth mode before the change (config_changed events)",
+                          "type": "string"
+                        },
+                        "old_application_id": {
+                          "description": "Revision being replaced (deployment_* events)",
+                          "type": "string"
+                        },
+                        "old_config": {
+                          "additionalProperties": {},
+                          "description": "Application config before the change (config_changed events)",
+                          "type": "object"
+                        },
+                        "reason": {
+                          "description": "Human-readable reason for the transition, when available",
+                          "type": "string"
+                        },
+                        "state": {
+                          "description": "Runner state at failure time (runner_failed events)",
+                          "example": "RUNNING",
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "event_id",
+                    "category",
+                    "created_at",
+                    "payload"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "has_more": {
+                "description": "Boolean indicating if more results are available (convenience field derived from next_cursor)",
+                "type": "boolean"
+              },
+              "next_cursor": {
+                "description": "Cursor for the next page of results, null if no more pages",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "next_cursor",
+              "has_more",
+              "endpoint_id",
+              "events"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Successfully retrieved application events"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Invalid request parameters",
+              "type": "validation_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Authentication required",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Authentication required"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Access denied",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Access denied"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Resource not found",
+              "type": "not_found"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Resource not found"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Rate limit exceeded",
+              "type": "rate_limited"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Rate limit exceeded"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "An unexpected error occurred",
+              "type": "server_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Internal server error"
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "summary": "Application Events",
+  "tags": [
+    "Serverless",
+    "Apps"
+  ]
+}

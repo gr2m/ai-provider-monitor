@@ -1,0 +1,559 @@
+{
+  "description": "Returns historical runner counts by state (running, idle, pending, draining)\nfor an application, bucketed over time.\n\n**Use cases:**\n- Capacity/utilization analysis: compare idle vs running over days or weeks\n  to see how much reserved capacity goes unused (use `aggregation=avg`)\n- Incident forensics: correlate error spikes with runner drops or drain\n  events around the incident window (use `aggregation=max`)\n\n**Time range:** up to 90 days of history. Defaults to the last 24 hours when\n`start`/`end` are omitted. Bucket size is auto-detected from the range\nunless `timeframe` is specified.\n\n**Authentication:** Required via API key. Only the app owner can query it.",
+  "operationId": "serverlessGetRunnerHistory",
+  "parameters": [
+    {
+      "description": "Username of the app owner",
+      "in": "path",
+      "name": "owner",
+      "required": true,
+      "schema": {
+        "description": "Username of the app owner",
+        "example": "user_123",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Application name",
+      "in": "path",
+      "name": "name",
+      "required": true,
+      "schema": {
+        "description": "Application name",
+        "example": "my-app",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Start date in ISO8601 format (e.g., '2025-01-01T00:00:00Z' or '2025-01-01'). Defaults to 24 hours ago.",
+      "in": "query",
+      "name": "start",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        ],
+        "description": "Start date in ISO8601 format (e.g., '2025-01-01T00:00:00Z' or '2025-01-01'). Defaults to 24 hours ago.",
+        "example": "2025-01-01T00:00:00Z"
+      }
+    },
+    {
+      "description": "End date in ISO8601 format, exclusive (e.g., '2025-02-01T00:00:00Z' or '2025-02-01'). Data up to but not including this timestamp is returned. Defaults to current time.",
+      "in": "query",
+      "name": "end",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+            "type": "string"
+          }
+        ],
+        "description": "End date in ISO8601 format, exclusive (e.g., '2025-02-01T00:00:00Z' or '2025-02-01'). Data up to but not including this timestamp is returned. Defaults to current time.",
+        "example": "2025-02-01T00:00:00Z"
+      }
+    },
+    {
+      "description": "Bucket size for the time series (auto-detected from the date range if not specified). Auto-detection uses: minute (<2h), hour (<2d), day (<64d), week (<183d), month (>=183d).",
+      "in": "query",
+      "name": "timeframe",
+      "required": false,
+      "schema": {
+        "description": "Bucket size for the time series (auto-detected from the date range if not specified). Auto-detection uses: minute (<2h), hour (<2d), day (<64d), week (<183d), month (>=183d).",
+        "enum": [
+          "minute",
+          "hour",
+          "day",
+          "week",
+          "month"
+        ],
+        "example": "day",
+        "type": "string"
+      }
+    },
+    {
+      "description": "How runner counts are aggregated within each bucket: 'max' shows peak concurrency (capacity analysis), 'avg' shows mean concurrency (utilization analysis).",
+      "in": "query",
+      "name": "aggregation",
+      "required": false,
+      "schema": {
+        "default": "max",
+        "description": "How runner counts are aggregated within each bucket: 'max' shows peak concurrency (capacity analysis), 'avg' shows mean concurrency (utilization analysis).",
+        "enum": [
+          "max",
+          "avg"
+        ],
+        "example": "max",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "example": {
+            "aggregation": "max",
+            "endpoint_id": "user_123/my-app",
+            "history": [
+              {
+                "draining": 0,
+                "idle": 1,
+                "pending": 0,
+                "running": 2,
+                "timestamp": "2026-07-01T12:00:00.000Z"
+              }
+            ],
+            "timeframe": "hour"
+          },
+          "schema": {
+            "additionalProperties": false,
+            "description": "Historical runner state counts for an application",
+            "properties": {
+              "aggregation": {
+                "description": "Aggregation applied within each bucket",
+                "enum": [
+                  "max",
+                  "avg"
+                ],
+                "example": "max",
+                "type": "string"
+              },
+              "endpoint_id": {
+                "description": "Canonical endpoint identifier ('<owner>/<name>')",
+                "example": "user_123/my-app",
+                "type": "string"
+              },
+              "history": {
+                "description": "Runner state counts per time bucket, oldest first",
+                "items": {
+                  "additionalProperties": false,
+                  "description": "Runner counts by state for one time bucket",
+                  "properties": {
+                    "draining": {
+                      "description": "Runners finishing in-flight work before shutting down",
+                      "example": 0,
+                      "type": "number"
+                    },
+                    "idle": {
+                      "description": "Warm runners waiting for requests (billed but unused)",
+                      "example": 1,
+                      "type": "number"
+                    },
+                    "pending": {
+                      "description": "Runners waiting to be scheduled or starting up",
+                      "example": 0,
+                      "type": "number"
+                    },
+                    "running": {
+                      "description": "Runners actively processing requests",
+                      "example": 2,
+                      "type": "number"
+                    },
+                    "timestamp": {
+                      "description": "Bucket start timestamp (UTC ISO8601)",
+                      "example": "2026-07-01T12:00:00Z",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "timestamp",
+                    "running",
+                    "idle",
+                    "pending",
+                    "draining"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "timeframe": {
+                "description": "Bucket size used for the series (resolved if auto-detected)",
+                "enum": [
+                  "minute",
+                  "hour",
+                  "day",
+                  "week",
+                  "month"
+                ],
+                "example": "day",
+                "type": "string"
+              }
+            },
+            "required": [
+              "endpoint_id",
+              "timeframe",
+              "aggregation",
+              "history"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Successfully retrieved runner state history"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Invalid request parameters",
+              "type": "validation_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Authentication required",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Authentication required"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Access denied",
+              "type": "authorization_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Access denied"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Resource not found",
+              "type": "not_found"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Resource not found"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "Rate limit exceeded",
+              "type": "rate_limited"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Rate limit exceeded"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "example": {
+            "error": {
+              "message": "An unexpected error occurred",
+              "type": "server_error"
+            }
+          },
+          "schema": {
+            "description": "Standard error response format",
+            "properties": {
+              "error": {
+                "description": "Error details",
+                "properties": {
+                  "docs_url": {
+                    "description": "Link to relevant documentation",
+                    "format": "uri",
+                    "type": "string"
+                  },
+                  "message": {
+                    "description": "Human-readable error message",
+                    "type": "string"
+                  },
+                  "request_id": {
+                    "description": "Unique request identifier for debugging",
+                    "type": "string"
+                  },
+                  "type": {
+                    "description": "The category of error that occurred",
+                    "enum": [
+                      "authorization_error",
+                      "validation_error",
+                      "not_found",
+                      "rate_limited",
+                      "server_error",
+                      "not_implemented"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "message"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "error"
+            ],
+            "type": "object"
+          }
+        }
+      },
+      "description": "Internal server error"
+    }
+  },
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "summary": "Runner State History",
+  "tags": [
+    "Serverless",
+    "Apps"
+  ]
+}
