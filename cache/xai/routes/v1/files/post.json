@@ -1,0 +1,144 @@
+{
+  "operationId": "handle_upload_file_request",
+  "requestBody": {
+    "content": {
+      "multipart/form-data": {
+        "schema": {
+          "$ref": "#/components/schemas/UploadFileMultipartRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "example": {
+            "bytes": 12345,
+            "created_at": 1762345678,
+            "expires_at": 1762432078,
+            "filename": "document.pdf",
+            "id": "file_a128090d-f0c9-4873-bd84-e499777e7417",
+            "object": "file",
+            "purpose": ""
+          },
+          "schema": {
+            "$ref": "#/components/schemas/File"
+          }
+        }
+      },
+      "description": "Success"
+    },
+    "400": {
+      "description": "Bad request. Common causes: `expires_after` outside [3600, 2592000], `expires_after` field appearing after `file` in the multipart body, missing or unnamed `file` part, invalid filename."
+    },
+    "413": {
+      "description": "Payload too large -- file exceeds 50 MB."
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "summary": "Upload a file to xAI's storage. Returns the file's metadata. Files can\nbe referenced by ID anywhere a `file_id` is accepted (e.g. chat\nattachments). Maximum file size: 50 MB. Files are kept until you\ndelete them, or until `expires_after` elapses if set at upload time.",
+  "tags": [
+    "v1"
+  ],
+  "components": {
+    "schemas": {
+      "UploadFileMultipartRequest": {
+        "description": "Multipart form fields accepted by `POST /v1/files`. The `expires_after`\nfield MUST appear before `file` in the multipart body when both are\npresent (the upload handler streams `file` straight to gRPC and cannot\nrewind to read metadata after).",
+        "properties": {
+          "expires_after": {
+            "description": "Optional TTL in seconds (measured from upload time). Must be between\n3600 (1 hour) and 2592000 (30 days). If unset the file does not expire.\n\nAccepts either a plain integer or the OpenAI SDK deepObject form\n(`expires_after[anchor]=created_at` + `expires_after[seconds]=N`)\nas separate multipart fields. The anchor+seconds form must arrive\nbefore the `file` part.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "file": {
+            "description": "The file to upload. The filename from the multipart\n`Content-Disposition: filename=` header is recorded as the file's\n`filename`.",
+            "format": "binary",
+            "type": "string"
+          },
+          "purpose": {
+            "description": "Optional purpose label, accepted for OpenAI SDK compatibility. xAI\ndoes not enforce or interpret this field. Setting `\"assistants\"`\nis the conventional choice.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "type": "object"
+      },
+      "File": {
+        "description": "An uploaded file.",
+        "properties": {
+          "bytes": {
+            "description": "The size of the file, in bytes.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "The Unix timestamp (in seconds) for file creation time.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "expires_at": {
+            "description": "The Unix timestamp (in seconds) for file expiry time. null if file does not expire.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "filename": {
+            "description": "The name of the file.",
+            "type": "string"
+          },
+          "id": {
+            "description": "The file identifier, which can be used in other API requests.",
+            "type": "string"
+          },
+          "object": {
+            "description": "The object type, which is always `file`. Only included for compatability.",
+            "type": "string"
+          },
+          "public_url": {
+            "description": "Public URL for the file. Only present when the file has an active public URL.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "public_url_expires_at": {
+            "description": "Unix timestamp (seconds) when the public URL expires. Only present when\nthe public URL has an independent expiry.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "purpose": {
+            "description": "The intended purpose of the uploaded file. Only included for OAI compatability.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "bytes",
+          "created_at",
+          "filename",
+          "id",
+          "object"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

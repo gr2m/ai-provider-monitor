@@ -106,6 +106,14 @@
             "description": "Prompt for video generation. Required for text-to-video (T2V) and\nreference-to-video (R2V). Optional for image-to-video (I2V) — when\nomitted, the model generates a video from the image alone.",
             "type": "string"
           },
+          "reference_audios": {
+            "description": "Optional reference audio clips (voice identity) for reference-to-video\ngeneration. Each entry supplies a clip via `url` or selects a voice via\n`voice_id`; caller-supplied clips must be at most 15 seconds long. Only\nsupported by select video models; at most 3 entries. May be provided\nwithout `reference_images` (audio-only reference-to-video) — at least\none reference of either kind selects the reference-to-video mode.",
+            "items": {
+              "$ref": "#/components/schemas/AudioUrl"
+            },
+            "maxItems": 3,
+            "type": "array"
+          },
           "reference_images": {
             "description": "Optional reference images for reference-to-video (R2V) generation.\nWhen provided generates video using these images\nas style/content references.",
             "items": {
@@ -124,14 +132,14 @@
               }
             ]
           },
-          "size": {
+          "storage_options": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/VideoSize",
-                "description": "The size of the generated video. DEPRECATED: Use aspect_ratio and resolution instead.\nDefaults to \"848x480\" (16:9) if not specified."
+                "$ref": "#/components/schemas/StorageOptions",
+                "description": "Optional output storage configuration. When present, the generated\nvideo is stored in the Files API and a `file_output` reference is\nreturned in the response alongside the ephemeral URL."
               }
             ]
           },
@@ -172,16 +180,20 @@
         "type": "string"
       },
       "ImageUrl": {
-        "description": "Image URL object of Image prompt",
+        "description": "Image input for generation and editing requests.\nAccepts a public URL, a base64-encoded data URL, or a file_id from the xAI Files API.",
         "properties": {
+          "file_id": {
+            "description": "File ID from the xAI Files API. Mutually exclusive with `url`.\nThe file must be an image (JPEG, PNG, or WebP) and fully uploaded.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "url": {
-            "description": "URL of the image. Also accepts `image_url` for compatibility.",
+            "description": "Public URL or base64-encoded data URL of the image (JPEG, PNG, or WebP).\nAlso accepts `image_url` for compatibility.\nRequired when `file_id` is not set.",
             "type": "string"
           }
         },
-        "required": [
-          "url"
-        ],
         "type": "object"
       },
       "VideoOutput": {
@@ -197,23 +209,93 @@
         ],
         "type": "object"
       },
+      "AudioUrl": {
+        "description": "Reference audio input for video generation.\nAccepts a caller-supplied clip via `url` or selects a voice via `voice_id`.\nExactly one source must be set.",
+        "properties": {
+          "url": {
+            "description": "Base64-encoded audio data URL (e.g. `data:audio/wav;base64,...`) or an\nhttp(s) URL to a downloadable audio clip of at most 15 seconds.\nMutually exclusive with `voice_id`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "voice_id": {
+            "description": "Identifier of a first-party preset voice (e.g. \"ara\"; same voice\nidentifiers as the TTS API), resolved server-side to a curated\nreference clip from the model's voice-preset catalog. Models configured\nfor custom voices also accept a custom voice identifier. Mutually\nexclusive with `url`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
       "VideoResolution": {
         "description": "Resolution for video generation.",
         "enum": [
           "480p",
-          "720p"
+          "720p",
+          "1080p"
         ],
         "type": "string"
       },
-      "VideoSize": {
-        "description": "Supported video sizes for video generation.\nDefaults to 848x480 (16:9) if not specified.",
-        "enum": [
-          "848x480",
-          "1696x960",
-          "1280x720",
-          "1920x1080"
+      "StorageOptions": {
+        "description": "Configuration for storing generation output in the Files API.\nWhen provided in a generation request, the output is stored as a\npermanent file and a `file_output` reference is included in the response.",
+        "properties": {
+          "expires_after": {
+            "description": "Seconds from now until the file auto-expires. Maximum 2592000 (30 days).\nIf omitted, the file does not expire.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "filename": {
+            "description": "Filename for the stored file.",
+            "type": "string"
+          },
+          "public_url": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicUrlInput",
+                "description": "`true` = create public URL with default options (no independent expiry).\nObject = create public URL with explicit configuration.\nOmit = no public URL (file stored privately)."
+              }
+            ]
+          }
+        },
+        "required": [
+          "filename"
         ],
-        "type": "string"
+        "type": "object"
+      },
+      "PublicUrlInput": {
+        "description": "Accepts either `true` (create public URL with defaults) or a configuration\nobject with explicit options.\n\n**Variant order matters for `#[serde(untagged)]`:** `Flag` must come before\n`Options` so that JSON `true`/`false` match `Flag` rather than falling\nthrough to the object variant.\n\n**Serialization note:** Proto→REST readback always constructs\n`Options(...)`, never `Flag`, so responses always emit the object form.\n`Flag` only appears on the deserialization (request) path.",
+        "oneOf": [
+          {
+            "description": "`true` = create public URL with default options (no independent expiry).\n`false` = no public URL (equivalent to omitting the field).",
+            "type": "boolean"
+          },
+          {
+            "$ref": "#/components/schemas/PublicUrlOptions",
+            "description": "Full configuration object."
+          }
+        ]
+      },
+      "PublicUrlOptions": {
+        "description": "Configuration for creating a public URL alongside file storage.",
+        "properties": {
+          "expires_after": {
+            "description": "Seconds from now until the public URL expires. Must be between\n3600 (1 hour) and 2592000 (30 days).\n\nIf omitted and the file has a TTL (`expires_after` on the file),\nthe public URL inherits the file's expiry. If omitted and the file\nhas no TTL, the public URL remains valid indefinitely until the\nfile is deleted or the URL is explicitly revoked via\n`POST /v1/files/{file_id}/public-url/revoke`.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
       }
     }
   }

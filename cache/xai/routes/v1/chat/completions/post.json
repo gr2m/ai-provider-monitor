@@ -14,7 +14,7 @@
               "role": "user"
             }
           ],
-          "model": "grok-4-0709"
+          "model": "latest"
         },
         "schema": {
           "$ref": "#/components/schemas/ChatRequest"
@@ -41,7 +41,7 @@
             ],
             "created": 1752854522,
             "id": "a3d1008e-4544-40d4-d075-11527e794e4a",
-            "model": "grok-4-0709",
+            "model": "latest",
             "object": "chat.completion",
             "system_fingerprint": "fp_3a7881249c",
             "usage": {
@@ -127,14 +127,14 @@
           },
           "logprobs": {
             "default": false,
-            "description": "Whether to return log probabilities of the output tokens or not. If true, returns the log probabilities of each output token returned in the content of message.",
+            "description": "Whether to return log probabilities of the output tokens or not. If true, returns the log probabilities of each output token returned in the content of message. Not supported by models `grok-4.20` and newer; the field will be silently ignored if set.",
             "type": [
               "boolean",
               "null"
             ]
           },
           "max_completion_tokens": {
-            "description": "An upper bound for the number of tokens that can be generated for a completion, only applies to visible output tokens (i.e. does not apply to tokens used for reasoning or function calls). Defaults to None, meaning the model will generate as many tokens as needed up until the model's maximum context length.",
+            "description": "An upper bound for the number of tokens that can be generated for a completion, only applies to visible output tokens (i.e. does not apply to tokens used for reasoning or function calls). Defaults to 128,000 when unset; set a larger value to allow longer generations.",
             "example": 8192,
             "format": "int32",
             "type": [
@@ -160,7 +160,7 @@
           },
           "model": {
             "description": "Model name for the model to use. Obtainable from <https://console.x.ai/team/default/models> or <https://docs.x.ai/docs/models>.",
-            "example": "grok-4-0709",
+            "example": "latest",
             "type": "string"
           },
           "n": {
@@ -194,8 +194,15 @@
               "null"
             ]
           },
+          "prompt_cache_key": {
+            "description": "A stable cache key for best-effort sticky routing / prompt-cache hits\nacross requests sharing a prompt prefix. Plumbed to `x-grok-conv-id`,\nsame as on `/v1/responses`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "reasoning_effort": {
-            "description": "Constrains how hard a reasoning model thinks before responding. Not supported by `grok-4` and will result in error if used with `grok-4`. Possible values are `low` (uses fewer reasoning tokens) and `high` (uses more reasoning tokens).",
+            "description": "Constrains how hard a reasoning model thinks before responding. Only supported by `grok-4.3`. Possible values are `none` (disables reasoning completely), `low` (this is the default if not specified), `medium` and `high` (uses the most reasoning tokens).",
             "type": [
               "string",
               "null"
@@ -229,6 +236,17 @@
             "type": [
               "integer",
               "null"
+            ]
+          },
+          "service_tier": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ServiceTier",
+                "description": "Specifies the processing tier for this request. Set to `\"priority\"` for higher scheduling\npriority at a higher token price. Valid values: `\"auto\"` (default), `\"priority\"`."
+              }
             ]
           },
           "stop": {
@@ -296,7 +314,7 @@
             ]
           },
           "top_logprobs": {
-            "description": "An integer between 0 and 8 specifying the number of most likely tokens to return at each token position, each with an associated log probability. logprobs must be set to true if this parameter is used.",
+            "description": "An integer between 0 and 8 specifying the number of most likely tokens to return at each token position, each with an associated log probability. logprobs must be set to true if this parameter is used. Not supported by models `grok-4.20` and newer; the field will be silently ignored if set.",
             "format": "int32",
             "maximum": 8,
             "minimum": 0,
@@ -368,7 +386,7 @@
           },
           "model": {
             "description": "Model ID used to create chat completion.",
-            "example": "grok-4-0709",
+            "example": "latest",
             "type": "string"
           },
           "object": {
@@ -384,6 +402,10 @@
               "array",
               "null"
             ]
+          },
+          "service_tier": {
+            "$ref": "#/components/schemas/ServiceTier",
+            "description": "The processing tier used for this request."
           },
           "system_fingerprint": {
             "description": "System fingerprint, used to indicate xAI system configuration changes.",
@@ -409,7 +431,8 @@
           "object",
           "created",
           "model",
-          "choices"
+          "choices",
+          "service_tier"
         ],
         "type": "object"
       },
@@ -691,6 +714,14 @@
           }
         },
         "type": "object"
+      },
+      "ServiceTier": {
+        "description": "Processing tier for a request. Determines scheduling priority and billing.",
+        "enum": [
+          "default",
+          "priority"
+        ],
+        "type": "string"
       },
       "StreamOptions": {
         "description": "Options available when using streaming response.",
@@ -1160,6 +1191,13 @@
       "FunctionDefinition": {
         "description": "Definition of the tool call made available to the model.",
         "properties": {
+          "defer_loading": {
+            "description": "When true, the definition is hidden from the model's prompt until loaded\nvia a `tool_search` step. The tool stays callable at all times. Only\nsupported on `/v1/responses` together with the `tool_search` tool.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
           "description": {
             "description": "A description of the function to indicate to the model when to call it.",
             "type": [
@@ -1424,16 +1462,20 @@
         "type": "object"
       },
       "ImageUrl": {
-        "description": "Image URL object of Image prompt",
+        "description": "Image input for generation and editing requests.\nAccepts a public URL, a base64-encoded data URL, or a file_id from the xAI Files API.",
         "properties": {
+          "file_id": {
+            "description": "File ID from the xAI Files API. Mutually exclusive with `url`.\nThe file must be an image (JPEG, PNG, or WebP) and fully uploaded.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "url": {
-            "description": "URL of the image. Also accepts `image_url` for compatibility.",
+            "description": "Public URL or base64-encoded data URL of the image (JPEG, PNG, or WebP).\nAlso accepts `image_url` for compatibility.\nRequired when `file_id` is not set.",
             "type": "string"
           }
         },
-        "required": [
-          "url"
-        ],
         "type": "object"
       },
       "TopLogProb": {

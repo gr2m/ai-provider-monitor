@@ -54,7 +54,7 @@
         "description": "Request for extending a video for `/v1/videos/extensions` endpoint",
         "properties": {
           "duration": {
-            "description": "Duration of the extension segment to generate in seconds (1-10).\nDefaults to 6 seconds if not specified.",
+            "description": "Duration of the extension segment to generate in seconds (2-10).\nDefaults to 6 seconds if not specified.",
             "format": "int32",
             "type": [
               "integer",
@@ -84,9 +84,20 @@
             "description": "Prompt describing what should happen next in the video.",
             "type": "string"
           },
+          "storage_options": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/StorageOptions",
+                "description": "Optional output storage configuration. When present, the generated\nvideo is stored in the Files API and a `file_output` reference is\nreturned in the response alongside the ephemeral URL."
+              }
+            ]
+          },
           "video": {
             "$ref": "#/components/schemas/VideoUrl",
-            "description": "Input video to extend. The extension continues from the end of this video.\nInput video must be between 2 and 30 seconds long."
+            "description": "Input video to extend. The extension continues from the end of this video.\nInput video must be between 2 and 15 seconds long."
           }
         },
         "required": [
@@ -121,17 +132,80 @@
         ],
         "type": "object"
       },
-      "VideoUrl": {
-        "description": "Video URL for video editing input",
+      "StorageOptions": {
+        "description": "Configuration for storing generation output in the Files API.\nWhen provided in a generation request, the output is stored as a\npermanent file and a `file_output` reference is included in the response.",
         "properties": {
-          "url": {
-            "description": "URL of the video (public URL or base64-encoded data URL).\nThe video must have the `.mp4` file extension and be encoded with `.mp4` supported codecs such as H.265, H.264, AV1, etc.",
+          "expires_after": {
+            "description": "Seconds from now until the file auto-expires. Maximum 2592000 (30 days).\nIf omitted, the file does not expire.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "filename": {
+            "description": "Filename for the stored file.",
             "type": "string"
+          },
+          "public_url": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PublicUrlInput",
+                "description": "`true` = create public URL with default options (no independent expiry).\nObject = create public URL with explicit configuration.\nOmit = no public URL (file stored privately)."
+              }
+            ]
           }
         },
         "required": [
-          "url"
+          "filename"
         ],
+        "type": "object"
+      },
+      "VideoUrl": {
+        "description": "Video input for editing and extension requests.\nAccepts a public URL, a base64-encoded data URL, or a file_id from the xAI Files API.",
+        "properties": {
+          "file_id": {
+            "description": "File ID from the xAI Files API. Mutually exclusive with `url`.\nThe file must be a video (e.g., MP4) and fully uploaded.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "description": "URL of the video (public URL or base64-encoded data URL).\nThe video must have the `.mp4` file extension and be encoded with `.mp4` supported codecs such as H.265, H.264, AV1, etc.\nRequired when `file_id` is not set.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PublicUrlInput": {
+        "description": "Accepts either `true` (create public URL with defaults) or a configuration\nobject with explicit options.\n\n**Variant order matters for `#[serde(untagged)]`:** `Flag` must come before\n`Options` so that JSON `true`/`false` match `Flag` rather than falling\nthrough to the object variant.\n\n**Serialization note:** Proto→REST readback always constructs\n`Options(...)`, never `Flag`, so responses always emit the object form.\n`Flag` only appears on the deserialization (request) path.",
+        "oneOf": [
+          {
+            "description": "`true` = create public URL with default options (no independent expiry).\n`false` = no public URL (equivalent to omitting the field).",
+            "type": "boolean"
+          },
+          {
+            "$ref": "#/components/schemas/PublicUrlOptions",
+            "description": "Full configuration object."
+          }
+        ]
+      },
+      "PublicUrlOptions": {
+        "description": "Configuration for creating a public URL alongside file storage.",
+        "properties": {
+          "expires_after": {
+            "description": "Seconds from now until the public URL expires. Must be between\n3600 (1 hour) and 2592000 (30 days).\n\nIf omitted and the file has a TTL (`expires_after` on the file),\nthe public URL inherits the file's expiry. If omitted and the file\nhas no TTL, the public URL remains valid indefinitely until the\nfile is deleted or the URL is explicitly revoked via\n`POST /v1/files/{file_id}/public-url/revoke`.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
         "type": "object"
       }
     }
