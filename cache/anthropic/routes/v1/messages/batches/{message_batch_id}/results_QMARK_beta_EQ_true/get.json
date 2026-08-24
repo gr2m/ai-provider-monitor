@@ -1,5 +1,5 @@
 {
-  "description": "Streams the results of a Message Batch as a `.jsonl` file.\n\nEach line in the file is a JSON object containing the result of a single request in the Message Batch. Results are not guaranteed to be in the same order as requests. Use the `custom_id` field to match results to requests.\n\nLearn more about the Message Batches API in our [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)",
+  "description": "Streams the results of a Message Batch as a `.jsonl` file.\n\nEach line in the file is a JSON object containing the result of a single request in the Message Batch. Results are not guaranteed to be in the same order as requests. Use the `custom_id` field to match results to requests.\n\nLearn more about the Message Batches API in our [user guide](https://platform.claude.com/docs/en/build-with-claude/batch-processing)",
   "operationId": "beta_message_batches_results",
   "parameters": [
     {
@@ -28,12 +28,12 @@
       }
     },
     {
-      "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://docs.claude.com/en/api/versioning).",
+      "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
       "in": "header",
       "name": "anthropic-version",
       "required": false,
       "schema": {
-        "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://docs.claude.com/en/api/versioning).",
+        "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
         "title": "Anthropic-Version",
         "type": "string"
       }
@@ -69,7 +69,7 @@
           }
         }
       },
-      "description": "Error response.\n\nSee our [errors documentation](https://docs.claude.com/en/api/errors) for more details."
+      "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
     }
   },
   "summary": "Retrieve Message Batch results",
@@ -464,7 +464,7 @@
               }
             ],
             "id": "msg_013Zva2CMHLNnXjNJJKqJ2EF",
-            "model": "claude-opus-4-6",
+            "model": "claude-opus-5",
             "role": "assistant",
             "stop_details": null,
             "stop_reason": "end_turn",
@@ -518,6 +518,18 @@
             "default": null,
             "description": "Context management response.\n\nInformation about context management strategies applied during the request."
           },
+          "diagnostics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaDiagnostics"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Request-level diagnostics. Present only when `diagnostics` was supplied on the request; `null` when no prompt-cache divergence was detected."
+          },
           "id": {
             "description": "Unique object identifier.\n\nThe format and length of IDs may change over time.",
             "examples": [
@@ -557,7 +569,7 @@
                 "type": "null"
               }
             ],
-            "description": "The reason that we stopped.\n\nThis may be one the following values:\n* `\"end_turn\"`: the model reached a natural stopping point\n* `\"max_tokens\"`: we exceeded the requested `max_tokens` or the model's maximum\n* `\"stop_sequence\"`: one of your provided custom `stop_sequences` was generated\n* `\"tool_use\"`: the model invoked one or more tools\n* `\"pause_turn\"`: we paused a long-running turn. You may provide the response back as-is in a subsequent request to let the model continue.\n* `\"refusal\"`: when streaming classifiers intervene to handle potential policy violations\n\nIn non-streaming mode this value is always non-null. In streaming mode, it is null in the `message_start` event and non-null otherwise.",
+            "description": "The reason that we stopped.\n\nThis may be one the following values:\n* `\"end_turn\"`: the model reached a natural stopping point\n* `\"max_tokens\"`: we exceeded the requested `max_tokens` or the model's maximum\n* `\"stop_sequence\"`: one of your provided custom `stop_sequences` was generated\n* `\"tool_use\"`: the model invoked one or more tools\n* `\"pause_turn\"`: we paused a long-running turn. You may provide the response back as-is in a subsequent request to let the model continue.\n* `\"refusal\"`: when streaming classifiers intervene to handle potential policy violations\n* `\"model_context_window_exceeded\"`: we exceeded the model's context window\n\nIn non-streaming mode this value is always non-null. In streaming mode, it is null in the `message_start` event and non-null otherwise.",
             "title": "Stop Reason"
           },
           "stop_sequence": {
@@ -601,6 +613,7 @@
           "stop_sequence",
           "stop_details",
           "usage",
+          "diagnostics",
           "context_management",
           "container"
         ],
@@ -618,6 +631,9 @@
           },
           "id": {
             "description": "Identifier for the container used in this request",
+            "examples": [
+              "container_011CpZohnwH4vuy7gazohgSP"
+            ],
             "title": "Id",
             "type": "string"
           },
@@ -654,6 +670,7 @@
             "code_execution_tool_result": "#/components/schemas/BetaResponseCodeExecutionToolResultBlock",
             "compaction": "#/components/schemas/BetaResponseCompactionBlock",
             "container_upload": "#/components/schemas/BetaResponseContainerUploadBlock",
+            "fallback": "#/components/schemas/BetaResponseFallbackBlock",
             "mcp_tool_result": "#/components/schemas/BetaResponseMCPToolResultBlock",
             "mcp_tool_use": "#/components/schemas/BetaResponseMCPToolUseBlock",
             "redacted_thinking": "#/components/schemas/BetaResponseRedactedThinkingBlock",
@@ -716,6 +733,9 @@
           },
           {
             "$ref": "#/components/schemas/BetaResponseCompactionBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaResponseFallbackBlock"
           }
         ]
       },
@@ -750,22 +770,96 @@
         "title": "ResponseContextManagement",
         "type": "object"
       },
+      "BetaDiagnostics": {
+        "description": "Response envelope for request-level diagnostics. Present (possibly\nnull) whenever the caller supplied `diagnostics` on the request.",
+        "properties": {
+          "cache_miss_reason": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "messages_changed": "#/components/schemas/BetaCacheMissMessagesChanged",
+                    "model_changed": "#/components/schemas/BetaCacheMissModelChanged",
+                    "previous_message_not_found": "#/components/schemas/BetaCacheMissPreviousMessageNotFound",
+                    "system_changed": "#/components/schemas/BetaCacheMissSystemChanged",
+                    "tools_changed": "#/components/schemas/BetaCacheMissToolsChanged",
+                    "unavailable": "#/components/schemas/BetaCacheMissUnavailable"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheMissModelChanged"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BetaCacheMissSystemChanged"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BetaCacheMissToolsChanged"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BetaCacheMissMessagesChanged"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BetaCacheMissPreviousMessageNotFound"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BetaCacheMissUnavailable"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Explains why the prompt cache could not fully reuse the prefix from the request identified by `diagnostics.previous_message_id`. `null` means diagnosis is still pending — the response was serialized before the background comparison completed.",
+            "title": "Cache Miss Reason"
+          }
+        },
+        "required": [
+          "cache_miss_reason"
+        ],
+        "title": "Diagnostics",
+        "type": "object"
+      },
       "Model": {
         "anyOf": [
           {
             "type": "string"
           },
           {
+            "const": "claude-sonnet-5",
+            "description": "High-performance model for coding and agents"
+          },
+          {
+            "const": "claude-fable-5",
+            "description": "Next generation of intelligence for the hardest knowledge work and coding problems"
+          },
+          {
+            "const": "claude-mythos-5",
+            "description": "Most capable model for cybersecurity and biology research"
+          },
+          {
+            "const": "claude-opus-5",
+            "description": "Powerful intelligence for long-running agents and coding"
+          },
+          {
+            "const": "claude-opus-4-8",
+            "description": "Powerful intelligence for long-running agents and coding"
+          },
+          {
             "const": "claude-opus-4-7",
-            "description": "Frontier intelligence for long-running agents and coding"
+            "description": "Powerful intelligence for long-running agents and coding"
           },
           {
             "const": "claude-mythos-preview",
+            "deprecated": true,
             "description": "New class of intelligence, strongest in coding and cybersecurity"
           },
           {
             "const": "claude-opus-4-6",
-            "description": "Frontier intelligence for long-running agents and coding"
+            "description": "Powerful intelligence for long-running agents and coding"
           },
           {
             "const": "claude-sonnet-4-6",
@@ -781,11 +875,11 @@
           },
           {
             "const": "claude-opus-4-5",
-            "description": "Premium model combining maximum intelligence with practical performance"
+            "description": "Powerful intelligence for long-running agents and coding"
           },
           {
             "const": "claude-opus-4-5-20251101",
-            "description": "Premium model combining maximum intelligence with practical performance"
+            "description": "Powerful intelligence for long-running agents and coding"
           },
           {
             "const": "claude-sonnet-4-5",
@@ -794,42 +888,9 @@
           {
             "const": "claude-sonnet-4-5-20250929",
             "description": "High-performance model for agents and coding"
-          },
-          {
-            "const": "claude-opus-4-1",
-            "description": "Exceptional model for specialized complex tasks"
-          },
-          {
-            "const": "claude-opus-4-1-20250805",
-            "description": "Exceptional model for specialized complex tasks"
-          },
-          {
-            "const": "claude-opus-4-0",
-            "deprecated": true,
-            "description": "Powerful model for complex tasks"
-          },
-          {
-            "const": "claude-opus-4-20250514",
-            "deprecated": true,
-            "description": "Powerful model for complex tasks"
-          },
-          {
-            "const": "claude-sonnet-4-0",
-            "deprecated": true,
-            "description": "High-performance model with extended thinking"
-          },
-          {
-            "const": "claude-sonnet-4-20250514",
-            "deprecated": true,
-            "description": "High-performance model with extended thinking"
-          },
-          {
-            "const": "claude-3-haiku-20240307",
-            "deprecated": true,
-            "description": "Fast and cost-effective model"
           }
         ],
-        "description": "The model that will complete your prompt.\\n\\nSee [models](https://docs.anthropic.com/en/docs/models-overview) for additional details and options.",
+        "description": "The model that will complete your prompt.\n\nSee [models](https://docs.anthropic.com/en/docs/models-overview) for additional details and options.",
         "title": "Model"
       },
       "BetaRefusalStopDetails": {
@@ -838,19 +899,14 @@
           "category": {
             "anyOf": [
               {
-                "enum": [
-                  "cyber",
-                  "bio"
-                ],
-                "type": "string"
+                "$ref": "#/components/schemas/BetaRefusalCategory"
               },
               {
                 "type": "null"
               }
             ],
             "default": null,
-            "description": "The policy category that triggered the refusal.\n\n`null` when the refusal doesn't map to a named category.",
-            "title": "Category"
+            "description": "The policy category that triggered the refusal.\n\n`null` when the refusal doesn't map to a named category."
           },
           "explanation": {
             "anyOf": [
@@ -863,7 +919,55 @@
             ],
             "default": null,
             "description": "Human-readable explanation of the refusal.\n\nThis text is not guaranteed to be stable. `null` when no explanation is available for the category.",
+            "examples": [
+              "This request was declined because it conflicts with Anthropic's Usage Policy."
+            ],
             "title": "Explanation"
+          },
+          "fallback_credit_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Opaque code that refunds the cache-miss cost when retrying this refused\nrequest on the fallback model. Pass it as `fallback_credit_token` on the\nretry request. Expires 5 minutes after the refusal.\n\nThe retry is sent either with the same request body (`system`, `messages`,\n`tools`, and other render-shaping fields), or with the same body plus one\nappended `assistant` message whose content is the partial text (with any\ntrailing whitespace stripped from the final text block) and paired\nserver-tool blocks from this refusal — which also authorizes that\nappended turn as an assistant-prefill continuation on models that otherwise\ndisallow prefill. A token minted mid-server-tool-loop whose partial content\nwas continuable may only be redeemed the second way — if a same-body retry\nis rejected with a 400 saying the token must be redeemed by continuing the\npartial response, retry the second way instead. Either way: same workspace,\nsame platform; a mismatch is a 400. Resending a token for an already-warm\nprefix is permitted but yields no additional credit.\n\n`null` when the refused model isn't eligible for a fallback credit.",
+            "examples": [
+              "QW50aHJvcGljL0NsYXVkZQ=="
+            ],
+            "title": "Fallback Credit Token"
+          },
+          "fallback_has_prefill_claim": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Whether the accompanying `fallback_credit_token` may be redeemed with the\nappended-assistant retry form. Only set when `fallback_credit_token` is\npresent.\n\n`true`: retry by resending the same request body plus one appended\n`assistant` message whose content is this response's `content` with any\ntrailing whitespace stripped from the final text block and unpaired\n`tool_use` blocks omitted (the same appended-turn shape described on\n`fallback_credit_token`), with the token attached. `false`: retry by\nresending the original request body unchanged, with the token attached —\nthe appended-assistant form is not available for this refusal (no\ncontinuable partial content, or the request uses `output_format` or a\n`tool_choice` that forces tool use). One exception: when the request used\n`output_format` or a forced `tool_choice` and the refusal arrived after\nserver tools (including MCP connector tools) had already executed, the\ntoken may not be redeemable by either retry form; if the exact-body retry\nis then rejected with a 400 saying the token must be redeemed by\ncontinuing the partial response, discard the token and retry without it.\n\nAdvisory: if an appended-assistant retry is rejected with a 400 despite\n`true`, fall back to resending the original request body with the token.",
+            "title": "Fallback Has Prefill Claim"
+          },
+          "recommended_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The server's suggested retry target for this refusal. Populated when a fallback attempt could not be made (the fallback model's rate limit was exhausted, or it was overloaded); names the fallback model the caller can retry directly. Null otherwise.",
+            "examples": [
+              "claude-opus-4-8"
+            ],
+            "title": "Recommended Model"
           },
           "type": {
             "const": "refusal",
@@ -875,6 +979,9 @@
         "required": [
           "category",
           "explanation",
+          "fallback_credit_token",
+          "fallback_has_prefill_claim",
+          "recommended_model",
           "type"
         ],
         "title": "RefusalStopDetails",
@@ -941,6 +1048,18 @@
             ],
             "title": "Cache Read Input Tokens"
           },
+          "fallback_credit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaFallbackCreditUsage"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Outcome of the `fallback_credit_token` presented on this request.\n\nPresent on every response to a non-batch request that carried a\n`fallback_credit_token`, in either redemption mode; absent otherwise (batch\nitems accept and ignore the token and carry no outcome object)."
+          },
           "inference_geo": {
             "anyOf": [
               {
@@ -952,6 +1071,9 @@
             ],
             "default": null,
             "description": "The geographic region where inference was performed for this request.",
+            "examples": [
+              "global"
+            ],
             "title": "Inference Geo"
           },
           "input_tokens": {
@@ -974,6 +1096,18 @@
             "minimum": 0,
             "title": "Output Tokens",
             "type": "integer"
+          },
+          "output_tokens_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaOutputTokensDetails"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Breakdown of output tokens by category.\n\n`output_tokens` remains the inclusive, authoritative total used for billing.\nThis object provides a read-only decomposition for observability — for example,\nhow many of the billed output tokens were spent on internal reasoning that may\nhave been summarized before being returned to you."
           },
           "server_tool_use": {
             "anyOf": [
@@ -1022,10 +1156,12 @@
           "cache_creation",
           "cache_creation_input_tokens",
           "cache_read_input_tokens",
+          "fallback_credit",
           "inference_geo",
           "input_tokens",
           "iterations",
           "output_tokens",
+          "output_tokens_details",
           "server_tool_use",
           "service_tier",
           "speed"
@@ -1059,7 +1195,7 @@
             "type": "string"
           },
           "version": {
-            "description": "Skill version or 'latest' for most recent version",
+            "description": "The resolved version: a skill version ID for custom skills.",
             "examples": [
               "latest"
             ],
@@ -1145,10 +1281,12 @@
       "BetaResponseThinkingBlock": {
         "properties": {
           "signature": {
+            "description": "A value used to verify that this thinking block was generated by Claude when it is passed back to the API.\n\nThis is an opaque field and should not be interpreted or parsed. When passing thinking blocks back to the API (required when using tools with extended thinking), pass them back exactly as received, with this field intact.\n\nSee [extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) for details.",
             "title": "Signature",
             "type": "string"
           },
           "thinking": {
+            "description": "The text of Claude's thinking process for this block.",
             "title": "Thinking",
             "type": "string"
           },
@@ -1170,6 +1308,7 @@
       "BetaResponseRedactedThinkingBlock": {
         "properties": {
           "data": {
+            "description": "The contents of this redacted thinking block, returned when portions of the model's thinking were safety-redacted. This field is opaque and encrypted, with no readable content.\n\nPass `redacted_thinking` blocks back to the API unchanged when continuing a multi-turn conversation.\n\nSee [extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking#redacted-thinking-blocks) for details.",
             "title": "Data",
             "type": "string"
           },
@@ -1225,6 +1364,21 @@
             "minLength": 1,
             "title": "Name",
             "type": "string"
+          },
+          "toolset_name": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[a-zA-Z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a toolset member tool_use, the toolset family.",
+            "title": "Toolset Name"
           },
           "type": {
             "const": "tool_use",
@@ -1743,6 +1897,37 @@
         "title": "ResponseCompactionBlock",
         "type": "object"
       },
+      "BetaResponseFallbackBlock": {
+        "description": "Marks the point in `content` where one model's output gives way to the next.\n\nOne block appears per hop where a preceding model actually ran this turn and\ndeclined. A turn where no preceding model ran and declined has no such\nboundary and carries no block — the signal for whether a fallback model\nserved the response is the presence of a `fallback_message` entry in\n`usage.iterations`, not this block.\n\nThe block is treated like a server-tool content block for streaming: it\narrives via the standard `content_block_start` / `content_block_stop`\npair and carries no deltas.",
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/BetaResponseFallbackHopInfo",
+            "description": "The model whose output ends at this point — the model that declined at this hop. When the declining hop is the requested model, its `model` echoes the top-level `model` string the caller sent (alias or canonical); when the declining hop is a fallback model, its `model` is that model's canonical id."
+          },
+          "to": {
+            "$ref": "#/components/schemas/BetaResponseFallbackHopInfo",
+            "description": "The fallback model producing the content that follows this block. Its `model` is always the canonical id."
+          },
+          "trigger": {
+            "$ref": "#/components/schemas/BetaFallbackRefusalTrigger",
+            "description": "What caused the `from` model to hand over at this hop."
+          },
+          "type": {
+            "const": "fallback",
+            "default": "fallback",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "trigger",
+          "type"
+        ],
+        "title": "ResponseFallbackBlock",
+        "type": "object"
+      },
       "BetaResponseClearToolUses20250919Edit": {
         "properties": {
           "cleared_input_tokens": {
@@ -1803,6 +1988,132 @@
         "title": "ResponseClearThinking20251015Edit",
         "type": "object"
       },
+      "BetaCacheMissModelChanged": {
+        "properties": {
+          "cache_missed_input_tokens": {
+            "description": "Approximate number of input tokens that would have been read from cache had the prefix matched the previous request.",
+            "title": "Cache Missed Input Tokens",
+            "type": "integer"
+          },
+          "type": {
+            "const": "model_changed",
+            "default": "model_changed",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cache_missed_input_tokens",
+          "type"
+        ],
+        "title": "CacheMissModelChanged",
+        "type": "object"
+      },
+      "BetaCacheMissSystemChanged": {
+        "properties": {
+          "cache_missed_input_tokens": {
+            "description": "Approximate number of input tokens that would have been read from cache had the prefix matched the previous request.",
+            "title": "Cache Missed Input Tokens",
+            "type": "integer"
+          },
+          "type": {
+            "const": "system_changed",
+            "default": "system_changed",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cache_missed_input_tokens",
+          "type"
+        ],
+        "title": "CacheMissSystemChanged",
+        "type": "object"
+      },
+      "BetaCacheMissToolsChanged": {
+        "properties": {
+          "cache_missed_input_tokens": {
+            "description": "Approximate number of input tokens that would have been read from cache had the prefix matched the previous request.",
+            "title": "Cache Missed Input Tokens",
+            "type": "integer"
+          },
+          "type": {
+            "const": "tools_changed",
+            "default": "tools_changed",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cache_missed_input_tokens",
+          "type"
+        ],
+        "title": "CacheMissToolsChanged",
+        "type": "object"
+      },
+      "BetaCacheMissMessagesChanged": {
+        "properties": {
+          "cache_missed_input_tokens": {
+            "description": "Approximate number of input tokens that would have been read from cache had the prefix matched the previous request.",
+            "title": "Cache Missed Input Tokens",
+            "type": "integer"
+          },
+          "type": {
+            "const": "messages_changed",
+            "default": "messages_changed",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cache_missed_input_tokens",
+          "type"
+        ],
+        "title": "CacheMissMessagesChanged",
+        "type": "object"
+      },
+      "BetaCacheMissPreviousMessageNotFound": {
+        "properties": {
+          "type": {
+            "const": "previous_message_not_found",
+            "default": "previous_message_not_found",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "CacheMissPreviousMessageNotFound",
+        "type": "object"
+      },
+      "BetaCacheMissUnavailable": {
+        "properties": {
+          "type": {
+            "const": "unavailable",
+            "default": "unavailable",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "CacheMissUnavailable",
+        "type": "object"
+      },
+      "BetaRefusalCategory": {
+        "description": "The policy category that triggered a refusal.",
+        "enum": [
+          "cyber",
+          "bio",
+          "frontier_llm",
+          "reasoning_extraction",
+          "general_harms"
+        ],
+        "title": "RefusalCategory",
+        "type": "string"
+      },
       "BetaCacheCreation": {
         "properties": {
           "ephemeral_1h_input_tokens": {
@@ -1827,6 +2138,35 @@
         "title": "CacheCreation",
         "type": "object"
       },
+      "BetaFallbackCreditUsage": {
+        "description": "Outcome of the ``fallback_credit_token`` presented on this request.",
+        "properties": {
+          "status": {
+            "description": "Whether the fallback-credit reprice was applied to this response's billing.\n\nA union discriminated on `type`. `redeemed`: the retry is billed as if\nthe conversation had been on the retry model all along — including when the\nresulting shift is zero because there was nothing to move. `not_applied`:\nno reprice was applied; the arm's `reason` says why.",
+            "discriminator": {
+              "mapping": {
+                "not_applied": "#/components/schemas/BetaFallbackCreditNotApplied",
+                "redeemed": "#/components/schemas/BetaFallbackCreditRedeemed"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaFallbackCreditRedeemed"
+              },
+              {
+                "$ref": "#/components/schemas/BetaFallbackCreditNotApplied"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "FallbackCreditUsage",
+        "type": "object"
+      },
       "BetaIterationsUsage": {
         "anyOf": [
           {
@@ -1835,6 +2175,7 @@
                 "mapping": {
                   "advisor_message": "#/components/schemas/BetaAdvisorMessageIterationUsage",
                   "compaction": "#/components/schemas/BetaCompactionIterationUsage",
+                  "fallback_message": "#/components/schemas/BetaFallbackMessageIterationUsage",
                   "message": "#/components/schemas/BetaMessageIterationUsage"
                 },
                 "propertyName": "type"
@@ -1848,6 +2189,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/BetaAdvisorMessageIterationUsage"
+                },
+                {
+                  "$ref": "#/components/schemas/BetaFallbackMessageIterationUsage"
                 }
               ]
             },
@@ -1860,6 +2204,22 @@
         "default": null,
         "description": "Per-iteration token usage breakdown.\n\nEach entry represents one sampling iteration, with its own input/output token counts and cache statistics. This allows you to:\n- Determine which iterations exceeded long context thresholds (>=200k tokens)\n- Calculate the true context window size from the last iteration\n- Understand token accumulation across server-side tool use loops",
         "title": "Iterations"
+      },
+      "BetaOutputTokensDetails": {
+        "properties": {
+          "thinking_tokens": {
+            "default": 0,
+            "description": "Number of output tokens the model generated as internal reasoning, including\nthe thinking-block delimiter tokens.\n\nReflects the raw reasoning the model produced, not the (possibly shorter)\nsummarized thinking text returned in the response body. Computed by\nre-tokenizing the raw reasoning text, so it may differ from the model's exact\ngeneration count by a small number of tokens. Always ≤ `output_tokens`;\n`output_tokens - thinking_tokens` approximates the non-reasoning output.",
+            "minimum": 0,
+            "title": "Thinking Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "thinking_tokens"
+        ],
+        "title": "OutputTokensDetails",
+        "type": "object"
       },
       "BetaServerToolUsage": {
         "properties": {
@@ -1892,16 +2252,19 @@
         "type": "object"
       },
       "BetaSpeed": {
+        "description": "Inference speed mode. `fast` provides significantly faster output token generation at premium pricing. Not all models support `fast`; invalid combinations are rejected at create time.",
         "enum": [
           "standard",
           "fast"
         ],
-        "title": "Speed",
         "type": "string"
       },
       "BetaResponseCharLocationCitation": {
         "properties": {
           "cited_text": {
+            "examples": [
+              "The grass is green. The sky is blue."
+            ],
             "title": "Cited Text",
             "type": "string"
           },
@@ -1919,6 +2282,9 @@
                 "type": "null"
               }
             ],
+            "examples": [
+              "My Document"
+            ],
             "title": "Document Title"
           },
           "end_char_index": {
@@ -1935,6 +2301,9 @@
               }
             ],
             "default": null,
+            "examples": [
+              "file_011CNha8iCJcU1wXNR6q4V8w"
+            ],
             "title": "File Id"
           },
           "start_char_index": {
@@ -1964,6 +2333,9 @@
       "BetaResponsePageLocationCitation": {
         "properties": {
           "cited_text": {
+            "examples": [
+              "The grass is green. The sky is blue."
+            ],
             "title": "Cited Text",
             "type": "string"
           },
@@ -1981,6 +2353,9 @@
                 "type": "null"
               }
             ],
+            "examples": [
+              "My Document"
+            ],
             "title": "Document Title"
           },
           "end_page_number": {
@@ -1997,6 +2372,9 @@
               }
             ],
             "default": null,
+            "examples": [
+              "file_011CNha8iCJcU1wXNR6q4V8w"
+            ],
             "title": "File Id"
           },
           "start_page_number": {
@@ -2026,6 +2404,10 @@
       "BetaResponseContentBlockLocationCitation": {
         "properties": {
           "cited_text": {
+            "description": "The full text of the cited block range, concatenated.\n\nAlways equals the contents of `content[start_block_index:end_block_index]` joined together. The text block is the minimal citable unit; this field is never a substring of a single block. Not counted toward output tokens, and not counted toward input tokens when sent back in subsequent turns.",
+            "examples": [
+              "The grass is green. The sky is blue."
+            ],
             "title": "Cited Text",
             "type": "string"
           },
@@ -2043,9 +2425,13 @@
                 "type": "null"
               }
             ],
+            "examples": [
+              "My Document"
+            ],
             "title": "Document Title"
           },
           "end_block_index": {
+            "description": "Exclusive 0-based end index of the cited block range in the source's `content` array.\n\nAlways greater than `start_block_index`; a single-block citation has `end_block_index = start_block_index + 1`.",
             "title": "End Block Index",
             "type": "integer"
           },
@@ -2059,9 +2445,13 @@
               }
             ],
             "default": null,
+            "examples": [
+              "file_011CNha8iCJcU1wXNR6q4V8w"
+            ],
             "title": "File Id"
           },
           "start_block_index": {
+            "description": "0-based index of the first cited block in the source's `content` array.",
             "minimum": 0,
             "title": "Start Block Index",
             "type": "integer"
@@ -2088,6 +2478,9 @@
       "BetaResponseWebSearchResultLocationCitation": {
         "properties": {
           "cited_text": {
+            "examples": [
+              "The grass is green. The sky is blue."
+            ],
             "title": "Cited Text",
             "type": "string"
           },
@@ -2131,14 +2524,20 @@
       "BetaResponseSearchResultLocationCitation": {
         "properties": {
           "cited_text": {
+            "description": "The full text of the cited block range, concatenated.\n\nAlways equals the contents of `content[start_block_index:end_block_index]` joined together. The text block is the minimal citable unit; this field is never a substring of a single block. Not counted toward output tokens, and not counted toward input tokens when sent back in subsequent turns.",
+            "examples": [
+              "The grass is green. The sky is blue."
+            ],
             "title": "Cited Text",
             "type": "string"
           },
           "end_block_index": {
+            "description": "Exclusive 0-based end index of the cited block range in the source's `content` array.\n\nAlways greater than `start_block_index`; a single-block citation has `end_block_index = start_block_index + 1`.",
             "title": "End Block Index",
             "type": "integer"
           },
           "search_result_index": {
+            "description": "0-based index of the cited search result among all `search_result` content blocks in the request, in the order they appear across messages and tool results.\n\nCounted separately from `document_index`; server-side web search results are not included in this count.",
             "minimum": 0,
             "title": "Search Result Index",
             "type": "integer"
@@ -2148,6 +2547,7 @@
             "type": "string"
           },
           "start_block_index": {
+            "description": "0-based index of the first cited block in the source's `content` array.",
             "minimum": 0,
             "title": "Start Block Index",
             "type": "integer"
@@ -2382,6 +2782,19 @@
       },
       "BetaResponseAdvisorResultBlock": {
         "properties": {
+          "stop_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The advisor sub-inference's stop reason (same values as the top-level message `stop_reason`). `max_tokens` indicates the advisor's output was truncated at the tool's `max_tokens` value or the advisor model's policy cap.",
+            "title": "Stop Reason"
+          },
           "text": {
             "title": "Text",
             "type": "string"
@@ -2394,6 +2807,7 @@
           }
         },
         "required": [
+          "stop_reason",
           "text",
           "type"
         ],
@@ -2407,6 +2821,19 @@
             "title": "Encrypted Content",
             "type": "string"
           },
+          "stop_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The advisor sub-inference's stop reason (same values as the top-level message `stop_reason`).",
+            "title": "Stop Reason"
+          },
           "type": {
             "const": "advisor_redacted_result",
             "default": "advisor_redacted_result",
@@ -2416,6 +2843,7 @@
         },
         "required": [
           "encrypted_content",
+          "stop_reason",
           "type"
         ],
         "title": "ResponseAdvisorRedactedResultBlock",
@@ -2833,6 +3261,116 @@
         "title": "ResponseToolSearchToolSearchResultBlock",
         "type": "object"
       },
+      "BetaResponseFallbackHopInfo": {
+        "description": "Identifies one hop of a fallback transition.",
+        "properties": {
+          "model": {
+            "$ref": "#/components/schemas/Model"
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "title": "ResponseFallbackHopInfo",
+        "type": "object"
+      },
+      "BetaFallbackRefusalTrigger": {
+        "description": "The `from` model declined for policy reasons.",
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaRefusalCategory"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The policy category that triggered the `from` model's refusal at this hop. `null` when the refusal doesn't map to a named category. Same vocabulary as `stop_details.category`."
+          },
+          "type": {
+            "const": "refusal",
+            "default": "refusal",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "type"
+        ],
+        "title": "FallbackRefusalTrigger",
+        "type": "object"
+      },
+      "BetaFallbackCreditRedeemed": {
+        "description": "The reprice was applied: the retry is billed as if the conversation\nhad been on the retry model all along.",
+        "properties": {
+          "type": {
+            "const": "redeemed",
+            "default": "redeemed",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "FallbackCreditRedeemed",
+        "type": "object"
+      },
+      "BetaFallbackCreditNotApplied": {
+        "description": "No reprice was applied; ``reason`` says why.",
+        "properties": {
+          "reason": {
+            "description": "Why the reprice was not applied.\n\nA closed enum; additions to the redemption-check vocabulary arrive as\ndeliberate schema updates.",
+            "enum": [
+              "body_mismatch",
+              "continuation_excluded",
+              "continuation_only",
+              "expired",
+              "invalid_target_model",
+              "not_enabled",
+              "reprice_unavailable",
+              "temporarily_unavailable",
+              "variant_fields_present",
+              "wrong_organization",
+              "wrong_platform",
+              "wrong_workspace"
+            ],
+            "title": "Reason",
+            "type": "string"
+          },
+          "remove_to_redeem": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Request fields to remove before retrying, so the retry can redeem this\ntoken.\n\nPresent exactly when `reason` is `variant_fields_present` — never null,\nnever an empty array; absent otherwise. Fields are named only from your own request, and only after\nthe sealed variant hash matched. A served best-effort retry has already\nbeen billed at normal price; nothing redeems retroactively, but a corrected\nre-send inside the token's five-minute window can still redeem.",
+            "title": "Remove To Redeem"
+          },
+          "type": {
+            "const": "not_applied",
+            "default": "not_applied",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason",
+          "type"
+        ],
+        "title": "FallbackCreditNotApplied",
+        "type": "object"
+      },
       "BetaMessageIterationUsage": {
         "description": "Token usage for a sampling iteration.",
         "properties": {
@@ -2868,6 +3406,9 @@
             "title": "Input Tokens",
             "type": "integer"
           },
+          "model": {
+            "$ref": "#/components/schemas/Model"
+          },
           "output_tokens": {
             "description": "The number of output tokens which were used.",
             "minimum": 0,
@@ -2887,6 +3428,7 @@
           "cache_creation_input_tokens",
           "cache_read_input_tokens",
           "input_tokens",
+          "model",
           "output_tokens",
           "type"
         ],
@@ -3017,6 +3559,70 @@
         "title": "AdvisorMessageIterationUsage",
         "type": "object"
       },
+      "BetaFallbackMessageIterationUsage": {
+        "description": "Token usage for the fallback-model attempt of a server-side fallback request.\n\nProduced in place of a `message` entry for whichever hop served the\nresponse. A declined hop produces the existing `message` entry. Whether\na fallback model served the response is signalled by the presence of this\nentry in `usage.iterations`.",
+        "properties": {
+          "cache_creation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaCacheCreation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Breakdown of cached tokens by TTL"
+          },
+          "cache_creation_input_tokens": {
+            "default": 0,
+            "description": "The number of input tokens used to create the cache entry.",
+            "minimum": 0,
+            "title": "Cache Creation Input Tokens",
+            "type": "integer"
+          },
+          "cache_read_input_tokens": {
+            "default": 0,
+            "description": "The number of input tokens read from the cache.",
+            "minimum": 0,
+            "title": "Cache Read Input Tokens",
+            "type": "integer"
+          },
+          "input_tokens": {
+            "description": "The number of input tokens which were used.",
+            "minimum": 0,
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "model": {
+            "$ref": "#/components/schemas/Model"
+          },
+          "output_tokens": {
+            "description": "The number of output tokens which were used.",
+            "minimum": 0,
+            "title": "Output Tokens",
+            "type": "integer"
+          },
+          "type": {
+            "const": "fallback_message",
+            "default": "fallback_message",
+            "description": "Usage for the fallback-model attempt that served the response",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cache_creation",
+          "cache_creation_input_tokens",
+          "cache_read_input_tokens",
+          "input_tokens",
+          "model",
+          "output_tokens",
+          "type"
+        ],
+        "title": "FallbackMessageIterationUsage",
+        "type": "object"
+      },
       "BetaWebSearchToolResultErrorCode": {
         "enum": [
           "invalid_tool_input",
@@ -3034,6 +3640,7 @@
           "invalid_tool_input",
           "url_too_long",
           "url_not_allowed",
+          "url_not_in_prior_context",
           "url_not_accessible",
           "unsupported_content_type",
           "too_many_requests",
@@ -3111,7 +3718,8 @@
           "too_many_requests",
           "overloaded",
           "unavailable",
-          "execution_time_exceeded"
+          "execution_time_exceeded",
+          "model_not_found"
         ],
         "title": "AdvisorToolResultErrorCode",
         "type": "string"
