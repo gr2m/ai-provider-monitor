@@ -1,0 +1,433 @@
+{
+  "description": "`Tokenizer` is used to split text into `tokens` recognizable by the model and calculate the count. It receives user input text, processes it through the model for tokenization, and finally returns the corresponding `token` count. It is suitable for text length evaluation, model input estimation, dialogue context truncation, cost calculation, etc.",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "examples": {
+          "Text Tokenization Example": {
+            "value": {
+              "messages": [
+                {
+                  "content": "What opportunities and challenges will the Chinese large model industry face in 2025?",
+                  "role": "user"
+                }
+              ],
+              "model": "glm-4.6"
+            }
+          }
+        },
+        "schema": {
+          "$ref": "#/components/schemas/TokenizerRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/TokenizerResponse"
+          }
+        }
+      },
+      "description": "Business processing successful"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/Error"
+          }
+        }
+      },
+      "description": "The request has failed."
+    }
+  },
+  "summary": "Text Tokenizer",
+  "components": {
+    "schemas": {
+      "TokenizerRequest": {
+        "properties": {
+          "messages": {
+            "description": "The current conversation message list as the model’s prompt input, provided in JSON array format, e.g.,`{“role”: “user”, “content”: “Hello”}`. Possible message types include system messages, user messages. Note: The input must not consist of system or assistant messages only.",
+            "items": {
+              "oneOf": [
+                {
+                  "properties": {
+                    "content": {
+                      "oneOf": [
+                        {
+                          "description": "Multimodal message content, supports text, images, video, file",
+                          "items": {
+                            "$ref": "#/components/schemas/VisionMultimodalContentItem"
+                          },
+                          "type": "array"
+                        },
+                        {
+                          "description": "Text message content (can switch to multimodal message above)",
+                          "example": "What opportunities and challenges will the Chinese large model industry face in 2025?",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "role": {
+                      "default": "user",
+                      "description": "Role of the message author",
+                      "enum": [
+                        "user"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "role",
+                    "content"
+                  ],
+                  "title": "User Message",
+                  "type": "object"
+                },
+                {
+                  "properties": {
+                    "content": {
+                      "oneOf": [
+                        {
+                          "description": "Message text content",
+                          "example": "You are a helpful assistant.",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "role": {
+                      "default": "system",
+                      "description": "Role of the message author",
+                      "enum": [
+                        "system"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "role",
+                    "content"
+                  ],
+                  "title": "System Message",
+                  "type": "object"
+                },
+                {
+                  "description": "Can include tool calls",
+                  "properties": {
+                    "content": {
+                      "oneOf": [
+                        {
+                          "description": "Text message content",
+                          "example": "I'll help you with that analysis.",
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    "role": {
+                      "default": "assistant",
+                      "description": "Role of the message author",
+                      "enum": [
+                        "assistant"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "role"
+                  ],
+                  "title": "Assistant Message",
+                  "type": "object"
+                }
+              ]
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "model": {
+            "default": "glm-4.6",
+            "description": "The model code to be called.",
+            "enum": [
+              "glm-4.6",
+              "glm-4.6v",
+              "glm-4.5"
+            ],
+            "example": "glm-4.6",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Passed by the user side, needs to be unique; used to distinguish each request, 6–64 characters. If not provided by the user side, the platform will generate one by default.",
+            "maxLength": 64,
+            "minLength": 6,
+            "type": "string"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/FunctionToolSchema"
+                }
+              }
+            ],
+            "description": "List of tools the model can call. Supports up to `128` functions.",
+            "type": "array"
+          },
+          "user_id": {
+            "description": "Unique ID for the end user, 6–128 characters. Avoid using sensitive information.",
+            "maxLength": 128,
+            "minLength": 6,
+            "type": "string"
+          }
+        },
+        "required": [
+          "model",
+          "messages"
+        ],
+        "type": "object"
+      },
+      "TokenizerResponse": {
+        "properties": {
+          "created": {
+            "example": 1727156815,
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "description": "The task sequence number generated by the Zhipu AI Open Platform. Please use this number when calling the request result interface.",
+            "example": "20241120141244890ab4ee4af84acf",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "The task number submitted by the client or generated by the platform when the request was initiated.",
+            "example": "1",
+            "type": "string"
+          },
+          "usage": {
+            "properties": {
+              "image_tokens": {
+                "description": "Image tokens in this input",
+                "type": "number"
+              },
+              "prompt_tokens": {
+                "description": "Prompt tokens in this input",
+                "type": "number"
+              },
+              "total_tokens": {
+                "description": "Total tokens in this input",
+                "type": "number"
+              },
+              "video_tokens": {
+                "description": "Video tokens in this input",
+                "type": "number"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "usage"
+        ],
+        "type": "object"
+      },
+      "Error": {
+        "description": "The request has failed.",
+        "properties": {
+          "code": {
+            "description": "Error code.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "message": {
+            "description": "Error message.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "VisionMultimodalContentItem": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "text": {
+                "description": "Text content",
+                "type": "string"
+              },
+              "type": {
+                "default": "text",
+                "description": "Content type is text",
+                "enum": [
+                  "text"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "text"
+            ],
+            "title": "Text",
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "image_url": {
+                "additionalProperties": false,
+                "description": "Image information",
+                "properties": {
+                  "url": {
+                    "description": "Image URL or Base64 encoding. Image size limit is under 5M per image, with pixels not exceeding 6000*6000. GLM-5V GLM4.6V series are limited to 150 sheets, GLM4.5V limit 50 sheets. Supports jpg, png, jpeg formats.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "type": "object"
+              },
+              "type": {
+                "default": "image_url",
+                "description": "Content type is image URL",
+                "enum": [
+                  "image_url"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "image_url"
+            ],
+            "title": "Image",
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "default": "video_url",
+                "description": "Content type is video URL",
+                "enum": [
+                  "video_url"
+                ],
+                "type": "string"
+              },
+              "video_url": {
+                "additionalProperties": false,
+                "description": "Video information.",
+                "properties": {
+                  "url": {
+                    "description": "Video URL address.The video size is limited to within 200 MB, GLM-5V GLM4.6V series are limited to 2 videos, GLM4.5V limit 1 video, and the format supports `mp4`，`mkv`，`mov`.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "type",
+              "video_url"
+            ],
+            "title": "Video",
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "file_url": {
+                "additionalProperties": false,
+                "description": "File information.",
+                "properties": {
+                  "url": {
+                    "description": "File URL address. Only GLM-5V-Turbo, GLM-4.6V, GLM-4.5V supported. Supports formats such as pdf、txt、word、jsonl、xlsx、pptx, with a maximum of 50.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "type": "object"
+              },
+              "type": {
+                "default": "file_url",
+                "description": "Content type is file URL, not support passing both the `file_url` and `image_url` or `video_url` parameters at the same time.",
+                "enum": [
+                  "file_url"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "file_url"
+            ],
+            "title": "File",
+            "type": "object"
+          }
+        ]
+      },
+      "FunctionToolSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "function": {
+            "$ref": "#/components/schemas/FunctionObject"
+          },
+          "type": {
+            "default": "function",
+            "enum": [
+              "function"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "function"
+        ],
+        "title": "Function Call",
+        "type": "object"
+      },
+      "FunctionObject": {
+        "properties": {
+          "description": {
+            "description": "A description of what the function does, used by the model to choose when and how to call the function.",
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64.",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/FunctionParameters"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "FunctionParameters": {
+        "additionalProperties": true,
+        "description": "Parameters defined using JSON Schema. Must pass a JSON Schema object to accurately define accepted parameters. Omit if no parameters are needed when calling the function.",
+        "type": "object"
+      }
+    }
+  }
+}

@@ -1,0 +1,303 @@
+{
+  "description": "Use the [GLM-OCR](/guides/vlm/glm-ocr) model to parse the layout of documents and images and extract text content. Support OCR recognition of images and PDF documents, returning detailed layout information and visualization results.",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "examples": {
+          "Layout Parsing Example": {
+            "value": {
+              "file": "https://cdn.bigmodel.cn/static/logo/introduction.png",
+              "model": "glm-ocr"
+            }
+          }
+        },
+        "schema": {
+          "$ref": "#/components/schemas/LayoutParsingRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/LayoutParsingResponse"
+          }
+        }
+      },
+      "description": "Business processing successful"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/Error"
+          }
+        }
+      },
+      "description": "Request failed."
+    }
+  },
+  "summary": "Layout Parsing",
+  "components": {
+    "schemas": {
+      "LayoutParsingRequest": {
+        "properties": {
+          "end_page_id": {
+            "description": "End page number for parsing when PDF is provided",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "file": {
+            "description": "Image or PDF document to be recognized, supports URL and base64. Supported image formats: PDF, JPG, PNG. Single image ≤10MB, PDF ≤50MB, maximum support 30 pages",
+            "example": "https://cdn.bigmodel.cn/static/logo/introduction.png",
+            "type": "string"
+          },
+          "model": {
+            "description": "Model code: `glm-ocr`",
+            "enum": [
+              "glm-ocr"
+            ],
+            "example": "glm-ocr",
+            "type": "string"
+          },
+          "need_layout_visualization": {
+            "default": false,
+            "description": "Whether to return detailed layout image result information",
+            "type": "boolean"
+          },
+          "request_id": {
+            "description": "Passed by the user side, needs to be unique; used to distinguish each request, 6–64 characters. If not provided by the user side, the platform will generate one by default.",
+            "maxLength": 64,
+            "minLength": 6,
+            "type": "string"
+          },
+          "return_crop_images": {
+            "default": false,
+            "description": "Whether to return screenshot information",
+            "type": "boolean"
+          },
+          "start_page_id": {
+            "description": "Start page number for parsing when PDF is provided",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "user_id": {
+            "description": "Unique ID for the end user, 6–128 characters. Avoid using sensitive information.",
+            "maxLength": 128,
+            "minLength": 6,
+            "type": "string"
+          }
+        },
+        "required": [
+          "model",
+          "file"
+        ],
+        "type": "object"
+      },
+      "LayoutParsingResponse": {
+        "properties": {
+          "created": {
+            "description": "Request creation time, Unix timestamp in seconds",
+            "example": 1727156815,
+            "format": "int64",
+            "type": "integer"
+          },
+          "data_info": {
+            "$ref": "#/components/schemas/DataInfo"
+          },
+          "id": {
+            "description": "Task ID",
+            "example": "task_123456789",
+            "type": "string"
+          },
+          "layout_details": {
+            "description": "Detailed layout information",
+            "items": {
+              "items": {
+                "$ref": "#/components/schemas/LayoutDetail"
+              },
+              "type": "array"
+            },
+            "type": "array"
+          },
+          "layout_visualization": {
+            "description": "Recognition result image URLs",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "md_results": {
+            "description": "Recognition result in Markdown format",
+            "example": "# Doc title\nThis is the document content...",
+            "type": "string"
+          },
+          "model": {
+            "description": "Model name",
+            "example": "GLM-OCR",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "Request ID",
+            "example": "req_123456789",
+            "type": "string"
+          },
+          "usage": {
+            "description": "Token usage statistics returned when the model call ends.",
+            "properties": {
+              "completion_tokens": {
+                "description": "Number of output tokens",
+                "type": "number"
+              },
+              "prompt_tokens": {
+                "description": "Number of tokens in user input",
+                "type": "number"
+              },
+              "prompt_tokens_details": {
+                "properties": {
+                  "cached_tokens": {
+                    "description": "Number of tokens served from cache",
+                    "type": "number"
+                  }
+                },
+                "type": "object"
+              },
+              "total_tokens": {
+                "description": "Total number of tokens",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "created",
+          "model"
+        ],
+        "type": "object"
+      },
+      "Error": {
+        "description": "The request has failed.",
+        "properties": {
+          "code": {
+            "description": "Error code.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "message": {
+            "description": "Error message.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "DataInfo": {
+        "description": "Document basic information",
+        "properties": {
+          "num_pages": {
+            "description": "Total number of document pages",
+            "example": 5,
+            "type": "integer"
+          },
+          "pages": {
+            "description": "Document page count information",
+            "items": {
+              "$ref": "#/components/schemas/PageInfo"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "num_pages"
+        ],
+        "type": "object"
+      },
+      "LayoutDetail": {
+        "description": "Layout detail element",
+        "properties": {
+          "bbox_2d": {
+            "description": "Normalized element coordinates [x1,y1,x2,y2]",
+            "example": [
+              0.1,
+              0.1,
+              0.5,
+              0.3
+            ],
+            "items": {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            "maxItems": 4,
+            "minItems": 4,
+            "type": "array"
+          },
+          "content": {
+            "description": "Element content (text / image URL / table HTML)",
+            "example": "This is the content of the element",
+            "type": "string"
+          },
+          "height": {
+            "description": "Page height",
+            "example": 800,
+            "type": "integer"
+          },
+          "index": {
+            "description": "Element index",
+            "example": 1,
+            "type": "integer"
+          },
+          "label": {
+            "description": "Element type: image for images, text for text content, formula for inline formulas, table for tables",
+            "enum": [
+              "image",
+              "text",
+              "formula",
+              "table"
+            ],
+            "example": "text",
+            "type": "string"
+          },
+          "width": {
+            "description": "Page width",
+            "example": 600,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "index",
+          "label"
+        ],
+        "type": "object"
+      },
+      "PageInfo": {
+        "description": "Page dimension information",
+        "properties": {
+          "height": {
+            "description": "Page height",
+            "example": 800,
+            "type": "integer"
+          },
+          "width": {
+            "description": "Page width",
+            "example": 600,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "width",
+          "height"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

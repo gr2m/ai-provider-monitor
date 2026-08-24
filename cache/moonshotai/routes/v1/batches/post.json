@@ -1,0 +1,281 @@
+{
+  "description": "Create a batch task. You need to first upload a JSONL file with purpose=\"batch\" via the Files API, then use the returned file_id to create the task.",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/BatchCreateRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BatchObject"
+          }
+        }
+      },
+      "description": "The created batch task"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Bad request - Invalid parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Unauthorized - Invalid or missing API key"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Server error"
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "summary": "Create Batch",
+  "tags": [
+    "Batch"
+  ],
+  "components": {
+    "schemas": {
+      "BatchCreateRequest": {
+        "properties": {
+          "completion_window": {
+            "description": "Time window for task processing, supports formats like 12h, 1d, 3d, minimum 12h, maximum 7d",
+            "type": "string"
+          },
+          "endpoint": {
+            "description": "Request endpoint, currently only /v1/chat/completions is supported",
+            "enum": [
+              "/v1/chat/completions"
+            ],
+            "type": "string"
+          },
+          "input_file_id": {
+            "description": "ID of the input file, must be a .jsonl file uploaded with purpose=\"batch\"",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "maxLength": 512,
+              "type": "string"
+            },
+            "description": "Custom metadata, up to 16 key-value pairs, key max 64 chars, value max 512 chars",
+            "type": "object"
+          }
+        },
+        "required": [
+          "input_file_id",
+          "endpoint",
+          "completion_window"
+        ],
+        "type": "object"
+      },
+      "BatchObject": {
+        "properties": {
+          "cancelled_at": {
+            "description": "Cancellation completion timestamp (Unix)",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "cancelling_at": {
+            "description": "Cancellation request timestamp (Unix)",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "completed_at": {
+            "description": "Completion timestamp (Unix)",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "completion_window": {
+            "description": "Processing time window",
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Creation timestamp (Unix)",
+            "type": "integer"
+          },
+          "endpoint": {
+            "description": "Request endpoint",
+            "type": "string"
+          },
+          "error_file_id": {
+            "description": "Error file ID for failed results",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expires_at": {
+            "description": "Expiration timestamp (Unix)",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "failed_at": {
+            "description": "Validation failure timestamp (Unix)",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "finalizing_at": {
+            "description": "Result preparation start timestamp (Unix)",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Unique identifier for the batch task",
+            "type": "string"
+          },
+          "in_progress_at": {
+            "description": "Execution start timestamp (Unix)",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "input_file_id": {
+            "description": "Input file ID",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Custom metadata",
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "object": {
+            "description": "Object type, always batch",
+            "example": "batch",
+            "type": "string"
+          },
+          "output_file_id": {
+            "description": "Output file ID for successful results",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request_counts": {
+            "$ref": "#/components/schemas/BatchRequestCounts"
+          },
+          "status": {
+            "description": "Current status: validating, failed, in_progress, finalizing, completed, expired, cancelling, cancelled",
+            "enum": [
+              "validating",
+              "failed",
+              "in_progress",
+              "finalizing",
+              "completed",
+              "expired",
+              "cancelling",
+              "cancelled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "endpoint",
+          "input_file_id",
+          "completion_window",
+          "status",
+          "created_at",
+          "request_counts"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "Error code",
+                "type": "string"
+              },
+              "message": {
+                "description": "Error message describing what went wrong",
+                "type": "string"
+              },
+              "type": {
+                "description": "Error type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "BatchRequestCounts": {
+        "properties": {
+          "completed": {
+            "description": "Number of completed requests",
+            "type": "integer"
+          },
+          "failed": {
+            "description": "Number of failed requests",
+            "type": "integer"
+          },
+          "total": {
+            "description": "Total number of requests",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "completed",
+          "failed",
+          "total"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

@@ -93,6 +93,17 @@
                 "type": "null"
               }
             ]
+          },
+          "prompt_cache_retention": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PromptCacheRetentionEnum",
+                "description": "How long to retain a prompt cache entry created by this request."
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -209,6 +220,13 @@
           }
         ],
         "description": "Model ID used to generate the response, like `gpt-5` or `o3`. OpenAI offers a wide range of models with different capabilities, performance characteristics, and price points. Refer to the [model guide](/docs/models) to browse and compare available models."
+      },
+      "PromptCacheRetentionEnum": {
+        "enum": [
+          "in_memory",
+          "24h"
+        ],
+        "type": "string"
       },
       "ItemField": {
         "description": "An item representing a message, tool call, tool output, reasoning, or other response element.",
@@ -584,6 +602,17 @@
           "id": {
             "description": "The unique ID of the message.",
             "type": "string"
+          },
+          "phase": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MessagePhase-2",
+                "description": "Labels an `assistant` message as intermediate commentary (`commentary`) or the final answer (`final_answer`). For models like `gpt-5.3-codex` and beyond, when sending follow-up requests, preserve and resend phase on all assistant messages — dropping it can degrade performance. Not used for user messages."
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "role": {
             "$ref": "#/components/schemas/MessageRole",
@@ -1055,13 +1084,22 @@
           },
           {
             "properties": {
+              "created_by": {
+                "description": "The identifier of the actor that created the item.\n",
+                "type": "string"
+              },
               "id": {
                 "description": "The unique ID of the computer call tool output.\n",
                 "type": "string"
+              },
+              "status": {
+                "$ref": "#/components/schemas/ComputerCallOutputStatus",
+                "description": "The status of the message input. One of `in_progress`, `completed`, or\n`incomplete`. Populated when input items are returned via API.\n"
               }
             },
             "required": [
-              "id"
+              "id",
+              "status"
             ],
             "type": "object"
           }
@@ -2551,6 +2589,10 @@
           {
             "enum": [
               "gpt-5.4",
+              "gpt-5.4-mini",
+              "gpt-5.4-nano",
+              "gpt-5.4-mini-2026-03-17",
+              "gpt-5.4-nano-2026-03-17",
               "gpt-5.3-chat-latest",
               "gpt-5.2",
               "gpt-5.2-2025-12-11",
@@ -2876,6 +2918,10 @@
       "InputFileContent": {
         "description": "A file input to the model.",
         "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/FileInputDetail",
+            "description": "The detail level of the file to be sent to the model. Use `low` for the default rendering behavior, or `high` to render the file at higher quality. Defaults to `low`."
+          },
           "file_data": {
             "description": "The content of the file to be sent to the model.\n",
             "type": "string"
@@ -2913,6 +2959,13 @@
         ],
         "title": "Input file",
         "type": "object"
+      },
+      "MessagePhase-2": {
+        "enum": [
+          "commentary",
+          "final_answer"
+        ],
+        "type": "string"
       },
       "MessageRole": {
         "enum": [
@@ -3295,6 +3348,14 @@
         ],
         "title": "Computer tool call output",
         "type": "object"
+      },
+      "ComputerCallOutputStatus": {
+        "enum": [
+          "completed",
+          "incomplete",
+          "failed"
+        ],
+        "type": "string"
       },
       "CodeInterpreterOutputLogs": {
         "description": "The logs output from the code interpreter.",
@@ -3831,11 +3892,15 @@
       "InputFileContentParam": {
         "description": "A file input to the model.",
         "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/FileDetailEnum",
+            "description": "The detail level of the file to be sent to the model. Use `low` for the default rendering behavior, or `high` to render the file at higher quality. Defaults to `low`."
+          },
           "file_data": {
             "anyOf": [
               {
                 "description": "The base64-encoded data of the file to be sent to the model.",
-                "maxLength": 33554432,
+                "maxLength": 73400320,
                 "type": "string"
               },
               {
@@ -4111,6 +4176,13 @@
           "high",
           "auto",
           "original"
+        ],
+        "type": "string"
+      },
+      "FileInputDetail": {
+        "enum": [
+          "low",
+          "high"
         ],
         "type": "string"
       },
@@ -4882,6 +4954,20 @@
             "$ref": "#/components/schemas/ClickButtonType",
             "description": "Indicates which mouse button was pressed during the click. One of `left`, `right`, `wheel`, `back`, or `forward`."
           },
+          "keys": {
+            "anyOf": [
+              {
+                "description": "The keys being held while clicking.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "default": "click",
             "description": "Specifies the event type. For a click action, this property is always `click`.",
@@ -4911,6 +4997,20 @@
       "DoubleClickAction": {
         "description": "A double click action.",
         "properties": {
+          "keys": {
+            "anyOf": [
+              {
+                "description": "The keys being held while double-clicking.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "default": "double_click",
             "description": "Specifies the event type. For a double click action, this property is always set to `double_click`.",
@@ -4931,7 +5031,8 @@
         "required": [
           "type",
           "x",
-          "y"
+          "y",
+          "keys"
         ],
         "title": "DoubleClick",
         "type": "object"
@@ -4939,6 +5040,20 @@
       "DragParam": {
         "description": "A drag action.",
         "properties": {
+          "keys": {
+            "anyOf": [
+              {
+                "description": "The keys being held while dragging the mouse.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "path": {
             "description": "An array of coordinates representing the path of the drag action. Coordinates will appear as an array of objects, eg\n```\n[\n  { x: 100, y: 200 },\n  { x: 200, y: 300 }\n]\n```",
             "items": {
@@ -4992,6 +5107,20 @@
       "MoveParam": {
         "description": "A mouse move action.",
         "properties": {
+          "keys": {
+            "anyOf": [
+              {
+                "description": "The keys being held while moving the mouse.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "default": "move",
             "description": "Specifies the event type. For a move action, this property is always set to `move`.",
@@ -5038,6 +5167,20 @@
       "ScrollParam": {
         "description": "A scroll action.",
         "properties": {
+          "keys": {
+            "anyOf": [
+              {
+                "description": "The keys being held while scrolling.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "scroll_x": {
             "description": "The horizontal scroll distance.",
             "type": "integer"
@@ -5161,6 +5304,13 @@
           "high",
           "auto",
           "original"
+        ],
+        "type": "string"
+      },
+      "FileDetailEnum": {
+        "enum": [
+          "low",
+          "high"
         ],
         "type": "string"
       },
@@ -5975,7 +6125,9 @@
               "gt",
               "gte",
               "lt",
-              "lte"
+              "lte",
+              "in",
+              "nin"
             ],
             "type": "string"
           },

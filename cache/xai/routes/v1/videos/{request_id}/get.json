@@ -16,33 +16,13 @@
     "200": {
       "content": {
         "application/json": {
-          "examples": {
-            "done": {
-              "summary": "Video generation completed successfully",
-              "value": {
-                "model": "grok-imagine-video",
-                "status": "done",
-                "video": {
-                  "duration": 6,
-                  "respect_moderation": true,
-                  "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-f532feb6-49a9-4f9a-9a37-6e64ef725e8f.mp4"
-                }
-              }
-            },
-            "failed": {
-              "summary": "Video generation failed",
-              "value": {
-                "error": {
-                  "code": "internal_error",
-                  "message": "Video generation failed due to an internal error. Please try again."
-                },
-                "model": "",
-                "status": "failed",
-                "video": {
-                  "duration": 0,
-                  "respect_moderation": true
-                }
-              }
+          "example": {
+            "model": "grok-imagine-video",
+            "status": "done",
+            "video": {
+              "duration": 6,
+              "respect_moderation": true,
+              "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-{request_id}.mp4"
             }
           },
           "schema": {
@@ -76,13 +56,6 @@
       "VideoResponse": {
         "description": "Video generation response.",
         "properties": {
-          "block_reason": {
-            "description": "If the request was blocked by moderation, contains the block reason.",
-            "type": [
-              "string",
-              "null"
-            ]
-          },
           "error": {
             "oneOf": [
               {
@@ -95,8 +68,18 @@
             ]
           },
           "model": {
-            "description": "The model used to generate the video.",
-            "type": "string"
+            "description": "The model used to generate the video. Omitted when status is \"failed\".",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "progress": {
+            "description": "Approximate completion percentage for the video generation task (0-100).\n- When status is \"pending\": progress is between 0-99, indicating current completion.\n- When status is \"done\": progress is 100.\n- When status is \"failed\": progress is 0.",
+            "format": "int32",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
           },
           "status": {
             "description": "Status of the video generation: \"done\" when the video is ready.",
@@ -114,14 +97,20 @@
             ]
           },
           "video": {
-            "$ref": "#/components/schemas/GeneratedVideo",
-            "description": "The generated video data."
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GeneratedVideo",
+                "description": "The generated video data. Omitted when status is \"failed\"."
+              }
+            ]
           }
         },
         "required": [
           "status",
-          "video",
-          "model"
+          "progress"
         ],
         "type": "object"
       },
@@ -129,8 +118,8 @@
         "description": "Structured error returned when video generation fails.",
         "properties": {
           "code": {
-            "description": "Machine-readable error code (e.g. \"invalid_argument\", \"internal_error\").",
-            "type": "string"
+            "$ref": "#/components/schemas/VideoErrorCode",
+            "description": "Machine-readable error code indicating the type of failure.\nSee `VideoErrorCode` for all possible values."
           },
           "message": {
             "description": "Human-readable error message describing the failure.",
@@ -182,6 +171,16 @@
           "respect_moderation"
         ],
         "type": "object"
+      },
+      "VideoErrorCode": {
+        "description": "Machine-readable error codes for video generation failures.\n\nThese are the codes that can appear in `VideoError.code` when polling a\ndeferred video generation result. Authentication errors, model-not-found\nerrors, and rate-limit errors are returned synchronously as HTTP errors\nand never appear in `VideoError`.\n\nSerializes to/from snake_case strings (e.g. `\"invalid_argument\"`,\n`\"internal_error\"`) for JSON compatibility.",
+        "enum": [
+          "invalid_argument",
+          "permission_denied",
+          "failed_precondition",
+          "internal_error"
+        ],
+        "type": "string"
       }
     }
   }

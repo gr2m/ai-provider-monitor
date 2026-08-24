@@ -1,0 +1,2154 @@
+{
+  "operationId": "stream_v1_workflows_executions__execution_id__stream_get",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "execution_id",
+      "required": true,
+      "schema": {
+        "title": "Execution Id",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "event_source",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/EventSource"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Event Source"
+      }
+    },
+    {
+      "in": "query",
+      "name": "last_event_id",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Last Event Id"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "text/event-stream": {
+          "schema": {
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/StreamEventSsePayload"
+              },
+              "event": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              },
+              "retry": {
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "description": "Stream of Server-Sent Events (SSE)"
+    },
+    "422": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/HTTPValidationError"
+          }
+        }
+      },
+      "description": "Validation Error"
+    }
+  },
+  "summary": "Stream",
+  "tags": [
+    "beta.workflows.executions"
+  ],
+  "components": {
+    "schemas": {
+      "EventSource": {
+        "enum": [
+          "DATABASE",
+          "LIVE"
+        ],
+        "title": "EventSource",
+        "type": "string"
+      },
+      "StreamEventSsePayload": {
+        "properties": {
+          "broker_sequence": {
+            "title": "Broker Sequence",
+            "type": "integer"
+          },
+          "data": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WorkflowExecutionStartedResponse"
+              },
+              {
+                "$ref": "#/components/schemas/WorkflowExecutionCompletedResponse"
+              },
+              {
+                "$ref": "#/components/schemas/WorkflowExecutionFailedResponse"
+              },
+              {
+                "$ref": "#/components/schemas/WorkflowExecutionCanceledResponse"
+              },
+              {
+                "$ref": "#/components/schemas/WorkflowExecutionContinuedAsNewResponse"
+              },
+              {
+                "$ref": "#/components/schemas/WorkflowTaskTimedOutResponse"
+              },
+              {
+                "$ref": "#/components/schemas/WorkflowTaskFailedResponse"
+              },
+              {
+                "$ref": "#/components/schemas/CustomTaskStartedResponse"
+              },
+              {
+                "$ref": "#/components/schemas/CustomTaskInProgressResponse"
+              },
+              {
+                "$ref": "#/components/schemas/CustomTaskCompletedResponse"
+              },
+              {
+                "$ref": "#/components/schemas/CustomTaskFailedResponse"
+              },
+              {
+                "$ref": "#/components/schemas/CustomTaskTimedOutResponse"
+              },
+              {
+                "$ref": "#/components/schemas/CustomTaskCanceledResponse"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityTaskStartedResponse"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityTaskCompletedResponse"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityTaskRetryingResponse"
+              },
+              {
+                "$ref": "#/components/schemas/ActivityTaskFailedResponse"
+              }
+            ],
+            "title": "Data"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "stream": {
+            "title": "Stream",
+            "type": "string"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          },
+          "workflow_context": {
+            "$ref": "#/components/schemas/StreamEventWorkflowContext"
+          }
+        },
+        "required": [
+          "stream",
+          "data",
+          "workflow_context",
+          "broker_sequence"
+        ],
+        "title": "StreamEventSsePayload",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "WorkflowExecutionStartedResponse": {
+        "description": "Emitted when a workflow execution begins.\n\nThis is the first event in any workflow execution lifecycle.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/WorkflowExecutionStartedAttributesResponse",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "WORKFLOW_EXECUTION_STARTED",
+            "default": "WORKFLOW_EXECUTION_STARTED",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "WorkflowExecutionStarted",
+        "type": "object"
+      },
+      "WorkflowExecutionCompletedResponse": {
+        "description": "Emitted when a workflow execution completes successfully.\n\nThis is a terminal event indicating the workflow finished without errors.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/WorkflowExecutionCompletedAttributesResponse",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "WORKFLOW_EXECUTION_COMPLETED",
+            "default": "WORKFLOW_EXECUTION_COMPLETED",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "WorkflowExecutionCompleted",
+        "type": "object"
+      },
+      "WorkflowExecutionFailedResponse": {
+        "description": "Emitted when a workflow execution fails due to an unhandled exception.\n\nThis is a terminal event indicating the workflow ended with an error.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/WorkflowExecutionFailedAttributes",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "WORKFLOW_EXECUTION_FAILED",
+            "default": "WORKFLOW_EXECUTION_FAILED",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "WorkflowExecutionFailed",
+        "type": "object"
+      },
+      "WorkflowExecutionCanceledResponse": {
+        "description": "Emitted when a workflow execution is canceled.\n\nThis is a terminal event indicating the workflow was explicitly canceled.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/WorkflowExecutionCanceledAttributes",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "WORKFLOW_EXECUTION_CANCELED",
+            "default": "WORKFLOW_EXECUTION_CANCELED",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "WorkflowExecutionCanceled",
+        "type": "object"
+      },
+      "WorkflowExecutionContinuedAsNewResponse": {
+        "description": "Emitted when a workflow continues as a new execution.\n\nThis occurs when a workflow uses continue-as-new to reset its history\nwhile maintaining logical continuity.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/WorkflowExecutionContinuedAsNewAttributesResponse",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "WORKFLOW_EXECUTION_CONTINUED_AS_NEW",
+            "default": "WORKFLOW_EXECUTION_CONTINUED_AS_NEW",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "WorkflowExecutionContinuedAsNew",
+        "type": "object"
+      },
+      "WorkflowTaskTimedOutResponse": {
+        "description": "Emitted when a workflow task times out.\n\nThis indicates the workflow task (a unit of workflow execution) exceeded\nits configured timeout.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/WorkflowTaskTimedOutAttributes",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "WORKFLOW_TASK_TIMED_OUT",
+            "default": "WORKFLOW_TASK_TIMED_OUT",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "WorkflowTaskTimedOut",
+        "type": "object"
+      },
+      "WorkflowTaskFailedResponse": {
+        "description": "Emitted when a workflow task fails.\n\nThis indicates an error occurred during workflow task execution,\nwhich may trigger a retry depending on configuration.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/WorkflowTaskFailedAttributes",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "WORKFLOW_TASK_FAILED",
+            "default": "WORKFLOW_TASK_FAILED",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "WorkflowTaskFailed",
+        "type": "object"
+      },
+      "CustomTaskStartedResponse": {
+        "description": "Emitted when a custom task begins execution.\n\nCustom tasks represent user-defined units of work within a workflow,\nsuch as LLM calls, API requests, or data processing steps.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/CustomTaskStartedAttributesResponse",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "CUSTOM_TASK_STARTED",
+            "default": "CUSTOM_TASK_STARTED",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "CustomTaskStarted",
+        "type": "object"
+      },
+      "CustomTaskInProgressResponse": {
+        "description": "Emitted during custom task execution to report progress.\n\nThis event supports streaming updates via JSON or JSON Patch payloads,\nenabling real-time progress tracking for long-running tasks.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/CustomTaskInProgressAttributesResponse",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "CUSTOM_TASK_IN_PROGRESS",
+            "default": "CUSTOM_TASK_IN_PROGRESS",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "CustomTaskInProgress",
+        "type": "object"
+      },
+      "CustomTaskCompletedResponse": {
+        "description": "Emitted when a custom task completes successfully.\n\nContains the final result of the task execution.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/CustomTaskCompletedAttributesResponse",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "CUSTOM_TASK_COMPLETED",
+            "default": "CUSTOM_TASK_COMPLETED",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "CustomTaskCompleted",
+        "type": "object"
+      },
+      "CustomTaskFailedResponse": {
+        "description": "Emitted when a custom task fails.\n\nContains details about the failure for debugging and error handling.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/CustomTaskFailedAttributes",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "CUSTOM_TASK_FAILED",
+            "default": "CUSTOM_TASK_FAILED",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "CustomTaskFailed",
+        "type": "object"
+      },
+      "CustomTaskTimedOutResponse": {
+        "description": "Emitted when a custom task exceeds its timeout.\n\nIndicates the task did not complete within its configured time limit.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/CustomTaskTimedOutAttributes",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "CUSTOM_TASK_TIMED_OUT",
+            "default": "CUSTOM_TASK_TIMED_OUT",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "CustomTaskTimedOut",
+        "type": "object"
+      },
+      "CustomTaskCanceledResponse": {
+        "description": "Emitted when a custom task is canceled.\n\nIndicates the task was explicitly stopped before completion.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/CustomTaskCanceledAttributes",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "CUSTOM_TASK_CANCELED",
+            "default": "CUSTOM_TASK_CANCELED",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "CustomTaskCanceled",
+        "type": "object"
+      },
+      "ActivityTaskStartedResponse": {
+        "description": "Emitted when an activity task begins execution.\n\nThis is the first event for an activity, emitted on the first attempt only.\nSubsequent retry attempts emit ACTIVITY_TASK_RETRYING instead.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/ActivityTaskStartedAttributesResponse",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "ACTIVITY_TASK_STARTED",
+            "default": "ACTIVITY_TASK_STARTED",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "ActivityTaskStarted",
+        "type": "object"
+      },
+      "ActivityTaskCompletedResponse": {
+        "description": "Emitted when an activity task completes successfully.\n\nContains timing information about the successful execution.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/ActivityTaskCompletedAttributesResponse",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "ACTIVITY_TASK_COMPLETED",
+            "default": "ACTIVITY_TASK_COMPLETED",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "ActivityTaskCompleted",
+        "type": "object"
+      },
+      "ActivityTaskRetryingResponse": {
+        "description": "Emitted when an activity task fails and will be retried.\n\nContains information about the failed attempt and the error that occurred.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/ActivityTaskRetryingAttributes",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "ACTIVITY_TASK_RETRYING",
+            "default": "ACTIVITY_TASK_RETRYING",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "ActivityTaskRetrying",
+        "type": "object"
+      },
+      "ActivityTaskFailedResponse": {
+        "description": "Emitted when an activity task fails after exhausting all retry attempts.\n\nThis is a terminal event indicating the activity could not complete successfully.",
+        "properties": {
+          "attributes": {
+            "$ref": "#/components/schemas/ActivityTaskFailedAttributes",
+            "description": "Event-specific attributes."
+          },
+          "event_id": {
+            "description": "Unique identifier for this event instance.",
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_timestamp": {
+            "description": "Unix timestamp in nanoseconds when the event was created.",
+            "title": "Event Timestamp",
+            "type": "integer"
+          },
+          "event_type": {
+            "const": "ACTIVITY_TASK_FAILED",
+            "default": "ACTIVITY_TASK_FAILED",
+            "description": "Event type discriminator.",
+            "title": "Event Type",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Execution ID of the parent workflow that initiated this execution. If this is a root workflow, this field is not set.",
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "description": "Execution ID of the root workflow that initiated this execution chain.",
+            "title": "Root Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_exec_id": {
+            "description": "Execution ID of the workflow that emitted this event.",
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow that emitted this event.",
+            "title": "Workflow Name",
+            "type": "string"
+          },
+          "workflow_run_id": {
+            "description": "Run ID of the workflow execution. Changes on continue-as-new while workflow_exec_id stays the same.",
+            "title": "Workflow Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_timestamp",
+          "root_workflow_exec_id",
+          "parent_workflow_exec_id",
+          "workflow_exec_id",
+          "workflow_run_id",
+          "workflow_name",
+          "event_type",
+          "attributes"
+        ],
+        "title": "ActivityTaskFailed",
+        "type": "object"
+      },
+      "StreamEventWorkflowContext": {
+        "properties": {
+          "namespace": {
+            "title": "Namespace",
+            "type": "string"
+          },
+          "parent_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Workflow Exec Id"
+          },
+          "root_workflow_exec_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Root Workflow Exec Id"
+          },
+          "workflow_exec_id": {
+            "title": "Workflow Exec Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "title": "Workflow Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "namespace",
+          "workflow_name",
+          "workflow_exec_id"
+        ],
+        "title": "StreamEventWorkflowContext",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "WorkflowExecutionStartedAttributesResponse": {
+        "description": "Attributes for workflow execution started events.",
+        "properties": {
+          "input": {
+            "$ref": "#/components/schemas/JSONPayloadResponse",
+            "description": "The input arguments passed to the workflow."
+          },
+          "task_id": {
+            "description": "Unique identifier for the task within the workflow execution.",
+            "title": "Task Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the workflow being executed.",
+            "title": "Workflow Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "workflow_name",
+          "input"
+        ],
+        "title": "WorkflowExecutionStartedAttributes",
+        "type": "object"
+      },
+      "WorkflowExecutionCompletedAttributesResponse": {
+        "description": "Attributes for workflow execution completed events.",
+        "properties": {
+          "result": {
+            "$ref": "#/components/schemas/JSONPayloadResponse",
+            "description": "The final result returned by the workflow."
+          },
+          "task_id": {
+            "description": "Unique identifier for the task within the workflow execution.",
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "result"
+        ],
+        "title": "WorkflowExecutionCompletedAttributes",
+        "type": "object"
+      },
+      "WorkflowExecutionFailedAttributes": {
+        "description": "Attributes for workflow execution failed events.",
+        "properties": {
+          "failure": {
+            "$ref": "#/components/schemas/Failure",
+            "description": "Details about the failure that caused the workflow to fail."
+          },
+          "task_id": {
+            "description": "Unique identifier for the task within the workflow execution.",
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "failure"
+        ],
+        "title": "WorkflowExecutionFailedAttributes",
+        "type": "object"
+      },
+      "WorkflowExecutionCanceledAttributes": {
+        "description": "Attributes for workflow execution canceled events.",
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional reason provided for the cancellation.",
+            "title": "Reason"
+          },
+          "task_id": {
+            "description": "Unique identifier for the task within the workflow execution.",
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "title": "WorkflowExecutionCanceledAttributes",
+        "type": "object"
+      },
+      "WorkflowExecutionContinuedAsNewAttributesResponse": {
+        "description": "Attributes for workflow execution continued-as-new events.",
+        "properties": {
+          "input": {
+            "$ref": "#/components/schemas/JSONPayloadResponse",
+            "description": "The input arguments passed to the new workflow execution."
+          },
+          "new_execution_run_id": {
+            "description": "The run ID of the new workflow execution that continues this workflow.",
+            "title": "New Execution Run Id",
+            "type": "string"
+          },
+          "task_id": {
+            "description": "Unique identifier for the task within the workflow execution.",
+            "title": "Task Id",
+            "type": "string"
+          },
+          "workflow_name": {
+            "description": "The registered name of the continued workflow.",
+            "title": "Workflow Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "new_execution_run_id",
+          "workflow_name",
+          "input"
+        ],
+        "title": "WorkflowExecutionContinuedAsNewAttributes",
+        "type": "object"
+      },
+      "WorkflowTaskTimedOutAttributes": {
+        "description": "Attributes for workflow task timed out events.",
+        "properties": {
+          "task_id": {
+            "description": "Unique identifier for the task within the workflow execution.",
+            "title": "Task Id",
+            "type": "string"
+          },
+          "timeout_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The type of timeout that occurred (e.g., 'START_TO_CLOSE', 'SCHEDULE_TO_START').",
+            "title": "Timeout Type"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "title": "WorkflowTaskTimedOutAttributes",
+        "type": "object"
+      },
+      "WorkflowTaskFailedAttributes": {
+        "description": "Attributes for workflow task failed events.",
+        "properties": {
+          "failure": {
+            "$ref": "#/components/schemas/Failure",
+            "description": "Details about the failure that caused the task to fail."
+          },
+          "task_id": {
+            "description": "Unique identifier for the task within the workflow execution.",
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "failure"
+        ],
+        "title": "WorkflowTaskFailedAttributes",
+        "type": "object"
+      },
+      "CustomTaskStartedAttributesResponse": {
+        "description": "Attributes for custom task started events.",
+        "properties": {
+          "custom_task_id": {
+            "description": "Unique identifier for the custom task within the workflow.",
+            "title": "Custom Task Id",
+            "type": "string"
+          },
+          "custom_task_type": {
+            "description": "The type/category of the custom task (e.g., 'llm_call', 'api_request').",
+            "title": "Custom Task Type",
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/JSONPayloadResponse",
+            "description": "The initial state or payload for the custom task."
+          }
+        },
+        "required": [
+          "custom_task_id",
+          "custom_task_type"
+        ],
+        "title": "CustomTaskStartedAttributes",
+        "type": "object"
+      },
+      "CustomTaskInProgressAttributesResponse": {
+        "description": "Attributes for custom task in-progress events with streaming updates.",
+        "properties": {
+          "custom_task_id": {
+            "description": "Unique identifier for the custom task within the workflow.",
+            "title": "Custom Task Id",
+            "type": "string"
+          },
+          "custom_task_type": {
+            "description": "The type/category of the custom task (e.g., 'llm_call', 'api_request').",
+            "title": "Custom Task Type",
+            "type": "string"
+          },
+          "payload": {
+            "description": "The current state or incremental update for the task.",
+            "discriminator": {
+              "mapping": {
+                "json": "#/components/schemas/JSONPayloadResponse",
+                "json_patch": "#/components/schemas/JSONPatchPayloadResponse"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/JSONPayloadResponse"
+              },
+              {
+                "$ref": "#/components/schemas/JSONPatchPayloadResponse"
+              }
+            ],
+            "title": "Payload"
+          }
+        },
+        "required": [
+          "custom_task_id",
+          "custom_task_type",
+          "payload"
+        ],
+        "title": "CustomTaskInProgressAttributes",
+        "type": "object"
+      },
+      "CustomTaskCompletedAttributesResponse": {
+        "description": "Attributes for custom task completed events.",
+        "properties": {
+          "custom_task_id": {
+            "description": "Unique identifier for the custom task within the workflow.",
+            "title": "Custom Task Id",
+            "type": "string"
+          },
+          "custom_task_type": {
+            "description": "The type/category of the custom task (e.g., 'llm_call', 'api_request').",
+            "title": "Custom Task Type",
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/JSONPayloadResponse",
+            "description": "The final result of the custom task."
+          }
+        },
+        "required": [
+          "custom_task_id",
+          "custom_task_type",
+          "payload"
+        ],
+        "title": "CustomTaskCompletedAttributes",
+        "type": "object"
+      },
+      "CustomTaskFailedAttributes": {
+        "description": "Attributes for custom task failed events.",
+        "properties": {
+          "custom_task_id": {
+            "description": "Unique identifier for the custom task within the workflow.",
+            "title": "Custom Task Id",
+            "type": "string"
+          },
+          "custom_task_type": {
+            "description": "The type/category of the custom task (e.g., 'llm_call', 'api_request').",
+            "title": "Custom Task Type",
+            "type": "string"
+          },
+          "failure": {
+            "$ref": "#/components/schemas/Failure",
+            "description": "Details about the failure that caused the task to fail."
+          }
+        },
+        "required": [
+          "custom_task_id",
+          "custom_task_type",
+          "failure"
+        ],
+        "title": "CustomTaskFailedAttributes",
+        "type": "object"
+      },
+      "CustomTaskTimedOutAttributes": {
+        "description": "Attributes for custom task timed out events.",
+        "properties": {
+          "custom_task_id": {
+            "description": "Unique identifier for the custom task within the workflow.",
+            "title": "Custom Task Id",
+            "type": "string"
+          },
+          "custom_task_type": {
+            "description": "The type/category of the custom task (e.g., 'llm_call', 'api_request').",
+            "title": "Custom Task Type",
+            "type": "string"
+          },
+          "timeout_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The type of timeout that occurred.",
+            "title": "Timeout Type"
+          }
+        },
+        "required": [
+          "custom_task_id",
+          "custom_task_type"
+        ],
+        "title": "CustomTaskTimedOutAttributes",
+        "type": "object"
+      },
+      "CustomTaskCanceledAttributes": {
+        "description": "Attributes for custom task canceled events.",
+        "properties": {
+          "custom_task_id": {
+            "description": "Unique identifier for the custom task within the workflow.",
+            "title": "Custom Task Id",
+            "type": "string"
+          },
+          "custom_task_type": {
+            "description": "The type/category of the custom task (e.g., 'llm_call', 'api_request').",
+            "title": "Custom Task Type",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional reason provided for the cancellation.",
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "custom_task_id",
+          "custom_task_type"
+        ],
+        "title": "CustomTaskCanceledAttributes",
+        "type": "object"
+      },
+      "ActivityTaskStartedAttributesResponse": {
+        "description": "Attributes for activity task started events.",
+        "properties": {
+          "activity_name": {
+            "description": "The registered name of the activity being executed.",
+            "title": "Activity Name",
+            "type": "string"
+          },
+          "input": {
+            "$ref": "#/components/schemas/JSONPayloadResponse",
+            "description": "The input arguments passed to the activity."
+          },
+          "task_id": {
+            "description": "Unique identifier for the activity task within the workflow.",
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "activity_name",
+          "input"
+        ],
+        "title": "ActivityTaskStartedAttributes",
+        "type": "object"
+      },
+      "ActivityTaskCompletedAttributesResponse": {
+        "description": "Attributes for activity task completed events.",
+        "properties": {
+          "activity_name": {
+            "description": "The registered name of the activity being executed.",
+            "title": "Activity Name",
+            "type": "string"
+          },
+          "result": {
+            "$ref": "#/components/schemas/JSONPayloadResponse",
+            "description": "The result returned by the activity."
+          },
+          "task_id": {
+            "description": "Unique identifier for the activity task within the workflow.",
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "activity_name",
+          "result"
+        ],
+        "title": "ActivityTaskCompletedAttributes",
+        "type": "object"
+      },
+      "ActivityTaskRetryingAttributes": {
+        "description": "Attributes for activity task retrying events.",
+        "properties": {
+          "activity_name": {
+            "description": "The registered name of the activity being executed.",
+            "title": "Activity Name",
+            "type": "string"
+          },
+          "attempt": {
+            "description": "The attempt number that failed (1-indexed).",
+            "title": "Attempt",
+            "type": "integer"
+          },
+          "failure": {
+            "$ref": "#/components/schemas/Failure",
+            "description": "Details about the failure that caused the retry."
+          },
+          "task_id": {
+            "description": "Unique identifier for the activity task within the workflow.",
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "activity_name",
+          "attempt",
+          "failure"
+        ],
+        "title": "ActivityTaskRetryingAttributes",
+        "type": "object"
+      },
+      "ActivityTaskFailedAttributes": {
+        "description": "Attributes for activity task failed events (final failure after all retries).",
+        "properties": {
+          "activity_name": {
+            "description": "The registered name of the activity being executed.",
+            "title": "Activity Name",
+            "type": "string"
+          },
+          "attempt": {
+            "description": "The final attempt number that failed (1-indexed).",
+            "title": "Attempt",
+            "type": "integer"
+          },
+          "failure": {
+            "$ref": "#/components/schemas/Failure",
+            "description": "Details about the failure that caused the activity to fail."
+          },
+          "task_id": {
+            "description": "Unique identifier for the activity task within the workflow.",
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "activity_name",
+          "attempt",
+          "failure"
+        ],
+        "title": "ActivityTaskFailedAttributes",
+        "type": "object"
+      },
+      "JSONPayloadResponse": {
+        "description": "A payload containing arbitrary JSON data.\n\nUsed for complete state snapshots or final results.",
+        "properties": {
+          "type": {
+            "const": "json",
+            "default": "json",
+            "description": "Discriminator indicating this is a raw JSON payload.",
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "description": "The JSON-serializable payload value.",
+            "title": "Value"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ],
+        "title": "JSONPayload",
+        "type": "object"
+      },
+      "Failure": {
+        "description": "Represents an error or exception that occurred during execution.",
+        "properties": {
+          "message": {
+            "description": "A human-readable description of the failure.",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "Failure",
+        "type": "object"
+      },
+      "JSONPatchPayloadResponse": {
+        "description": "A payload containing a list of JSON Patch operations.\n\nUsed for streaming incremental updates to workflow state.",
+        "properties": {
+          "type": {
+            "const": "json_patch",
+            "default": "json_patch",
+            "description": "Discriminator indicating this is a JSON Patch payload.",
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "description": "The list of JSON Patch operations to apply in order.",
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "add": "#/components/schemas/JSONPatchAdd",
+                  "append": "#/components/schemas/JSONPatchAppend",
+                  "remove": "#/components/schemas/JSONPatchRemove",
+                  "replace": "#/components/schemas/JSONPatchReplace"
+                },
+                "propertyName": "op"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/JSONPatchAppend"
+                },
+                {
+                  "$ref": "#/components/schemas/JSONPatchAdd"
+                },
+                {
+                  "$ref": "#/components/schemas/JSONPatchReplace"
+                },
+                {
+                  "$ref": "#/components/schemas/JSONPatchRemove"
+                }
+              ]
+            },
+            "title": "Value",
+            "type": "array"
+          }
+        },
+        "required": [
+          "type",
+          "value"
+        ],
+        "title": "JSONPatchPayload",
+        "type": "object"
+      },
+      "JSONPatchAppend": {
+        "properties": {
+          "op": {
+            "const": "append",
+            "description": "'append' is an extension for efficient string concatenation in streaming scenarios.",
+            "title": "Op",
+            "type": "string"
+          },
+          "path": {
+            "description": "A JSON Pointer (RFC 6901) identifying the target location within the document. Can be a string path (e.g., '/foo/bar'), '/', '', or an empty list [] for root-level operations.",
+            "title": "Path",
+            "type": "string"
+          },
+          "value": {
+            "description": "The value to use for the operation. A string to append to the existing value",
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "value",
+          "op"
+        ],
+        "title": "JSONPatchAppend",
+        "type": "object"
+      },
+      "JSONPatchAdd": {
+        "properties": {
+          "op": {
+            "const": "add",
+            "description": "Add operation ",
+            "title": "Op",
+            "type": "string"
+          },
+          "path": {
+            "description": "A JSON Pointer (RFC 6901) identifying the target location within the document. Can be a string path (e.g., '/foo/bar'), '/', '', or an empty list [] for root-level operations.",
+            "title": "Path",
+            "type": "string"
+          },
+          "value": {
+            "description": "The value to use for the operation",
+            "title": "Value"
+          }
+        },
+        "required": [
+          "path",
+          "value",
+          "op"
+        ],
+        "title": "JSONPatchAdd",
+        "type": "object"
+      },
+      "JSONPatchReplace": {
+        "properties": {
+          "op": {
+            "const": "replace",
+            "description": "Replace operation",
+            "title": "Op",
+            "type": "string"
+          },
+          "path": {
+            "description": "A JSON Pointer (RFC 6901) identifying the target location within the document. Can be a string path (e.g., '/foo/bar'), '/', '', or an empty list [] for root-level operations.",
+            "title": "Path",
+            "type": "string"
+          },
+          "value": {
+            "description": "The value to use for the operation",
+            "title": "Value"
+          }
+        },
+        "required": [
+          "path",
+          "value",
+          "op"
+        ],
+        "title": "JSONPatchReplace",
+        "type": "object"
+      },
+      "JSONPatchRemove": {
+        "properties": {
+          "op": {
+            "const": "remove",
+            "description": "Remove operation",
+            "title": "Op",
+            "type": "string"
+          },
+          "path": {
+            "description": "A JSON Pointer (RFC 6901) identifying the target location within the document. Can be a string path (e.g., '/foo/bar'), '/', '', or an empty list [] for root-level operations.",
+            "title": "Path",
+            "type": "string"
+          },
+          "value": {
+            "description": "The value to use for the operation",
+            "title": "Value"
+          }
+        },
+        "required": [
+          "path",
+          "value",
+          "op"
+        ],
+        "title": "JSONPatchRemove",
+        "type": "object"
+      }
+    }
+  }
+}

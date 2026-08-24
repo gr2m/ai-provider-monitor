@@ -3428,6 +3428,13 @@ components:
         button:
           $ref: "#/components/schemas/ClickButtonType"
           description: Indicates which mouse button was pressed during the click. One of `left`, `right`, `wheel`, `back`, or `forward`.
+        keys:
+          anyOf:
+            - description: The keys being held while clicking.
+              items:
+                type: string
+              type: array
+            - type: "null"
         type:
           default: click
           description: Specifies the event type. For a click action, this property is always `click`.
@@ -3790,6 +3797,11 @@ components:
               maxLength: 64
               type: string
             - type: "null"
+        prompt_cache_retention:
+          anyOf:
+            - $ref: "#/components/schemas/PromptCacheRetentionEnum"
+              description: How long to retain a prompt cache entry created by this request.
+            - type: "null"
       required:
         - model
       type: object
@@ -3870,6 +3882,8 @@ components:
             - gte
             - lt
             - lte
+            - in
+            - nin
           type: string
         value:
           description: The value to compare against the attribute key; supports string, number, or boolean types.
@@ -4054,6 +4068,12 @@ components:
         - output
       title: Computer tool call output
       type: object
+    ComputerCallOutputStatus:
+      enum:
+        - completed
+        - incomplete
+        - failed
+      type: string
     ComputerCallSafetyCheckParam:
       description: A pending safety check for the computer call.
       properties:
@@ -4238,12 +4258,22 @@ components:
       allOf:
         - $ref: "#/components/schemas/ComputerToolCallOutput"
         - properties:
+            created_by:
+              description: |
+                The identifier of the actor that created the item.
+              type: string
             id:
               description: |
                 The unique ID of the computer call tool output.
               type: string
+            status:
+              $ref: "#/components/schemas/ComputerCallOutputStatus"
+              description: |
+                The status of the message input. One of `in_progress`, `completed`, or
+                `incomplete`. Populated when input items are returned via API.
           required:
             - id
+            - status
           type: object
     ComputerUsePreviewTool:
       description: A tool that controls a virtual computer. Learn more about the [computer tool](https://platform.openai.com/docs/guides/tools-computer-use).
@@ -4681,6 +4711,7 @@ components:
         - $ref: "#/components/schemas/ToolSearchCall"
         - $ref: "#/components/schemas/ToolSearchOutput"
         - $ref: "#/components/schemas/ReasoningItem"
+        - $ref: "#/components/schemas/CompactionBody"
         - $ref: "#/components/schemas/CodeInterpreterToolCall"
         - $ref: "#/components/schemas/LocalShellToolCall"
         - $ref: "#/components/schemas/LocalShellToolCallOutput"
@@ -7689,6 +7720,13 @@ components:
                     to swap out system (or developer) messages in new responses.
                   type: string
                 - type: "null"
+            max_output_tokens:
+              anyOf:
+                - description: |
+                    An upper bound for the number of tokens that can be generated for a response, including visible output tokens and [reasoning tokens](/docs/guides/reasoning).
+                  minimum: 16
+                  type: integer
+                - type: "null"
             parallel_tool_calls:
               anyOf:
                 - default: true
@@ -8592,14 +8630,14 @@ components:
         chunking_strategy:
           $ref: "#/components/schemas/ChunkingStrategyRequestParam"
         file_ids:
-          description: A list of [File](/docs/api-reference/files) IDs that the vector store should use. Useful for tools like `file_search` that can access files.  If `attributes` or `chunking_strategy` are provided, they will be  applied to all files in the batch. The maximum batch size is 2000 files. Mutually exclusive with `files`.
+          description: A list of [File](/docs/api-reference/files) IDs that the vector store should use. Useful for tools like `file_search` that can access files.  If `attributes` or `chunking_strategy` are provided, they will be  applied to all files in the batch. The maximum batch size is 2000 files. This endpoint is recommended for multi-file ingestion and helps reduce per-vector-store write request pressure. Mutually exclusive with `files`.
           items:
             type: string
           maxItems: 2000
           minItems: 1
           type: array
         files:
-          description: A list of objects that each include a `file_id` plus optional `attributes` or `chunking_strategy`. Use this when you need to override metadata for specific files. The global `attributes` or `chunking_strategy` will be ignored and must be specified for each file. The maximum batch size is 2000 files. Mutually exclusive with `file_ids`.
+          description: A list of objects that each include a `file_id` plus optional `attributes` or `chunking_strategy`. Use this when you need to override metadata for specific files. The global `attributes` or `chunking_strategy` will be ignored and must be specified for each file. The maximum batch size is 2000 files. This endpoint is recommended for multi-file ingestion and helps reduce per-vector-store write request pressure. Mutually exclusive with `file_ids`.
           items:
             $ref: "#/components/schemas/CreateVectorStoreFileRequest"
           maxItems: 2000
@@ -8614,7 +8652,7 @@ components:
         chunking_strategy:
           $ref: "#/components/schemas/ChunkingStrategyRequestParam"
         file_id:
-          description: A [File](/docs/api-reference/files) ID that the vector store should use. Useful for tools like `file_search` that can access files.
+          description: A [File](/docs/api-reference/files) ID that the vector store should use. Useful for tools like `file_search` that can access files. For multi-file ingestion, we recommend [`file_batches`](/docs/api-reference/vector-stores-file-batches/createBatch) to minimize per-vector-store write requests.
           type: string
       required:
         - file_id
@@ -8963,6 +9001,50 @@ components:
         - output
       title: Custom tool call output
       type: object
+    CustomToolCallOutputResource:
+      allOf:
+        - $ref: "#/components/schemas/CustomToolCallOutput"
+        - properties:
+            created_by:
+              description: |
+                The identifier of the actor that created the item.
+              type: string
+            id:
+              description: |
+                The unique ID of the custom tool call output item.
+              type: string
+            status:
+              $ref: "#/components/schemas/FunctionCallOutputStatusEnum"
+              description: |
+                The status of the item. One of `in_progress`, `completed`, or
+                `incomplete`. Populated when items are returned via API.
+          required:
+            - id
+            - status
+          type: object
+      title: ResponseCustomToolCallOutputItem
+    CustomToolCallResource:
+      allOf:
+        - $ref: "#/components/schemas/CustomToolCall"
+        - properties:
+            created_by:
+              description: |
+                The identifier of the actor that created the item.
+              type: string
+            id:
+              description: |
+                The unique ID of the custom tool call item.
+              type: string
+            status:
+              $ref: "#/components/schemas/FunctionCallStatus"
+              description: |
+                The status of the item. One of `in_progress`, `completed`, or
+                `incomplete`. Populated when items are returned via API.
+          required:
+            - id
+            - status
+          type: object
+      title: ResponseCustomToolCallItem
     CustomToolChatCompletions:
       description: |
         A custom tool that processes input using a specified format.
@@ -9370,6 +9452,13 @@ components:
     DoubleClickAction:
       description: A double click action.
       properties:
+        keys:
+          anyOf:
+            - description: The keys being held while double-clicking.
+              items:
+                type: string
+              type: array
+            - type: "null"
         type:
           default: double_click
           description: Specifies the event type. For a double click action, this property is always set to `double_click`.
@@ -9387,11 +9476,19 @@ components:
         - type
         - x
         - "y"
+        - keys
       title: DoubleClick
       type: object
     DragParam:
       description: A drag action.
       properties:
+        keys:
+          anyOf:
+            - description: The keys being held while dragging the mouse.
+              items:
+                type: string
+              type: array
+            - type: "null"
         path:
           description: |-
             An array of coordinates representing the path of the drag action. Coordinates will appear as an array of objects, eg
@@ -11210,6 +11307,11 @@ components:
         - filename
       title: File citation
       type: object
+    FileDetailEnum:
+      enum:
+        - low
+        - high
+      type: string
     FileExpirationAfter:
       description: The expiration policy for a file. By default, files with `purpose=batch` expire after 30 days and all other files are persisted until they are manually deleted.
       properties:
@@ -11229,6 +11331,11 @@ components:
         - seconds
       title: File expiration policy
       type: object
+    FileInputDetail:
+      enum:
+        - low
+        - high
+      type: string
     FilePath:
       description: |
         A path to a file.
@@ -12654,23 +12761,43 @@ components:
       allOf:
         - $ref: "#/components/schemas/FunctionToolCallOutput"
         - properties:
+            created_by:
+              description: |
+                The identifier of the actor that created the item.
+              type: string
             id:
               description: |
                 The unique ID of the function call tool output.
               type: string
+            status:
+              $ref: "#/components/schemas/FunctionCallOutputStatusEnum"
+              description: |
+                The status of the item. One of `in_progress`, `completed`, or
+                `incomplete`. Populated when items are returned via API.
           required:
             - id
+            - status
           type: object
     FunctionToolCallResource:
       allOf:
         - $ref: "#/components/schemas/FunctionToolCall"
         - properties:
+            created_by:
+              description: |
+                The identifier of the actor that created the item.
+              type: string
             id:
               description: |
                 The unique ID of the function tool call.
               type: string
+            status:
+              $ref: "#/components/schemas/FunctionCallStatus"
+              description: |
+                The status of the item. One of `in_progress`, `completed`, or
+                `incomplete`. Populated when items are returned via API.
           required:
             - id
+            - status
           type: object
     FunctionToolParam:
       properties:
@@ -14238,6 +14365,9 @@ components:
     InputFileContent:
       description: A file input to the model.
       properties:
+        detail:
+          $ref: "#/components/schemas/FileInputDetail"
+          description: The detail level of the file to be sent to the model. Use `low` for the default rendering behavior, or `high` to render the file at higher quality. Defaults to `low`.
         file_data:
           description: |
             The content of the file to be sent to the model.
@@ -14267,10 +14397,13 @@ components:
     InputFileContentParam:
       description: A file input to the model.
       properties:
+        detail:
+          $ref: "#/components/schemas/FileDetailEnum"
+          description: The detail level of the file to be sent to the model. Use `low` for the default rendering behavior, or `high` to render the file at higher quality. Defaults to `low`.
         file_data:
           anyOf:
             - description: The base64-encoded data of the file to be sent to the model.
-              maxLength: 33554432
+              maxLength: 73400320
               type: string
             - type: "null"
         file_id:
@@ -14425,6 +14558,7 @@ components:
               type: string
           required:
             - id
+            - type
           type: object
     InputParam:
       description: |
@@ -14758,6 +14892,8 @@ components:
         - $ref: "#/components/schemas/FunctionToolCallOutputResource"
         - $ref: "#/components/schemas/ToolSearchCall"
         - $ref: "#/components/schemas/ToolSearchOutput"
+        - $ref: "#/components/schemas/ReasoningItem"
+        - $ref: "#/components/schemas/CompactionBody"
         - $ref: "#/components/schemas/ImageGenToolCall"
         - $ref: "#/components/schemas/CodeInterpreterToolCall"
         - $ref: "#/components/schemas/LocalShellToolCall"
@@ -14770,6 +14906,8 @@ components:
         - $ref: "#/components/schemas/MCPApprovalRequest"
         - $ref: "#/components/schemas/MCPApprovalResponseResource"
         - $ref: "#/components/schemas/MCPToolCall"
+        - $ref: "#/components/schemas/CustomToolCallResource"
+        - $ref: "#/components/schemas/CustomToolCallOutputResource"
     KeyPressAction:
       description: A collection of keypresses the model would like to perform.
       properties:
@@ -15849,6 +15987,11 @@ components:
         id:
           description: The unique ID of the message.
           type: string
+        phase:
+          anyOf:
+            - $ref: "#/components/schemas/MessagePhase-2"
+              description: Labels an `assistant` message as intermediate commentary (`commentary`) or the final answer (`final_answer`). For models like `gpt-5.3-codex` and beyond, when sending follow-up requests, preserve and resend phase on all assistant messages — dropping it can degrade performance. Not used for user messages.
+            - type: "null"
         role:
           $ref: "#/components/schemas/MessageRole"
           description: The role of the message. One of `unknown`, `user`, `assistant`, `system`, `critic`, `discriminator`, `developer`, or `tool`.
@@ -16423,6 +16566,11 @@ components:
         - commentary
         - final_answer
       type: string
+    MessagePhase-2:
+      enum:
+        - commentary
+        - final_answer
+      type: string
     MessageRequestContentTextObject:
       description: The text content that is part of a message.
       properties:
@@ -16617,6 +16765,10 @@ components:
         - type: string
         - enum:
             - gpt-5.4
+            - gpt-5.4-mini
+            - gpt-5.4-nano
+            - gpt-5.4-mini-2026-03-17
+            - gpt-5.4-nano-2026-03-17
             - gpt-5.3-chat-latest
             - gpt-5.2
             - gpt-5.2-2025-12-11
@@ -16920,6 +17072,13 @@ components:
     MoveParam:
       description: A mouse move action.
       properties:
+        keys:
+          anyOf:
+            - description: The keys being held while moving the mouse.
+              items:
+                type: string
+              type: array
+            - type: "null"
         type:
           default: move
           description: Specifies the event type. For a move action, this property is always set to `move`.
@@ -17103,12 +17262,16 @@ components:
         - $ref: "#/components/schemas/RefusalContent"
         - $ref: "#/components/schemas/ReasoningTextContent"
     OutputItem:
-      anyOf:
+      discriminator:
+        propertyName: type
+      oneOf:
         - $ref: "#/components/schemas/OutputMessage"
         - $ref: "#/components/schemas/FileSearchToolCall"
         - $ref: "#/components/schemas/FunctionToolCall"
+        - $ref: "#/components/schemas/FunctionToolCallOutputResource"
         - $ref: "#/components/schemas/WebSearchToolCall"
         - $ref: "#/components/schemas/ComputerToolCall"
+        - $ref: "#/components/schemas/ComputerToolCallOutputResource"
         - $ref: "#/components/schemas/ReasoningItem"
         - $ref: "#/components/schemas/ToolSearchCall"
         - $ref: "#/components/schemas/ToolSearchOutput"
@@ -17116,6 +17279,7 @@ components:
         - $ref: "#/components/schemas/ImageGenToolCall"
         - $ref: "#/components/schemas/CodeInterpreterToolCall"
         - $ref: "#/components/schemas/LocalShellToolCall"
+        - $ref: "#/components/schemas/LocalShellToolCallOutput"
         - $ref: "#/components/schemas/FunctionShellCall"
         - $ref: "#/components/schemas/FunctionShellCallOutput"
         - $ref: "#/components/schemas/ApplyPatchToolCall"
@@ -17123,9 +17287,9 @@ components:
         - $ref: "#/components/schemas/MCPToolCall"
         - $ref: "#/components/schemas/MCPListTools"
         - $ref: "#/components/schemas/MCPApprovalRequest"
+        - $ref: "#/components/schemas/MCPApprovalResponseResource"
         - $ref: "#/components/schemas/CustomToolCall"
-      discriminator:
-        propertyName: type
+        - $ref: "#/components/schemas/CustomToolCallOutputResource"
     OutputMessage:
       description: |
         An output message from the model.
@@ -17944,6 +18108,11 @@ components:
             - id
           type: object
         - type: "null"
+    PromptCacheRetentionEnum:
+      enum:
+        - in_memory
+        - 24h
+      type: string
     PublicAssignOrganizationGroupRoleBody:
       description: Request payload for assigning a role to a group or user.
       properties:
@@ -25100,7 +25269,7 @@ components:
         tracing:
           default: null
           description: |
-            Realtime API can write session traces to the [Traces Dashboard](/logs?api=traces). Set to null to disable tracing. Once
+            Realtime API can write session traces to the [Traces Dashboard](https://platform.openai.com/logs?api=traces). Set to null to disable tracing. Once
             tracing is enabled for a session, the configuration cannot be modified.
 
             `auto` will create a trace for the session with default values for the
@@ -25529,7 +25698,7 @@ components:
           anyOf:
             - default: null
               description: |
-                Realtime API can write session traces to the [Traces Dashboard](/logs?api=traces). Set to null to disable tracing. Once
+                Realtime API can write session traces to the [Traces Dashboard](https://platform.openai.com/logs?api=traces). Set to null to disable tracing. Once
                 tracing is enabled for a session, the configuration cannot be modified.
 
                 `auto` will create a trace for the session with default values for the
@@ -26271,6 +26440,12 @@ components:
                         $ref: "#/components/schemas/InputItem"
                       title: Input item list
                       type: array
+                - type: "null"
+            max_output_tokens:
+              anyOf:
+                - description: |
+                    An upper bound for the number of tokens that can be generated for a response, including visible output tokens and [reasoning tokens](/docs/guides/reasoning).
+                  type: integer
                 - type: "null"
             object:
               description: |
@@ -28364,12 +28539,6 @@ components:
                 Whether to run the model response in the background.
                 [Learn more](/docs/guides/background).
               type: boolean
-            - type: "null"
-        max_output_tokens:
-          anyOf:
-            - description: |
-                An upper bound for the number of tokens that can be generated for a response, including visible output tokens and [reasoning tokens](/docs/guides/reasoning).
-              type: integer
             - type: "null"
         max_tool_calls:
           anyOf:
@@ -30701,6 +30870,13 @@ components:
     ScrollParam:
       description: A scroll action.
       properties:
+        keys:
+          anyOf:
+            - description: The keys being held while scrolling.
+              items:
+                type: string
+              type: array
+            - type: "null"
         scroll_x:
           description: The horizontal scroll distance.
           type: integer
@@ -36451,7 +36627,7 @@ paths:
                 		Input: "input",
                 		Model: openai.SpeechModelTTS1,
                 		Voice: openai.AudioSpeechNewParamsVoiceUnion{
-                			OfString: openai.String("string"),
+                			OfAudioSpeechNewsVoiceString2: openai.String("alloy"),
                 		},
                 	})
                 	if err != nil {
@@ -36477,7 +36653,7 @@ paths:
                         SpeechCreateParams params = SpeechCreateParams.builder()
                             .input("input")
                             .model(SpeechModel.TTS_1)
-                            .voice("string")
+                            .voice(SpeechCreateParams.Voice.UnionMember1.ALLOY)
                             .build();
                         HttpResponse speech = client.audio().speech().create(params);
                     }
@@ -36511,8 +36687,8 @@ paths:
 
                 const speech = await client.audio.speech.create({
                   input: 'input',
-                  model: 'string',
-                  voice: 'string',
+                  model: 'tts-1',
+                  voice: 'alloy',
                 });
 
                 console.log(speech);
@@ -36528,8 +36704,8 @@ paths:
                 )
                 speech = client.audio.speech.create(
                     input="input",
-                    model="string",
-                    voice="string",
+                    model="tts-1",
+                    voice="alloy",
                 )
                 print(speech)
                 content = speech.read()
@@ -36539,7 +36715,7 @@ paths:
 
                 openai = OpenAI::Client.new(api_key: "My API Key")
 
-                speech = openai.audio.speech.create(input: "input", model: :"tts-1", voice: "string")
+                speech = openai.audio.speech.create(input: "input", model: :"tts-1", voice: :alloy)
 
                 puts(speech)
             title: Default
@@ -36573,7 +36749,7 @@ paths:
                 		Input: "input",
                 		Model: openai.SpeechModelTTS1,
                 		Voice: openai.AudioSpeechNewParamsVoiceUnion{
-                			OfString: openai.String("string"),
+                			OfAudioSpeechNewsVoiceString2: openai.String("alloy"),
                 		},
                 	})
                 	if err != nil {
@@ -36599,7 +36775,7 @@ paths:
                         SpeechCreateParams params = SpeechCreateParams.builder()
                             .input("input")
                             .model(SpeechModel.TTS_1)
-                            .voice("string")
+                            .voice(SpeechCreateParams.Voice.UnionMember1.ALLOY)
                             .build();
                         HttpResponse speech = client.audio().speech().create(params);
                     }
@@ -36613,8 +36789,8 @@ paths:
 
                 const speech = await client.audio.speech.create({
                   input: 'input',
-                  model: 'string',
-                  voice: 'string',
+                  model: 'tts-1',
+                  voice: 'alloy',
                 });
 
                 console.log(speech);
@@ -36630,8 +36806,8 @@ paths:
                 )
                 speech = client.audio.speech.create(
                     input="input",
-                    model="string",
-                    voice="string",
+                    model="tts-1",
+                    voice="alloy",
                 )
                 print(speech)
                 content = speech.read()
@@ -36641,7 +36817,7 @@ paths:
 
                 openai = OpenAI::Client.new(api_key: "My API Key")
 
-                speech = openai.audio.speech.create(input: "input", model: :"tts-1", voice: "string")
+                speech = openai.audio.speech.create(input: "input", model: :"tts-1", voice: :alloy)
 
                 puts(speech)
             title: SSE Stream Format
@@ -36742,7 +36918,7 @@ paths:
                         OpenAIClient client = OpenAIOkHttpClient.fromEnv();
 
                         TranscriptionCreateParams params = TranscriptionCreateParams.builder()
-                            .file(ByteArrayInputStream("Example data".getBytes()))
+                            .file(new ByteArrayInputStream("Example data".getBytes()))
                             .model(AudioModel.GPT_4O_TRANSCRIBE)
                             .build();
                         TranscriptionCreateResponse transcription = client.audio().transcriptions().create(params);
@@ -36764,6 +36940,7 @@ paths:
                 }
                 main();
               node.js: |-
+                import fs from 'fs';
                 import OpenAI from 'openai';
 
                 const client = new OpenAI({
@@ -36865,7 +37042,7 @@ paths:
                         OpenAIClient client = OpenAIOkHttpClient.fromEnv();
 
                         TranscriptionCreateParams params = TranscriptionCreateParams.builder()
-                            .file(ByteArrayInputStream("Example data".getBytes()))
+                            .file(new ByteArrayInputStream("Example data".getBytes()))
                             .model(AudioModel.GPT_4O_TRANSCRIBE)
                             .build();
                         TranscriptionCreateResponse transcription = client.audio().transcriptions().create(params);
@@ -36892,6 +37069,7 @@ paths:
 
                 console.log(transcript.segments);
               node.js: |-
+                import fs from 'fs';
                 import OpenAI from 'openai';
 
                 const client = new OpenAI({
@@ -37012,7 +37190,7 @@ paths:
                         OpenAIClient client = OpenAIOkHttpClient.fromEnv();
 
                         TranscriptionCreateParams params = TranscriptionCreateParams.builder()
-                            .file(ByteArrayInputStream("Example data".getBytes()))
+                            .file(new ByteArrayInputStream("Example data".getBytes()))
                             .model(AudioModel.GPT_4O_TRANSCRIBE)
                             .build();
                         TranscriptionCreateResponse transcription = client.audio().transcriptions().create(params);
@@ -37034,6 +37212,7 @@ paths:
                   console.log(event);
                 }
               node.js: |-
+                import fs from 'fs';
                 import OpenAI from 'openai';
 
                 const client = new OpenAI({
@@ -37183,7 +37362,7 @@ paths:
                         OpenAIClient client = OpenAIOkHttpClient.fromEnv();
 
                         TranscriptionCreateParams params = TranscriptionCreateParams.builder()
-                            .file(ByteArrayInputStream("Example data".getBytes()))
+                            .file(new ByteArrayInputStream("Example data".getBytes()))
                             .model(AudioModel.GPT_4O_TRANSCRIBE)
                             .build();
                         TranscriptionCreateResponse transcription = client.audio().transcriptions().create(params);
@@ -37207,6 +37386,7 @@ paths:
                 }
                 main();
               node.js: |-
+                import fs from 'fs';
                 import OpenAI from 'openai';
 
                 const client = new OpenAI({
@@ -37369,7 +37549,7 @@ paths:
                         OpenAIClient client = OpenAIOkHttpClient.fromEnv();
 
                         TranscriptionCreateParams params = TranscriptionCreateParams.builder()
-                            .file(ByteArrayInputStream("Example data".getBytes()))
+                            .file(new ByteArrayInputStream("Example data".getBytes()))
                             .model(AudioModel.GPT_4O_TRANSCRIBE)
                             .build();
                         TranscriptionCreateResponse transcription = client.audio().transcriptions().create(params);
@@ -37393,6 +37573,7 @@ paths:
                 }
                 main();
               node.js: |-
+                import fs from 'fs';
                 import OpenAI from 'openai';
 
                 const client = new OpenAI({
@@ -37523,7 +37704,7 @@ paths:
                         OpenAIClient client = OpenAIOkHttpClient.fromEnv();
 
                         TranscriptionCreateParams params = TranscriptionCreateParams.builder()
-                            .file(ByteArrayInputStream("Example data".getBytes()))
+                            .file(new ByteArrayInputStream("Example data".getBytes()))
                             .model(AudioModel.GPT_4O_TRANSCRIBE)
                             .build();
                         TranscriptionCreateResponse transcription = client.audio().transcriptions().create(params);
@@ -37547,6 +37728,7 @@ paths:
                 }
                 main();
               node.js: |-
+                import fs from 'fs';
                 import OpenAI from 'openai';
 
                 const client = new OpenAI({
@@ -37698,7 +37880,7 @@ paths:
                       OpenAIClient client = OpenAIOkHttpClient.fromEnv();
 
                       TranslationCreateParams params = TranslationCreateParams.builder()
-                          .file(ByteArrayInputStream("Example data".getBytes()))
+                          .file(new ByteArrayInputStream("Example data".getBytes()))
                           .model(AudioModel.WHISPER_1)
                           .build();
                       TranslationCreateResponse translation = client.audio().translations().create(params);
@@ -37720,6 +37902,7 @@ paths:
               }
               main();
             node.js: |-
+              import fs from 'fs';
               import OpenAI from 'openai';
 
               const client = new OpenAI({
@@ -41471,7 +41654,10 @@ paths:
                   apiKey: process.env['OPENAI_API_KEY'], // This is the default and can be omitted
                 });
 
-                const completion = await client.completions.create({ model: 'string', prompt: 'This is a test.' });
+                const completion = await client.completions.create({
+                  model: 'gpt-3.5-turbo-instruct',
+                  prompt: 'This is a test.',
+                });
 
                 console.log(completion);
               python: |-
@@ -41482,7 +41668,7 @@ paths:
                     api_key=os.environ.get("OPENAI_API_KEY"),  # This is the default and can be omitted
                 )
                 for completion in client.completions.create(
-                    model="string",
+                    model="gpt-3.5-turbo-instruct",
                     prompt="This is a test.",
                 ):
                   print(completion)
@@ -41599,7 +41785,10 @@ paths:
                   apiKey: process.env['OPENAI_API_KEY'], // This is the default and can be omitted
                 });
 
-                const completion = await client.completions.create({ model: 'string', prompt: 'This is a test.' });
+                const completion = await client.completions.create({
+                  model: 'gpt-3.5-turbo-instruct',
+                  prompt: 'This is a test.',
+                });
 
                 console.log(completion);
               python: |-
@@ -41610,7 +41799,7 @@ paths:
                     api_key=os.environ.get("OPENAI_API_KEY"),  # This is the default and can be omitted
                 )
                 for completion in client.completions.create(
-                    model="string",
+                    model="gpt-3.5-turbo-instruct",
                     prompt="This is a test.",
                 ):
                   print(completion)
@@ -42339,6 +42528,7 @@ paths:
                   }
               }
             node.js: |-
+              import fs from 'fs';
               import OpenAI from 'openai';
 
               const client = new OpenAI({
@@ -46678,7 +46868,7 @@ paths:
                       OpenAIClient client = OpenAIOkHttpClient.fromEnv();
 
                       FileCreateParams params = FileCreateParams.builder()
-                          .file(ByteArrayInputStream("Example data".getBytes()))
+                          .file(new ByteArrayInputStream("Example data".getBytes()))
                           .purpose(FilePurpose.ASSISTANTS)
                           .build();
                       FileObject fileObject = client.files().create(params);
@@ -46705,6 +46895,7 @@ paths:
 
               main();
             node.js: |-
+              import fs from 'fs';
               import OpenAI from 'openai';
 
               const client = new OpenAI({
@@ -50104,7 +50295,7 @@ paths:
                         OpenAIClient client = OpenAIOkHttpClient.fromEnv();
 
                         ImageEditParams params = ImageEditParams.builder()
-                            .image(ByteArrayInputStream("Example data".getBytes()))
+                            .image(new ByteArrayInputStream("Example data".getBytes()))
                             .prompt("A cute baby sea otter wearing a beret")
                             .build();
                         ImagesResponse imagesResponse = client.images().edit(params);
@@ -50142,6 +50333,7 @@ paths:
                 const image_bytes = Buffer.from(image_base64, "base64");
                 fs.writeFileSync("basket.png", image_bytes);
               node.js: |-
+                import fs from 'fs';
                 import OpenAI from 'openai';
 
                 const client = new OpenAI({
@@ -50231,7 +50423,7 @@ paths:
                         OpenAIClient client = OpenAIOkHttpClient.fromEnv();
 
                         ImageEditParams params = ImageEditParams.builder()
-                            .image(ByteArrayInputStream("Example data".getBytes()))
+                            .image(new ByteArrayInputStream("Example data".getBytes()))
                             .prompt("A cute baby sea otter wearing a beret")
                             .build();
                         ImagesResponse imagesResponse = client.images().edit(params);
@@ -50269,6 +50461,7 @@ paths:
                     console.log(event);
                 }
               node.js: |-
+                import fs from 'fs';
                 import OpenAI from 'openai';
 
                 const client = new OpenAI({
@@ -50644,7 +50837,7 @@ paths:
                       OpenAIClient client = OpenAIOkHttpClient.fromEnv();
 
                       ImageCreateVariationParams params = ImageCreateVariationParams.builder()
-                          .image(ByteArrayInputStream("Example data".getBytes()))
+                          .image(new ByteArrayInputStream("Example data".getBytes()))
                           .build();
                       ImagesResponse imagesResponse = client.images().createVariation(params);
                   }
@@ -50664,6 +50857,7 @@ paths:
               }
               main();
             node.js: |-
+              import fs from 'fs';
               import OpenAI from 'openai';
 
               const client = new OpenAI({
@@ -65565,12 +65759,13 @@ paths:
 
                       PartCreateParams params = PartCreateParams.builder()
                           .uploadId("upload_abc123")
-                          .data(ByteArrayInputStream("Example data".getBytes()))
+                          .data(new ByteArrayInputStream("Example data".getBytes()))
                           .build();
                       UploadPart uploadPart = client.uploads().parts().create(params);
                   }
               }
             node.js: |-
+              import fs from 'fs';
               import OpenAI from 'openai';
 
               const client = new OpenAI({
@@ -66277,7 +66472,10 @@ paths:
         name: Modify vector store
   /vector_stores/{vector_store_id}/file_batches:
     post:
-      description: The maximum number of files in a single batch request is 2000.
+      description: |
+        The maximum number of files in a single batch request is 2000.
+        Vector store file attach requests are rate limited per vector store (300 requests per minute across both this endpoint and `/vector_stores/{vector_store_id}/files`).
+        For ingesting multiple files into the same vector store, this batch endpoint is recommended.
       operationId: createVectorStoreFileBatch
       parameters:
         - description: |
@@ -66305,6 +66503,8 @@ paths:
       tags:
         - Vector stores
       x-oaiMeta:
+        description: |
+          Attaches multiple files to a vector store in one request. This is the recommended approach for multi-file ingestion, especially because per-vector-store file attach writes are rate-limited (300 requests/minute shared with `/vector_stores/{vector_store_id}/files`).
         examples:
           request:
             curl: |
@@ -67099,6 +67299,9 @@ paths:
         group: vector_stores
         name: List vector store files
     post:
+      description: |-
+        This endpoint is subject to a per-vector-store write rate limit of 300 requests per minute, shared with `/vector_stores/{vector_store_id}/file_batches`.
+        For uploading multiple files to the same vector store, use the file batches endpoint to reduce request volume.
       operationId: createVectorStoreFile
       parameters:
         - description: |
@@ -67126,6 +67329,8 @@ paths:
       tags:
         - Vector stores
       x-oaiMeta:
+        description: |
+          Attaches one file to a vector store. File attach writes are rate-limited per vector store (300 requests/minute shared with `/vector_stores/{vector_store_id}/file_batches`), so use file batches when uploading multiple files.
         examples:
           request:
             curl: |
@@ -68273,12 +68478,13 @@ paths:
 
                       VideoCreateCharacterParams params = VideoCreateCharacterParams.builder()
                           .name("x")
-                          .video(ByteArrayInputStream("Example data".getBytes()))
+                          .video(new ByteArrayInputStream("Example data".getBytes()))
                           .build();
                       VideoCreateCharacterResponse response = client.videos().createCharacter(params);
                   }
               }
             node.js: |-
+              import fs from 'fs';
               import OpenAI from 'openai';
 
               const client = new OpenAI({
@@ -68475,7 +68681,7 @@ paths:
 
                       VideoEditParams params = VideoEditParams.builder()
                           .prompt("x")
-                          .video(ByteArrayInputStream("Example data".getBytes()))
+                          .video(new ByteArrayInputStream("Example data".getBytes()))
                           .build();
                       Video video = client.videos().edit(params);
                   }
@@ -68585,7 +68791,7 @@ paths:
                       VideoExtendParams params = VideoExtendParams.builder()
                           .prompt("x")
                           .seconds(VideoSeconds._4)
-                          .video(ByteArrayInputStream("Example data".getBytes()))
+                          .video(new ByteArrayInputStream("Example data".getBytes()))
                           .build();
                       Video video = client.videos().extend(params);
                   }

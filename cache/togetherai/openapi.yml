@@ -8,8 +8,26 @@ components:
       description: Public HTTPS URL to audio file
       format: uri
       type: string
+    AudioRef:
+      properties:
+        audio:
+          description: URL of the audio.
+          type: string
+      required:
+        - audio
+      type: object
     AudioSpeechRequest:
       properties:
+        bit_rate:
+          default: 128000
+          description: Bitrate of the MP3 audio output in bits per second. Only applicable when response_format is mp3. Higher values produce better audio quality at larger file sizes. Default is 128000. Currently supported on Cartesia models.
+          enum:
+            - 32000
+            - 64000
+            - 96000
+            - 128000
+            - 192000
+          type: integer
         input:
           description: Input text to generate the audio for
           type: string
@@ -71,7 +89,7 @@ components:
           type: boolean
         voice:
           description: |
-            The voice to use for generating the audio. The voices supported are different for each model. For eg - for canopylabs/orpheus-3b-0.1-ft, one of the voices supported is tara, for hexgrad/Kokoro-82M, one of the voices supported is af_alloy and for cartesia/sonic, one of the voices supported is "friendly sidekick". <br> <br> You can view the voices supported for each model using the /v1/voices endpoint sending the model name as the query parameter. [View all supported voices here](https://docs.together.ai/docs/text-to-speech#voices-available).
+            The voice to use for generating the audio. The voices supported are different for each model. For eg - for canopylabs/orpheus-3b-0.1-ft, one of the voices supported is tara, for hexgrad/Kokoro-82M, one of the voices supported is af_alloy and for cartesia/sonic, one of the voices supported is "friendly sidekick". <br> <br> You can view the voices supported for each model using the /v1/voices endpoint sending the model name as the query parameter. [View all supported voices here](https://docs.together.ai/docs/text-to-speech#supported-voices).
           type: string
       required:
         - model
@@ -852,18 +870,9 @@ components:
           format: float
           type: number
         model:
-          anyOf:
-            - enum:
-                - Qwen/Qwen2.5-72B-Instruct-Turbo
-                - Qwen/Qwen2.5-7B-Instruct-Turbo
-                - Qwen/Qwen3.5-9B
-                - meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo
-                - meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo
-              type: string
-            - type: string
           description: |
             The name of the model to query.<br> <br> [See all of Together AI's chat models](https://docs.together.ai/docs/serverless-models#chat-models)
-          example: Qwen/Qwen3.5-9B
+          type: string
         n:
           description: The number of completions to generate for each prompt.
           maximum: 128
@@ -1168,6 +1177,19 @@ components:
       required:
         - content
         - role
+      type: object
+    ClusterDriverVersionInfo:
+      description: CUDA/NVIDIA driver versions pair available in the region to use in the create cluster request.
+      properties:
+        cuda_version:
+          description: CUDA driver version.
+          type: string
+        nvidia_driver_version:
+          description: NVIDIA driver version.
+          type: string
+      required:
+        - cuda_version
+        - nvidia_driver_version
       type: object
     CompletionChoice:
       properties:
@@ -1514,7 +1536,6 @@ components:
           description: GPUType specifies the GPU hardware to use (e.g., "h100-80gb").
           enum:
             - h100-80gb
-            - a100-80gb
           type: string
         health_check_path:
           description: HealthCheckPath is the HTTP path for health checks (e.g., "/health"). If set, the platform will check this endpoint to determine container health
@@ -1527,7 +1548,7 @@ components:
           type: integer
         memory:
           description: Memory is the amount of RAM to allocate per container instance in GiB (e.g., 0.5 = 512MiB)
-          minimum: 0.1
+          maximum: 1000
           type: number
         min_replicas:
           description: MinReplicas is the minimum number of container instances to run. Defaults to 1 if not specified
@@ -1539,9 +1560,12 @@ components:
           type: string
         port:
           description: Port is the container port your application listens on (e.g., 8080 for web servers). Required if your application serves traffic
+          maximum: 65535
+          minimum: 1
           type: integer
         storage:
           description: Storage is the amount of ephemeral disk storage to allocate per container instance (e.g., 10 = 10GiB)
+          maximum: 400
           type: integer
         termination_grace_period_seconds:
           description: TerminationGracePeriodSeconds is the time in seconds to wait for graceful shutdown before forcefully terminating the replica
@@ -1575,13 +1599,11 @@ components:
           type: boolean
         display_name:
           description: A human-readable name for the endpoint
-          examples:
-            - My Llama3 70b endpoint
+          example: My Llama3 70b endpoint
           type: string
         hardware:
           description: The hardware configuration to use for this endpoint
-          examples:
-            - 1x_nvidia_a100_80gb_sxm
+          example: 1x_nvidia_a100_80gb_sxm
           type: string
         inactive_timeout:
           description: The number of minutes of inactivity after which the endpoint will be automatically stopped. Set to null, omit or set to 0 to disable automatic timeout.
@@ -1590,8 +1612,7 @@ components:
           type: integer
         model:
           description: The model to deploy on this endpoint
-          examples:
-            - meta-llama/Llama-3-8b-chat-hf
+          example: deepseek-ai/DeepSeek-R1
           type: string
         state:
           default: STARTED
@@ -1635,7 +1656,8 @@ components:
           description: Frames per second. Defaults to 24.
           type: integer
         frame_images:
-          description: Array of images to guide video generation, similar to keyframes.
+          deprecated: true
+          description: "Deprecated: use media.frame_images instead. Array of images to guide video generation, similar to keyframes."
           example:
             - - frame: 0
                 input_image: aac49721-1964-481a-ae78-8a4e29b91402
@@ -1646,11 +1668,17 @@ components:
           items:
             $ref: "#/components/schemas/VideoFrameImageInput"
           type: array
+        generate_audio:
+          description: Whether to generate audio for the video.
+          type: boolean
         guidance_scale:
           description: Controls how closely the video generation follows your prompt. Higher values make the model adhere more strictly to your text description, while lower values allow more creative freedom. guidence_scale affects both visual content and temporal consistency.Recommended range is 6.0-10.0 for most video models. Values above 12 may cause over-guidance artifacts or unnatural motion patterns.
           type: integer
         height:
           type: integer
+        media:
+          $ref: "#/components/schemas/VideoMedia"
+          description: Media inputs for video generation. The accepted fields depend on the model type (e.g. i2v, r2v, t2v, videoedit).
         model:
           description: The model to be used for the video creation request.
           type: string
@@ -1668,11 +1696,18 @@ components:
           maxLength: 32000
           minLength: 1
           type: string
+        ratio:
+          description: Aspect ratio of the video.
+          type: string
         reference_images:
-          description: Unlike frame_images which constrain specific timeline positions, reference images guide the general appearance that should appear consistently across the video.
+          deprecated: true
+          description: "Deprecated: use media.reference_images instead. Unlike frame_images which constrain specific timeline positions, reference images guide the general appearance that should appear consistently across the video."
           items:
             type: string
           type: array
+        resolution:
+          description: Video resolution.
+          type: string
         seconds:
           description: Clip duration in seconds.
           type: string
@@ -1739,11 +1774,11 @@ components:
           type: string
         display_name:
           description: Human-readable name for the endpoint
-          example: My Llama3 70b endpoint
+          example: My DeepSeek R1 endpoint
           type: string
         hardware:
           description: The hardware configuration used for this endpoint
-          example: 1x_nvidia_a100_80gb_sxm
+          example: 8x_nvidia_h200_140gb_sxm
           type: string
         id:
           description: Unique identifier for the endpoint
@@ -1751,11 +1786,11 @@ components:
           type: string
         model:
           description: The model deployed on this endpoint
-          example: meta-llama/Llama-3-8b-chat-hf
+          example: deepseek-ai/DeepSeek-R1
           type: string
         name:
           description: System name for the endpoint
-          example: devuser/meta-llama/Llama-3-8b-chat-hf-a32b82a1
+          example: devuser/deepseek-ai/DeepSeek-R1-a32b82a1
           type: string
         object:
           const: endpoint
@@ -1835,6 +1870,7 @@ components:
           type: number
         created_at:
           description: CreatedAt is the ISO8601 timestamp when this deployment was created
+          format: date-time
           type: string
         description:
           description: Description provides a human-readable explanation of the deployment's purpose or content
@@ -1905,6 +1941,7 @@ components:
           type: integer
         updated_at:
           description: UpdatedAt is the ISO8601 timestamp when this deployment was last updated
+          format: date-time
           type: string
         volumes:
           description: Volumes is a list of volume mounts for this deployment
@@ -2305,7 +2342,7 @@ components:
           type: string
         model:
           description: Name of the judge model
-          example: meta-llama/Llama-3-70B-Instruct-Turbo
+          example: Qwen/Qwen3.5-9B
           type: string
         model_source:
           description: Source of the judge model.
@@ -2314,6 +2351,11 @@ components:
             - dedicated
             - external
           type: string
+        num_workers:
+          description: Number of concurrent workers for inference requests. Overrides the default concurrency for this model. Useful for tuning throughput when using proxy endpoints (e.g. OpenRouter) or rate-limited external APIs.
+          example: 5
+          minimum: 1
+          type: integer
         system_template:
           description: System prompt template for the judge
           example: Imagine you are a helpful assistant
@@ -2347,7 +2389,7 @@ components:
           type: integer
         model:
           description: Name of the model to evaluate
-          example: meta-llama/Llama-3-70B-Instruct-Turbo
+          example: Qwen/Qwen3.5-9B
           type: string
         model_source:
           description: Source of the model.
@@ -2356,6 +2398,11 @@ components:
             - dedicated
             - external
           type: string
+        num_workers:
+          description: Number of concurrent workers for inference requests. Overrides the default concurrency for this model. Useful for tuning throughput when using proxy endpoints (e.g. OpenRouter) or rate-limited external APIs.
+          example: 5
+          minimum: 1
+          type: integer
         system_template:
           description: System prompt template
           example: Imagine you are helpful assistant
@@ -3130,6 +3177,9 @@ components:
           description: Maximum gradient norm for clipping
           format: float
           type: number
+        max_seq_length:
+          description: Maximum sequence length to use for training.
+          type: integer
         model:
           description: Base model used for fine-tuning
           type: string
@@ -3147,9 +3197,17 @@ components:
         owner_address:
           description: Owner address information
           type: string
+        packing:
+          description: Whether sequence packing is being used for training.
+          type: boolean
         progress:
           $ref: "#/components/schemas/FineTuneProgress"
           description: Progress information for the fine-tuning job
+        random_seed:
+          description: |
+            Random seed used for training. Integer when set; null if not stored (e.g. legacy jobs) or no explicit seed was recorded.
+          nullable: true
+          type: integer
         started_at:
           description: Start timestamp of the current stage of the fine-tune job
           format: date-time
@@ -3263,6 +3321,13 @@ components:
     GPUClusterCreateRequest:
       description: GPU Cluster create request
       properties:
+        auto_scale_max_gpus:
+          description: Maximum number of GPUs to which the cluster can be auto-scaled up. This field is required if auto_scaled is true.
+          type: integer
+        auto_scaled:
+          default: false
+          description: Whether GPU cluster should be auto-scaled based on the workload. By default, it is not auto-scaled.
+          type: boolean
         billing_type:
           description: |
             RESERVED billing types allow you to specify the duration of the cluster reservation via the duration_days field.
@@ -3270,8 +3335,12 @@ components:
           enum:
             - RESERVED
             - ON_DEMAND
+            - SCHEDULED_CAPACITY
           type: string
           x-stainless-terraform-configurability: computed
+        capacity_pool_id:
+          description: ID of the capacity pool to use for the cluster. This field is optional and only applicable if the cluster is created from a capacity pool.
+          type: string
         cluster_name:
           description: Name of the GPU cluster.
           type: string
@@ -3281,18 +3350,17 @@ components:
             - KUBERNETES
             - SLURM
           type: string
-        driver_version:
-          description: NVIDIA driver version to use in the cluster.
-          enum:
-            - CUDA_12_5_555
-            - CUDA_12_6_560
-            - CUDA_12_6_565
-            - CUDA_12_8_570
+        cuda_version:
+          description: CUDA version for this cluster. For example, 12.5
           type: string
         duration_days:
           description: Duration in days to keep the cluster running.
           type: integer
           x-stainless-terraform-configurability: computed
+        gpu_node_failover_enabled:
+          default: false
+          description: Whether automated GPU node failover should be enabled for this cluster. By default, it is disabled.
+          type: boolean
         gpu_type:
           description: Type of GPU to use in the cluster
           enum:
@@ -3303,16 +3371,37 @@ components:
             - B200_SXM
             - H100_SXM_INF
           type: string
+        install_traefik:
+          default: false
+          description: Whether to install Traefik ingress controller in the cluster. This field is only applicable for Kubernetes clusters and is false by default.
+          type: boolean
         num_gpus:
           description: Number of GPUs to allocate in the cluster. This must be multiple of 8. For example, 8, 16 or 24
           type: integer
+        nvidia_driver_version:
+          description: Nvidia driver version for this cluster. For example, 550. Only some combination of cuda_version and nvidia_driver_version are supported.
+          type: string
         region:
           description: Region to create the GPU cluster in. Usable regions can be found from `client.clusters.list_regions()`
+          type: string
+        reservation_end_time:
+          description: Reservation end time of the cluster. This field is required for SCHEDULED billing to specify the reservation end time for the cluster.
+          format: date-time
+          type: string
+        reservation_start_time:
+          description: Reservation start time of the cluster. This field is required for SCHEDULED billing to specify the reservation start time for the cluster. If not provided, the cluster will be provisioned immediately.
+          format: date-time
           type: string
         shared_volume:
           $ref: "#/components/schemas/GPUClustersSharedVolumeCreateRequest"
           description: Inline configuration to create a shared volume with the cluster creation.
           x-stainless-terraform-configurability: computed
+        slurm_image:
+          description: Custom Slurm image for Slurm clusters.
+          type: string
+        slurm_shm_size_gib:
+          description: Shared memory size in GiB for Slurm cluster. This field is required if cluster_type is SLURM.
+          type: integer
         volume_id:
           description: ID of an existing volume to use with the cluster creation.
           type: string
@@ -3321,12 +3410,15 @@ components:
         - gpu_type
         - num_gpus
         - cluster_name
-        - driver_version
+        - cuda_version
+        - nvidia_driver_version
         - billing_type
       type: object
     GPUClusterGPUWorkerNode:
       properties:
         host_name:
+          type: string
+        instance_id:
           type: string
         memory_gib:
           type: number
@@ -3356,6 +3448,8 @@ components:
       type: object
     GPUClusterInfo:
       properties:
+        capacity_pool_id:
+          type: string
         cluster_id:
           type: string
         cluster_name:
@@ -3369,12 +3463,11 @@ components:
           items:
             $ref: "#/components/schemas/GPUClusterControlPlaneNode"
           type: array
-        driver_version:
-          enum:
-            - CUDA_12_5_555
-            - CUDA_12_6_560
-            - CUDA_12_6_565
-            - CUDA_12_8_570
+        created_at:
+          format: date-time
+          type: string
+        cuda_version:
+          type: string
         duration_hours:
           type: integer
         gpu_type:
@@ -3389,12 +3482,24 @@ components:
           items:
             $ref: "#/components/schemas/GPUClusterGPUWorkerNode"
           type: array
+        install_traefik:
+          type: boolean
         kube_config:
           type: string
         num_gpus:
           type: integer
+        nvidia_driver_version:
+          type: string
         region:
           type: string
+        reservation_end_time:
+          format: date-time
+          type: string
+        reservation_start_time:
+          format: date-time
+          type: string
+        slurm_shm_size_gib:
+          type: integer
         status:
           description: Current status of the GPU cluster.
           enum:
@@ -3419,8 +3524,8 @@ components:
         - region
         - gpu_type
         - cluster_name
-        - duration_hours
-        - driver_version
+        - cuda_version
+        - nvidia_driver_version
         - volumes
         - status
         - control_plane_nodes
@@ -3438,6 +3543,10 @@ components:
         num_gpus:
           description: Number of GPUs to allocate in the cluster. This must be multiple of 8. For example, 8, 16 or 24
           type: integer
+        reservation_end_time:
+          description: Timestamp at which the cluster should be decommissioned. Only accepted for prepaid clusters.
+          format: date-time
+          type: string
       type: object
     GPUClusterVolume:
       properties:
@@ -4409,6 +4518,7 @@ components:
           type: number
       type: object
     RL.CheckpointDownloadResponse:
+      description: Presigned download URLs for a checkpoint's files
       properties:
         data:
           description: List of files with presigned download URLs
@@ -4416,6 +4526,8 @@ components:
             $ref: "#/components/schemas/RL.CheckpointFile"
             type: object
           type: array
+      required:
+        - data
       type: object
     RL.CheckpointFile:
       description: A downloadable file within a checkpoint
@@ -4433,6 +4545,10 @@ components:
           description: Presigned URL for downloading the file
           example: https://...
           type: string
+      required:
+        - filename
+        - url
+        - size
       type: object
     RL.CheckpointVariant:
       default: CHECKPOINT_VARIANT_UNSPECIFIED
@@ -4463,9 +4579,12 @@ components:
             - 456
             - 789
           items:
-            format: int64
-            type: string
+            oneOf:
+              - type: string
+              - type: integer
           type: array
+      required:
+        - tokens
       type: object
     RL.ForwardBackwardBody:
       properties:
@@ -4483,32 +4602,45 @@ components:
         - loss
       type: object
     RL.ForwardBackwardOperation:
+      description: Async forward-backward pass operation
       properties:
         error:
           $ref: "#/components/schemas/RL.TrainingOperationError"
+          description: Error details on failure
         id:
           description: Operation ID
           example: 550e8400-e29b-41d4-a716-446655440000
           type: string
         output:
           $ref: "#/components/schemas/RL.ForwardBackwardResult"
+          description: Result on success
         status:
           $ref: "#/components/schemas/RL.TrainingOperationStatus"
           description: Operation status
           example: TRAINING_OPERATION_STATUS_PENDING
+      required:
+        - id
+        - status
       type: object
     RL.ForwardBackwardResult:
+      description: Result of a forward-backward pass operation
       properties:
         loss:
           description: Loss value
           example: 2.345
+          format: double
           type: number
         metrics:
           additionalProperties:
             format: double
             type: number
           description: Loss-specific metrics (e.g., KL divergence, clip fraction for GRPO)
+          example:
+            loss/clip/high_fraction: 0.1
+            loss/kl_ref/mean: 0.05
           type: object
+      required:
+        - loss
       type: object
     RL.GRPOLossAggregationType:
       default: GRPO_LOSS_AGGREGATION_TYPE_UNSPECIFIED
@@ -4516,6 +4648,7 @@ components:
         - GRPO_LOSS_AGGREGATION_TYPE_UNSPECIFIED
         - GRPO_LOSS_AGGREGATION_TYPE_FIXED_HORIZON
         - GRPO_LOSS_AGGREGATION_TYPE_TOKEN_MEAN
+        - GRPO_LOSS_AGGREGATION_TYPE_SEQUENCE_MEAN
       type: string
     RL.GRPOLossInputs:
       properties:
@@ -4578,21 +4711,31 @@ components:
           example: 42
           format: uint64
           type: string
+      required:
+        - id
+        - step
+        - created_at
       type: object
     RL.InferenceCheckpointOperation:
+      description: Async inference checkpoint operation
       properties:
         error:
           $ref: "#/components/schemas/RL.TrainingOperationError"
+          description: Error details on failure
         id:
           description: Operation ID
           example: 550e8400-e29b-41d4-a716-446655440000
           type: string
         output:
           $ref: "#/components/schemas/RL.InferenceCheckpointResult"
+          description: Result on success
         status:
           $ref: "#/components/schemas/RL.TrainingOperationStatus"
           description: Operation status
           example: TRAINING_OPERATION_STATUS_PENDING
+      required:
+        - id
+        - status
       type: object
     RL.InferenceCheckpointRegistration:
       description: Model registration details for an inference checkpoint
@@ -4606,13 +4749,19 @@ components:
           example: "2026-01-02T00:00:00Z"
           format: date-time
           type: string
+      required:
+        - model_name
+        - registered_at
       type: object
     RL.InferenceCheckpointResult:
+      description: Result of an inference checkpoint operation
       properties:
         model_name:
           description: Registered model name for downloading the checkpoint
           example: username/Meta-Llama-3-8B-rl-step-42-20260216
           type: string
+      required:
+        - model_name
       type: object
     RL.InputChunk:
       properties:
@@ -4620,6 +4769,7 @@ components:
           $ref: "#/components/schemas/RL.EncodedText"
       type: object
     RL.ListMeta:
+      description: Pagination metadata for list responses
       properties:
         has_more:
           description: Whether more items exist beyond this page
@@ -4630,6 +4780,10 @@ components:
           example: 20
           format: int32
           type: integer
+        next_cursor:
+          description: Cursor to use as the 'after' parameter for the next page. Empty when has_more is false.
+          example: 123e4567-e89b-12d3-a456-426614174000
+          type: string
       type: object
     RL.LoraConfig:
       description: LoRA adapter configuration
@@ -4693,7 +4847,9 @@ components:
           description: Per-token loss mask (1=compute loss, 0=ignore)
         target_tokens:
           $ref: "#/components/schemas/RL.LossTargetTokens"
-          description: Target tokens for loss computation (optional, defaults to shifted input_ids)
+          description: Target tokens for loss computation
+      required:
+        - target_tokens
       type: object
     RL.LossLogprobs:
       properties:
@@ -4723,8 +4879,9 @@ components:
             - 0
             - 1
           items:
-            format: int64
-            type: string
+            oneOf:
+              - type: string
+              - type: integer
           type: array
         dtype:
           $ref: "#/components/schemas/RL.DType"
@@ -4742,8 +4899,9 @@ components:
             - 456
             - 789
           items:
-            format: int64
-            type: string
+            oneOf:
+              - type: string
+              - type: integer
           type: array
         dtype:
           $ref: "#/components/schemas/RL.DType"
@@ -4782,69 +4940,103 @@ components:
           type: number
       type: object
     RL.OptimStepOperation:
+      description: Async optimizer step operation
       properties:
         error:
           $ref: "#/components/schemas/RL.TrainingOperationError"
+          description: Error details on failure
         id:
           description: Operation ID
           example: 550e8400-e29b-41d4-a716-446655440000
           type: string
         output:
           $ref: "#/components/schemas/RL.OptimStepResult"
+          description: Result on success
         status:
           $ref: "#/components/schemas/RL.TrainingOperationStatus"
           description: Operation status
+      required:
+        - id
+        - status
       type: object
     RL.OptimStepResult:
+      description: Result of an optimizer step operation
       properties:
         step:
           description: Step number
           example: 100
           format: uint64
           type: string
+      required:
+        - step
       type: object
     RL.SampleBody:
       properties:
         num_samples:
           default: "1"
-          description: Number of completions to generate for this prompt
+          description: Number of completions to generate per prompt
           example: 1
           format: int64
           type: integer
-        prompt:
-          $ref: "#/components/schemas/RL.ModelInput"
-          description: Input prompt as tokenized chunks
+        prompts:
+          description: Input prompts as tokenized chunks
+          items:
+            $ref: "#/components/schemas/RL.ModelInput"
+            type: object
+          type: array
         sampling_params:
           $ref: "#/components/schemas/RL.SamplingParams"
           description: Optional sampling parameters
       required:
-        - prompt
+        - prompts
       type: object
     RL.SampleOperation:
+      description: Async sample operation
       properties:
         error:
           $ref: "#/components/schemas/RL.TrainingOperationError"
+          description: Error details on failure
         id:
           description: Operation ID
           example: 550e8400-e29b-41d4-a716-446655440000
           type: string
         output:
           $ref: "#/components/schemas/RL.SampleResult"
+          description: Result on success
         status:
           $ref: "#/components/schemas/RL.TrainingOperationStatus"
           description: Operation status
           example: TRAINING_OPERATION_STATUS_PENDING
+      required:
+        - id
+        - status
       type: object
     RL.SampleResult:
+      description: Result of a sample operation
+      properties:
+        rollouts:
+          description: Completions grouped by prompt
+          items:
+            $ref: "#/components/schemas/RL.SampleRollout"
+            type: object
+          type: array
+      required:
+        - rollouts
+      type: object
+    RL.SampleRollout:
+      description: Completions generated for a single prompt
       properties:
         sequences:
-          description: Generated completions
+          description: Completions generated for one prompt
           items:
             $ref: "#/components/schemas/RL.SampleSequence"
             type: object
           type: array
+      required:
+        - sequences
       type: object
     RL.SampleSequence:
+      description: A single generated completion sequence with tokens and logprobs
       properties:
         logprobs:
           description: Log probabilities for each generated token
@@ -4870,6 +5062,8 @@ components:
             format: int64
             type: string
           type: array
+      required:
+        - tokens
       type: object
     RL.SamplingParams:
       properties:
@@ -4887,7 +5081,7 @@ components:
         stop:
           description: Generation stops when any of these strings is produced
           example:
-            - |2+
+            - |+
 
             - END
           items:
@@ -4918,16 +5112,70 @@ components:
           description: Base model to use for the training session
           example: meta-llama/Meta-Llama-3-8B-Instruct
           type: string
-        checkpoint_id:
-          description: Checkpoint ID to use for the training session
-          example: checkpoint-123
-          type: string
         lora_config:
           $ref: "#/components/schemas/RL.LoraConfig"
+        resume_from_checkpoint_id:
+          description: Checkpoint ID to resume from
+          example: 123e4567-e89b-12d3-a456-426614174000
+          type: string
       required:
         - base_model
       type: object
+    RL.TrainingCheckpoint:
+      description: Saved training checkpoint
+      properties:
+        created_at:
+          description: Timestamp when the checkpoint was created
+          example: "2026-01-02T00:00:00Z"
+          format: date-time
+          type: string
+        id:
+          description: Unique identifier for the checkpoint
+          example: 123e4567-e89b-12d3-a456-426614174000
+          type: string
+        step:
+          description: Training step at time of save
+          example: 42
+          format: uint64
+          type: string
+      required:
+        - id
+        - step
+        - created_at
+      type: object
+    RL.TrainingCheckpointOperation:
+      description: Async save training checkpoint operation
+      properties:
+        error:
+          $ref: "#/components/schemas/RL.TrainingOperationError"
+          description: Error details on failure
+        id:
+          description: Operation ID
+          example: 550e8400-e29b-41d4-a716-446655440000
+          type: string
+        output:
+          $ref: "#/components/schemas/RL.TrainingCheckpointResult"
+          description: Result on success
+        status:
+          $ref: "#/components/schemas/RL.TrainingOperationStatus"
+          description: Operation status
+          example: TRAINING_OPERATION_STATUS_PENDING
+      required:
+        - id
+        - status
+      type: object
+    RL.TrainingCheckpointResult:
+      description: Result of a save training checkpoint operation
+      properties:
+        checkpoint_id:
+          description: ID of the saved training checkpoint (use for resume via Start)
+          example: 550e8400-e29b-41d4-a716-446655440000
+          type: string
+      required:
+        - checkpoint_id
+      type: object
     RL.TrainingOperationError:
+      description: Error details for a failed training operation
       properties:
         code:
           $ref: "#/components/schemas/RL.TrainingOperationErrorCode"
@@ -4970,6 +5218,7 @@ components:
         - loss_inputs
       type: object
     RL.TrainingSession:
+      description: A training session and its current state
       properties:
         base_model:
           description: Base model used for the training session
@@ -4992,6 +5241,10 @@ components:
           type: array
         lora_config:
           $ref: "#/components/schemas/RL.LoraConfig"
+        resume_from_checkpoint_id:
+          description: Checkpoint ID this session was resumed from
+          example: 123e4567-e89b-12d3-a456-426614174000
+          type: string
         status:
           $ref: "#/components/schemas/RL.TrainingSessionStatus"
           description: Status of the training session
@@ -5002,11 +5255,27 @@ components:
           example: 100
           format: uint64
           type: string
+        training_checkpoints:
+          description: List of saved training checkpoints for this session
+          items:
+            $ref: "#/components/schemas/RL.TrainingCheckpoint"
+            type: object
+          type: array
         updated_at:
           description: Timestamp when the training session was last updated
           example: "2026-01-02T00:00:05Z"
           format: date-time
           type: string
+      required:
+        - id
+        - status
+        - base_model
+        - inference_checkpoints
+        - training_checkpoints
+        - step
+        - created_at
+        - updated_at
+        - lora_config
       type: object
     RL.TrainingSessionStatus:
       default: TRAINING_SESSION_STATUS_UNSPECIFIED
@@ -5021,6 +5290,7 @@ components:
         - TRAINING_SESSION_STATUS_EXPIRED
       type: string
     RL.TrainingSessionsListResponse:
+      description: Paginated list of training sessions
       properties:
         data:
           description: List of training sessions
@@ -5038,9 +5308,9 @@ components:
           items:
             properties:
               driver_versions:
-                description: List of supported identifiable driver versions available in the region.
+                description: List of supported identifiable cuda/nvidia driver versions pairs available in the region.
                 items:
-                  type: string
+                  $ref: "#/components/schemas/ClusterDriverVersionInfo"
                 type: array
               name:
                 description: Identifiable name of the region.
@@ -5052,7 +5322,7 @@ components:
                 type: array
             required:
               - name
-              - availability_zones
+              - supported_instance_types
               - driver_versions
             type: object
           type: array
@@ -5500,7 +5770,7 @@ components:
             type: string
           type: array
         autoscaling:
-          description: Autoscaling configuration for the deployment. Omit or set to null to disable autoscaling
+          description: Autoscaling configuration for the deployment. Set to {} to disable autoscaling
           oneOf:
             - $ref: "#/components/schemas/HTTPAutoscalingConfig"
             - $ref: "#/components/schemas/QueueAutoscalingConfig"
@@ -5529,7 +5799,6 @@ components:
           description: GPUType specifies the GPU hardware to use (e.g., "h100-80gb")
           enum:
             - h100-80gb
-            - " a100-80gb"
           type: string
         health_check_path:
           description: HealthCheckPath is the HTTP path for health checks (e.g., "/health"). Set to empty string to disable health checks
@@ -5542,7 +5811,7 @@ components:
           type: integer
         memory:
           description: Memory is the amount of RAM to allocate per container instance in GiB (e.g., 0.5 = 512MiB)
-          minimum: 0.1
+          maximum: 1000
           type: number
         min_replicas:
           description: MinReplicas is the minimum number of replicas to run
@@ -5554,9 +5823,12 @@ components:
           type: string
         port:
           description: Port is the container port your application listens on (e.g., 8080 for web servers)
+          maximum: 65535
+          minimum: 1
           type: integer
         storage:
           description: Storage is the amount of ephemeral disk storage to allocate per container instance (e.g., 10 = 10GiB)
+          maximum: 400
           type: integer
         termination_grace_period_seconds:
           description: TerminationGracePeriodSeconds is the time in seconds to wait for graceful shutdown before forcefully terminating the replica
@@ -5705,11 +5977,55 @@ components:
         - created_at
       title: Video job
       type: object
+    VideoMedia:
+      description: Contains all media inputs for video generation. Accepted fields depend on the model type.
+      properties:
+        audio_inputs:
+          description: Array of audio inputs. Each element accepts a URL string or an object with an "audio" key.
+          items:
+            oneOf:
+              - type: string
+              - $ref: "#/components/schemas/AudioRef"
+          type: array
+        frame_images:
+          description: Array of images to guide video generation at specific timeline positions.
+          items:
+            $ref: "#/components/schemas/VideoFrameImageInput"
+          type: array
+        frame_videos:
+          description: Array of video clips to use as starting clips.
+          items:
+            $ref: "#/components/schemas/VideoRef"
+          type: array
+        reference_images:
+          description: Array of image URLs that guide the general appearance across the video.
+          items:
+            type: string
+          type: array
+        reference_videos:
+          description: Array of reference videos.
+          items:
+            $ref: "#/components/schemas/VideoRef"
+          type: array
+        source_video:
+          description: Source video to edit. Accepts a URL string or an object with a "video" key.
+          oneOf:
+            - type: string
+            - $ref: "#/components/schemas/VideoRef"
+      type: object
     VideoOutputFormat:
       enum:
         - MP4
         - WEBM
       type: string
+    VideoRef:
+      properties:
+        video:
+          description: URL of the video.
+          type: string
+      required:
+        - video
+      type: object
     VideoStatus:
       description: Current lifecycle status of the video job.
       enum:
@@ -10593,6 +10909,9 @@ paths:
                   description: Max gradient norm to be used for gradient clipping. Set to 0 to disable.
                   format: float
                   type: number
+                max_seq_length:
+                  description: Maximum sequence length to use for training.
+                  type: integer
                 model:
                   description: Name of the base model to run fine-tune job on
                   type: string
@@ -10609,6 +10928,15 @@ paths:
                 n_evals:
                   default: 0
                   description: Number of evaluations to be run on a given validation set during training
+                  type: integer
+                packing:
+                  default: true
+                  description: Whether to use sequence packing for training.
+                  type: boolean
+                random_seed:
+                  description: |
+                    Random seed for reproducible training. When set, the same seed produces the same run (e.g. data shuffle, init). If omitted or null, the server applies its default seed (e.g. 42).
+                  nullable: true
                   type: integer
                 suffix:
                   description: Suffix that will be added to your fine-tuned model name
@@ -11431,7 +11759,8 @@ paths:
             description: |
               Filter hardware configurations by model compatibility. When provided,
               the response includes availability status for each compatible configuration.
-            example: meta-llama/Llama-3-70b-chat-hf
+              [See all of Together AI's dedicated models](https://docs.together.ai/docs/dedicated-models)
+            example: deepseek-ai/DeepSeek-R1
             type: string
       responses:
         "200":
@@ -12151,12 +12480,60 @@ paths:
             "audio": "<base64_encoded_audio_chunk>"
           }
           ```
-        - `input_audio_buffer.commit`: Signal end of audio stream
+        - `input_audio_buffer.commit`: Signal end of audio stream. When VAD is enabled, the server automatically detects speech boundaries and emits `completed` events. When VAD is disabled, you must send `commit` to trigger transcription of the buffered audio.
           ```json
           {
             "type": "input_audio_buffer.commit"
           }
           ```
+        - `transcription_session.updated`: Update session configuration, including Voice Activity Detection (VAD) parameters. Send this after receiving `session.created`. Can also be sent at any time during the session to change VAD settings.
+          ```json
+          {
+            "type": "transcription_session.updated",
+            "session": {
+              "turn_detection": {
+                "type": "server_vad",
+                "threshold": 0.3,
+                "min_silence_duration_ms": 500,
+                "min_speech_duration_ms": 250,
+                "max_speech_duration_s": 5.0,
+                "speech_pad_ms": 250
+              }
+            }
+          }
+          ```
+          To disable VAD entirely (manual commit mode), set `turn_detection` to `null`:
+          ```json
+          {
+            "type": "transcription_session.updated",
+            "session": {
+              "turn_detection": null
+            }
+          }
+          ```
+
+        **Voice Activity Detection (VAD)**
+
+        VAD controls how the server automatically detects speech segments in the audio stream. When enabled (the default), the server uses Silero VAD to identify speech regions and emits transcription events as each segment completes. When disabled, you must manually call `input_audio_buffer.commit` to trigger transcription.
+
+        VAD can be configured in two ways:
+        1. **Query parameters** at connection time: `turn_detection=server_vad&threshold=0.3&min_silence_duration_ms=500`
+        2. **Session message** after connection: Send `transcription_session.updated` with a `turn_detection` object (see above)
+
+        To disable VAD at connection time, use `turn_detection=none` as a query parameter.
+
+        **VAD Parameters:**
+
+        All parameters are optional — omitted fields use their defaults.
+
+        | Parameter | Type | Default | Description |
+        |-----------|------|---------|-------------|
+        | `type` | string | `server_vad` | VAD mode. Use `server_vad` to enable, or set `turn_detection` to `null` to disable. |
+        | `threshold` | float | `0.3` | Speech probability threshold (0.0–1.0). Audio frames with probability above this value are classified as speech. Lower values detect more speech but may increase false positives. For low-SNR audio (e.g., 8kHz phone calls), values of 0.01–0.2 may work better. |
+        | `min_silence_duration_ms` | int | `500` | Minimum silence duration in milliseconds before ending a speech segment. Higher values merge nearby speech bursts into single segments. For phone calls with mid-sentence pauses, 2000–5000ms prevents over-segmentation. |
+        | `min_speech_duration_ms` | int | `250` | Minimum speech segment duration in milliseconds. Segments shorter than this are discarded. Filters out brief noise bursts or clicks. |
+        | `max_speech_duration_s` | float | `5.0` | Maximum speech segment duration in seconds. Segments longer than this are force-split at the longest internal silence gap. Useful for continuous speech without natural pauses. |
+        | `speech_pad_ms` | int | `250` | Padding in milliseconds added to the start and end of each detected segment. Prevents clipping speech edges. When padding would cause adjacent segments to overlap, the gap is split at the midpoint instead. |
 
         **Server Events:**
         - `session.created`: Initial session confirmation (sent first)
@@ -12168,6 +12545,22 @@ paths:
               "object": "realtime.session",
               "modalities": ["audio"],
               "model": "openai/whisper-large-v3"
+            }
+          }
+          ```
+        - `transcription_session.updated`: Confirms session configuration was applied. Sent in response to a client `transcription_session.updated` message.
+          ```json
+          {
+            "type": "transcription_session.updated",
+            "session": {
+              "turn_detection": {
+                "type": "server_vad",
+                "threshold": 0.3,
+                "min_silence_duration_ms": 500,
+                "min_speech_duration_ms": 250,
+                "max_speech_duration_s": 5.0,
+                "speech_pad_ms": 250
+              }
             }
           }
           ```
@@ -12980,6 +13373,66 @@ paths:
                 $ref: "#/components/schemas/ErrorData"
           description: An unexpected error response.
       summary: Get sample operation
+      tags:
+        - RL
+  /rl/training-sessions/{session_id}/operations/training-checkpoint:
+    post:
+      description: Submits an operation that will asynchronously save the full training state (adapter + optimizer + step).
+      operationId: createTrainingCheckpoint
+      parameters:
+        - in: path
+          name: session_id
+          required: true
+          schema:
+            description: Training session ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RL.TrainingCheckpointOperation"
+          description: Save training checkpoint operation details
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: An unexpected error response.
+      summary: Save training checkpoint
+      tags:
+        - RL
+  /rl/training-sessions/{session_id}/operations/training-checkpoint/{operation_id}:
+    get:
+      description: Retrieves the current status and result of a save training checkpoint operation.
+      operationId: getTrainingCheckpointOperation
+      parameters:
+        - in: path
+          name: session_id
+          required: true
+          schema:
+            description: Training session ID
+            type: string
+        - in: path
+          name: operation_id
+          required: true
+          schema:
+            description: Operation ID
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RL.TrainingCheckpointOperation"
+          description: Save training checkpoint operation details
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: An unexpected error response.
+      summary: Get save training checkpoint operation
       tags:
         - RL
   /rl/training-sessions/{session_id}/stop:

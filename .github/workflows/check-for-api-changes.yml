@@ -11,10 +11,17 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/check-for-api-changes.yml"
+      - "scripts/check-for-changes.js"
+      - "scripts/lib/download.js"
+
+concurrency:
+  group: check-for-api-changes
+  cancel-in-progress: false
 
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: write
       pull-requests: write
@@ -23,11 +30,9 @@ jobs:
       matrix:
         source:
           - name: anthropic
-            openapi_url: "https://storage.googleapis.com/stainless-sdk-openapi-specs/anthropic%2Fanthropic-29a6b7ba51942cd606e5bf4b533e5aac1bef42f6d4b1f7f45f756304cf676782.yml"
+            openapi_url: "https://raw.githubusercontent.com/anthropics/anthropic-sdk-typescript/main/.stats.yml"
+            openapi_url_property: openapi_spec_url
             filename: "openapi.json"
-          - name: assemblyai
-            openapi_url: "https://raw.githubusercontent.com/AssemblyAI/assemblyai-api-spec/refs/heads/main/openapi.yml"
-            filename: "openapi.yml"
           - name: cohere
             openapi_url: "https://raw.githubusercontent.com/cohere-ai/cohere-developer-experience/main/cohere-openapi.yaml"
             filename: openapi.yml
@@ -41,7 +46,7 @@ jobs:
             openapi_url: "https://app.stainless.com/api/spec/documented/openai/openapi.documented.yml"
             filename: openapi.yml
           - name: togetherai
-            openapi_url: "https://raw.githubusercontent.com/togethercomputer/openapi/refs/heads/main/openapi.yaml"
+            openapi_url: "https://docs.together.ai/openapi.yaml"
             filename: openapi.yml
           - name: xai
             openapi_url: "https://api.x.ai/api-docs/openapi.json"
@@ -72,6 +77,17 @@ jobs:
           - name: gladia
             openapi_url: "https://api.gladia.io/openapi.json"
             filename: openapi.json
+          - name: zai
+            openapi_url: "https://docs.z.ai/openapi.json"
+            filename: openapi.json
+          # DeepSeek does not publish the OpenAPI source used to generate its docs.
+          # Jentic maintains the only publicly available specification.
+          - name: deepseek
+            openapi_url: "https://raw.githubusercontent.com/jentic/jentic-public-apis/main/apis/openapi/deepseek.com/main/1.0.0/openapi.json"
+            filename: openapi.json
+          - name: moonshotai
+            openapi_url: "https://platform.kimi.ai/docs/openapi.json"
+            filename: openapi.json
 
     steps:
       - name: Checkout repository
@@ -79,8 +95,11 @@ jobs:
 
       - name: Install yq
         run: |
-          wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
-          chmod +x /usr/local/bin/yq
+          curl --fail --location --retry 3 --retry-all-errors --silent --show-error \
+            --output "$RUNNER_TEMP/yq" \
+            "https://github.com/mikefarah/yq/releases/download/v4.47.1/yq_linux_amd64"
+          chmod +x "$RUNNER_TEMP/yq"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -97,9 +116,10 @@ jobs:
           AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
           SOURCE_NAME: ${{ matrix.source.name }}
           OPENAPI_URL: ${{ matrix.source.openapi_url }}
+          OPENAPI_URL_PROPERTY: ${{ matrix.source.openapi_url_property }}
           FILENAME: ${{ matrix.source.filename }}
         run: |
-          node scripts/check-for-changes.js "$SOURCE_NAME" "$OPENAPI_URL" "$FILENAME" > result.json
+          node scripts/check-for-changes.js "$SOURCE_NAME" "$OPENAPI_URL" "$FILENAME" "$OPENAPI_URL_PROPERTY" > result.json
           cat result.json
 
           echo "has_changes=$(jq -r '.has_changes' result.json)" >> $GITHUB_OUTPUT
@@ -164,25 +184,18 @@ jobs:
             git push origin "update/${SOURCE_NAME}"
           fi
 
-      # Auto-merge the PR
-      - uses: actions/create-github-app-token@v2
-        if: steps.create-pr.outputs.pull-request-url != ''
-        id: app-token
-        with:
-          app-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: Merge the pull request
         if: steps.create-pr.outputs.pull-request-url != ''
         run: |
           gh pr merge ${{ steps.create-pr.outputs.pull-request-number }} --squash --delete-branch --repo ${{ github.repository }}
         env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
 
       - name: Send notifications
         if: steps.create-pr.outputs.pull-request-url != ''
         env:
-          APP_ID: ${{ vars.APP_ID }}
-          APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
+          APP_ID: ${{ vars.RELEASE_NOTIFIER_APP_ID }}
+          APP_PRIVATE_KEY: ${{ secrets.RELEASE_NOTIFIER_PRIVATE_KEY }}
         run: |
           node scripts/send-notifications.js "${{ matrix.source.name }}" '${{ steps.check.outputs.changed_routes }}'
 

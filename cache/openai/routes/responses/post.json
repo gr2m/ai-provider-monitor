@@ -96,6 +96,18 @@
                   }
                 ]
               },
+              "max_output_tokens": {
+                "anyOf": [
+                  {
+                    "description": "An upper bound for the number of tokens that can be generated for a response, including visible output tokens and [reasoning tokens](/docs/guides/reasoning).\n",
+                    "minimum": 16,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "parallel_tool_calls": {
                 "anyOf": [
                   {
@@ -222,6 +234,17 @@
                         "type": "array"
                       }
                     ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "max_output_tokens": {
+                "anyOf": [
+                  {
+                    "description": "An upper bound for the number of tokens that can be generated for a response, including visible output tokens and [reasoning tokens](/docs/guides/reasoning).\n",
+                    "type": "integer"
                   },
                   {
                     "type": "null"
@@ -550,17 +573,6 @@
               }
             ]
           },
-          "max_output_tokens": {
-            "anyOf": [
-              {
-                "description": "An upper bound for the number of tokens that can be generated for a response, including visible output tokens and [reasoning tokens](/docs/guides/reasoning).\n",
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "max_tool_calls": {
             "anyOf": [
               {
@@ -860,7 +872,10 @@
         ]
       },
       "OutputItem": {
-        "anyOf": [
+        "discriminator": {
+          "propertyName": "type"
+        },
+        "oneOf": [
           {
             "$ref": "#/components/schemas/OutputMessage"
           },
@@ -871,10 +886,16 @@
             "$ref": "#/components/schemas/FunctionToolCall"
           },
           {
+            "$ref": "#/components/schemas/FunctionToolCallOutputResource"
+          },
+          {
             "$ref": "#/components/schemas/WebSearchToolCall"
           },
           {
             "$ref": "#/components/schemas/ComputerToolCall"
+          },
+          {
+            "$ref": "#/components/schemas/ComputerToolCallOutputResource"
           },
           {
             "$ref": "#/components/schemas/ReasoningItem"
@@ -898,6 +919,9 @@
             "$ref": "#/components/schemas/LocalShellToolCall"
           },
           {
+            "$ref": "#/components/schemas/LocalShellToolCallOutput"
+          },
+          {
             "$ref": "#/components/schemas/FunctionShellCall"
           },
           {
@@ -919,12 +943,15 @@
             "$ref": "#/components/schemas/MCPApprovalRequest"
           },
           {
+            "$ref": "#/components/schemas/MCPApprovalResponseResource"
+          },
+          {
             "$ref": "#/components/schemas/CustomToolCall"
+          },
+          {
+            "$ref": "#/components/schemas/CustomToolCallOutputResource"
           }
-        ],
-        "discriminator": {
-          "propertyName": "type"
-        }
+        ]
       },
       "ResponseUsage": {
         "description": "Represents token usage details including input tokens, output tokens,\na breakdown of output tokens, and the total tokens used.\n",
@@ -3414,6 +3441,34 @@
         "title": "Function tool call",
         "type": "object"
       },
+      "FunctionToolCallOutputResource": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/FunctionToolCallOutput"
+          },
+          {
+            "properties": {
+              "created_by": {
+                "description": "The identifier of the actor that created the item.\n",
+                "type": "string"
+              },
+              "id": {
+                "description": "The unique ID of the function call tool output.\n",
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/components/schemas/FunctionCallOutputStatusEnum",
+                "description": "The status of the item. One of `in_progress`, `completed`, or\n`incomplete`. Populated when items are returned via API.\n"
+              }
+            },
+            "required": [
+              "id",
+              "status"
+            ],
+            "type": "object"
+          }
+        ]
+      },
       "WebSearchToolCall": {
         "description": "The results of a web search tool call. See the\n[web search guide](/docs/guides/tools-web-search) for more information.\n",
         "properties": {
@@ -3517,6 +3572,34 @@
         ],
         "title": "Computer tool call",
         "type": "object"
+      },
+      "ComputerToolCallOutputResource": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ComputerToolCallOutput"
+          },
+          {
+            "properties": {
+              "created_by": {
+                "description": "The identifier of the actor that created the item.\n",
+                "type": "string"
+              },
+              "id": {
+                "description": "The unique ID of the computer call tool output.\n",
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/components/schemas/ComputerCallOutputStatus",
+                "description": "The status of the message input. One of `in_progress`, `completed`, or\n`incomplete`. Populated when input items are returned via API.\n"
+              }
+            },
+            "required": [
+              "id",
+              "status"
+            ],
+            "type": "object"
+          }
+        ]
       },
       "ReasoningItem": {
         "description": "A description of the chain of thought used by a reasoning model while generating\na response. Be sure to include these items in your `input` to the Responses API\nfor subsequent turns of a conversation if you are manually\n[managing context](/docs/guides/conversation-state).\n",
@@ -3877,6 +3960,50 @@
           "status"
         ],
         "title": "Local shell call",
+        "type": "object"
+      },
+      "LocalShellToolCallOutput": {
+        "description": "The output of a local shell tool call.\n",
+        "properties": {
+          "id": {
+            "description": "The unique ID of the local shell tool call generated by the model.\n",
+            "type": "string"
+          },
+          "output": {
+            "description": "A JSON string of the output of the local shell tool call.\n",
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "description": "The status of the item. One of `in_progress`, `completed`, or `incomplete`.\n",
+                "enum": [
+                  "in_progress",
+                  "completed",
+                  "incomplete"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "description": "The type of the local shell tool call output. Always `local_shell_call_output`.\n",
+            "enum": [
+              "local_shell_call_output"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "call_id",
+          "output"
+        ],
+        "title": "Local shell call output",
         "type": "object"
       },
       "FunctionShellCall": {
@@ -4260,6 +4387,50 @@
         "title": "MCP approval request",
         "type": "object"
       },
+      "MCPApprovalResponseResource": {
+        "description": "A response to an MCP approval request.\n",
+        "properties": {
+          "approval_request_id": {
+            "description": "The ID of the approval request being answered.\n",
+            "type": "string"
+          },
+          "approve": {
+            "description": "Whether the request was approved.\n",
+            "type": "boolean"
+          },
+          "id": {
+            "description": "The unique ID of the approval response\n",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "description": "Optional reason for the decision.\n",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "description": "The type of the item. Always `mcp_approval_response`.\n",
+            "enum": [
+              "mcp_approval_response"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "request_id",
+          "approve",
+          "approval_request_id"
+        ],
+        "title": "MCP approval response",
+        "type": "object"
+      },
       "CustomToolCall": {
         "description": "A call to a custom tool created by the model.\n",
         "properties": {
@@ -4299,6 +4470,35 @@
         ],
         "title": "Custom tool call",
         "type": "object"
+      },
+      "CustomToolCallOutputResource": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CustomToolCallOutput"
+          },
+          {
+            "properties": {
+              "created_by": {
+                "description": "The identifier of the actor that created the item.\n",
+                "type": "string"
+              },
+              "id": {
+                "description": "The unique ID of the custom tool call output item.\n",
+                "type": "string"
+              },
+              "status": {
+                "$ref": "#/components/schemas/FunctionCallOutputStatusEnum",
+                "description": "The status of the item. One of `in_progress`, `completed`, or\n`incomplete`. Populated when items are returned via API.\n"
+              }
+            },
+            "required": [
+              "id",
+              "status"
+            ],
+            "type": "object"
+          }
+        ],
+        "title": "ResponseCustomToolCallOutputItem"
       },
       "OutputContent": {
         "discriminator": {
@@ -4359,6 +4559,10 @@
           {
             "enum": [
               "gpt-5.4",
+              "gpt-5.4-mini",
+              "gpt-5.4-nano",
+              "gpt-5.4-mini-2026-03-17",
+              "gpt-5.4-nano-2026-03-17",
               "gpt-5.3-chat-latest",
               "gpt-5.2",
               "gpt-5.2-2025-12-11",
@@ -5115,50 +5319,6 @@
         "title": "Compaction item",
         "type": "object"
       },
-      "LocalShellToolCallOutput": {
-        "description": "The output of a local shell tool call.\n",
-        "properties": {
-          "id": {
-            "description": "The unique ID of the local shell tool call generated by the model.\n",
-            "type": "string"
-          },
-          "output": {
-            "description": "A JSON string of the output of the local shell tool call.\n",
-            "type": "string"
-          },
-          "status": {
-            "anyOf": [
-              {
-                "description": "The status of the item. One of `in_progress`, `completed`, or `incomplete`.\n",
-                "enum": [
-                  "in_progress",
-                  "completed",
-                  "incomplete"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "type": {
-            "description": "The type of the local shell tool call output. Always `local_shell_call_output`.\n",
-            "enum": [
-              "local_shell_call_output"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "type",
-          "call_id",
-          "output"
-        ],
-        "title": "Local shell call output",
-        "type": "object"
-      },
       "FunctionShellCallItemParam": {
         "description": "A tool representing a request to execute one or more shell commands.",
         "properties": {
@@ -5539,6 +5699,68 @@
           }
         ]
       },
+      "FunctionToolCallOutput": {
+        "description": "The output of a function tool call.\n",
+        "properties": {
+          "call_id": {
+            "description": "The unique ID of the function tool call generated by the model.\n",
+            "type": "string"
+          },
+          "id": {
+            "description": "The unique ID of the function tool call output. Populated when this item\nis returned via API.\n",
+            "type": "string"
+          },
+          "output": {
+            "description": "The output from the function call generated by your code.\nCan be a string or an list of output content.\n",
+            "oneOf": [
+              {
+                "description": "A string of the output of the function call.\n",
+                "title": "string output",
+                "type": "string"
+              },
+              {
+                "description": "Text, image, or file output of the function call.\n",
+                "items": {
+                  "$ref": "#/components/schemas/FunctionAndCustomToolCallOutput"
+                },
+                "title": "output content list",
+                "type": "array"
+              }
+            ]
+          },
+          "status": {
+            "description": "The status of the item. One of `in_progress`, `completed`, or\n`incomplete`. Populated when items are returned via API.\n",
+            "enum": [
+              "in_progress",
+              "completed",
+              "incomplete"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "description": "The type of the function tool call output. Always `function_call_output`.\n",
+            "enum": [
+              "function_call_output"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "call_id",
+          "output"
+        ],
+        "title": "Function tool call output",
+        "type": "object"
+      },
+      "FunctionCallOutputStatusEnum": {
+        "enum": [
+          "in_progress",
+          "completed",
+          "incomplete"
+        ],
+        "type": "string"
+      },
       "WebSearchActionSearch": {
         "description": "Action type \"search\" - Performs a web search query.\n",
         "properties": {
@@ -5731,6 +5953,61 @@
         ],
         "type": "object"
       },
+      "ComputerToolCallOutput": {
+        "description": "The output of a computer tool call.\n",
+        "properties": {
+          "acknowledged_safety_checks": {
+            "description": "The safety checks reported by the API that have been acknowledged by the\ndeveloper.\n",
+            "items": {
+              "$ref": "#/components/schemas/ComputerCallSafetyCheckParam"
+            },
+            "type": "array"
+          },
+          "call_id": {
+            "description": "The ID of the computer tool call that produced the output.\n",
+            "type": "string"
+          },
+          "id": {
+            "description": "The ID of the computer tool call output.\n",
+            "type": "string"
+          },
+          "output": {
+            "$ref": "#/components/schemas/ComputerScreenshotImage"
+          },
+          "status": {
+            "description": "The status of the message input. One of `in_progress`, `completed`, or\n`incomplete`. Populated when input items are returned via API.\n",
+            "enum": [
+              "in_progress",
+              "completed",
+              "incomplete"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "default": "computer_call_output",
+            "description": "The type of the computer tool call output. Always `computer_call_output`.\n",
+            "enum": [
+              "computer_call_output"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "call_id",
+          "output"
+        ],
+        "title": "Computer tool call output",
+        "type": "object"
+      },
+      "ComputerCallOutputStatus": {
+        "enum": [
+          "completed",
+          "incomplete",
+          "failed"
+        ],
+        "type": "string"
+      },
       "ReasoningTextContent": {
         "description": "Reasoning text from the model.",
         "properties": {
@@ -5785,14 +6062,6 @@
         "type": "string"
       },
       "FunctionCallStatus": {
-        "enum": [
-          "in_progress",
-          "completed",
-          "incomplete"
-        ],
-        "type": "string"
-      },
-      "FunctionCallOutputStatusEnum": {
         "enum": [
           "in_progress",
           "completed",
@@ -6325,6 +6594,10 @@
       "InputFileContent": {
         "description": "A file input to the model.",
         "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/FileInputDetail",
+            "description": "The detail level of the file to be sent to the model. Use `low` for the default rendering behavior, or `high` to render the file at higher quality. Defaults to `low`."
+          },
           "file_data": {
             "description": "The content of the file to be sent to the model.\n",
             "type": "string"
@@ -7329,11 +7602,15 @@
       "InputFileContentParam": {
         "description": "A file input to the model.",
         "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/FileDetailEnum",
+            "description": "The detail level of the file to be sent to the model. Use `low` for the default rendering behavior, or `high` to render the file at higher quality. Defaults to `low`."
+          },
           "file_data": {
             "anyOf": [
               {
                 "description": "The base64-encoded data of the file to be sent to the model.",
-                "maxLength": 33554432,
+                "maxLength": 73400320,
                 "type": "string"
               },
               {
@@ -7575,6 +7852,20 @@
             "$ref": "#/components/schemas/ClickButtonType",
             "description": "Indicates which mouse button was pressed during the click. One of `left`, `right`, `wheel`, `back`, or `forward`."
           },
+          "keys": {
+            "anyOf": [
+              {
+                "description": "The keys being held while clicking.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "default": "click",
             "description": "Specifies the event type. For a click action, this property is always `click`.",
@@ -7604,6 +7895,20 @@
       "DoubleClickAction": {
         "description": "A double click action.",
         "properties": {
+          "keys": {
+            "anyOf": [
+              {
+                "description": "The keys being held while double-clicking.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "default": "double_click",
             "description": "Specifies the event type. For a double click action, this property is always set to `double_click`.",
@@ -7624,7 +7929,8 @@
         "required": [
           "type",
           "x",
-          "y"
+          "y",
+          "keys"
         ],
         "title": "DoubleClick",
         "type": "object"
@@ -7632,6 +7938,20 @@
       "DragParam": {
         "description": "A drag action.",
         "properties": {
+          "keys": {
+            "anyOf": [
+              {
+                "description": "The keys being held while dragging the mouse.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "path": {
             "description": "An array of coordinates representing the path of the drag action. Coordinates will appear as an array of objects, eg\n```\n[\n  { x: 100, y: 200 },\n  { x: 200, y: 300 }\n]\n```",
             "items": {
@@ -7685,6 +8005,20 @@
       "MoveParam": {
         "description": "A mouse move action.",
         "properties": {
+          "keys": {
+            "anyOf": [
+              {
+                "description": "The keys being held while moving the mouse.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "default": "move",
             "description": "Specifies the event type. For a move action, this property is always set to `move`.",
@@ -7731,6 +8065,20 @@
       "ScrollParam": {
         "description": "A scroll action.",
         "properties": {
+          "keys": {
+            "anyOf": [
+              {
+                "description": "The keys being held while scrolling.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "scroll_x": {
             "description": "The horizontal scroll distance.",
             "type": "integer"
@@ -7905,6 +8253,13 @@
           "high",
           "auto",
           "original"
+        ],
+        "type": "string"
+      },
+      "FileInputDetail": {
+        "enum": [
+          "low",
+          "high"
         ],
         "type": "string"
       },
@@ -8361,6 +8716,13 @@
         ],
         "type": "string"
       },
+      "FileDetailEnum": {
+        "enum": [
+          "low",
+          "high"
+        ],
+        "type": "string"
+      },
       "LocalSkillParam": {
         "properties": {
           "description": {
@@ -8693,7 +9055,9 @@
               "gt",
               "gte",
               "lt",
-              "lte"
+              "lte",
+              "in",
+              "nin"
             ],
             "type": "string"
           },

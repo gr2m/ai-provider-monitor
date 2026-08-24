@@ -54,6 +54,22 @@
             "title": "Frequency Penalty",
             "type": "number"
           },
+          "guardrails": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/GuardrailConfig"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "A list of guardrail configurations to apply to this request. Each guardrail specifies a moderation type, categories with thresholds to evaluate, and an action to take on violation.",
+            "title": "Guardrails"
+          },
           "max_tokens": {
             "anyOf": [
               {
@@ -160,6 +176,18 @@
             "title": "Presence Penalty",
             "type": "number"
           },
+          "prompt_cache_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A cache key to enable prompt caching. When provided, the API will attempt to reuse previously computed tokens for requests sharing the same prefix (e.g. multi-turn conversations or requests with a similar system prompt). Cached tokens are billed at 10% of the standard input token price.",
+            "title": "Prompt Cache Key"
+          },
           "prompt_mode": {
             "anyOf": [
               {
@@ -169,7 +197,7 @@
                 "type": "null"
               }
             ],
-            "description": "Allows toggling between the reasoning mode and no system prompt. When set to `reasoning` the system prompt for reasoning models will be used."
+            "description": "Allows toggling between the reasoning mode and no system prompt. When set to `reasoning` the system prompt for reasoning models will be used. **Deprecated for reasoning models - use `reasoning_effort` parameter instead.**"
           },
           "random_seed": {
             "anyOf": [
@@ -183,6 +211,14 @@
             ],
             "description": "The seed to use for random sampling. If set, different calls will generate deterministic results.",
             "title": "Random Seed"
+          },
+          "reasoning_effort": {
+            "description": "Controls the reasoning effort level for reasoning models. \"high\" enables comprehensive reasoning traces, \"none\" disables reasoning effort.",
+            "enum": [
+              "high",
+              "none"
+            ],
+            "type": "string"
           },
           "response_format": {
             "$ref": "#/components/schemas/ResponseFormat"
@@ -322,6 +358,38 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "GuardrailConfig": {
+        "properties": {
+          "block_on_error": {
+            "default": false,
+            "description": "If true, return HTTP 403 and block request in the event of a server-side error",
+            "title": "Block On Error",
+            "type": "boolean"
+          },
+          "moderation_llm_v1": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationLLMV1Config"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "moderation_llm_v2": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationLLMV2Config"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "GuardrailConfig",
         "type": "object"
       },
       "SystemMessage": {
@@ -703,6 +771,13 @@
       },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [
@@ -732,6 +807,72 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "ModerationLLMV1Config": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ModerationLLMAction",
+            "default": "none",
+            "description": "Action to take if any score is above the threshold for any category."
+          },
+          "custom_category_thresholds": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationLLMV1CategoryThresholds"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ignore_other_categories": {
+            "default": false,
+            "description": "If true, only evaluate categories in custom_category_thresholds; others are ignored.",
+            "title": "Ignore Other Categories",
+            "type": "boolean"
+          },
+          "model_name": {
+            "default": "mistral-moderation-2411",
+            "description": "Override model name. Should be omitted in general.",
+            "title": "Model Name",
+            "type": "string"
+          }
+        },
+        "title": "ModerationLLMV1Config",
+        "type": "object"
+      },
+      "ModerationLLMV2Config": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ModerationLLMAction",
+            "default": "none",
+            "description": "Action to take if any score is above the threshold for any category."
+          },
+          "custom_category_thresholds": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationLLMV2CategoryThresholds"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ignore_other_categories": {
+            "default": false,
+            "description": "If true, only evaluate categories in custom_category_thresholds; others are ignored.",
+            "title": "Ignore Other Categories",
+            "type": "boolean"
+          },
+          "model_name": {
+            "default": "mistral-moderation-2603",
+            "description": "Override model name. Should be omitted in general.",
+            "title": "Model Name",
+            "type": "string"
+          }
+        },
+        "title": "ModerationLLMV2Config",
         "type": "object"
       },
       "SystemMessageContentChunks": {
@@ -973,6 +1114,17 @@
             "title": "Completion Tokens",
             "type": "integer"
           },
+          "num_cached_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Num Cached Tokens"
+          },
           "prompt_audio_seconds": {
             "anyOf": [
               {
@@ -984,10 +1136,30 @@
             ],
             "title": "Prompt Audio Seconds"
           },
+          "prompt_token_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PromptTokensDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "prompt_tokens": {
             "default": 0,
             "title": "Prompt Tokens",
             "type": "integer"
+          },
+          "prompt_tokens_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PromptTokensDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "total_tokens": {
             "default": 0,
@@ -1001,6 +1173,246 @@
           "total_tokens"
         ],
         "title": "UsageInfo",
+        "type": "object"
+      },
+      "ModerationLLMAction": {
+        "enum": [
+          "none",
+          "block"
+        ],
+        "title": "ModerationLLMAction",
+        "type": "string"
+      },
+      "ModerationLLMV1CategoryThresholds": {
+        "properties": {
+          "dangerous_and_criminal_content": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dangerous And Criminal Content"
+          },
+          "financial": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Financial"
+          },
+          "hate_and_discrimination": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hate And Discrimination"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health"
+          },
+          "law": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Law"
+          },
+          "pii": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pii"
+          },
+          "selfharm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selfharm"
+          },
+          "sexual": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sexual"
+          },
+          "violence_and_threats": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Violence And Threats"
+          }
+        },
+        "title": "ModerationLLMV1CategoryThresholds",
+        "type": "object"
+      },
+      "ModerationLLMV2CategoryThresholds": {
+        "properties": {
+          "criminal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criminal"
+          },
+          "dangerous": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dangerous"
+          },
+          "financial": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Financial"
+          },
+          "hate_and_discrimination": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hate And Discrimination"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health"
+          },
+          "jailbreaking": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jailbreaking"
+          },
+          "law": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Law"
+          },
+          "pii": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pii"
+          },
+          "selfharm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selfharm"
+          },
+          "sexual": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sexual"
+          },
+          "violence_and_threats": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Violence And Threats"
+          }
+        },
+        "title": "ModerationLLMV2CategoryThresholds",
         "type": "object"
       },
       "TextChunk": {
@@ -1036,10 +1448,13 @@
             "items": {
               "anyOf": [
                 {
-                  "$ref": "#/components/schemas/ReferenceChunk"
+                  "$ref": "#/components/schemas/TextChunk"
                 },
                 {
-                  "$ref": "#/components/schemas/TextChunk"
+                  "$ref": "#/components/schemas/ToolReferenceChunk"
+                },
+                {
+                  "$ref": "#/components/schemas/ReferenceChunk"
                 }
               ]
             },
@@ -1263,6 +1678,84 @@
         "title": "DeltaMessage",
         "type": "object"
       },
+      "PromptTokensDetails": {
+        "additionalProperties": false,
+        "description": "Token usage details for the prompt.",
+        "properties": {
+          "cached_tokens": {
+            "default": 0,
+            "title": "Cached Tokens",
+            "type": "integer"
+          }
+        },
+        "title": "PromptTokensDetails",
+        "type": "object"
+      },
+      "ToolReferenceChunk": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "favicon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Favicon"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "tool": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BuiltInConnectors"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Tool"
+          },
+          "type": {
+            "const": "tool_reference",
+            "default": "tool_reference",
+            "title": "Type",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "tool",
+          "title"
+        ],
+        "title": "ToolReferenceChunk",
+        "type": "object"
+      },
       "ImageURL": {
         "additionalProperties": false,
         "properties": {
@@ -1286,6 +1779,17 @@
         ],
         "title": "ImageURL",
         "type": "object"
+      },
+      "BuiltInConnectors": {
+        "enum": [
+          "web_search",
+          "web_search_premium",
+          "code_interpreter",
+          "image_generation",
+          "document_library"
+        ],
+        "title": "BuiltInConnectors",
+        "type": "string"
       },
       "ImageDetail": {
         "enum": [

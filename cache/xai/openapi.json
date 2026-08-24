@@ -99,25 +99,6 @@
         ],
         "type": "object"
       },
-      "CandidateImage": {
-        "description": "A candidate image generated during Best-of-N selection.",
-        "properties": {
-          "b64_json": {
-            "description": "A base64-encoded string representation of the candidate image.",
-            "type": ["string", "null"]
-          },
-          "up_sampled_prompt": {
-            "description": "The upsampled prompt used to generate this candidate image.",
-            "type": "string"
-          },
-          "url": {
-            "description": "A url to the candidate image.",
-            "type": ["string", "null"]
-          }
-        },
-        "required": ["up_sampled_prompt"],
-        "type": "object"
-      },
       "ChatRequest": {
         "description": "The chat request body for `/v1/chat/completions` endpoint.",
         "properties": {
@@ -164,7 +145,7 @@
             "type": ["integer", "null"]
           },
           "messages": {
-            "description": "A list of messages that make up the the chat conversation. Different models support different message types, such as image and text.",
+            "description": "A list of messages that make up the chat conversation. Different models support different message types, such as image and text.",
             "items": {
               "$ref": "#/components/schemas/Message"
             },
@@ -753,12 +734,8 @@
             "description": "Text prompt.",
             "type": ["string", "null"]
           },
-          "text_file": {
-            "description": "File path to a text file to be used as prompt.",
-            "type": ["string", "null"]
-          },
           "type": {
-            "description": "The type of the content part.",
+            "description": "The type of the content part. Can be `text`, `image_url`, `text_file` or `file`.",
             "type": "string"
           }
         },
@@ -794,93 +771,6 @@
           }
         },
         "required": ["call_id", "name", "type", "id"],
-        "type": "object"
-      },
-      "DebugOutput": {
-        "properties": {
-          "attempts": {
-            "description": "Number of attempts made to the model.",
-            "format": "int32",
-            "type": "integer"
-          },
-          "cache_read_count": {
-            "description": "Number of cache reads",
-            "format": "int32",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "cache_read_input_bytes": {
-            "description": "Size of cache read",
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "cache_write_count": {
-            "description": "Number of cache writes",
-            "format": "int32",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "cache_write_input_bytes": {
-            "description": "Size of cache write",
-            "format": "int64",
-            "minimum": 0,
-            "type": "integer"
-          },
-          "chunks": {
-            "description": "The individual chunks returned from the pipeline of samplers.",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "engine_request": {
-            "description": "JSON-serialized request sent to the inference engine.",
-            "type": "string"
-          },
-          "lb_address": {
-            "description": "The load balancer address",
-            "type": "string"
-          },
-          "prompt": {
-            "description": "The prompt sent to the model in text form.",
-            "type": "string"
-          },
-          "request": {
-            "description": "The request received from the user.",
-            "type": "string"
-          },
-          "responses": {
-            "description": "The response(s) received from the model.",
-            "items": {
-              "type": "string"
-            },
-            "type": "array"
-          },
-          "sampler_checkpoint_mount": {
-            "description": "The underlying checkpoint mount path for the sampler that served this request.",
-            "type": "string"
-          },
-          "sampler_tag": {
-            "description": "The tag of the actual engines sitting behind the GTP address. Eg \"grok-4-code-eapi-lap4-unified-sblbm-0\"",
-            "type": "string"
-          }
-        },
-        "required": [
-          "attempts",
-          "request",
-          "prompt",
-          "engine_request",
-          "responses",
-          "chunks",
-          "cache_read_count",
-          "cache_read_input_bytes",
-          "cache_write_count",
-          "cache_write_input_bytes",
-          "lb_address",
-          "sampler_tag",
-          "sampler_checkpoint_mount"
-        ],
         "type": "object"
       },
       "DeleteStoredCompletionResponse": {
@@ -1339,14 +1229,53 @@
         "required": ["prompt_tokens", "total_tokens"],
         "type": "object"
       },
+      "ExtendVideoRequest": {
+        "description": "Request for extending a video for `/v1/videos/extensions` endpoint",
+        "properties": {
+          "duration": {
+            "description": "Duration of the extension segment to generate in seconds (1-10).\nDefaults to 6 seconds if not specified.",
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "model": {
+            "description": "Model to be used.",
+            "example": "grok-imagine-video",
+            "type": ["string", "null"]
+          },
+          "output": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/VideoOutput",
+                "description": "Optional output destination for generated video."
+              }
+            ]
+          },
+          "prompt": {
+            "description": "Prompt describing what should happen next in the video.",
+            "type": "string"
+          },
+          "video": {
+            "$ref": "#/components/schemas/VideoUrl",
+            "description": "Input video to extend. The extension continues from the end of this video.\nInput video must be between 2 and 30 seconds long."
+          }
+        },
+        "required": ["prompt", "video"],
+        "type": "object"
+      },
       "FileRef": {
         "properties": {
           "file_id": {
             "description": "The file ID from the Files API.",
-            "type": "string"
+            "type": ["string", "null"]
+          },
+          "url": {
+            "description": "Public URL for a file attachment.",
+            "type": ["string", "null"]
           }
         },
-        "required": ["file_id"],
         "type": "object"
       },
       "FileSearchCall": {
@@ -1393,7 +1322,7 @@
             "type": "string"
           },
           "score": {
-            "description": "The score of the file search result.",
+            "description": "The score of the file search result.\nProto3 omits float fields with value 0.0; default to 0.0 when absent.",
             "format": "double",
             "type": "number"
           },
@@ -1402,7 +1331,7 @@
             "type": "string"
           }
         },
-        "required": ["file_id", "filename", "score", "text"],
+        "required": ["file_id", "filename", "text"],
         "type": "object"
       },
       "Function": {
@@ -1601,7 +1530,7 @@
           },
           "duration": {
             "default": 8,
-            "description": "Video duration in seconds. Range: [1, 15]. Default: 8.",
+            "description": "Video duration in seconds. Range: [1, 15]. Default: 8.\nAlso accepts `seconds` for OpenAI API compatibility.\nAccepts both number (8) and string (\"8\") values.",
             "format": "int32",
             "maximum": 15,
             "minimum": 1,
@@ -1614,7 +1543,7 @@
               },
               {
                 "$ref": "#/components/schemas/ImageUrl",
-                "description": "Optional input image for image-to-video generation.\nIf provided, generates video with this image as the first frame."
+                "description": "Optional input image for image-to-video generation.\nIf provided, generates video with this image as the first frame.\nAlso accepts `input_reference` for compatibility (same semantics — first frame)."
               }
             ]
           },
@@ -1635,8 +1564,15 @@
             ]
           },
           "prompt": {
-            "description": "Prompt for video generation.",
+            "description": "Prompt for video generation. Required for text-to-video (T2V) and\nreference-to-video (R2V). Optional for image-to-video (I2V) — when\nomitted, the model generates a video from the image alone.",
             "type": "string"
+          },
+          "reference_images": {
+            "description": "Optional reference images for reference-to-video (R2V) generation.\nWhen provided generates video using these images\nas style/content references.",
+            "items": {
+              "$ref": "#/components/schemas/ImageUrl"
+            },
+            "type": "array"
           },
           "resolution": {
             "oneOf": [
@@ -1665,7 +1601,6 @@
             "type": ["string", "null"]
           }
         },
-        "required": ["prompt"],
         "type": "object"
       },
       "GeneratedImage": {
@@ -1692,49 +1627,9 @@
         "required": ["revised_prompt"],
         "type": "object"
       },
-      "GeneratedImageDebugOutput": {
-        "description": "Debug output for image generation. Only available to trusted testers.\nContains information about Best-of-N (BoN) candidate images and grading scores.",
-        "properties": {
-          "best_local_idx": {
-            "description": "The index of the best image selected from the candidates.",
-            "format": "int32",
-            "type": "integer"
-          },
-          "candidate_images": {
-            "description": "List of candidate images generated during Best-of-N selection.",
-            "items": {
-              "$ref": "#/components/schemas/CandidateImage"
-            },
-            "type": "array"
-          },
-          "grading_scores": {
-            "description": "Grading scores for each candidate image.",
-            "items": {
-              "format": "int32",
-              "type": "integer"
-            },
-            "type": "array"
-          },
-          "raw_grading": {
-            "description": "The raw grading output from the grader model.",
-            "type": "string"
-          }
-        },
-        "required": [
-          "candidate_images",
-          "grading_scores",
-          "best_local_idx",
-          "raw_grading"
-        ],
-        "type": "object"
-      },
       "GeneratedImageResponse": {
         "description": "Image generation response for `/v1/image/generations` endpoint",
         "properties": {
-          "block_reason": {
-            "description": "If the request was blocked by moderation, contains the block reason.",
-            "type": ["string", "null"]
-          },
           "data": {
             "description": "A list of generated image objects.",
             "items": {
@@ -1809,6 +1704,88 @@
         },
         "required": ["status"],
         "type": "object"
+      },
+      "GroupBy": {
+        "description": "Group search results by metadata key(s) and keep top-k per group.",
+        "properties": {
+          "aggregate": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GroupByAggregate",
+                "description": "Aggregation function per group. Defaults to MinK(k=1, keys=[\"#score\"])."
+              }
+            ]
+          },
+          "keys": {
+            "description": "Metadata key(s) to group results by (e.g. \"category\", \"department\").\nAt least one key is required.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["keys"],
+        "type": "object"
+      },
+      "GroupByAggregate": {
+        "description": "Aggregation function to apply within each group.",
+        "oneOf": [
+          {
+            "description": "Keep the k records with the smallest values (best scores).",
+            "properties": {
+              "min_k": {
+                "description": "Keep the k records with the smallest values (best scores).",
+                "properties": {
+                  "k": {
+                    "description": "Number of records to keep per group. Must be >= 1.",
+                    "format": "int32",
+                    "type": "integer"
+                  },
+                  "keys": {
+                    "description": "Key(s) to sort by within each group. Use \"#score\" for relevance score.",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": ["keys", "k"],
+                "type": "object"
+              }
+            },
+            "required": ["min_k"],
+            "type": "object"
+          },
+          {
+            "description": "Keep the k records with the largest values.",
+            "properties": {
+              "max_k": {
+                "description": "Keep the k records with the largest values.",
+                "properties": {
+                  "k": {
+                    "description": "Number of records to keep per group. Must be >= 1.",
+                    "format": "int32",
+                    "type": "integer"
+                  },
+                  "keys": {
+                    "description": "Key(s) to sort by within each group.",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": ["keys", "k"],
+                "type": "object"
+              }
+            },
+            "required": ["max_k"],
+            "type": "object"
+          }
+        ]
       },
       "HybridReranker": {
         "description": "Reranker configuration for hybrid retrieval.",
@@ -1983,7 +1960,7 @@
         "description": "Image URL object of Image prompt",
         "properties": {
           "url": {
-            "description": "URL of the image.",
+            "description": "URL of the image. Also accepts `image_url` for compatibility.",
             "type": "string"
           }
         },
@@ -2496,8 +2473,8 @@
                 "description": "(Unsupported) Cache control."
               },
               "content": {
-                "description": "Result content of the tool call.",
-                "type": "string"
+                "$ref": "#/components/schemas/ToolResultContent",
+                "description": "Result content of the tool call. Can be a string or an array of content blocks."
               },
               "is_error": {
                 "description": "Whether the tool call returns an error.",
@@ -2533,6 +2510,10 @@
           {
             "description": "Thinking of the model.",
             "properties": {
+              "signature": {
+                "description": "Signature of the thinking block (required by Anthropic SDK for round-tripping).",
+                "type": ["string", "null"]
+              },
               "thinking": {
                 "description": "Thinking.",
                 "type": "string"
@@ -3014,11 +2995,15 @@
             "description": "File input.",
             "properties": {
               "file_data": {
-                "description": "Inline file bytes (base64 encoded).\n\nWhen set, the file content is provided directly in the request and does NOT need\nto be uploaded to the Files API first.\n\nExactly one of `file_id` or `file_data` should be set.",
+                "description": "Inline file bytes (base64 encoded).\n\nWhen set, the file content is provided directly in the request and does NOT need\nto be uploaded to the Files API first.\n\nExactly one of `file_id`, `file_data`, or `file_url` should be set.",
                 "type": ["string", "null"]
               },
               "file_id": {
-                "description": "The file ID from the Files API.\n\nSet this to reference a previously-uploaded file.",
+                "description": "The file ID from the Files API.\n\nSet this to reference a previously-uploaded file.\nExactly one of `file_id`, `file_data`, or `file_url` should be set.",
+                "type": ["string", "null"]
+              },
+              "file_url": {
+                "description": "Public URL for a file attachment.\n\nWhen set, the file content is fetched from this URL.\nExactly one of `file_id`, `file_data`, or `file_url` should be set.",
                 "type": ["string", "null"]
               },
               "filename": {
@@ -3036,24 +3021,6 @@
             },
             "required": ["type"],
             "type": "object"
-          }
-        ]
-      },
-      "ModelInputItem": {
-        "oneOf": [
-          {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ModelOutput"
-              }
-            ]
-          },
-          {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/FunctionToolCallOutput"
-              }
-            ]
           }
         ]
       },
@@ -3085,10 +3052,18 @@
           {
             "allOf": [
               {
-                "$ref": "#/components/schemas/ModelInputItem"
+                "$ref": "#/components/schemas/ModelOutput"
               }
             ],
-            "description": "Previous responses of the model and tool call outputs."
+            "description": "The model output from previous responses."
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FunctionToolCallOutput"
+              }
+            ],
+            "description": "The output of a function call."
           }
         ]
       },
@@ -3160,6 +3135,11 @@
             "description": "(Unsupported) Whether to process the response asynchronously in the background.",
             "type": ["boolean", "null"]
           },
+          "context_management": {
+            "description": "Optional context-management directives (e.g. compaction). Parsed but not yet executed.",
+            "items": {},
+            "type": ["array", "null"]
+          },
           "include": {
             "description": "What additional output data to include in the response. Currently the only supported value is `reasoning.encrypted_content` which returns an encrypted version of the reasoning tokens.",
             "items": {
@@ -3182,6 +3162,11 @@
           },
           "max_output_tokens": {
             "description": "Max number of tokens that can be generated in a response. This includes both output and reasoning tokens.",
+            "format": "int32",
+            "type": ["integer", "null"]
+          },
+          "max_turns": {
+            "description": "Maximum number of agentic tool calling turns allowed for this request.\nIf not set, defaults to the server's global cap.\nThis parameter will be ignored for any non-agentic requests.",
             "format": "int32",
             "type": ["integer", "null"]
           },
@@ -3907,32 +3892,6 @@
         ],
         "type": "object"
       },
-      "ModerationCategoryScore": {
-        "description": "Score and threshold for a single moderation category.\nInternal use only — populated when moderation-debug ACL is enabled.",
-        "properties": {
-          "name": {
-            "description": "Name of the category (e.g. \"nudity\", \"violence\", \"self_harm\").",
-            "type": "string"
-          },
-          "score": {
-            "description": "The score assigned to the content for this category.",
-            "format": "double",
-            "type": "number"
-          },
-          "threshold": {
-            "description": "The threshold configured for this category.",
-            "format": "double",
-            "type": "number"
-          }
-        },
-        "required": ["name", "score", "threshold"],
-        "type": "object"
-      },
-      "ModerationLevel": {
-        "description": "Moderation level for image and video generation.\nControls the strictness of content moderation for generated content.",
-        "enum": ["low", "auto", "high"],
-        "type": "string"
-      },
       "OutputFile": {
         "description": "A file generated during the model's response (e.g., by the code execution tool).",
         "properties": {
@@ -4289,31 +4248,6 @@
           }
         ]
       },
-      "SafetyCategory": {
-        "description": "Categories of content that can be independently configured for safety filtering.",
-        "enum": ["SEXUALLY_EXPLICIT", "DANGEROUS_CONTENT"],
-        "type": "string"
-      },
-      "SafetySetting": {
-        "description": "Per-category safety setting that pairs a content category with a blocking threshold.",
-        "properties": {
-          "category": {
-            "$ref": "#/components/schemas/SafetyCategory",
-            "description": "The category this setting applies to."
-          },
-          "threshold": {
-            "$ref": "#/components/schemas/SafetyThreshold",
-            "description": "The blocking threshold for the category."
-          }
-        },
-        "required": ["category", "threshold"],
-        "type": "object"
-      },
-      "SafetyThreshold": {
-        "description": "Threshold levels that control how aggressively content is blocked for a given safety category.",
-        "enum": ["BLOCK_UNSET", "BLOCK_LOW_THRESHOLD", "BLOCK_HIGH_THRESHOLD"],
-        "type": "string"
-      },
       "SampleChoice": {
         "properties": {
           "finish_reason": {
@@ -4535,6 +4469,11 @@
             "description": "The document ID.",
             "type": "string"
           },
+          "page_number": {
+            "description": "The dominant page number this chunk belongs to (0 for single-page docs).",
+            "format": "int32",
+            "type": "integer"
+          },
           "score": {
             "description": "The relevance score.",
             "format": "float",
@@ -4601,6 +4540,17 @@
           "filter": {
             "description": "Optional metadata filter string to apply to search results.\nUses AIP-160 filter syntax for querying document metadata.\nSupports comparison operators: `=`, `!=`, `>`, `>=`, `<`, `<=`\nSupports logical operators: `AND`, `OR`\nSupports range syntax: `field:10..20` (inclusive)\nExamples: `author = \"John\"` or `year > 2020 AND category = \"finance\"`",
             "type": ["string", "null"]
+          },
+          "group_by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GroupBy",
+                "description": "Optional group_by to diversify search results by metadata key(s).\nWhen set, results are grouped by the specified key(s) and only the\ntop-k records per group are returned. Applied after ranking and filtering.\nDocuments missing a group_by key are placed in a shared null group.\nGrouping is applied per-collection, not across the combined result set."
+              }
+            ]
           },
           "instructions": {
             "description": "User-defined instructions to be included in the search query. Defaults to generic search instructions.",
@@ -5104,6 +5054,57 @@
           }
         ]
       },
+      "ToolResultContent": {
+        "description": "Content of a tool_result block. The Anthropic SDK may send this as either a plain\nstring or an array of typed content blocks (e.g. `[{\"type\": \"text\", \"text\": \"...\"}]`).",
+        "oneOf": [
+          {
+            "description": "Plain text content.",
+            "type": "string"
+          },
+          {
+            "description": "An array of content blocks (text, image, etc.).",
+            "items": {
+              "$ref": "#/components/schemas/ToolResultContentBlock"
+            },
+            "type": "array"
+          }
+        ]
+      },
+      "ToolResultContentBlock": {
+        "description": "A single content block within a tool_result's array content.",
+        "oneOf": [
+          {
+            "description": "Text content block.",
+            "properties": {
+              "text": {
+                "description": "The text content.",
+                "type": "string"
+              },
+              "type": {
+                "enum": ["text"],
+                "type": "string"
+              }
+            },
+            "required": ["text", "type"],
+            "type": "object"
+          },
+          {
+            "description": "Image content block.",
+            "properties": {
+              "source": {
+                "$ref": "#/components/schemas/MessageImageContent",
+                "description": "Image source."
+              },
+              "type": {
+                "enum": ["image"],
+                "type": "string"
+              }
+            },
+            "required": ["source", "type"],
+            "type": "object"
+          }
+        ]
+      },
       "TopLogProb": {
         "properties": {
           "bytes": {
@@ -5180,23 +5181,12 @@
         "enum": ["1:1", "16:9", "9:16", "4:3", "3:4", "3:2", "2:3"],
         "type": "string"
       },
-      "VideoDebugOutput": {
-        "description": "Debug output for video generation. Only available to trusted testers.",
-        "properties": {
-          "upsampled_prompt": {
-            "description": "The upsampled prompt used to generate the video.",
-            "type": "string"
-          }
-        },
-        "required": ["upsampled_prompt"],
-        "type": "object"
-      },
       "VideoError": {
         "description": "Structured error returned when video generation fails.",
         "properties": {
           "code": {
-            "description": "Machine-readable error code (e.g. \"invalid_argument\", \"internal_error\").",
-            "type": "string"
+            "$ref": "#/components/schemas/VideoErrorCode",
+            "description": "Machine-readable error code indicating the type of failure.\nSee `VideoErrorCode` for all possible values."
           },
           "message": {
             "description": "Human-readable error message describing the failure.",
@@ -5205,6 +5195,16 @@
         },
         "required": ["code", "message"],
         "type": "object"
+      },
+      "VideoErrorCode": {
+        "description": "Machine-readable error codes for video generation failures.\n\nThese are the codes that can appear in `VideoError.code` when polling a\ndeferred video generation result. Authentication errors, model-not-found\nerrors, and rate-limit errors are returned synchronously as HTTP errors\nand never appear in `VideoError`.\n\nSerializes to/from snake_case strings (e.g. `\"invalid_argument\"`,\n`\"internal_error\"`) for JSON compatibility.",
+        "enum": [
+          "invalid_argument",
+          "permission_denied",
+          "failed_precondition",
+          "internal_error"
+        ],
+        "type": "string"
       },
       "VideoGenerationModel": {
         "description": "Details of a video generation model",
@@ -5288,10 +5288,6 @@
       "VideoResponse": {
         "description": "Video generation response.",
         "properties": {
-          "block_reason": {
-            "description": "If the request was blocked by moderation, contains the block reason.",
-            "type": ["string", "null"]
-          },
           "error": {
             "oneOf": [
               {
@@ -5304,8 +5300,15 @@
             ]
           },
           "model": {
-            "description": "The model used to generate the video.",
-            "type": "string"
+            "description": "The model used to generate the video. Omitted when status is \"failed\".",
+            "type": ["string", "null"]
+          },
+          "progress": {
+            "description": "Approximate completion percentage for the video generation task (0-100).\n- When status is \"pending\": progress is between 0-99, indicating current completion.\n- When status is \"done\": progress is 100.\n- When status is \"failed\": progress is 0.",
+            "format": "int32",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
           },
           "status": {
             "description": "Status of the video generation: \"done\" when the video is ready.",
@@ -5323,11 +5326,18 @@
             ]
           },
           "video": {
-            "$ref": "#/components/schemas/GeneratedVideo",
-            "description": "The generated video data."
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/GeneratedVideo",
+                "description": "The generated video data. Omitted when status is \"failed\"."
+              }
+            ]
           }
         },
-        "required": ["status", "video", "model"],
+        "required": ["status", "progress"],
         "type": "object"
       },
       "VideoSize": {
@@ -6671,20 +6681,15 @@
                   "tools": [],
                   "top_p": null,
                   "usage": {
-                    "completion_tokens": 9,
-                    "completion_tokens_details": {
-                      "accepted_prediction_tokens": 0,
-                      "audio_tokens": 0,
-                      "reasoning_tokens": 110,
-                      "rejected_prediction_tokens": 0
+                    "input_tokens": 32,
+                    "input_tokens_details": {
+                      "cached_tokens": 8
                     },
+                    "num_server_side_tools_used": 0,
                     "num_sources_used": 0,
-                    "prompt_tokens": 32,
-                    "prompt_tokens_details": {
-                      "audio_tokens": 0,
-                      "cached_tokens": 8,
-                      "image_tokens": 0,
-                      "text_tokens": 32
+                    "output_tokens": 9,
+                    "output_tokens_details": {
+                      "reasoning_tokens": 110
                     },
                     "total_tokens": 151
                   },
@@ -7070,6 +7075,57 @@
         "tags": ["v1"]
       }
     },
+    "/v1/videos/extensions": {
+      "post": {
+        "operationId": "handle_extend_video_request",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": {
+                "duration": 6,
+                "model": "grok-imagine-video",
+                "prompt": "The camera slowly zooms out to reveal the city skyline",
+                "video": {
+                  "url": "https://example.com/video.mp4"
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/ExtendVideoRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "request_id": "a3d1008e-4544-40d4-d075-11527e794e4a"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/StartDeferredResponse"
+                }
+              }
+            },
+            "description": "Video extension started successfully"
+          },
+          "400": {
+            "description": "Bad request. The request is invalid or an invalid API key is provided."
+          },
+          "422": {
+            "description": "Unprocessable Entity. There are missing fields in the request body."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Extend a video by generating continuation content.\nThis is an asynchronous operation that returns a request_id for polling.",
+        "tags": ["v1"]
+      }
+    },
     "/v1/videos/generations": {
       "post": {
         "operationId": "handle_generate_video_request",
@@ -7137,33 +7193,13 @@
           "200": {
             "content": {
               "application/json": {
-                "examples": {
-                  "done": {
-                    "summary": "Video generation completed successfully",
-                    "value": {
-                      "model": "grok-imagine-video",
-                      "status": "done",
-                      "video": {
-                        "duration": 6,
-                        "respect_moderation": true,
-                        "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-f532feb6-49a9-4f9a-9a37-6e64ef725e8f.mp4"
-                      }
-                    }
-                  },
-                  "failed": {
-                    "summary": "Video generation failed",
-                    "value": {
-                      "error": {
-                        "code": "internal_error",
-                        "message": "Video generation failed due to an internal error. Please try again."
-                      },
-                      "model": "",
-                      "status": "failed",
-                      "video": {
-                        "duration": 0,
-                        "respect_moderation": true
-                      }
-                    }
+                "example": {
+                  "model": "grok-imagine-video",
+                  "status": "done",
+                  "video": {
+                    "duration": 6,
+                    "respect_moderation": true,
+                    "url": "https://vidgen.x.ai/xai-vidgen-bucket/xai-video-{request_id}.mp4"
                   }
                 },
                 "schema": {

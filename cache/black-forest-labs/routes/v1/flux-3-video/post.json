@@ -1,0 +1,627 @@
+{
+  "description": "Submits a video generation task to FLUX 3 via the harness. The mode is explicit: t2v (`text-to-video`), i2v (`image-continuation`, keyframes), v2v (`video-continuation`, start_video), or draft_enhance (`draft-enhance`, full-quality render of a prior draft's `draft_cache`); the spelled-out aliases are accepted anywhere the short key is.",
+  "operationId": "flux_3_video_v1_flux_3_video_post",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/Flux3VideoInputsBody"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AsyncResponse"
+              },
+              {
+                "$ref": "#/components/schemas/AsyncWebhookResponse"
+              }
+            ],
+            "title": "Response Flux 3 Video V1 Flux 3 Video Post"
+          }
+        }
+      },
+      "description": "Successful Response"
+    },
+    "422": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/HTTPValidationError"
+          }
+        }
+      },
+      "description": "Validation Error"
+    }
+  },
+  "security": [
+    {
+      "APIKeyHeader": []
+    }
+  ],
+  "summary": "Generate a video with FLUX 3.",
+  "tags": [
+    "Models"
+  ],
+  "components": {
+    "schemas": {
+      "Flux3VideoInputsBody": {
+        "description": "Route body wrapper: FastAPI drops the union's discriminator when the\nbare union is the top-level body param, so 422s enumerate every mode\nclass instead of the one the client sent. The RootModel keeps\ndiscrimination inside pydantic; routes unwrap `.root`.",
+        "discriminator": {
+          "mapping": {
+            "draft_enhance": "#/components/schemas/Flux3VideoDraftEnhanceInputs",
+            "i2v": "#/components/schemas/Flux3VideoI2VInputs",
+            "t2v": "#/components/schemas/Flux3VideoT2VInputs",
+            "v2v": "#/components/schemas/Flux3VideoV2VInputs"
+          },
+          "propertyName": "mode"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Flux3VideoT2VInputs"
+          },
+          {
+            "$ref": "#/components/schemas/Flux3VideoI2VInputs"
+          },
+          {
+            "$ref": "#/components/schemas/Flux3VideoV2VInputs"
+          },
+          {
+            "$ref": "#/components/schemas/Flux3VideoDraftEnhanceInputs"
+          }
+        ],
+        "title": "Flux3VideoInputsBody"
+      },
+      "AsyncResponse": {
+        "properties": {
+          "cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cost in credits for this request",
+            "title": "Cost"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "input_mp": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Input megapixels (2 decimal places)",
+            "title": "Input Mp"
+          },
+          "output_mp": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Output megapixels (2 decimal places)",
+            "title": "Output Mp"
+          },
+          "polling_url": {
+            "title": "Polling Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "polling_url"
+        ],
+        "title": "AsyncResponse",
+        "type": "object"
+      },
+      "AsyncWebhookResponse": {
+        "properties": {
+          "cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cost in credits for this request",
+            "title": "Cost"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "input_mp": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Input megapixels (2 decimal places)",
+            "title": "Input Mp"
+          },
+          "output_mp": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Output megapixels (2 decimal places)",
+            "title": "Output Mp"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "webhook_url": {
+            "title": "Webhook Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "webhook_url"
+        ],
+        "title": "AsyncWebhookResponse",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Flux3VideoT2VInputs": {
+        "additionalProperties": false,
+        "properties": {
+          "aspect_ratio": {
+            "anyOf": [
+              {
+                "enum": [
+                  "21:9",
+                  "2:1",
+                  "16:9",
+                  "4:3",
+                  "1:1",
+                  "3:4",
+                  "9:16"
+                ],
+                "type": "string"
+              },
+              {
+                "const": "auto",
+                "type": "string"
+              }
+            ],
+            "default": "auto",
+            "description": "Output aspect ratio. `auto` lets the harness choose from the prompt and any references.",
+            "title": "Aspect Ratio"
+          },
+          "draft": {
+            "default": false,
+            "description": "Draft mode: generate a fast preview and return a `draft_cache` download URL in the result. Download that bundle and pass it back later to render the full-quality version of the same generation.",
+            "title": "Draft",
+            "type": "boolean"
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "maximum": 20,
+                "minimum": 5,
+                "type": "integer"
+              },
+              {
+                "const": "auto",
+                "type": "string"
+              }
+            ],
+            "default": "auto",
+            "description": "Video duration in seconds (any whole second from 5 to 20), or `auto` to fit the content.",
+            "title": "Duration"
+          },
+          "generate_audio": {
+            "default": true,
+            "description": "Generate synchronized audio alongside the video.",
+            "title": "Generate Audio",
+            "type": "boolean"
+          },
+          "mode": {
+            "const": "t2v",
+            "title": "Mode",
+            "type": "string"
+          },
+          "prompt": {
+            "description": "Free-form prompt describing the video.",
+            "title": "Prompt",
+            "type": "string"
+          },
+          "resolution": {
+            "default": "hd",
+            "description": "Video resolution class: `hd`, or `fhd` for a higher-resolution result finished by the video upsampler. Exact dimensions vary with the aspect ratio.",
+            "enum": [
+              "hd",
+              "fhd"
+            ],
+            "title": "Resolution",
+            "type": "string"
+          },
+          "safety_tolerance": {
+            "default": 2,
+            "description": "Tolerance level for input and output harm moderation. Between 0 and 4, with 0 the strictest. Sexual content is limited to level 3 and hate content to level 2 regardless of the requested tolerance. Contextual safety signals can tighten the requested level.",
+            "maximum": 4,
+            "minimum": 0,
+            "title": "Safety Tolerance",
+            "type": "integer"
+          },
+          "version": {
+            "const": "latest",
+            "default": "latest",
+            "description": "Endpoint version. `latest` (default) serves the current release; dated pinnable release tags are added here as they are published.",
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt",
+          "mode"
+        ],
+        "title": "Text to Video",
+        "type": "object"
+      },
+      "Flux3VideoI2VInputs": {
+        "additionalProperties": false,
+        "description": "Image continuation: your images become frames of the video. One image\nstarts the video; two start and end it; with more, the first starts it,\nthe last ends it, and the rest fall evenly in between. To control the\ntiming yourself, send `[seconds, image]` pairs: each image becomes the\nframe at that second.",
+        "properties": {
+          "aspect_ratio": {
+            "anyOf": [
+              {
+                "enum": [
+                  "21:9",
+                  "2:1",
+                  "16:9",
+                  "4:3",
+                  "1:1",
+                  "3:4",
+                  "9:16"
+                ],
+                "type": "string"
+              },
+              {
+                "const": "auto",
+                "type": "string"
+              }
+            ],
+            "default": "auto",
+            "description": "Output aspect ratio. `auto` lets the harness choose from the prompt and any references.",
+            "title": "Aspect Ratio"
+          },
+          "draft": {
+            "default": false,
+            "description": "Draft mode: generate a fast preview and return a `draft_cache` download URL in the result. Download that bundle and pass it back later to render the full-quality version of the same generation.",
+            "title": "Draft",
+            "type": "boolean"
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "maximum": 20,
+                "minimum": 5,
+                "type": "integer"
+              },
+              {
+                "const": "auto",
+                "type": "string"
+              }
+            ],
+            "default": "auto",
+            "description": "Video duration in seconds (any whole second from 5 to 20), or `auto` to fit the content.",
+            "title": "Duration"
+          },
+          "generate_audio": {
+            "default": true,
+            "description": "Generate synchronized audio alongside the video.",
+            "title": "Generate Audio",
+            "type": "boolean"
+          },
+          "keyframes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ],
+                "type": "array"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "items": {
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "prefixItems": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "type": "array"
+                },
+                "type": "array"
+              }
+            ],
+            "description": "Your images become frames of the video; each is an http(s) URL or base64, one to ten total. Plain images: one starts the video, two start and end it, with more the first starts it, the last ends it, and the rest fall evenly in between (3 or more need a set `duration`). To control the timing yourself, send `[seconds, image]` pairs in time order, e.g. `[[0, \"...\"], [3.5, \"...\"]]`: each image becomes the frame at that second, and with `duration: \"auto\"` the video runs to the last pair's second, rounded up (20s max).",
+            "title": "Keyframes"
+          },
+          "mode": {
+            "const": "i2v",
+            "title": "Mode",
+            "type": "string"
+          },
+          "prompt": {
+            "description": "Free-form prompt describing the video.",
+            "title": "Prompt",
+            "type": "string"
+          },
+          "resolution": {
+            "default": "hd",
+            "description": "Video resolution class: `hd`, or `fhd` for a higher-resolution result finished by the video upsampler. Exact dimensions vary with the aspect ratio.",
+            "enum": [
+              "hd",
+              "fhd"
+            ],
+            "title": "Resolution",
+            "type": "string"
+          },
+          "safety_tolerance": {
+            "default": 2,
+            "description": "Tolerance level for input and output harm moderation. Between 0 and 4, with 0 the strictest. Sexual content is limited to level 3 and hate content to level 2 regardless of the requested tolerance. Contextual safety signals can tighten the requested level.",
+            "maximum": 4,
+            "minimum": 0,
+            "title": "Safety Tolerance",
+            "type": "integer"
+          },
+          "version": {
+            "const": "latest",
+            "default": "latest",
+            "description": "Endpoint version. `latest` (default) serves the current release; dated pinnable release tags are added here as they are published.",
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt",
+          "mode",
+          "keyframes"
+        ],
+        "title": "Image to Video",
+        "type": "object"
+      },
+      "Flux3VideoV2VInputs": {
+        "additionalProperties": false,
+        "description": "Video continuation: the generated clip carries on from your video's\nfinal frames.",
+        "properties": {
+          "aspect_ratio": {
+            "anyOf": [
+              {
+                "enum": [
+                  "21:9",
+                  "2:1",
+                  "16:9",
+                  "4:3",
+                  "1:1",
+                  "3:4",
+                  "9:16"
+                ],
+                "type": "string"
+              },
+              {
+                "const": "auto",
+                "type": "string"
+              }
+            ],
+            "default": "auto",
+            "description": "Output aspect ratio. `auto` lets the harness choose from the prompt and any references.",
+            "title": "Aspect Ratio"
+          },
+          "draft": {
+            "default": false,
+            "description": "Draft mode: generate a fast preview and return a `draft_cache` download URL in the result. Download that bundle and pass it back later to render the full-quality version of the same generation.",
+            "title": "Draft",
+            "type": "boolean"
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "maximum": 15,
+                "minimum": 5,
+                "type": "integer"
+              },
+              {
+                "const": "auto",
+                "type": "string"
+              }
+            ],
+            "default": "auto",
+            "description": "Video duration in seconds (any whole second from 5 to 15), or `auto` to fit the content.",
+            "title": "Duration"
+          },
+          "generate_audio": {
+            "default": true,
+            "description": "Generate synchronized audio alongside the video.",
+            "title": "Generate Audio",
+            "type": "boolean"
+          },
+          "mode": {
+            "const": "v2v",
+            "title": "Mode",
+            "type": "string"
+          },
+          "prompt": {
+            "description": "Free-form prompt describing the video.",
+            "title": "Prompt",
+            "type": "string"
+          },
+          "resolution": {
+            "default": "hd",
+            "description": "Video resolution class: `hd`, or `fhd` for a higher-resolution result finished by the video upsampler. Exact dimensions vary with the aspect ratio.",
+            "enum": [
+              "hd",
+              "fhd"
+            ],
+            "title": "Resolution",
+            "type": "string"
+          },
+          "safety_tolerance": {
+            "default": 2,
+            "description": "Tolerance level for input and output harm moderation. Between 0 and 4, with 0 the strictest. Sexual content is limited to level 3 and hate content to level 2 regardless of the requested tolerance. Contextual safety signals can tighten the requested level.",
+            "maximum": 4,
+            "minimum": 0,
+            "title": "Safety Tolerance",
+            "type": "integer"
+          },
+          "start_video": {
+            "description": "The video to continue, an http(s) URL or base64 mp4; the generated clip carries on from its final frames.",
+            "title": "Start Video",
+            "type": "string"
+          },
+          "version": {
+            "const": "latest",
+            "default": "latest",
+            "description": "Endpoint version. `latest` (default) serves the current release; dated pinnable release tags are added here as they are published.",
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "prompt",
+          "mode",
+          "start_video"
+        ],
+        "title": "Video Continuation",
+        "type": "object"
+      },
+      "Flux3VideoDraftEnhanceInputs": {
+        "additionalProperties": false,
+        "description": "Full-quality render of a prior `draft` generation. The bundle pins the\ngeneration itself -- the original mode, prompt, seed, and conditioning\nmedia -- so `resolution` is the only output choice left to the caller.",
+        "properties": {
+          "draft_cache": {
+            "description": "Encrypted draft-cache bundle from a prior `draft` generation. Primary form: the base64-encoded `.bin` file downloaded from the prior result's `draft_cache` URL. An http(s) URL is also accepted for replays within the download URL's expiry window. The harness is skipped and the original FLUX call is reproduced at full quality; the original inputs are embedded in the bundle.",
+            "title": "Draft Cache",
+            "type": "string"
+          },
+          "mode": {
+            "const": "draft_enhance",
+            "title": "Mode",
+            "type": "string"
+          },
+          "resolution": {
+            "default": "fhd",
+            "description": "Video resolution class of the enhanced result: `fhd` (default) finishes the reproduced generation with the video upsampler, `hd` returns it without that pass. The reproduced generation is identical either way; only the finishing pass differs.",
+            "enum": [
+              "hd",
+              "fhd"
+            ],
+            "title": "Resolution",
+            "type": "string"
+          },
+          "safety_tolerance": {
+            "default": 2,
+            "description": "Tolerance level for replay input and output harm moderation. Between 0 and 4, with 0 the strictest. Sexual content is limited to level 3 and hate content to level 2 regardless of the requested tolerance.",
+            "maximum": 4,
+            "minimum": 0,
+            "title": "Safety Tolerance",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "mode",
+          "draft_cache"
+        ],
+        "title": "Draft Enhance",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  }
+}

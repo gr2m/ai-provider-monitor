@@ -54,14 +54,18 @@
         "properties": {
           "num_samples": {
             "default": "1",
-            "description": "Number of completions to generate for this prompt",
+            "description": "Number of completions to generate per prompt",
             "example": 1,
             "format": "int64",
             "type": "integer"
           },
-          "prompt": {
-            "$ref": "#/components/schemas/RL.ModelInput",
-            "description": "Input prompt as tokenized chunks"
+          "prompts": {
+            "description": "Input prompts as tokenized chunks",
+            "items": {
+              "$ref": "#/components/schemas/RL.ModelInput",
+              "type": "object"
+            },
+            "type": "array"
           },
           "sampling_params": {
             "$ref": "#/components/schemas/RL.SamplingParams",
@@ -69,14 +73,16 @@
           }
         },
         "required": [
-          "prompt"
+          "prompts"
         ],
         "type": "object"
       },
       "RL.SampleOperation": {
+        "description": "Async sample operation",
         "properties": {
           "error": {
-            "$ref": "#/components/schemas/RL.TrainingOperationError"
+            "$ref": "#/components/schemas/RL.TrainingOperationError",
+            "description": "Error details on failure"
           },
           "id": {
             "description": "Operation ID",
@@ -84,7 +90,8 @@
             "type": "string"
           },
           "output": {
-            "$ref": "#/components/schemas/RL.SampleResult"
+            "$ref": "#/components/schemas/RL.SampleResult",
+            "description": "Result on success"
           },
           "status": {
             "$ref": "#/components/schemas/RL.TrainingOperationStatus",
@@ -92,6 +99,10 @@
             "example": "TRAINING_OPERATION_STATUS_PENDING"
           }
         },
+        "required": [
+          "id",
+          "status"
+        ],
         "type": "object"
       },
       "ErrorData": {
@@ -196,6 +207,7 @@
         "type": "object"
       },
       "RL.TrainingOperationError": {
+        "description": "Error details for a failed training operation",
         "properties": {
           "code": {
             "$ref": "#/components/schemas/RL.TrainingOperationErrorCode",
@@ -211,16 +223,20 @@
         "type": "object"
       },
       "RL.SampleResult": {
+        "description": "Result of a sample operation",
         "properties": {
-          "sequences": {
-            "description": "Generated completions",
+          "rollouts": {
+            "description": "Completions grouped by prompt",
             "items": {
-              "$ref": "#/components/schemas/RL.SampleSequence",
+              "$ref": "#/components/schemas/RL.SampleRollout",
               "type": "object"
             },
             "type": "array"
           }
         },
+        "required": [
+          "rollouts"
+        ],
         "type": "object"
       },
       "RL.TrainingOperationStatus": {
@@ -254,7 +270,52 @@
         ],
         "type": "string"
       },
+      "RL.SampleRollout": {
+        "description": "Completions generated for a single prompt",
+        "properties": {
+          "sequences": {
+            "description": "Completions generated for one prompt",
+            "items": {
+              "$ref": "#/components/schemas/RL.SampleSequence",
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "sequences"
+        ],
+        "type": "object"
+      },
+      "RL.EncodedText": {
+        "properties": {
+          "tokens": {
+            "description": "Pre-tokenized text input",
+            "example": [
+              123,
+              456,
+              789
+            ],
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "tokens"
+        ],
+        "type": "object"
+      },
       "RL.SampleSequence": {
+        "description": "A single generated completion sequence with tokens and logprobs",
         "properties": {
           "logprobs": {
             "description": "Log probabilities for each generated token",
@@ -288,24 +349,9 @@
             "type": "array"
           }
         },
-        "type": "object"
-      },
-      "RL.EncodedText": {
-        "properties": {
-          "tokens": {
-            "description": "Pre-tokenized text input",
-            "example": [
-              123,
-              456,
-              789
-            ],
-            "items": {
-              "format": "int64",
-              "type": "string"
-            },
-            "type": "array"
-          }
-        },
+        "required": [
+          "tokens"
+        ],
         "type": "object"
       }
     }
