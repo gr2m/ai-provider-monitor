@@ -1,0 +1,403 @@
+{
+  "description": "Approves a pending remediation.\n\nOnly remediations with state PENDING_APPROVAL can be approved.\n\nOn APPROVE: state changes to PENDING and the remediation process begins.\nThe reviewed_by, review_time, and review_comment fields are populated\non the remediation after approval.\n",
+  "operationId": "RemediationService_ApproveRemediation",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "cluster_id",
+      "required": true,
+      "schema": {
+        "type": "string"
+      }
+    },
+    {
+      "in": "path",
+      "name": "instance_id",
+      "required": true,
+      "schema": {
+        "type": "string"
+      }
+    },
+    {
+      "in": "path",
+      "name": "remediation_id",
+      "required": true,
+      "schema": {
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/ApproveRemediationRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/Remediation"
+          }
+        }
+      },
+      "description": "OK"
+    }
+  },
+  "tags": [
+    "RemediationService"
+  ],
+  "components": {
+    "schemas": {
+      "ApproveRemediationRequest": {
+        "description": "Request body for approving a pending remediation.",
+        "properties": {
+          "comment": {
+            "description": "Approval comment explaining the decision.",
+            "type": "string"
+          },
+          "mode": {
+            "description": "Remediation mode to use after approval. When omitted, the remediation keeps its existing mode.\n\n- `REMEDIATION_MODE_VM_ONLY`: Deletes the VM and provisions a new one on any available host.\n- `REMEDIATION_MODE_HOST_AWARE`: Cordons the host, deletes the VM, and provisions a new one on a different host.\n- `REMEDIATION_MODE_EVICT_WITHOUT_REPLACEMENT`: Evicts the VM without provisioning a replacement.\n- `REMEDIATION_MODE_REBOOT_VM`: Reboots the VM in place.\n- `REMEDIATION_MODE_HOST_POWER_CYCLE`: Power-cycles the bare-metal host after cordoning it. This mode cannot be set as an approval override; create a host power-cycle remediation directly.\n",
+            "enum": [
+              "REMEDIATION_MODE_VM_ONLY",
+              "REMEDIATION_MODE_HOST_AWARE",
+              "REMEDIATION_MODE_EVICT_WITHOUT_REPLACEMENT",
+              "REMEDIATION_MODE_REBOOT_VM",
+              "REMEDIATION_MODE_HOST_POWER_CYCLE"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Remediation": {
+        "description": "Remediation represents a node remediation request for an instance.\nAn instance can have multiple remediations over time (e.g., failed attempts followed by retries).",
+        "properties": {
+          "active_health_check_run_id": {
+            "description": "Active health check run ID (UUID) that triggered this remediation.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "cluster_id": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "create_time": {
+            "description": "When the remediation was created.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "end_time": {
+            "description": "When the remediation completed.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "error_message": {
+            "description": "Error message if the remediation failed.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "id": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "instance_id": {
+            "readOnly": true,
+            "type": "string"
+          },
+          "instance_name": {
+            "description": "Display name of the targeted instance.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "linked_alerts": {
+            "description": "Passive health check alerts linked to this remediation, including resolved alerts.",
+            "items": {
+              "$ref": "#/components/schemas/PassiveHealthCheckAlert"
+            },
+            "readOnly": true,
+            "type": "array"
+          },
+          "mode": {
+            "description": "Remediation mode specifies how the remediation should be performed.\n\n- `REMEDIATION_MODE_VM_ONLY`: Deletes the VM and provisions a new one on any available host.\n- `REMEDIATION_MODE_HOST_AWARE`: Cordons the host, deletes the VM, and provisions a new one on a different host.\n- `REMEDIATION_MODE_EVICT_WITHOUT_REPLACEMENT`: Evicts the VM without provisioning a replacement.\n- `REMEDIATION_MODE_REBOOT_VM`: Reboots the VM in place.\n- `REMEDIATION_MODE_HOST_POWER_CYCLE`: Cordons and power-cycles the bare-metal host while preserving host and node identity.\n",
+            "enum": [
+              "REMEDIATION_MODE_VM_ONLY",
+              "REMEDIATION_MODE_HOST_AWARE",
+              "REMEDIATION_MODE_EVICT_WITHOUT_REPLACEMENT",
+              "REMEDIATION_MODE_REBOOT_VM",
+              "REMEDIATION_MODE_HOST_POWER_CYCLE"
+            ],
+            "type": "string"
+          },
+          "passive_health_check_event_id": {
+            "description": "Passive health check event ID that triggered this remediation.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "reason": {
+            "description": "User-provided reason for the remediation.",
+            "type": "string"
+          },
+          "requested_by": {
+            "description": "Who requested the remediation.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "review_comment": {
+            "description": "Review comment.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "review_time": {
+            "description": "When the remediation was reviewed.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "reviewed_by": {
+            "description": "Who reviewed the remediation.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "start_time": {
+            "description": "When processing started.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "state": {
+            "description": "RemediationState represents the lifecycle state of a remediation.\n\n- `PENDING_APPROVAL`: Awaiting approval before processing can begin.\n- `PENDING`: Approved and queued for processing.\n- `RUNNING`: Actively being processed.\n- `SUCCEEDED`: Successfully completed.\n- `FAILED`: Failed with an error.\n- `CANCELLED`: Cancelled by user or system.\n- `AUTO_RESOLVED`: The underlying issue was automatically resolved before processing.\n- `QUARANTINING`: Cordoning or preparing the host before remediation.\n- `QUARANTINED`: Host has been cordoned or isolated for remediation.\n",
+            "enum": [
+              "PENDING_APPROVAL",
+              "PENDING",
+              "RUNNING",
+              "SUCCEEDED",
+              "FAILED",
+              "CANCELLED",
+              "AUTO_RESOLVED",
+              "QUARANTINING",
+              "QUARANTINED"
+            ],
+            "readOnly": true,
+            "type": "string"
+          },
+          "trigger": {
+            "description": "RemediationTrigger specifies how the remediation was triggered.\n\n- `REMEDIATION_TRIGGER_MANUAL`: A user-initiated remediation (either via web UI or API call).\n- `REMEDIATION_TRIGGER_AUTOMATED`: A system-initiated remediation that requires approval.\n",
+            "enum": [
+              "REMEDIATION_TRIGGER_MANUAL",
+              "REMEDIATION_TRIGGER_AUTOMATED"
+            ],
+            "readOnly": true,
+            "type": "string"
+          },
+          "update_time": {
+            "description": "When the remediation was last updated.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "cluster_id",
+          "instance_id",
+          "mode",
+          "trigger",
+          "state"
+        ],
+        "type": "object"
+      },
+      "PassiveHealthCheckAlert": {
+        "description": "Passive health check alert returned by the health check API.",
+        "properties": {
+          "alert_name": {
+            "description": "Alertmanager alert name.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "annotation": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PHCAnnotation"
+              }
+            ],
+            "description": "Typed annotation content parsed from the legacy annotations bag.",
+            "readOnly": true
+          },
+          "annotations": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Legacy Alertmanager annotations as key-value strings.",
+            "readOnly": true,
+            "type": "object"
+          },
+          "cluster_id": {
+            "description": "Cluster UUID the alert was raised against.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "instance_id": {
+            "description": "Resolved instance UUID. Empty until the alert is joined to an instance.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "node_remediation_intent_id": {
+            "description": "Remediation intent UUID attached to this alert, if any.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "passive_health_check_alert_id": {
+            "description": "Primary key UUID for the passive health check alert.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "resolved_at": {
+            "description": "Time when the underlying alert resolved. Empty while the alert is firing.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "severity": {
+            "description": "Canonical severity tier for the alert.",
+            "enum": [
+              "PHC_SEVERITY_INFO",
+              "PHC_SEVERITY_WARNING",
+              "PHC_SEVERITY_CRITICAL"
+            ],
+            "readOnly": true,
+            "type": "string"
+          },
+          "started_at": {
+            "description": "Time when the underlying alert first fired.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "target_vm": {
+            "description": "VM name extracted from the Alertmanager labels.",
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "passive_health_check_alert_id",
+          "cluster_id",
+          "target_vm",
+          "alert_name",
+          "severity",
+          "annotations",
+          "started_at",
+          "annotation"
+        ],
+        "type": "object"
+      },
+      "PHCAnnotation": {
+        "description": "Typed content parsed from passive health check alert annotations.",
+        "properties": {
+          "description": {
+            "description": "Static explanation for the alert.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "slurm_node_unavailable": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SlurmNodeUnavailableDetail"
+              }
+            ],
+            "description": "Slurm node details when the alert was caused by unavailable Slurm nodes."
+          },
+          "summary_line": {
+            "description": "Per-firing summary line parsed from the evidence annotation.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "title": {
+            "description": "Alert title from the Alertmanager summary annotation.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "xid": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/XidDetail"
+              }
+            ],
+            "description": "Xid-specific details when the alert was caused by NVIDIA Xid errors."
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "summary_line"
+        ],
+        "type": "object"
+      },
+      "SlurmNodeUnavailableDetail": {
+        "description": "Details for a Slurm node unavailable passive health check alert.",
+        "properties": {
+          "reason": {
+            "description": "Drain reason reported for the unavailable Slurm node.",
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "type": "object"
+      },
+      "XidDetail": {
+        "description": "Details for a DmesgXidError passive health check alert.",
+        "properties": {
+          "events": {
+            "description": "Xid events observed during the alert window.",
+            "items": {
+              "$ref": "#/components/schemas/XidEvent"
+            },
+            "readOnly": true,
+            "type": "array"
+          }
+        },
+        "required": [
+          "events"
+        ],
+        "type": "object"
+      },
+      "XidEvent": {
+        "description": "One NVIDIA Xid code observed during the alert window.",
+        "properties": {
+          "count": {
+            "description": "Number of times this Xid code appeared in the alert window.",
+            "readOnly": true,
+            "type": "integer"
+          },
+          "mnemonic": {
+            "description": "Driver mnemonic for the Xid code when metadata is available.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "xid_code": {
+            "description": "NVIDIA Xid code, such as `79`.",
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "xid_code",
+          "mnemonic",
+          "count"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

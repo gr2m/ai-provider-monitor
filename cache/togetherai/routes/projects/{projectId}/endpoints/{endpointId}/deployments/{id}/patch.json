@@ -1,0 +1,493 @@
+{
+  "description": "Updates mutable deployment fields such as its model, configuration, autoscaling bounds, or LoRA support. Changes that affect serving may trigger asynchronous reprovisioning.",
+  "operationId": "DeploymentService_UpdateDeployment",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "projectId",
+      "required": true,
+      "schema": {
+        "description": "Project identifier.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "path",
+      "name": "endpointId",
+      "required": true,
+      "schema": {
+        "description": "Endpoint identifier.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+        "description": "Deployment identifier.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "updateMask",
+      "schema": {
+        "description": "Fields to update. If not set, the fields populated on `deployment` are updated.",
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/DE.UpdateDeploymentRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/DE.Deployment"
+          }
+        }
+      },
+      "description": "OK"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Default error response"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.together.ai/v2"
+    }
+  ],
+  "summary": "Update a deployment",
+  "tags": [
+    "DeploymentService"
+  ],
+  "components": {
+    "schemas": {
+      "DE.UpdateDeploymentRequest": {
+        "description": "Mutable deployment settings. Use the resource-name fields or their deprecated ID alternatives for a model or config change, but not both.",
+        "properties": {
+          "autoscaling": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.Autoscaling"
+              }
+            ],
+            "description": "Updated autoscaling configuration."
+          },
+          "etag": {
+            "description": "Current deployment version. The update is rejected if this value no longer matches.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Updated endpoint string.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DE.Deployment": {
+        "description": "Serving workload that binds a model and immutable config to an endpoint and manages its replicas.",
+        "properties": {
+          "autoscaling": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.AutoscalingResponse"
+              }
+            ],
+            "description": "Replica bounds, timing windows, and metrics that control horizontal scaling."
+          },
+          "config": {
+            "description": "Immutable config revision in the form `projects/{projectId}/configs/{configRevisionId}`.",
+            "type": "string"
+          },
+          "configId": {
+            "description": "Deprecated. Use `config`. Config revision identifier, populated during migration.",
+            "type": "string"
+          },
+          "createdAt": {
+            "description": "Timestamp when the deployment was created.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "desiredReplicas": {
+            "description": "Number of replicas the autoscaler currently wants across all regions.",
+            "readOnly": true,
+            "type": "integer"
+          },
+          "enableLora": {
+            "description": "Whether the deployment can dynamically load LoRA adapters.",
+            "type": "boolean"
+          },
+          "endpointId": {
+            "description": "ID of the endpoint that contains the deployment.",
+            "type": "string"
+          },
+          "estimatedEffectiveTrafficShare": {
+            "description": "Estimated fraction in [0, 1] of endpoint traffic that reaches this deployment under the current routing configuration. Absent or unrouted deployments are 0.",
+            "format": "double",
+            "readOnly": true,
+            "type": "number"
+          },
+          "etag": {
+            "description": "Opaque version tag for optimistic concurrency control. Supply on update/delete to ensure consistent read-modify-write. If not set, the write overwrites based on current state.",
+            "type": "string"
+          },
+          "hardware": {
+            "description": "Hardware selected by the deployment config, including GPU type and count.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique deployment identifier.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "model": {
+            "description": "Pinned model resource in the form `projects/{projectId}/models/{modelId}/revisions/{revisionId}`.",
+            "type": "string"
+          },
+          "modelId": {
+            "description": "Deprecated. Use `model`. Model identifier being served, populated during migration.",
+            "type": "string"
+          },
+          "modelRevisionId": {
+            "description": "Deprecated. Use `model` with a /revisions/{revisionId} segment. Pin to a specific model revision.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Project- and endpoint-qualified deployment name in the form `<project_slug>/<endpoint_name>/<deployment_name>`. Pass it as `model` in an inference request to target this deployment directly instead of using the endpoint's traffic split.",
+            "type": "string"
+          },
+          "placement": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.Placement"
+              }
+            ],
+            "description": "Region constraints used to schedule the deployment's replicas."
+          },
+          "projectId": {
+            "description": "ID of the project that owns the deployment.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "runtimeInfo": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.RuntimeInfo"
+              }
+            ],
+            "description": "Serving engine and feature support derived from the immutable config.",
+            "readOnly": true
+          },
+          "speculator": {
+            "description": "Pinned draft-model resource used for speculative decoding, in the same form as `model`. Omitted when speculative decoding is disabled.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "speculatorId": {
+            "description": "Deprecated. Use `speculator`. Speculative decoding model identifier derived from the deployment config.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "speculatorRevisionId": {
+            "description": "Deprecated. Use `speculator`. ID of the speculative decoding draft-model revision pinned at creation time.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.DeploymentStatus"
+              }
+            ],
+            "description": "Current lifecycle state and observed replica counts.",
+            "readOnly": true
+          },
+          "trafficMode": {
+            "description": "Whether the deployment serves client-visible responses or only mirrored shadow traffic.",
+            "enum": [
+              "TRAFFIC_MODE_LIVE",
+              "TRAFFIC_MODE_SHADOW"
+            ],
+            "readOnly": true,
+            "type": "string"
+          },
+          "updatedAt": {
+            "description": "Timestamp when the deployment was last updated.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "endpointId",
+          "name",
+          "createdAt",
+          "updatedAt",
+          "modelId",
+          "modelRevisionId",
+          "model",
+          "autoscaling",
+          "configId",
+          "config",
+          "etag",
+          "hardware",
+          "trafficMode",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "DE.Autoscaling": {
+        "description": "Autoscaling configuration for a deployment.",
+        "properties": {
+          "maxReplicas": {
+            "description": "Maximum number of replicas. Defaults to `minReplicas`; omitting it on update preserves the current value.",
+            "type": "integer"
+          },
+          "minReplicas": {
+            "description": "Minimum number of replicas. Omit on update to preserve the current value. Set both `minReplicas` and `maxReplicas` to `0` to stop the deployment.",
+            "type": "integer"
+          },
+          "scaleDownWindow": {
+            "description": "Time a lower replica recommendation must remain stable before scaling down. Defaults to `5m`.",
+            "pattern": "^-?(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,9})?s$",
+            "type": "string"
+          },
+          "scaleToZeroWindow": {
+            "description": "Idle period after which the deployment automatically stops and releases its replicas.",
+            "pattern": "^-?(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,9})?s$",
+            "type": "string"
+          },
+          "scaleUpWindow": {
+            "description": "Stabilization window before scaling up.",
+            "pattern": "^-?(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,9})?s$",
+            "type": "string"
+          },
+          "scalingMetrics": {
+            "description": "Metrics and targets that drive replica recommendations. When omitted, the platform uses concurrent in-flight requests per replica.",
+            "items": {
+              "$ref": "#/components/schemas/DE.ScalingMetric"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "DE.AutoscalingResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/DE.Autoscaling"
+          },
+          {
+            "required": [
+              "minReplicas",
+              "maxReplicas"
+            ],
+            "type": "object"
+          }
+        ],
+        "description": "Resolved autoscaling configuration returned for a deployment."
+      },
+      "DE.Placement": {
+        "description": "Placement controls where a deployment is scheduled.",
+        "oneOf": [
+          {
+            "properties": {
+              "inline": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DE.InlinePlacement"
+                  }
+                ],
+                "description": "Inline placement parameters evaluated at deploy time."
+              }
+            },
+            "required": [
+              "inline"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "profile": {
+                "description": "UID of a saved placement profile.",
+                "type": "string"
+              }
+            },
+            "required": [
+              "profile"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "DE.RuntimeInfo": {
+        "description": "Runtime information derived from the deployment's configuration.",
+        "properties": {
+          "engineType": {
+            "description": "Serving engine, such as `vllm`, `trtllm`, or `sglang`.",
+            "type": "string"
+          },
+          "engineVersion": {
+            "description": "Version of the serving engine.",
+            "type": "string"
+          },
+          "functionCallingSupported": {
+            "description": "Whether the runtime accepts tool and function-calling requests.",
+            "type": "boolean"
+          },
+          "structuredOutputSupported": {
+            "description": "Whether the runtime can constrain generation to a structured output schema.",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "DE.DeploymentStatus": {
+        "description": "Current status of a deployment, derived at read time from internal state.",
+        "properties": {
+          "message": {
+            "description": "Human-readable explanation of the current state.",
+            "type": "string"
+          },
+          "readyReplicas": {
+            "description": "Total replicas actively serving traffic across all clusters.",
+            "type": "integer"
+          },
+          "scheduledReplicas": {
+            "description": "Replicas the scheduler has placed on clusters.",
+            "type": "integer"
+          },
+          "state": {
+            "description": "High-level lifecycle state.",
+            "enum": [
+              "DEPLOYMENT_STATE_PROVISIONING",
+              "DEPLOYMENT_STATE_READY",
+              "DEPLOYMENT_STATE_SCALING",
+              "DEPLOYMENT_STATE_DEGRADED",
+              "DEPLOYMENT_STATE_FAILED",
+              "DEPLOYMENT_STATE_STOPPED",
+              "DEPLOYMENT_STATE_STOPPING"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "message"
+        ],
+        "type": "object"
+      },
+      "DE.ScalingMetric": {
+        "description": "Metric and target used by the autoscaler to recommend a replica count.",
+        "properties": {
+          "name": {
+            "description": "Metric name, such as `gpu_utilization`, `ttft`, `inflight_requests`, `e2e_latency`, `throughput_per_replica`, or `decoding_speed`.",
+            "type": "string"
+          },
+          "percentile": {
+            "description": "Percentile to evaluate for latency-based metrics: `p50`, `p90`, `p95`, or `p99`.",
+            "type": "string"
+          },
+          "target": {
+            "description": "Target interpreted according to `type`. Utilization uses a percentage from 0 to 100, value uses an absolute measurement, and average value uses a per-replica measurement.",
+            "type": "number"
+          },
+          "type": {
+            "description": "Whether `target` is an absolute value, a utilization percentage, or a per-replica average.",
+            "enum": [
+              "METRIC_TARGET_TYPE_VALUE",
+              "METRIC_TARGET_TYPE_UTILIZATION",
+              "METRIC_TARGET_TYPE_AVERAGE_VALUE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "target"
+        ],
+        "type": "object"
+      },
+      "DE.InlinePlacement": {
+        "description": "Inline placement parameters expanded into scheduling rules by the server.",
+        "properties": {
+          "constraint": {
+            "description": "How strictly the regions list is enforced.",
+            "enum": [
+              "ENFORCEMENT_REQUIRED",
+              "ENFORCEMENT_PREFERRED"
+            ],
+            "type": "string"
+          },
+          "regions": {
+            "description": "Regions where the deployment is allowed to run. Multiple regions allow best-effort replica spreading.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    }
+  }
+}

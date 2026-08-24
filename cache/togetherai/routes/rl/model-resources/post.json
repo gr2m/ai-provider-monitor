@@ -1,0 +1,289 @@
+{
+  "description": "Provisions a standalone model resource that training sessions can attach to.",
+  "operationId": "createModelResources",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/RL.CreateModelResourcesRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/RL.ModelResources"
+          }
+        }
+      },
+      "description": "Model resource details"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "An unexpected error response."
+    }
+  },
+  "summary": "Create model resources",
+  "tags": [
+    "RL"
+  ],
+  "components": {
+    "schemas": {
+      "RL.CreateModelResourcesRequest": {
+        "description": "Request to provision a standalone model resource",
+        "properties": {
+          "base_model": {
+            "description": "Base model to provision the resource for",
+            "example": "Qwen/Qwen3-0.6B",
+            "type": "string"
+          },
+          "compute_config": {
+            "$ref": "#/components/schemas/RL.ComputeConfigCreateRequest",
+            "description": "Compute layout to provision."
+          },
+          "lora_enabled": {
+            "default": true,
+            "description": "Whether the resource hosts LoRA sessions or a single full-weight session",
+            "example": true,
+            "type": "boolean"
+          },
+          "optimizer_config": {
+            "$ref": "#/components/schemas/RL.OptimizerConfig",
+            "description": "Optimizer configuration for this resource."
+          }
+        },
+        "required": [
+          "base_model"
+        ],
+        "type": "object"
+      },
+      "RL.ModelResources": {
+        "description": "Allocated GPU resources that training sessions attach to",
+        "properties": {
+          "base_model": {
+            "description": "Base model the resource is provisioned for",
+            "example": "Qwen/Qwen3-0.6B",
+            "type": "string"
+          },
+          "compute_config": {
+            "$ref": "#/components/schemas/RL.ComputeConfig",
+            "description": "Compute layout provisioned for the resource."
+          },
+          "created_at": {
+            "description": "Timestamp when the model resource was created",
+            "example": "2026-01-02T00:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "created_by": {
+            "description": "ID of the user who created the model resource",
+            "example": "user_123",
+            "type": "string"
+          },
+          "error": {
+            "$ref": "#/components/schemas/RL.ModelResourcesError",
+            "description": "Structured detail for the model resource's current error. Set when the resource is in an error state."
+          },
+          "id": {
+            "description": "Unique identifier for the model resource",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "lora_enabled": {
+            "description": "Whether the resource hosts LoRA sessions or a full-weight session",
+            "example": true,
+            "type": "boolean"
+          },
+          "optimizer_config": {
+            "$ref": "#/components/schemas/RL.OptimizerConfig",
+            "description": "Optimizer configuration for this resource."
+          },
+          "status": {
+            "$ref": "#/components/schemas/RL.ModelResourcesStatus",
+            "description": "Lifecycle status of the model resource",
+            "example": "MODEL_RESOURCES_STATUS_READY"
+          },
+          "updated_at": {
+            "description": "Timestamp when the model resource was last updated",
+            "example": "2026-01-02T00:00:05Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "base_model",
+          "compute_config",
+          "lora_enabled",
+          "created_at",
+          "updated_at",
+          "optimizer_config",
+          "created_by"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "RL.ComputeConfigCreateRequest": {
+        "description": "Compute layout to provision for a model resource",
+        "properties": {
+          "num_generator_replicas": {
+            "default": "1",
+            "description": "Number of generator replicas. 0 runs the trainer only, with no generator.",
+            "example": 2,
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "RL.OptimizerConfig": {
+        "description": "Optimizer configuration",
+        "properties": {
+          "adamw": {
+            "$ref": "#/components/schemas/RL.AdamWOptimizerConfig",
+            "description": "Use the AdamW optimizer."
+          },
+          "muon": {
+            "$ref": "#/components/schemas/RL.MuonOptimizerConfig",
+            "description": "Use the Muon optimizer."
+          }
+        },
+        "type": "object"
+      },
+      "RL.ComputeConfig": {
+        "description": "Compute layout for a model resource",
+        "properties": {
+          "num_generator_replicas": {
+            "description": "Number of generator replicas. 0 means the resource runs the trainer only, with no generator.",
+            "example": 1,
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "num_generator_replicas"
+        ],
+        "type": "object"
+      },
+      "RL.ModelResourcesError": {
+        "description": "Structured detail for the model resource's current error",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/RL.ModelResourcesErrorCode",
+            "description": "Finite machine-readable reason code for UI branching",
+            "example": "MODEL_RESOURCES_ERROR_CODE_CAPACITY_UNAVAILABLE"
+          },
+          "message": {
+            "description": "User-safe human-readable detail for the current status",
+            "example": "Capacity is currently unavailable. Try again later.",
+            "type": "string"
+          },
+          "occurred_at": {
+            "description": "Timestamp when this error was reported",
+            "example": "2026-01-02T00:00:05Z",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "occurred_at"
+        ],
+        "type": "object"
+      },
+      "RL.ModelResourcesStatus": {
+        "description": "Lifecycle status of a model resource",
+        "enum": [
+          "MODEL_RESOURCES_STATUS_PENDING",
+          "MODEL_RESOURCES_STATUS_CREATING",
+          "MODEL_RESOURCES_STATUS_READY",
+          "MODEL_RESOURCES_STATUS_ERROR",
+          "MODEL_RESOURCES_STATUS_STOPPED",
+          "MODEL_RESOURCES_STATUS_STOPPING"
+        ],
+        "type": "string"
+      },
+      "RL.AdamWOptimizerConfig": {
+        "additionalProperties": false,
+        "description": "AdamW optimizer configuration",
+        "properties": {},
+        "type": "object"
+      },
+      "RL.MuonOptimizerConfig": {
+        "description": "Advanced configuration for the Muon optimizer.",
+        "properties": {
+          "scaling_strategy": {
+            "$ref": "#/components/schemas/RL.MuonScalingStrategy",
+            "default": "MUON_SCALING_STRATEGY_MATCH_ADAMW",
+            "description": "Scaling strategy for the Muon optimizer.",
+            "example": "MUON_SCALING_STRATEGY_ORIGINAL"
+          }
+        },
+        "type": "object"
+      },
+      "RL.ModelResourcesErrorCode": {
+        "description": "Finite machine-readable model resource lifecycle error code",
+        "enum": [
+          "MODEL_RESOURCES_ERROR_CODE_CAPACITY_UNAVAILABLE",
+          "MODEL_RESOURCES_ERROR_CODE_PROVISIONING_FAILED"
+        ],
+        "type": "string"
+      },
+      "RL.MuonScalingStrategy": {
+        "default": "MUON_SCALING_STRATEGY_UNSPECIFIED",
+        "enum": [
+          "MUON_SCALING_STRATEGY_UNSPECIFIED",
+          "MUON_SCALING_STRATEGY_MATCH_ADAMW",
+          "MUON_SCALING_STRATEGY_ORIGINAL"
+        ],
+        "type": "string"
+      }
+    }
+  }
+}

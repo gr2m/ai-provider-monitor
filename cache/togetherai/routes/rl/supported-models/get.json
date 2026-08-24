@@ -1,0 +1,228 @@
+{
+  "description": "Returns the models supported by the RL service and their limits for training/sampling operations.",
+  "operationId": "listSupportedModels",
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/RL.SupportedModelsListResponse"
+          }
+        }
+      },
+      "description": "List of supported RL models"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Rate limit exceeded."
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "An unexpected error response."
+    }
+  },
+  "summary": "List supported models",
+  "tags": [
+    "RL"
+  ],
+  "components": {
+    "schemas": {
+      "RL.SupportedModelsListResponse": {
+        "description": "List of base models supported by the RL service",
+        "properties": {
+          "data": {
+            "description": "Supported base models for RL",
+            "items": {
+              "$ref": "#/components/schemas/RL.SupportedModel"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "RL.SupportedModel": {
+        "description": "A base model supported by the RL service. Per-mode configs are present only when the model supports that mode.",
+        "properties": {
+          "base_model": {
+            "description": "Base model identifier to pass as base_model when creating a model resource",
+            "example": "Qwen/Qwen3-0.6B",
+            "type": "string"
+          },
+          "generator_config": {
+            "$ref": "#/components/schemas/RL.ModelGeneratorConfig",
+            "description": "Inference config. Set when the model can be provisioned with generator replicas."
+          },
+          "trainer_config": {
+            "$ref": "#/components/schemas/RL.ModelTrainerConfig",
+            "description": "Training config. Set when the model supports at least one training mode."
+          }
+        },
+        "required": [
+          "base_model"
+        ],
+        "type": "object"
+      },
+      "RL.ModelGeneratorConfig": {
+        "description": "Inference config. If present, the model can be provisioned with one or more generator replicas.",
+        "properties": {
+          "context_length": {
+            "description": "Maximum tokens in a single inference request (prompt + completion)",
+            "example": 40960,
+            "type": "integer"
+          },
+          "sampling_defaults": {
+            "$ref": "#/components/schemas/RL.ModelSamplingDefaults",
+            "description": "Default sampling parameters used for sample requests."
+          }
+        },
+        "required": [
+          "context_length",
+          "sampling_defaults"
+        ],
+        "type": "object"
+      },
+      "RL.ModelTrainerConfig": {
+        "description": "Training config. Each sub-mode is present only when the model supports that training mode.",
+        "properties": {
+          "full": {
+            "$ref": "#/components/schemas/RL.ModelFullModeConfig",
+            "description": "Full-weight training config. Set when the model supports full-weight training."
+          },
+          "lora": {
+            "$ref": "#/components/schemas/RL.ModelLoraModeConfig",
+            "description": "LoRA training config. Set when the model supports LoRA training."
+          }
+        },
+        "type": "object"
+      },
+      "RL.ModelSamplingDefaults": {
+        "description": "Default sampling parameters used for a Sample request.",
+        "properties": {
+          "logprobs": {
+            "description": "Number of logprobs to return per token",
+            "example": 1,
+            "type": "integer"
+          },
+          "max_tokens": {
+            "description": "Maximum tokens generated per completion",
+            "example": 512,
+            "type": "integer"
+          },
+          "n": {
+            "description": "Number of completions per prompt",
+            "example": 1,
+            "type": "integer"
+          },
+          "temperature": {
+            "description": "Sampling temperature",
+            "example": 1,
+            "type": "number"
+          }
+        },
+        "required": [
+          "n",
+          "max_tokens",
+          "temperature",
+          "logprobs"
+        ],
+        "type": "object"
+      },
+      "RL.ModelFullModeConfig": {
+        "description": "Full-weight training config. If present, the model supports full-weight training.",
+        "properties": {
+          "max_batch_size": {
+            "description": "Maximum global batch size accepted by a forward-backward step",
+            "example": 512,
+            "type": "integer"
+          },
+          "max_seq_length": {
+            "description": "Maximum sequence length in tokens",
+            "example": 40960,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "max_batch_size",
+          "max_seq_length"
+        ],
+        "type": "object"
+      },
+      "RL.ModelLoraModeConfig": {
+        "description": "LoRA training config. If present, the model supports LoRA training.",
+        "properties": {
+          "max_batch_size": {
+            "description": "Maximum global batch size accepted by a forward-backward step",
+            "example": 512,
+            "type": "integer"
+          },
+          "max_rank": {
+            "description": "Maximum LoRA rank",
+            "example": 64,
+            "type": "integer"
+          },
+          "max_seq_length": {
+            "description": "Maximum sequence length in tokens",
+            "example": 40960,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "max_batch_size",
+          "max_seq_length",
+          "max_rank"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

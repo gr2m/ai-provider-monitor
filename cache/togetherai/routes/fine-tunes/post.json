@@ -20,13 +20,42 @@
                 }
               ]
             },
+            "early_stopping_enabled": {
+              "default": false,
+              "description": "Whether to stop training early when validation loss stops improving. Requires a validation_file, and n_evals must be at least early_stopping_patience + early_stopping_warmup_evals + 1 so a plateau can be detected.\n",
+              "type": "boolean"
+            },
+            "early_stopping_min_delta": {
+              "default": 0,
+              "description": "Minimum decrease in validation loss for an evaluation to count as an improvement. Larger values treat small gains as non-improvements, causing training to stop sooner. Only applies when early_stopping_enabled is true.\n",
+              "minimum": 0,
+              "type": "number"
+            },
+            "early_stopping_patience": {
+              "default": 2,
+              "description": "Number of consecutive evaluations with no improvement in validation loss to allow before stopping. Only applies when early_stopping_enabled is true.\n",
+              "minimum": 1,
+              "type": "integer"
+            },
+            "early_stopping_warmup_evals": {
+              "default": 1,
+              "description": "Number of initial evaluations excluded from the early-stopping decision. These still establish the baseline validation loss but do not count toward patience. Set to 0 to disable warmup; if omitted, defaults to 1. Only applies when early_stopping_enabled is true.\n",
+              "minimum": 0,
+              "nullable": true,
+              "type": "integer"
+            },
             "from_checkpoint": {
-              "description": "The checkpoint identifier to continue training from a previous fine-tuning job. Format is `{$JOB_ID}` or `{$OUTPUT_MODEL_NAME}` or `{$JOB_ID}:{$STEP}` or `{$OUTPUT_MODEL_NAME}:{$STEP}`. The step value is optional; without it, the final checkpoint will be used.",
+              "description": "The checkpoint identifier to continue training from a previous fine-tuning job. Format is `{$JOB_ID}` or `{$OUTPUT_MODEL_NAME}` or `{$JOB_ID}:{$STEP}` or `{$OUTPUT_MODEL_NAME}:{$STEP}`. The step value is optional; without it, uses the final checkpoint.",
               "type": "string"
             },
             "from_hf_model": {
               "description": "The Hugging Face Hub repo to start training from. Should be as close as possible to the base model (specified by the `model` argument) in terms of architecture and size.",
               "type": "string"
+            },
+            "gradient_accumulation_steps": {
+              "description": "Number of steps to accumulate gradients before performing a weight update. If omitted or set to 0, the model default is used.",
+              "minimum": 0,
+              "type": "integer"
             },
             "hf_api_token": {
               "description": "The API token for the Hugging Face Hub.",
@@ -43,7 +72,6 @@
             "learning_rate": {
               "default": 0.00001,
               "description": "Controls how quickly the model adapts to new information (too high may cause instability, too low may slow convergence)",
-              "format": "float",
               "type": "number"
             },
             "lr_scheduler": {
@@ -55,11 +83,10 @@
             "max_grad_norm": {
               "default": 1,
               "description": "Max gradient norm to be used for gradient clipping. Set to 0 to disable.",
-              "format": "float",
               "type": "number"
             },
             "max_seq_length": {
-              "description": "Maximum sequence length to use for training.",
+              "description": "Maximum sequence length to use for training. If not specified, the maximum allowed for the model and training method will be used.",
               "type": "integer"
             },
             "model": {
@@ -72,6 +99,7 @@
             "n_checkpoints": {
               "default": 1,
               "description": "Number of intermediate model versions saved during training for evaluation",
+              "maximum": 10,
               "type": "integer"
             },
             "n_epochs": {
@@ -86,7 +114,7 @@
             },
             "packing": {
               "default": true,
-              "description": "Whether to use sequence packing for training.",
+              "description": "Whether to use sequence packing for training. This flag has no effect if the training data is in Parquet format.",
               "type": "boolean"
             },
             "random_seed": {
@@ -95,13 +123,14 @@
               "type": "integer"
             },
             "suffix": {
-              "description": "Suffix that will be added to your fine-tuned model name",
+              "description": "Suffix to add to your fine-tuned model name. Must be at most 64 characters long.",
+              "maxLength": 64,
               "type": "string"
             },
             "train_on_inputs": {
               "default": "auto",
               "deprecated": true,
-              "description": "Whether to mask the user messages in conversational data or prompts in instruction data.",
+              "description": "Whether to mask user messages in conversational data or prompts in instruction data.",
               "oneOf": [
                 {
                   "type": "boolean"
@@ -141,7 +170,7 @@
                 }
               ],
               "default": null,
-              "description": "The training type to use. If not provided, the job will default to LoRA training type.",
+              "description": "The training type to use. Defaults to LoRA if not provided.",
               "nullable": true,
               "type": "object"
             },
@@ -166,19 +195,17 @@
               "type": "string"
             },
             "wandb_project_name": {
-              "description": "The Weights & Biases project for your run. If not specified, will use `together` as the project name.",
+              "description": "The Weights & Biases project for your run. If not specified, uses `together` as the project name.",
               "type": "string"
             },
             "warmup_ratio": {
               "default": 0,
               "description": "The percent of steps at the start of training to linearly increase the learning rate.",
-              "format": "float",
               "type": "number"
             },
             "weight_decay": {
               "default": 0,
               "description": "Weight decay. Regularization parameter for the optimizer.",
-              "format": "float",
               "type": "number"
             }
           },
@@ -254,7 +281,7 @@
           },
           "train_on_inputs": {
             "default": "auto",
-            "description": "Whether to mask the user messages in conversational data or prompts in instruction data.",
+            "description": "Whether to mask user messages in conversational data or prompts in instruction data.",
             "oneOf": [
               {
                 "type": "boolean"
@@ -279,7 +306,6 @@
         "properties": {
           "dpo_beta": {
             "default": 0.1,
-            "format": "float",
             "type": "number"
           },
           "dpo_normalize_logratios_by_length": {
@@ -298,12 +324,10 @@
           },
           "rpo_alpha": {
             "default": 0,
-            "format": "float",
             "type": "number"
           },
           "simpo_gamma": {
             "default": 0,
-            "format": "float",
             "type": "number"
           }
         },
@@ -327,23 +351,28 @@
         "type": "object"
       },
       "LoRATrainingType": {
+        "description": "LoRA training configuration for a fine-tuning job.",
         "properties": {
           "lora_alpha": {
+            "description": "Scaling factor applied to the LoRA adapter weights.",
             "type": "integer"
           },
           "lora_dropout": {
             "default": 0,
-            "format": "float",
+            "description": "Dropout probability applied to LoRA adapter inputs.",
             "type": "number"
           },
           "lora_r": {
+            "description": "Rank of the LoRA adapter matrices.",
             "type": "integer"
           },
           "lora_trainable_modules": {
             "default": "all-linear",
+            "description": "Comma-separated LoRA target modules. Use `all-linear` for model defaults; MoE expert modules (`w_up`, `w_gate`, `w_down`) can be combined with attention modules on compatible models. Fine-tunes that target any expert module produce adapter-only output.",
             "type": "string"
           },
           "type": {
+            "description": "Identifies this request as a LoRA fine-tune.",
             "enum": [
               "Lora"
             ],
@@ -372,7 +401,7 @@
           "total_price": 1500,
           "training_file": "file-01234567890123456789",
           "updated_at": "2023-05-17T18:46:23.456Z",
-          "user_id": "user_01234567890123456789",
+          "user_id": "user_789xyz012",
           "wandb_project_name": "my-finetune-project"
         },
         "properties": {
@@ -384,6 +413,19 @@
             "description": "Creation timestamp of the fine-tune job",
             "format": "date-time",
             "type": "string"
+          },
+          "early_stopped": {
+            "description": "Whether the early-stopping criterion triggered.",
+            "type": "boolean"
+          },
+          "early_stopping_best_metric": {
+            "description": "Best validation loss observed, corresponding to early_stopping_best_step. Null if no improving evaluation was recorded.",
+            "nullable": true,
+            "type": "number"
+          },
+          "early_stopping_best_step": {
+            "description": "Step associated with the selected early-stopping artifact. When early_stopping_best_metric is null, no finite best metric was recorded; this is the halt step, not a best-checkpoint step.\n",
+            "type": "integer"
           },
           "events": {
             "description": "Events related to this fine-tune job",
@@ -410,7 +452,6 @@
           },
           "learning_rate": {
             "description": "Learning rate used for training",
-            "format": "float",
             "type": "number"
           },
           "lr_scheduler": {
@@ -419,11 +460,10 @@
           },
           "max_grad_norm": {
             "description": "Maximum gradient norm for clipping",
-            "format": "float",
             "type": "number"
           },
           "max_seq_length": {
-            "description": "Maximum sequence length to use for training.",
+            "description": "Maximum sequence length to use for training. If not specified, uses the maximum allowed for the model and training method.",
             "type": "integer"
           },
           "model": {
@@ -514,7 +554,7 @@
             "type": "string"
           },
           "user_id": {
-            "description": "Identifier for the user who created the job",
+            "description": "ID of the user who created the fine-tune job.",
             "type": "string"
           },
           "validation_file": {
@@ -531,12 +571,10 @@
           },
           "warmup_ratio": {
             "description": "Ratio of warmup steps",
-            "format": "float",
             "type": "number"
           },
           "weight_decay": {
             "description": "Weight decay value used",
-            "format": "float",
             "type": "number"
           }
         },
@@ -544,7 +582,8 @@
           "id",
           "status",
           "created_at",
-          "updated_at"
+          "updated_at",
+          "user_id"
         ],
         "type": "object"
       },
@@ -553,7 +592,6 @@
           "min_lr_ratio": {
             "default": 0,
             "description": "The ratio of the final learning rate to the peak learning rate",
-            "format": "float",
             "type": "number"
           }
         },
@@ -564,13 +602,11 @@
           "min_lr_ratio": {
             "default": 0,
             "description": "The ratio of the final learning rate to the peak learning rate",
-            "format": "float",
             "type": "number"
           },
           "num_cycles": {
             "default": 0.5,
             "description": "Number or fraction of cycles for the cosine learning rate scheduler",
-            "format": "float",
             "type": "number"
           }
         },
@@ -588,8 +624,15 @@
           "created_at": {
             "type": "string"
           },
-          "hash": {
-            "type": "string"
+          "early_stopping_best_metric_value": {
+            "description": "For early_stopped events, the best validation loss observed. Null if no improving evaluation was recorded.",
+            "nullable": true,
+            "type": "number"
+          },
+          "early_stopping_best_step": {
+            "description": "For early_stopped events, the selected best-checkpoint step when a finite best metric exists. If early_stopping_best_metric_value is null, this is the halt step.\n",
+            "nullable": true,
+            "type": "integer"
           },
           "level": {
             "anyOf": [
@@ -617,10 +660,11 @@
           "token_count": {
             "type": "integer"
           },
-          "total_steps": {
-            "type": "integer"
+          "tokenized_dataset_path": {
+            "description": "Storage path for the tokenized dataset archive associated with this event.",
+            "type": "string"
           },
-          "training_offset": {
+          "total_steps": {
             "type": "integer"
           },
           "type": {
@@ -634,16 +678,7 @@
           "object",
           "created_at",
           "message",
-          "type",
-          "param_count",
-          "token_count",
-          "total_steps",
-          "wandb_url",
-          "step",
-          "checkpoint_path",
-          "model_path",
-          "training_offset",
-          "hash"
+          "type"
         ],
         "type": "object"
       },
@@ -717,7 +752,9 @@
           "cancel_requested",
           "job_restarted",
           "refund",
-          "warning"
+          "warning",
+          "early_stopped",
+          "tokenized_dataset_upload_complete"
         ],
         "type": "string"
       }

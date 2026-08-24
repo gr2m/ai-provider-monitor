@@ -1,0 +1,267 @@
+{
+  "description": "Lists production-ready configuration revisions compatible with a reference model. Specify the model with `referenceModel` or the deprecated `referenceModelId`; if both are supplied, they must identify the same model. Results include public configurations and configurations owned by the specified project.",
+  "operationId": "ConfigService_ListProjectConfigs",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "projectId",
+      "required": true,
+      "schema": {
+        "description": "Project identifier.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "referenceModelId",
+      "schema": {
+        "description": "Deprecated. Use `referenceModel`. Reference model identifier filter; if both are set, they must agree.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "referenceModel",
+      "schema": {
+        "description": "Model resource-name filter using `projects/{projectId}/models/{modelId}`; alternative to `referenceModelId`. If both are set, they must agree.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "limit",
+      "schema": {
+        "description": "Maximum number of results to return.",
+        "type": "integer"
+      }
+    },
+    {
+      "in": "query",
+      "name": "after",
+      "schema": {
+        "description": "Cursor from a previous list response.",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/DE.ListProjectConfigsResponse"
+          }
+        }
+      },
+      "description": "OK"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Default error response"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.together.ai/v2"
+    }
+  ],
+  "summary": "List model configurations",
+  "tags": [
+    "ConfigService"
+  ],
+  "components": {
+    "schemas": {
+      "DE.ListProjectConfigsResponse": {
+        "description": "Model-compatible config revisions and pagination metadata.",
+        "properties": {
+          "data": {
+            "description": "The list of model configs.",
+            "items": {
+              "$ref": "#/components/schemas/DE.ModelConfig"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Cursor for the next page. Null if there are no more results.",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Object type. Always `list`."
+          }
+        },
+        "required": [
+          "data",
+          "object"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "DE.ModelConfig": {
+        "description": "Immutable, user-facing configuration revision that defines how a compatible model runs, including engine and hardware selectors.",
+        "properties": {
+          "certifications": {
+            "description": "Model, hardware, and runtime combinations certified for this config revision.",
+            "items": {
+              "$ref": "#/components/schemas/DE.Certification"
+            },
+            "type": "array"
+          },
+          "draftModel": {
+            "description": "Resource name of the draft model, using `projects/{draftProject}/models/{modelId}`; empty when speculative decoding is not enabled.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Config revision identifier.",
+            "type": "string"
+          },
+          "projectId": {
+            "description": "ID of the project that owns the config revision. Public configs may be owned by a different project than the deployment.",
+            "type": "string"
+          },
+          "referenceModel": {
+            "description": "Resource name of the referenced model, using `projects/{modelProject}/models/{modelId}`.",
+            "type": "string"
+          },
+          "referenceModelId": {
+            "description": "Deprecated. Use `referenceModel`. Reference model identifier.",
+            "type": "string"
+          },
+          "selectors": {
+            "description": "Hardware and runtime selectors used to place and configure replicas.",
+            "items": {
+              "$ref": "#/components/schemas/DE.Selector"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "certifications",
+          "referenceModelId",
+          "selectors",
+          "projectId",
+          "referenceModel"
+        ],
+        "type": "object"
+      },
+      "DE.Certification": {
+        "description": "Certification result for a model, config, and optional draft-model combination.",
+        "properties": {
+          "certificationType": {
+            "description": "Whether the model and config combination passed certification.",
+            "enum": [
+              "CERTIFICATION_TYPE_CERTIFIED",
+              "CERTIFICATION_TYPE_UNCERTIFIED"
+            ],
+            "type": "string"
+          },
+          "certifiedAt": {
+            "description": "Time when the certification decision was recorded.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "certifiedBy": {
+            "description": "Service or reviewer that recorded the certification.",
+            "type": "string"
+          },
+          "draftModel": {
+            "description": "Resource name of the certified draft model.",
+            "type": "string"
+          },
+          "draftModelRevisionId": {
+            "description": "Revision identifier of the certified draft model.",
+            "type": "string"
+          },
+          "model": {
+            "description": "Resource name of the certified model.",
+            "type": "string"
+          },
+          "modelRevisionId": {
+            "description": "Revision identifier of the certified model.",
+            "type": "string"
+          },
+          "notes": {
+            "description": "Human-readable certification notes or limitations.",
+            "type": "string"
+          },
+          "target": {
+            "description": "Product or serving environment for which the combination was evaluated.",
+            "enum": [
+              "CERTIFICATION_TARGET_DE_SERVERLESS",
+              "CERTIFICATION_TARGET_MRE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "target",
+          "certificationType",
+          "certifiedAt",
+          "certifiedBy",
+          "model",
+          "modelRevisionId"
+        ],
+        "type": "object"
+      },
+      "DE.Selector": {
+        "description": "Hardware or runtime requirement expressed as a key-value pair.",
+        "properties": {
+          "key": {
+            "description": "Selector name, such as GPU type, GPU count, or optimization profile.",
+            "type": "string"
+          },
+          "value": {
+            "description": "Required value for the selector.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

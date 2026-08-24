@@ -1,5 +1,5 @@
 {
-  "description": "Submits an optimizer step operation that will asynchronously apply accumulated gradients to update model parameters.",
+  "description": "Submits an optimizer step operation that will asynchronously apply accumulated gradients to update model parameters. Does not make the updated parameters available for sampling; call `weights-sync` afterwards when you want subsequent samples to use the updated policy.",
   "operationId": "OptimStep",
   "parameters": [
     {
@@ -51,16 +51,15 @@
   "components": {
     "schemas": {
       "RL.OptimStepBody": {
+        "description": "Request body for an optimizer step.",
         "properties": {
-          "adamw_params": {
-            "$ref": "#/components/schemas/RL.AdamWOptimizerParams"
+          "adam_params": {
+            "$ref": "#/components/schemas/RL.AdamParams",
+            "description": "Adam optimizer overrides for this step."
           },
-          "learning_rate": {
-            "default": "0.0001",
-            "description": "Learning rate for this step.",
-            "example": 0.0001,
-            "format": "float",
-            "type": "number"
+          "muon_params": {
+            "$ref": "#/components/schemas/RL.MuonParams",
+            "description": "Muon optimizer overrides for this step."
           }
         },
         "type": "object"
@@ -127,35 +126,81 @@
         ],
         "type": "object"
       },
-      "RL.AdamWOptimizerParams": {
-        "description": "AdamW optimizer parameters",
+      "RL.AdamParams": {
+        "description": "Per-step Adam optimizer overrides.",
         "properties": {
           "beta1": {
             "default": "0.9",
-            "description": "First moment decay rate",
+            "description": "Exponential decay rate for the first-moment estimate",
             "example": 0.9,
-            "format": "float",
             "type": "number"
           },
           "beta2": {
             "default": "0.95",
-            "description": "Second moment decay rate",
+            "description": "Exponential decay rate for the second-moment estimate",
             "example": 0.95,
-            "format": "float",
             "type": "number"
           },
           "eps": {
             "default": "1e-8",
             "description": "Epsilon for numerical stability",
             "example": 1e-8,
-            "format": "float",
+            "type": "number"
+          },
+          "grad_clip_norm": {
+            "default": "1.0",
+            "description": "Maximum gradient norm for this step, gradients across all model parameters are clipped to this value. Set to 0 to disable gradient clipping. When unset, gradients are clipped to the session default (1.0).",
+            "example": 10,
+            "type": "number"
+          },
+          "learning_rate": {
+            "description": "Learning rate for the Adam-tuned parameters",
+            "example": 0.0001,
             "type": "number"
           },
           "weight_decay": {
-            "default": "0.1",
+            "default": "0",
             "description": "Weight decay coefficient",
             "example": 0.1,
-            "format": "float",
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "RL.MuonParams": {
+        "description": "Per-step Muon optimizer overrides",
+        "properties": {
+          "adam": {
+            "$ref": "#/components/schemas/RL.AdamParams",
+            "description": "Per-step Adam optimizer overrides for the Adam-tuned parameters in a Muon-tuned optimizer session."
+          },
+          "grad_clip_norm": {
+            "default": "1.0",
+            "description": "Maximum gradient norm for this step, gradients across all model parameters are clipped to this value. Set to 0 to disable gradient clipping. When unset, gradients are clipped to the session default (1.0).",
+            "example": 10,
+            "type": "number"
+          },
+          "learning_rate": {
+            "description": "Learning rate for this Muon optimizer step.",
+            "example": 0.02,
+            "type": "number"
+          },
+          "momentum": {
+            "default": "0.95",
+            "description": "Momentum coefficient",
+            "example": 0.95,
+            "type": "number"
+          },
+          "newton_schulz_steps": {
+            "default": "5",
+            "description": "Number of Newton-Schulz iterations",
+            "example": 5,
+            "type": "integer"
+          },
+          "weight_decay": {
+            "default": "0.0",
+            "description": "Weight decay coefficient",
+            "example": 0,
             "type": "number"
           }
         },
@@ -182,9 +227,15 @@
         "properties": {
           "step": {
             "description": "Step number",
-            "example": 100,
-            "format": "uint64",
-            "type": "string"
+            "example": "100",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
           }
         },
         "required": [
@@ -205,13 +256,15 @@
       },
       "RL.TrainingOperationErrorCode": {
         "default": "TRAINING_OPERATION_ERROR_CODE_UNSPECIFIED",
+        "description": "Application error code for a failed training operation",
         "enum": [
           "TRAINING_OPERATION_ERROR_CODE_UNSPECIFIED",
           "TRAINING_OPERATION_ERROR_CODE_RESOURCE_EXHAUSTED",
           "TRAINING_OPERATION_ERROR_CODE_TIMEOUT",
           "TRAINING_OPERATION_ERROR_CODE_INTERNAL_ERROR",
           "TRAINING_OPERATION_ERROR_CODE_SESSION_NOT_ACTIVE",
-          "TRAINING_OPERATION_ERROR_CODE_INVALID_INPUT"
+          "TRAINING_OPERATION_ERROR_CODE_INVALID_INPUT",
+          "TRAINING_OPERATION_ERROR_CODE_NON_FINITE_LOSS"
         ],
         "type": "string"
       }

@@ -1,0 +1,734 @@
+{
+  "description": "Creates a rollout in the pending state without shifting traffic. Start the rollout in a separate request after reviewing its strategy and metric gates.",
+  "operationId": "RolloutService_CreateRollout",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "projectId",
+      "required": true,
+      "schema": {
+        "description": "Project identifier.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "path",
+      "name": "endpointId",
+      "required": true,
+      "schema": {
+        "description": "Endpoint identifier.",
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "examples": {
+          "blueGreen": {
+            "summary": "Blue-green cutover",
+            "value": {
+              "blueGreen": {},
+              "sourceDeploymentId": "dep_source123",
+              "targetDeploymentId": "dep_target456"
+            }
+          },
+          "canary": {
+            "summary": "Canary rollout with a metric gate",
+            "value": {
+              "canary": {
+                "stepInterval": "300s",
+                "steps": [
+                  {
+                    "traffic": 25
+                  },
+                  {
+                    "traffic": 50
+                  },
+                  {
+                    "traffic": 100
+                  }
+                ]
+              },
+              "metrics": [
+                {
+                  "name": "serving_latency",
+                  "percentile": 95,
+                  "stat": "METRIC_STAT_TYPE_PERCENTILE",
+                  "thresholdCheck": {
+                    "operator": "THRESHOLD_OPERATOR_LT",
+                    "value": 30000
+                  },
+                  "window": "300s"
+                }
+              ],
+              "sourceDeploymentId": "dep_source123",
+              "targetDeploymentId": "dep_target456"
+            }
+          },
+          "rolling": {
+            "summary": "Rolling replica swap",
+            "value": {
+              "rolling": {},
+              "sourceDeploymentId": "dep_source123",
+              "targetDeploymentId": "dep_target456"
+            }
+          }
+        },
+        "schema": {
+          "$ref": "#/components/schemas/DE.CreateRolloutRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/DE.Rollout"
+          }
+        }
+      },
+      "description": "OK"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Default error response"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.together.ai/v2"
+    }
+  ],
+  "summary": "Create a rollout",
+  "tags": [
+    "RolloutService"
+  ],
+  "components": {
+    "schemas": {
+      "DE.CreateRolloutRequest": {
+        "description": "Strategy, metric gates, timing, and cleanup policy for shifting traffic between two deployments under one endpoint.",
+        "oneOf": [
+          {
+            "required": [
+              "canary"
+            ]
+          },
+          {
+            "required": [
+              "blueGreen"
+            ]
+          },
+          {
+            "required": [
+              "rolling"
+            ]
+          }
+        ],
+        "properties": {
+          "blueGreen": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.BlueGreenConfig"
+              }
+            ],
+            "description": "Blue-green rollout strategy configuration. Mutually exclusive with canary and rolling."
+          },
+          "canary": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.CanaryConfig"
+              }
+            ],
+            "description": "Canary rollout strategy configuration. Mutually exclusive with blueGreen and rolling."
+          },
+          "finalSourceReplicas": {
+            "description": "Optional final replica count for the source deployment. Defaults to 0, which drains and stops the source.",
+            "type": "integer"
+          },
+          "finalTargetReplicas": {
+            "description": "Optional target replica floor at completion. Must be at least 1 when set; defaults to the source deployment's replica count at create time, or to the source and target deployments' combined replica count when both already stand in the endpoint traffic split after a cancel. If this exceeds the target autoscaling max, the rollout raises that max once when first needed unless an operator changes max mid-run; the raised ceiling remains after completion. If the target's autoscaling min, or the source min inherited by a target that starts stopped, is higher, completion holds that higher floor and PreviewRolloutDefaults reports FINAL_BELOW_INHERITED_MIN.",
+            "type": "integer"
+          },
+          "metrics": {
+            "description": "Optional metric gates evaluated after each step's soak. Canary only; rejected on rolling and blue-green rollouts.",
+            "items": {
+              "$ref": "#/components/schemas/DE.MetricRule"
+            },
+            "type": "array"
+          },
+          "rolling": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.RollingConfig"
+              }
+            ],
+            "description": "Rolling rollout strategy configuration. Mutually exclusive with canary and blueGreen."
+          },
+          "sourceDeploymentId": {
+            "description": "Deployment that traffic shifts away from.",
+            "type": "string"
+          },
+          "targetDeploymentId": {
+            "description": "Deployment that traffic shifts toward.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sourceDeploymentId",
+          "targetDeploymentId"
+        ],
+        "type": "object"
+      },
+      "DE.Rollout": {
+        "description": "Public view of a rollout resource and its embedded runtime status.",
+        "properties": {
+          "completedAt": {
+            "description": "Output only. Timestamp when the rollout reached a terminal state.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "createdAt": {
+            "description": "Output only. Timestamp when the rollout was created.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "currentStep": {
+            "description": "Output only. Zero-based index of the current step. Unset while PENDING; step 0 is reported explicitly after start.",
+            "readOnly": true,
+            "type": "integer"
+          },
+          "currentTrafficPercent": {
+            "description": "Output only. Applied percentage of traffic on the target deployment.",
+            "readOnly": true,
+            "type": "integer"
+          },
+          "endpointId": {
+            "description": "Output only. Endpoint this rollout belongs to.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "etag": {
+            "description": "Output only. Opaque version tag for optimistic concurrency control.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "id": {
+            "description": "Output only. Unique rollout identifier.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "pauseInfo": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.PauseInfo"
+              }
+            ],
+            "description": "Output only. Why and when the rollout was paused. Set while a pause is pending or effective (PAUSING, PAUSED, or SYSTEM_PAUSED); while PAUSING, pausedAt records when the pause was requested.",
+            "readOnly": true
+          },
+          "sourceDeploymentId": {
+            "description": "Output only. Deployment that traffic is shifting away from.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "startedAt": {
+            "description": "Output only. Timestamp when the rollout started running.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "state": {
+            "description": "Output only. High-level rollout lifecycle state.",
+            "enum": [
+              "ROLLOUT_STATE_RUNNING",
+              "ROLLOUT_STATE_PAUSED",
+              "ROLLOUT_STATE_STABILIZING",
+              "ROLLOUT_STATE_ABORTING",
+              "ROLLOUT_STATE_COMPLETED",
+              "ROLLOUT_STATE_ABORTED",
+              "ROLLOUT_STATE_PENDING",
+              "ROLLOUT_STATE_SYSTEM_PAUSED",
+              "ROLLOUT_STATE_CANCELLING",
+              "ROLLOUT_STATE_CANCELED",
+              "ROLLOUT_STATE_PAUSING"
+            ],
+            "readOnly": true,
+            "type": "string"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.RolloutStatus"
+              }
+            ],
+            "description": "Output only. Derived runtime progress and failure details.",
+            "readOnly": true
+          },
+          "strategy": {
+            "description": "Output only. Rollout strategy selected at creation.",
+            "enum": [
+              "ROLLOUT_STRATEGY_TYPE_ROLLING",
+              "ROLLOUT_STRATEGY_TYPE_CANARY",
+              "ROLLOUT_STRATEGY_TYPE_BLUE_GREEN"
+            ],
+            "readOnly": true,
+            "type": "string"
+          },
+          "targetDeploymentId": {
+            "description": "Output only. Deployment that traffic is shifting toward.",
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "endpointId",
+          "sourceDeploymentId",
+          "targetDeploymentId",
+          "strategy",
+          "state",
+          "createdAt",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "DE.BlueGreenConfig": {
+        "additionalProperties": false,
+        "description": "Blue-green strategy configuration for a single cutover to the target deployment.",
+        "properties": {},
+        "type": "object"
+      },
+      "DE.CanaryConfig": {
+        "description": "Canary strategy configuration for gradual traffic progression. An empty config uses the default 5, 25, 50, 100 percent ladder; over a frozen traffic-split pair left by cancel, the default ladder is derived at start from the pair's current served share so it begins above it.",
+        "properties": {
+          "stepInterval": {
+            "description": "Optional positive soak between steps. Defaults to 3m if omitted, and grows to cover metric rule windows plus ingestion lag.",
+            "pattern": "^-?(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,9})?s$",
+            "type": "string"
+          },
+          "steps": {
+            "description": "Optional progression steps. Defaults to 5, 25, 50, 100 percent when empty; explicit steps must increase and end at 100 percent.",
+            "items": {
+              "$ref": "#/components/schemas/DE.RolloutStep"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "DE.MetricRule": {
+        "description": "Metric gate evaluated during a rollout.",
+        "oneOf": [
+          {
+            "required": [
+              "thresholdCheck"
+            ]
+          },
+          {
+            "required": [
+              "regressionCheck"
+            ]
+          }
+        ],
+        "properties": {
+          "name": {
+            "enum": [
+              "inflight_requests",
+              "router_error_rate",
+              "router_latency",
+              "serving_latency"
+            ],
+            "type": "string"
+          },
+          "percentile": {
+            "description": "Percentile value, such as 99. Set only when stat is METRIC_STAT_TYPE_PERCENTILE.",
+            "type": "integer"
+          },
+          "regressionCheck": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.RegressionCheck"
+              }
+            ],
+            "description": "Regression evaluation criteria. Mutually exclusive with thresholdCheck."
+          },
+          "stat": {
+            "description": "Required aggregation used for the metric.",
+            "enum": [
+              "METRIC_STAT_TYPE_AVG",
+              "METRIC_STAT_TYPE_MIN",
+              "METRIC_STAT_TYPE_MAX",
+              "METRIC_STAT_TYPE_PERCENTILE"
+            ],
+            "type": "string"
+          },
+          "thresholdCheck": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.ThresholdCheck"
+              }
+            ],
+            "description": "Threshold evaluation criteria. Mutually exclusive with regressionCheck."
+          },
+          "window": {
+            "description": "Optional query window for the metric. Defaults to the step soak duration.",
+            "pattern": "^-?(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,9})?s$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "stat"
+        ],
+        "type": "object"
+      },
+      "DE.RollingConfig": {
+        "additionalProperties": false,
+        "description": "Rolling strategy configuration for capacity-preserving batches that ramp target replicas up while draining source replicas.",
+        "properties": {},
+        "type": "object"
+      },
+      "DE.PauseInfo": {
+        "description": "Pause metadata returned while a rollout is paused.",
+        "properties": {
+          "pausedAt": {
+            "description": "Timestamp when the rollout was paused.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Human-readable reason recorded when the rollout was paused.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pausedAt"
+        ],
+        "type": "object"
+      },
+      "DE.RolloutStatus": {
+        "description": "Derived runtime progress for a rollout.",
+        "properties": {
+          "condition": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.RolloutCondition"
+              }
+            ],
+            "description": "Failure detail set when the rollout pauses, system-pauses, or aborts."
+          },
+          "conditions": {
+            "description": "Informational conditions that describe the rollout's current state. Omitted when empty; clients should treat an absent key as an empty list.",
+            "items": {
+              "$ref": "#/components/schemas/DE.RolloutCondition"
+            },
+            "type": "array"
+          },
+          "steps": {
+            "description": "Per-step rollout execution summaries.",
+            "items": {
+              "$ref": "#/components/schemas/DE.RolloutStepStatus"
+            },
+            "type": "array"
+          },
+          "totalSteps": {
+            "description": "Total number of steps in the rollout progression. Always serializes when status is present.",
+            "type": "integer"
+          },
+          "updatedAt": {
+            "description": "Timestamp of the most recent progress update.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "totalSteps",
+          "steps"
+        ],
+        "type": "object"
+      },
+      "DE.RolloutStep": {
+        "description": "One stage of a canary rollout progression.",
+        "properties": {
+          "replicas": {
+            "description": "Optional explicit target replica count for this step.",
+            "type": "integer"
+          },
+          "traffic": {
+            "description": "Required percentage of traffic on the target deployment for this step.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "traffic"
+        ],
+        "type": "object"
+      },
+      "DE.RegressionCheck": {
+        "description": "Regression criteria that fail when the target regresses against the source beyond a limit.",
+        "properties": {
+          "direction": {
+            "description": "Required direction that indicates whether higher or lower metric values are worse.",
+            "enum": [
+              "REGRESSION_DIRECTION_HIGHER_IS_WORSE",
+              "REGRESSION_DIRECTION_LOWER_IS_WORSE"
+            ],
+            "type": "string"
+          },
+          "maxRegressionPercent": {
+            "description": "Required maximum allowed regression percentage.",
+            "type": "number"
+          }
+        },
+        "required": [
+          "maxRegressionPercent",
+          "direction"
+        ],
+        "type": "object"
+      },
+      "DE.ThresholdCheck": {
+        "description": "Threshold criteria that fail when the target metric violates the configured bound.",
+        "properties": {
+          "operator": {
+            "description": "Required comparison operator applied to the target metric value.",
+            "enum": [
+              "THRESHOLD_OPERATOR_GT",
+              "THRESHOLD_OPERATOR_GTE",
+              "THRESHOLD_OPERATOR_LT",
+              "THRESHOLD_OPERATOR_LTE"
+            ],
+            "type": "string"
+          },
+          "value": {
+            "description": "Required numeric threshold value.",
+            "type": "number"
+          }
+        },
+        "required": [
+          "value",
+          "operator"
+        ],
+        "type": "object"
+      },
+      "DE.RolloutCondition": {
+        "description": "Structured reason a rollout stopped progressing.",
+        "properties": {
+          "atStep": {
+            "description": "Step index where the condition arose. Step 0 serializes explicitly.",
+            "type": "integer"
+          },
+          "category": {
+            "description": "Category that classifies why the rollout stopped.",
+            "enum": [
+              "ROLLOUT_FAILURE_CATEGORY_METRIC_REGRESSION",
+              "ROLLOUT_FAILURE_CATEGORY_METRICS_UNAVAILABLE",
+              "ROLLOUT_FAILURE_CATEGORY_TARGET_NOT_READY",
+              "ROLLOUT_FAILURE_CATEGORY_SOURCE_NOT_DRAINED",
+              "ROLLOUT_FAILURE_CATEGORY_HEALTH_REGRESSION",
+              "ROLLOUT_FAILURE_CATEGORY_CAPACITY_EXHAUSTED",
+              "ROLLOUT_FAILURE_CATEGORY_ROUTING_ERROR",
+              "ROLLOUT_FAILURE_CATEGORY_DEPENDENCY_OUTAGE",
+              "ROLLOUT_FAILURE_CATEGORY_ABORTED_BY_OPERATOR",
+              "ROLLOUT_FAILURE_CATEGORY_INTERNAL",
+              "ROLLOUT_FAILURE_CATEGORY_POLICY_INFEASIBLE",
+              "ROLLOUT_FAILURE_CATEGORY_UNDER_SERVED",
+              "ROLLOUT_FAILURE_CATEGORY_ENTITLEMENT_LAPSED"
+            ],
+            "type": "string"
+          },
+          "message": {
+            "description": "Human-readable explanation for the condition.",
+            "type": "string"
+          },
+          "metrics": {
+            "description": "Metrics observed at the failing gate, enriched with their criteria.",
+            "items": {
+              "$ref": "#/components/schemas/DE.MetricResult"
+            },
+            "type": "array"
+          },
+          "observedAt": {
+            "description": "Timestamp when the condition was observed.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "type": {
+            "description": "Informational condition type. `CapacityLimited` means the current step advanced partially because full capacity was not placeable.",
+            "enum": [
+              "CapacityLimited"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DE.RolloutStepStatus": {
+        "description": "Collapsed execution state for one rollout step.",
+        "properties": {
+          "completedAt": {
+            "description": "Timestamp when this step completed.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "failureReason": {
+            "description": "Failure reason when this step failed.",
+            "type": "string"
+          },
+          "metrics": {
+            "description": "Metric gate results for this step.",
+            "items": {
+              "$ref": "#/components/schemas/DE.MetricResult"
+            },
+            "type": "array"
+          },
+          "startedAt": {
+            "description": "Timestamp when this step started.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "state": {
+            "description": "Execution state of this rollout step.",
+            "enum": [
+              "ROLLOUT_STEP_STATE_PENDING",
+              "ROLLOUT_STEP_STATE_RUNNING",
+              "ROLLOUT_STEP_STATE_PASSED",
+              "ROLLOUT_STEP_STATE_FAILED"
+            ],
+            "type": "string"
+          },
+          "stepIndex": {
+            "description": "Index of this step in the rollout progression. Step 0 serializes explicitly.",
+            "type": "integer"
+          },
+          "targetTrafficPercent": {
+            "description": "Target traffic percentage configured for this step. Always serializes for recorded steps.",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "DE.MetricResult": {
+        "description": "Observed metric value enriched with its rollout rule and verdict.",
+        "properties": {
+          "check": {
+            "description": "Evaluation form used by the metric rule.",
+            "enum": [
+              "METRIC_CHECK_TYPE_THRESHOLD",
+              "METRIC_CHECK_TYPE_REGRESSION"
+            ],
+            "type": "string"
+          },
+          "direction": {
+            "description": "Direction that indicates whether higher or lower values are worse.",
+            "enum": [
+              "REGRESSION_DIRECTION_HIGHER_IS_WORSE",
+              "REGRESSION_DIRECTION_LOWER_IS_WORSE"
+            ],
+            "type": "string"
+          },
+          "maxRegressionPercent": {
+            "description": "Regression percentage limit used when check is METRIC_CHECK_TYPE_REGRESSION.",
+            "type": "number"
+          },
+          "name": {
+            "description": "Metric name as exported to the observability backend.",
+            "type": "string"
+          },
+          "operator": {
+            "description": "Threshold comparison operator.",
+            "enum": [
+              "THRESHOLD_OPERATOR_GT",
+              "THRESHOLD_OPERATOR_GTE",
+              "THRESHOLD_OPERATOR_LT",
+              "THRESHOLD_OPERATOR_LTE"
+            ],
+            "type": "string"
+          },
+          "percentile": {
+            "description": "Percentile value, such as 99. Set only when stat is METRIC_STAT_TYPE_PERCENTILE.",
+            "type": "integer"
+          },
+          "sourceValue": {
+            "description": "Observed source baseline. Set only for regression checks; a 0 reading serializes explicitly.",
+            "type": "number"
+          },
+          "stat": {
+            "description": "Aggregation used for the metric.",
+            "enum": [
+              "METRIC_STAT_TYPE_AVG",
+              "METRIC_STAT_TYPE_MIN",
+              "METRIC_STAT_TYPE_MAX",
+              "METRIC_STAT_TYPE_PERCENTILE"
+            ],
+            "type": "string"
+          },
+          "targetValue": {
+            "description": "Observed target value. A 0 reading serializes explicitly.",
+            "type": "number"
+          },
+          "threshold": {
+            "description": "Threshold criteria used when check is METRIC_CHECK_TYPE_THRESHOLD.",
+            "type": "number"
+          },
+          "verdict": {
+            "description": "Result of evaluating this metric at the gate.",
+            "enum": [
+              "METRIC_VERDICT_PASS",
+              "METRIC_VERDICT_BREACHED",
+              "METRIC_VERDICT_UNAVAILABLE"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    }
+  }
+}

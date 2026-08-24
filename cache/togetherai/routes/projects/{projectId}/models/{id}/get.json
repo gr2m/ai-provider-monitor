@@ -1,0 +1,233 @@
+{
+  "description": "Retrieves a custom model's metadata, visibility, weight information, and base-model relationship.",
+  "operationId": "VolumeService_GetModel",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "projectId",
+      "required": true,
+      "schema": {
+        "description": "Project identifier.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+        "description": "Model identifier.",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/DE.Model"
+          }
+        }
+      },
+      "description": "OK"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Default error response"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.together.ai/v2"
+    }
+  ],
+  "summary": "Get a model",
+  "tags": [
+    "VolumeService"
+  ],
+  "components": {
+    "schemas": {
+      "DE.Model": {
+        "description": "Custom or derived model registered in a project and backed by versioned weight files.",
+        "properties": {
+          "baseModel": {
+            "description": "Resource name of the base model, using `projects/{baseProject}/models/{baseModelId}`; empty when the model has no base.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "baseModelId": {
+            "description": "ID of the supported or custom base model from which this model was derived.",
+            "type": "string"
+          },
+          "description": {
+            "description": "Human-readable description of the model and its intended use.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique model identifier.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Project-qualified model name in the form `<project_slug>/<model_name>`. Create and update requests may use the bare or qualified form.",
+            "type": "string"
+          },
+          "organizationId": {
+            "description": "ID of the organization that owns the model's project.",
+            "type": "string"
+          },
+          "projectId": {
+            "description": "ID of the project that owns the model.",
+            "type": "string"
+          },
+          "visibility": {
+            "default": "VISIBILITY_PRIVATE",
+            "description": "Who can discover the model. `VISIBILITY_PRIVATE` restricts it to the project; `VISIBILITY_INTERNAL` shares it with the organization.",
+            "enum": [
+              "VISIBILITY_PRIVATE",
+              "VISIBILITY_INTERNAL"
+            ],
+            "type": "string"
+          },
+          "weights": {
+            "$ref": "#/components/schemas/DE.ModelWeights",
+            "description": "Architecture, size, precision, and speculative-decoding metadata derived from the model files."
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "organizationId",
+          "name",
+          "weights",
+          "visibility"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "DE.ModelWeights": {
+        "description": "Architecture, size, precision, and speculative-decoding metadata for model weights.",
+        "properties": {
+          "architecture": {
+            "description": "Model architecture detected from the weight metadata.",
+            "type": "string"
+          },
+          "contextLength": {
+            "description": "Maximum context length reported by the model metadata.",
+            "type": "string"
+          },
+          "draftSpeculatorType": {
+            "description": "Draft-model speculator family for draft speculative decoding.",
+            "enum": [
+              "DRAFT_SPECULATOR_TYPE_EAGLE",
+              "DRAFT_SPECULATOR_TYPE_PHOENIX"
+            ],
+            "type": "string"
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/DE.ModelParameters",
+            "description": "Total parameter count and breakdown by numerical data type."
+          },
+          "speculatorMechanism": {
+            "description": "Speculative decoding mechanism for speculator weights.",
+            "enum": [
+              "SPECULATOR_MECHANISM_DRAFT",
+              "SPECULATOR_MECHANISM_LOOKAHEAD",
+              "SPECULATOR_MECHANISM_MTP"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "description": "Role of the weights: full model, speculative draft model, or LoRA adapter.",
+            "enum": [
+              "WEIGHTS_TYPE_DEFAULT",
+              "WEIGHTS_TYPE_SPECULATOR",
+              "WEIGHTS_TYPE_ADAPTER"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DE.ModelParameters": {
+        "description": "Model parameter count and precision breakdown.",
+        "properties": {
+          "byDtype": {
+            "description": "Parameter counts grouped by numerical data type.",
+            "items": {
+              "$ref": "#/components/schemas/DE.ModelDTypeCount"
+            },
+            "type": "array"
+          },
+          "total": {
+            "description": "Total number of parameters in the model weights.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "total",
+          "byDtype"
+        ],
+        "type": "object"
+      },
+      "DE.ModelDTypeCount": {
+        "description": "Number of model parameters stored in one numerical data type.",
+        "properties": {
+          "count": {
+            "description": "Number of model parameters stored with this data type.",
+            "type": "string"
+          },
+          "dtype": {
+            "description": "Numerical data type, such as `float16`, `bfloat16`, or `int8`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "dtype",
+          "count"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}
