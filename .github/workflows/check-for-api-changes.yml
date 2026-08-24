@@ -27,6 +27,7 @@ jobs:
       pull-requests: write
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
         source:
           - name: anthropic
@@ -187,7 +188,25 @@ jobs:
       - name: Merge the pull request
         if: steps.create-pr.outputs.pull-request-url != ''
         run: |
-          gh pr merge ${{ steps.create-pr.outputs.pull-request-number }} --squash --delete-branch --repo ${{ github.repository }}
+          for attempt in 1 2 3 4 5 6; do
+            mergeable=$(gh pr view ${{ steps.create-pr.outputs.pull-request-number }} --repo ${{ github.repository }} --json mergeable --jq .mergeable)
+
+            if [ "$mergeable" = "MERGEABLE" ]; then
+              gh pr merge ${{ steps.create-pr.outputs.pull-request-number }} --squash --delete-branch --repo ${{ github.repository }}
+              exit 0
+            fi
+
+            if [ "$mergeable" = "CONFLICTING" ]; then
+              echo "Pull request has merge conflicts"
+              exit 1
+            fi
+
+            echo "Mergeability is $mergeable; retrying in 5 seconds (attempt $attempt/6)"
+            sleep 5
+          done
+
+          echo "Timed out waiting for GitHub to determine mergeability"
+          exit 1
         env:
           GH_TOKEN: ${{ github.token }}
 

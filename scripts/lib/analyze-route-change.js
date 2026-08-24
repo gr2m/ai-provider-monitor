@@ -1,5 +1,6 @@
 import { generateText, Output, jsonSchema } from "ai";
 import { isIdenticalAfterNormalizingTimestamps } from "./normalize-examples.js";
+import { retryAiCall } from "./retry-ai-call.js";
 
 /**
  * Recursively strips "description", "example", and "examples" keys from an object.
@@ -256,14 +257,27 @@ export async function analyzeRouteChange({
 
   const prompt = buildPrompt(status, route, oldContent, newContent);
 
+  async function generateAnalysis(prompt) {
+    const { output } = await retryAiCall(
+      () => generateText({
+        model: "openai/gpt-5",
+        prompt,
+        output: Output.object({ schema: SCHEMA }),
+        temperature: 0.1,
+      }),
+      {
+        onRetry: ({ attempt, attempts, delayMs, error }) => {
+          console.error(`Transient AI analysis failure for ${route} on attempt ${attempt}/${attempts} (${error.message}); retrying in ${delayMs / 1_000}s`);
+        },
+      },
+    );
+
+    return output;
+  }
+
   let result;
   try {
-    ({ output: result } = await generateText({
-      model: "openai/gpt-5",
-      prompt,
-      output: Output.object({ schema: SCHEMA }),
-      temperature: 0.1,
-    }));
+    result = await generateAnalysis(prompt);
   } catch (error) {
     if (!error.message?.includes("exceeds the context window")) {
       throw error;
@@ -278,12 +292,7 @@ export async function analyzeRouteChange({
     const strippedPrompt = buildPrompt(status, route, oldSpec, newSpec);
 
     try {
-      ({ output: result } = await generateText({
-        model: "openai/gpt-5",
-        prompt: strippedPrompt,
-        output: Output.object({ schema: SCHEMA }),
-        temperature: 0.1,
-      }));
+      result = await generateAnalysis(strippedPrompt);
     } catch (strippedError) {
       if (!strippedError.message?.includes("exceeds the context window")) {
         throw strippedError;
@@ -294,12 +303,7 @@ export async function analyzeRouteChange({
 
       const diffPrompt = buildDiffPrompt(status, route, oldContent, newContent);
 
-      ({ output: result } = await generateText({
-        model: "openai/gpt-5",
-        prompt: diffPrompt,
-        output: Output.object({ schema: SCHEMA }),
-        temperature: 0.1,
-      }));
+      result = await generateAnalysis(diffPrompt);
     }
   }
 

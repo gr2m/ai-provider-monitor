@@ -232,7 +232,7 @@ function deriveRoute(relativePath) {
 
 const analysisResults = await withConcurrency(
   changedRoutes,
-  5,
+  3,
   async ({ relativePath, status, oldContent, newContent }) => {
     const route = deriveRoute(relativePath);
     console.error(`Analyzing: ${route} (${status})`);
