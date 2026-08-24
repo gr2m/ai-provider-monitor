@@ -6,6 +6,13 @@
       "application/json": {
         "schema": {
           "properties": {
+            "expires_in_seconds": {
+              "description": "The number of seconds until the API key expires. Omit this field for a key that does not expire.",
+              "example": 2592000,
+              "maximum": 31536000,
+              "minimum": 1,
+              "type": "integer"
+            },
             "name": {
               "example": "New Admin Key",
               "type": "string"
@@ -25,24 +32,63 @@
       "content": {
         "application/json": {
           "schema": {
-            "$ref": "#/components/schemas/AdminApiKey"
+            "$ref": "#/components/schemas/AdminApiKeyCreateResponse"
           }
         }
       },
       "description": "The newly created admin API key."
     }
   },
+  "security": [
+    {
+      "AdminApiKeyAuth": []
+    }
+  ],
   "summary": "Create an organization admin API key",
   "components": {
     "schemas": {
+      "AdminApiKeyCreateResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AdminApiKey"
+          },
+          {
+            "description": "The newly created admin API key. The `value` field is only returned once, when the key is created.",
+            "properties": {
+              "value": {
+                "description": "The value of the API key. Only shown on create.",
+                "example": "sk-admin-1234abcd",
+                "type": "string"
+              }
+            },
+            "required": [
+              "value"
+            ],
+            "type": "object"
+          }
+        ]
+      },
       "AdminApiKey": {
         "description": "Represents an individual Admin API key in an org.",
         "properties": {
           "created_at": {
             "description": "The Unix timestamp (in seconds) of when the API key was created",
             "example": 1711471533,
-            "format": "int64",
+            "format": "unixtime",
             "type": "integer"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "description": "The Unix timestamp (in seconds) of when the API key expires",
+                "example": 1714063533,
+                "format": "unixtime",
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "id": {
             "description": "The identifier, which can be referenced in API endpoints",
@@ -54,7 +100,7 @@
               {
                 "description": "The Unix timestamp (in seconds) of when the API key was last used",
                 "example": 1711471534,
-                "format": "int64",
+                "format": "unixtime",
                 "type": "integer"
               },
               {
@@ -63,13 +109,22 @@
             ]
           },
           "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "The name of the API key",
-            "example": "Administration Key",
-            "type": "string"
+            "example": "Administration Key"
           },
           "object": {
             "description": "The object type, which is always `organization.admin_api_key`",
-            "example": "organization.admin_api_key",
+            "enum": [
+              "organization.admin_api_key"
+            ],
             "type": "string"
           },
           "owner": {
@@ -77,7 +132,7 @@
               "created_at": {
                 "description": "The Unix timestamp (in seconds) of when the user was created",
                 "example": 1711471533,
-                "format": "int64",
+                "format": "unixtime",
                 "type": "integer"
               },
               "id": {
@@ -112,19 +167,13 @@
             "description": "The redacted value of the API key",
             "example": "sk-admin...def",
             "type": "string"
-          },
-          "value": {
-            "description": "The value of the API key. Only shown on create.",
-            "example": "sk-admin-1234abcd",
-            "type": "string"
           }
         },
         "required": [
           "object",
           "redacted_value",
-          "name",
           "created_at",
-          "last_used_at",
+          "expires_at",
           "id",
           "owner"
         ],

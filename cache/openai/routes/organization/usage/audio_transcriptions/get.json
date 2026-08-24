@@ -130,6 +130,11 @@
       "description": "Usage data retrieved successfully."
     }
   },
+  "security": [
+    {
+      "AdminApiKeyAuth": []
+    }
+  ],
   "summary": "Get audio transcriptions usage details for the organization.",
   "tags": [
     "Usage"
@@ -148,7 +153,14 @@
             "type": "boolean"
           },
           "next_page": {
-            "type": "string"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "object": {
             "enum": [
@@ -176,8 +188,11 @@
             ],
             "type": "string"
           },
-          "result": {
+          "results": {
             "items": {
+              "discriminator": {
+                "propertyName": "object"
+              },
               "oneOf": [
                 {
                   "$ref": "#/components/schemas/UsageCompletionsResult"
@@ -204,6 +219,12 @@
                   "$ref": "#/components/schemas/UsageCodeInterpreterSessionsResult"
                 },
                 {
+                  "$ref": "#/components/schemas/UsageFileSearchCallsResult"
+                },
+                {
+                  "$ref": "#/components/schemas/UsageWebSearchCallsResult"
+                },
+                {
                   "$ref": "#/components/schemas/CostsResult"
                 }
               ]
@@ -218,7 +239,7 @@
           "object",
           "start_time",
           "end_time",
-          "result"
+          "results"
         ],
         "type": "object"
       },
@@ -248,15 +269,43 @@
             ]
           },
           "input_audio_tokens": {
-            "description": "The aggregated number of audio input tokens used, including cached tokens.",
+            "description": "The aggregated number of uncached audio input tokens used.",
+            "type": "integer"
+          },
+          "input_cache_write_tokens": {
+            "description": "The aggregated number of input tokens written to the cache.",
+            "type": "integer"
+          },
+          "input_cached_audio_tokens": {
+            "description": "The aggregated number of cached audio input tokens used.",
+            "type": "integer"
+          },
+          "input_cached_image_tokens": {
+            "description": "The aggregated number of cached image input tokens used.",
+            "type": "integer"
+          },
+          "input_cached_text_tokens": {
+            "description": "The aggregated number of cached text input tokens used.",
             "type": "integer"
           },
           "input_cached_tokens": {
-            "description": "The aggregated number of text input tokens that has been cached from previous requests. For customers subscribe to scale tier, this includes scale tier tokens.",
+            "description": "The aggregated number of cached input tokens used across text, audio, and image inputs. For customers subscribed to Scale Tier, this includes Scale Tier tokens.",
+            "type": "integer"
+          },
+          "input_image_tokens": {
+            "description": "The aggregated number of uncached image input tokens used.",
+            "type": "integer"
+          },
+          "input_text_tokens": {
+            "description": "The aggregated number of uncached text input tokens used, excluding cache-write tokens.",
             "type": "integer"
           },
           "input_tokens": {
-            "description": "The aggregated number of text input tokens used, including cached tokens. For customers subscribe to scale tier, this includes scale tier tokens.",
+            "description": "The aggregated number of input tokens used, including cached and cache-write tokens. This includes text, audio, and image tokens. For customers subscribed to Scale Tier, this includes Scale Tier tokens.",
+            "type": "integer"
+          },
+          "input_uncached_tokens": {
+            "description": "The aggregated number of uncached input tokens used across text, audio, and image inputs, excluding cache-write tokens.",
             "type": "integer"
           },
           "model": {
@@ -284,8 +333,16 @@
             "description": "The aggregated number of audio output tokens used.",
             "type": "integer"
           },
+          "output_image_tokens": {
+            "description": "The aggregated number of image output tokens used.",
+            "type": "integer"
+          },
+          "output_text_tokens": {
+            "description": "The aggregated number of text output tokens used.",
+            "type": "integer"
+          },
           "output_tokens": {
-            "description": "The aggregated number of text output tokens used. For customers subscribe to scale tier, this includes scale tier tokens.",
+            "description": "The aggregated number of output tokens used across text, audio, and image outputs. For customers subscribed to Scale Tier, this includes Scale Tier tokens.",
             "type": "integer"
           },
           "project_id": {
@@ -676,6 +733,7 @@
           },
           "seconds": {
             "description": "The number of seconds processed.",
+            "format": "int64",
             "type": "integer"
           },
           "user_id": {
@@ -755,7 +813,151 @@
         },
         "required": [
           "object",
-          "sessions"
+          "num_sessions"
+        ],
+        "type": "object"
+      },
+      "UsageFileSearchCallsResult": {
+        "description": "The aggregated file search calls usage details of the specific time bucket.",
+        "properties": {
+          "api_key_id": {
+            "anyOf": [
+              {
+                "description": "When `group_by=api_key_id`, this field provides the API key ID of the grouped usage result.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "num_requests": {
+            "description": "The count of file search calls.",
+            "type": "integer"
+          },
+          "object": {
+            "enum": [
+              "organization.usage.file_searches.result"
+            ],
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "description": "When `group_by=project_id`, this field provides the project ID of the grouped usage result.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "description": "When `group_by=user_id`, this field provides the user ID of the grouped usage result.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "vector_store_id": {
+            "anyOf": [
+              {
+                "description": "When `group_by=vector_store_id`, this field provides the vector store ID of the grouped usage result.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "object",
+          "num_requests"
+        ],
+        "type": "object"
+      },
+      "UsageWebSearchCallsResult": {
+        "description": "The aggregated web search calls usage details of the specific time bucket.",
+        "properties": {
+          "api_key_id": {
+            "anyOf": [
+              {
+                "description": "When `group_by=api_key_id`, this field provides the API key ID of the grouped usage result.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "context_level": {
+            "anyOf": [
+              {
+                "description": "When `group_by=context_level`, this field provides the search context size of the grouped usage result.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model": {
+            "anyOf": [
+              {
+                "description": "When `group_by=model`, this field provides the model name of the grouped usage result.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "num_model_requests": {
+            "description": "The count of model requests.",
+            "type": "integer"
+          },
+          "num_requests": {
+            "description": "The count of web search calls.",
+            "type": "integer"
+          },
+          "object": {
+            "enum": [
+              "organization.usage.web_searches.result"
+            ],
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "description": "When `group_by=project_id`, this field provides the project ID of the grouped usage result.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "description": "When `group_by=user_id`, this field provides the user ID of the grouped usage result.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "object",
+          "num_model_requests",
+          "num_requests"
         ],
         "type": "object"
       },
@@ -775,6 +977,17 @@
               }
             },
             "type": "object"
+          },
+          "api_key_id": {
+            "anyOf": [
+              {
+                "description": "When `group_by=api_key_id`, this field provides the API Key ID of the grouped costs result.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "line_item": {
             "anyOf": [
@@ -798,6 +1011,17 @@
               {
                 "description": "When `group_by=project_id`, this field provides the project ID of the grouped costs result.",
                 "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "description": "When `group_by=line_item`, this field provides the quantity of the grouped costs result.",
+                "type": "number"
               },
               {
                 "type": "null"

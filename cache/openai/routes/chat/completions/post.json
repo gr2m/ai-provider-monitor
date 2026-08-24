@@ -143,6 +143,17 @@
                 "$ref": "#/components/schemas/ModelIdsShared",
                 "description": "Model ID used to generate the response, like `gpt-4o` or `o3`. OpenAI\noffers a wide range of models with different capabilities, performance\ncharacteristics, and price points. Refer to the [model guide](/docs/models)\nto browse and compare available models.\n"
               },
+              "moderation": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ModerationParam",
+                    "description": "Configuration for running moderation on the request input and generated output.\n"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "n": {
                 "default": 1,
                 "description": "How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Keep `n` as `1` to minimize costs.",
@@ -236,7 +247,7 @@
                 "type": "array"
               },
               "top_logprobs": {
-                "description": "An integer between 0 and 20 specifying the number of most likely tokens to\nreturn at each token position, each with an associated log probability.\n`logprobs` must be set to `true` if this parameter is used.\n",
+                "description": "An integer between 0 and 20 specifying the maximum number of most likely\ntokens to return at each token position, each with an associated log\nprobability. In some cases, the number of returned tokens may be fewer than\nrequested.\n`logprobs` must be set to `true` if this parameter is used.\n",
                 "maximum": 20,
                 "minimum": 0,
                 "nullable": true,
@@ -293,7 +304,7 @@
             "items": {
               "properties": {
                 "finish_reason": {
-                  "description": "The reason the model stopped generating tokens. This will be `stop` if the model hit a natural stop point or a provided stop sequence,\n`length` if the maximum number of tokens specified in the request was reached,\n`content_filter` if content was omitted due to a flag from our content filters,\n`tool_calls` if the model called a tool, or `function_call` (deprecated) if the model called a function.\n",
+                  "description": "The reason the model stopped generating tokens. This will be `stop` if the model hit a natural stop point or a provided stop sequence,\n`length` if the maximum number of tokens specified in the request was reached,\n`content_filter` if content was omitted due to a flag from our content filters,\n`tool_calls` if the model called a tool, or `function_call` (deprecated) if the model called a function.\nRead the [Model Spec](https://model-spec.openai.com/2025-12-18.html) for more.\n",
                   "enum": [
                     "stop",
                     "length",
@@ -368,6 +379,7 @@
           },
           "created": {
             "description": "The Unix timestamp (in seconds) of when the chat completion was created.",
+            "format": "unixtime",
             "type": "integer"
           },
           "id": {
@@ -377,6 +389,17 @@
           "model": {
             "description": "The model used for the chat completion.",
             "type": "string"
+          },
+          "moderation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompletionModeration",
+                "description": "Moderation results for the request input and generated output, if moderated\ncompletions were requested.\n"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "object": {
             "description": "The object type, which is always `chat.completion`.",
@@ -471,6 +494,7 @@
           },
           "created": {
             "description": "The Unix timestamp (in seconds) of when the chat completion was created. Each chunk has the same timestamp.",
+            "format": "unixtime",
             "type": "integer"
           },
           "id": {
@@ -480,6 +504,17 @@
           "model": {
             "description": "The model to generate the completion.",
             "type": "string"
+          },
+          "moderation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompletionModeration",
+                "description": "Moderation results for the request input and generated output. Present\non the moderation chunk when moderated completions are requested.\n"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "object": {
             "description": "The object type, which is always `chat.completion.chunk`.",
@@ -518,8 +553,11 @@
           },
           {
             "properties": {
+              "prompt_cache_options": {
+                "$ref": "#/components/schemas/PromptCacheOptionsParam"
+              },
               "top_logprobs": {
-                "description": "An integer between 0 and 20 specifying the number of most likely tokens to\nreturn at each token position, each with an associated log probability.\n",
+                "description": "An integer between 0 and 20 specifying the maximum number of most likely\ntokens to return at each token position, each with an associated log\nprobability. In some cases, the number of returned tokens may be fewer than\nrequested.\n",
                 "maximum": 20,
                 "minimum": 0,
                 "type": "integer"
@@ -636,6 +674,10 @@
           },
           {
             "enum": [
+              "gpt-5.6-sol",
+              "gpt-5.6-terra",
+              "gpt-5.6-luna",
+              "gpt-5.5",
               "gpt-5.4",
               "gpt-5.4-mini",
               "gpt-5.4-nano",
@@ -720,6 +762,30 @@
         ],
         "example": "gpt-5.4"
       },
+      "ModerationParam": {
+        "description": "Configuration for running moderation on the input and output of this response.",
+        "properties": {
+          "model": {
+            "description": "The moderation model to use for moderated completions, e.g. 'omni-moderation-latest'.",
+            "type": "string"
+          },
+          "policy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationPolicyParam",
+                "description": "The policy to apply to moderated response input and output."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "type": "object"
+      },
       "ParallelToolCalls": {
         "default": true,
         "description": "Whether to enable [parallel function calling](/docs/guides/function-calling#configuring-parallel-function-calling) during tool use.",
@@ -766,14 +832,15 @@
         "anyOf": [
           {
             "default": "medium",
-            "description": "Constrains effort on reasoning for\n[reasoning models](https://platform.openai.com/docs/guides/reasoning).\nCurrently supported values are `none`, `minimal`, `low`, `medium`, `high`, and `xhigh`. Reducing\nreasoning effort can result in faster responses and fewer tokens used\non reasoning in a response.\n\n- `gpt-5.1` defaults to `none`, which does not perform reasoning. The supported reasoning values for `gpt-5.1` are `none`, `low`, `medium`, and `high`. Tool calls are supported for all reasoning values in gpt-5.1.\n- All models before `gpt-5.1` default to `medium` reasoning effort, and do not support `none`.\n- The `gpt-5-pro` model defaults to (and only supports) `high` reasoning effort.\n- `xhigh` is supported for all models after `gpt-5.1-codex-max`.\n",
+            "description": "Constrains effort on reasoning for reasoning models. Currently supported\nvalues are `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`.\nReducing reasoning effort can result in faster responses and fewer tokens\nused on reasoning in a response. Not all reasoning models support every\nvalue. See the\n[reasoning guide](https://platform.openai.com/docs/guides/reasoning)\nfor model-specific support.\n",
             "enum": [
               "none",
               "minimal",
               "low",
               "medium",
               "high",
-              "xhigh"
+              "xhigh",
+              "max"
             ],
             "type": "string"
           },
@@ -1061,7 +1128,7 @@
         "anyOf": [
           {
             "default": "medium",
-            "description": "Constrains the verbosity of the model's response. Lower values will result in\nmore concise responses, while higher values will result in more verbose responses.\nCurrently supported values are `low`, `medium`, and `high`.\n",
+            "description": "Constrains the verbosity of the model's response. Lower values will result in\nmore concise responses, while higher values will result in more verbose responses.\nCurrently supported values are `low`, `medium`, and `high`. The default is\n`medium`.\n",
             "enum": [
               "low",
               "medium",
@@ -1132,7 +1199,7 @@
             "type": "string"
           },
           "top_logprobs": {
-            "description": "List of the most likely tokens and their log probability, at this token position. In rare cases, there may be fewer than the number of requested `top_logprobs` returned.",
+            "description": "List of the most likely tokens and their log probability, at this token position. The number of entries may be fewer than the requested `top_logprobs`.",
             "items": {
               "properties": {
                 "bytes": {
@@ -1208,6 +1275,7 @@
                     },
                     "url": {
                       "description": "The URL of the web resource.",
+                      "format": "uri",
                       "type": "string"
                     }
                   },
@@ -1239,6 +1307,7 @@
                   },
                   "expires_at": {
                     "description": "The Unix timestamp (in seconds) for when this audio response will\nno longer be accessible on the server for use in multi-turn\nconversations.\n",
+                    "format": "unixtime",
                     "type": "integer"
                   },
                   "id": {
@@ -1322,17 +1391,56 @@
         ],
         "type": "object"
       },
+      "ChatCompletionModeration": {
+        "description": "Moderation results or errors for the request input and generated output.",
+        "properties": {
+          "input": {
+            "description": "Moderation for the request input.",
+            "discriminator": {
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompletionModerationResults"
+              },
+              {
+                "$ref": "#/components/schemas/ChatCompletionModerationError"
+              }
+            ]
+          },
+          "output": {
+            "description": "Moderation for the generated output.",
+            "discriminator": {
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompletionModerationResults"
+              },
+              {
+                "$ref": "#/components/schemas/ChatCompletionModerationError"
+              }
+            ]
+          }
+        },
+        "required": [
+          "input",
+          "output"
+        ],
+        "type": "object"
+      },
       "ServiceTier": {
         "anyOf": [
           {
             "default": "auto",
-            "description": "Specifies the processing type used for serving the request.\n  - If set to 'auto', then the request will be processed with the service tier configured in the Project settings. Unless otherwise configured, the Project will use 'default'.\n  - If set to 'default', then the request will be processed with the standard pricing and performance for the selected model.\n  - If set to '[flex](/docs/guides/flex-processing)' or '[priority](https://openai.com/api-priority-processing/)', then the request will be processed with the corresponding service tier.\n  - When not set, the default behavior is 'auto'.\n\n  When the `service_tier` parameter is set, the response body will include the `service_tier` value based on the processing mode actually used to serve the request. This response value may be different from the value set in the parameter.\n",
+            "description": "Specifies the processing type used for serving the request.\n  - If set to 'auto', then the request will be processed with the service tier configured in the Project settings. Unless otherwise configured, the Project will use 'default'.\n  - If set to 'default', then the request will be processed with the standard pricing and performance for the selected model.\n  - If set to '[flex](/docs/guides/flex-processing)', then the request will be processed with the Flex Processing service tier.\n  - To opt-in to [Fast mode](/api/docs/guides/fast-mode) at the request level, include the `service_tier=fast` or `service_tier=priority` parameter for Responses or Chat Completions. The response will show `service_tier=priority` regardless of if you specify `service_tier=fast` or `priority` in your request.\n  - When not set, the default behavior is 'auto'.\n\n  When the `service_tier` parameter is set, the response body will include the `service_tier` value based on the processing mode actually used to serve the request. This response value may be different from the value set in the parameter.\n",
             "enum": [
               "auto",
               "default",
               "flex",
               "scale",
-              "priority"
+              "priority",
+              "fast"
             ],
             "type": "string"
           },
@@ -1386,6 +1494,11 @@
               "audio_tokens": {
                 "default": 0,
                 "description": "Audio input tokens present in the prompt.",
+                "type": "integer"
+              },
+              "cache_write_tokens": {
+                "default": 0,
+                "description": "The unadjusted number of prompt tokens written to cache.",
                 "type": "integer"
               },
               "cached_tokens": {
@@ -1475,18 +1588,10 @@
             "$ref": "#/components/schemas/Metadata"
           },
           "prompt_cache_key": {
-            "description": "Used by OpenAI to cache responses for similar requests to optimize your cache hit rates. Replaces the `user` field. [Learn more](/docs/guides/prompt-caching).\n",
-            "example": "prompt-cache-key-1234",
-            "type": "string"
-          },
-          "prompt_cache_retention": {
             "anyOf": [
               {
-                "description": "The retention policy for the prompt cache. Set to `24h` to enable extended prompt caching, which keeps cached prefixes active for longer, up to a maximum of 24 hours. [Learn more](/docs/guides/prompt-caching#prompt-cache-retention).\n",
-                "enum": [
-                  "in-memory",
-                  "24h"
-                ],
+                "description": "Used by OpenAI to cache responses for similar requests to optimize your cache hit rates. Replaces the `user` field. [Learn more](/docs/guides/prompt-caching).\n",
+                "example": "prompt-cache-key-1234",
                 "type": "string"
               },
               {
@@ -1494,11 +1599,34 @@
               }
             ]
           },
+          "prompt_cache_retention": {
+            "anyOf": [
+              {
+                "description": "Deprecated. Use `prompt_cache_options.ttl` instead.\n\nThe retention policy for the prompt cache. Set to `24h` to enable extended prompt caching, which keeps cached prefixes active for longer, up to a maximum of 24 hours. [Learn more](/docs/guides/prompt-caching#prompt-cache-retention).\nThis field expresses a maximum retention policy, while\n`prompt_cache_options.ttl` expresses a minimum cache lifetime. The two\nfields are independent and do not interact.\nFor `gpt-5.5`, `gpt-5.5-pro`, and future models, only `24h` is supported.\n\nFor older models that support both `in_memory` and `24h`, the default depends on your organization's data retention policy:\n  - Organizations without ZDR enabled default to `24h`.\n  - Organizations with ZDR enabled default to `in_memory` when `prompt_cache_retention` is not specified.\n",
+                "enum": [
+                  "in_memory",
+                  "24h"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "deprecated": true
+          },
           "safety_identifier": {
-            "description": "A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies.\nThe IDs should be a string that uniquely identifies each user, with a maximum length of 64 characters. We recommend hashing their username or email address, in order to avoid sending us any identifying information. [Learn more](/docs/guides/safety-best-practices#safety-identifiers).\n",
-            "example": "safety-identifier-1234",
-            "maxLength": 64,
-            "type": "string"
+            "anyOf": [
+              {
+                "description": "A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies.\nThe IDs should be a string that uniquely identifies each user, with a maximum length of 64 characters. We recommend hashing their username or email address, in order to avoid sending us any identifying information. [Learn more](/docs/guides/safety-best-practices#safety-identifiers).\n",
+                "example": "safety-identifier-1234",
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "service_tier": {
             "$ref": "#/components/schemas/ServiceTier"
@@ -1521,7 +1649,7 @@
           "top_logprobs": {
             "anyOf": [
               {
-                "description": "An integer between 0 and 20 specifying the number of most likely tokens to\nreturn at each token position, each with an associated log probability.\n",
+                "description": "An integer between 0 and 20 specifying the maximum number of most likely\ntokens to return at each token position, each with an associated log\nprobability. In some cases, the number of returned tokens may be fewer than\nrequested.\n",
                 "maximum": 20,
                 "minimum": 0,
                 "type": "integer"
@@ -1553,6 +1681,22 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "PromptCacheOptionsParam": {
+        "description": "Options for prompt caching. Supported for `gpt-5.6` and later models. By default, OpenAI automatically chooses one implicit cache breakpoint. You can add explicit breakpoints to content blocks with `prompt_cache_breakpoint`. Each request can write up to four breakpoints. For cache matching, OpenAI considers up to the latest 80 breakpoints in the conversation, without a content-block lookback limit. Set `mode` to `explicit` to disable the implicit breakpoint. The `ttl` defaults to `30m`, which is currently the only supported value. See the [prompt caching guide](/docs/guides/prompt-caching) for current details.",
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/PromptCacheModeEnum",
+            "description": "Controls whether OpenAI automatically creates an implicit cache breakpoint. Defaults to `implicit`. With `implicit`, OpenAI creates one implicit breakpoint and writes up to the latest three explicit breakpoints in the request. With `explicit`, OpenAI does not create an implicit breakpoint and writes up to the latest four explicit breakpoints. If there are no explicit breakpoints, the request does not use prompt caching."
+          },
+          "ttl": {
+            "$ref": "#/components/schemas/PromptCacheTTLEnum",
+            "description": "The minimum lifetime applied to every implicit and explicit cache breakpoint written by the request. Defaults to `30m`, which is currently the only supported value. The backend may retain cache entries for longer."
+          }
+        },
+        "required": [],
+        "title": "Prompt cache options",
         "type": "object"
       },
       "VoiceIdsShared": {
@@ -1888,9 +2032,41 @@
         "title": "Function message",
         "type": "object"
       },
+      "ModerationPolicyParam": {
+        "description": "The policy to apply to moderated response input and output.",
+        "properties": {
+          "input": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationConfigParam",
+                "description": "The moderation policy for the response input."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationConfigParam",
+                "description": "The moderation policy for the response output."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
       "ChatCompletionRequestMessageContentPartText": {
         "description": "Learn about [text inputs](/docs/guides/text-generation).\n",
         "properties": {
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointParam"
+          },
           "text": {
             "description": "The text content.",
             "type": "string"
@@ -2045,6 +2221,61 @@
         },
         "type": "array"
       },
+      "ChatCompletionModerationResults": {
+        "description": "Successful moderation results for the request input or generated output.",
+        "properties": {
+          "model": {
+            "description": "The moderation model used to generate the results.",
+            "type": "string"
+          },
+          "results": {
+            "description": "A list of moderation results.",
+            "items": {
+              "$ref": "#/components/schemas/ModerationResultBody"
+            },
+            "type": "array"
+          },
+          "type": {
+            "description": "The object type, which is always `moderation_results`.",
+            "enum": [
+              "moderation_results"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "model",
+          "results"
+        ],
+        "type": "object"
+      },
+      "ChatCompletionModerationError": {
+        "description": "An error produced while attempting moderation.",
+        "properties": {
+          "code": {
+            "description": "The error code.",
+            "type": "string"
+          },
+          "message": {
+            "description": "The error message.",
+            "type": "string"
+          },
+          "type": {
+            "description": "The object type, which is always `error`.",
+            "enum": [
+              "error"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
       "ChatCompletionMessageToolCallChunk": {
         "properties": {
           "function": {
@@ -2094,6 +2325,19 @@
           }
         ]
       },
+      "PromptCacheModeEnum": {
+        "enum": [
+          "implicit",
+          "explicit"
+        ],
+        "type": "string"
+      },
+      "PromptCacheTTLEnum": {
+        "enum": [
+          "30m"
+        ],
+        "type": "string"
+      },
       "ChatCompletionRequestSystemMessageContentPart": {
         "oneOf": [
           {
@@ -2136,6 +2380,36 @@
             "$ref": "#/components/schemas/ChatCompletionRequestMessageContentPartText"
           }
         ]
+      },
+      "ModerationConfigParam": {
+        "description": "The moderation policy for the response input.",
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/ModerationMode"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "type": "object"
+      },
+      "PromptCacheBreakpointParam": {
+        "description": "Marks the exact end of a reusable prompt prefix. The breakpoint inherits its TTL from the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
+        "properties": {
+          "mode": {
+            "default": "explicit",
+            "description": "The breakpoint mode. Always `explicit`.",
+            "enum": [
+              "explicit"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "Prompt cache breakpoint",
+        "type": "object"
       },
       "ChatCompletionAllowedTools": {
         "description": "Constrains the tools available to the model to a pre-defined set.\n",
@@ -2247,6 +2521,61 @@
         "title": "Custom tool call",
         "type": "object"
       },
+      "ModerationResultBody": {
+        "description": "A moderation result produced for the response input or output.",
+        "properties": {
+          "categories": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "A dictionary of moderation categories to booleans, True if the input is flagged under this category.",
+            "type": "object"
+          },
+          "category_applied_input_types": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/ModerationInputType"
+              },
+              "type": "array"
+            },
+            "description": "Which modalities of input are reflected by the score for each category.",
+            "type": "object"
+          },
+          "category_scores": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "A dictionary of moderation categories to scores.",
+            "type": "object"
+          },
+          "flagged": {
+            "description": "A boolean indicating whether the content was flagged by any category.",
+            "type": "boolean"
+          },
+          "model": {
+            "description": "The moderation model that produced this result.",
+            "type": "string"
+          },
+          "type": {
+            "default": "moderation_result",
+            "description": "The object type, which was always `moderation_result` for successful moderation results.",
+            "enum": [
+              "moderation_result"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "model",
+          "flagged",
+          "categories",
+          "category_scores",
+          "category_applied_input_types"
+        ],
+        "title": "Moderation result",
+        "type": "object"
+      },
       "ChatCompletionRequestMessageContentPartImage": {
         "description": "Learn about [image inputs](/docs/guides/vision).\n",
         "properties": {
@@ -2272,6 +2601,9 @@
               "url"
             ],
             "type": "object"
+          },
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointParam"
           },
           "type": {
             "description": "The type of the content part.",
@@ -2312,6 +2644,9 @@
             ],
             "type": "object"
           },
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointParam"
+          },
           "type": {
             "description": "The type of the content part. Always `input_audio`.",
             "enum": [
@@ -2346,6 +2681,9 @@
               }
             },
             "type": "object"
+          },
+          "prompt_cache_breakpoint": {
+            "$ref": "#/components/schemas/PromptCacheBreakpointParam"
           },
           "type": {
             "description": "The type of the content part. Always `file`.",
@@ -2382,6 +2720,20 @@
         ],
         "title": "Refusal content part",
         "type": "object"
+      },
+      "ModerationMode": {
+        "enum": [
+          "score",
+          "block"
+        ],
+        "type": "string"
+      },
+      "ModerationInputType": {
+        "enum": [
+          "text",
+          "image"
+        ],
+        "type": "string"
       }
     }
   }
