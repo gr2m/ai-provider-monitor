@@ -1,0 +1,658 @@
+{
+  "description": "**Requires an OAuth access token with the `org:admin` scope**, from `ant auth login --scope org:admin` or a workload identity federation rule; Admin API keys are not accepted. See [Manage WIF with the Admin API](/docs/en/manage-claude/wif-admin-api).\n\nArchive a federation issuer.\n\nIdempotent; re-archiving returns the issuer with its original\n`archived_at`. Rejected with 400 if any live (non-archived) federation\nrule still references the issuer; archive those rules first (a rule's\nissuer cannot be changed), or recreate them against another issuer.",
+  "operationId": "beta_archive_federation_issuer_v1_organizations_federation_issuers__federation_issuer_id__archive_post",
+  "parameters": [
+    {
+      "description": "ID of the federation issuer to archive.",
+      "in": "path",
+      "name": "federation_issuer_id",
+      "required": true,
+      "schema": {
+        "description": "ID of the federation issuer to archive.",
+        "title": "Federation Issuer Id",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+      "in": "header",
+      "name": "anthropic-beta",
+      "required": false,
+      "schema": {
+        "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+        "items": {
+          "type": "string"
+        },
+        "title": "Anthropic-Beta",
+        "type": "string"
+      }
+    },
+    {
+      "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+      "in": "header",
+      "name": "anthropic-version",
+      "required": false,
+      "schema": {
+        "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+        "title": "Anthropic-Version",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaFederationIssuer"
+          }
+        }
+      },
+      "description": "Successful Response"
+    },
+    "4XX": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
+    }
+  },
+  "summary": "Archive Federation Issuer",
+  "components": {
+    "schemas": {
+      "BetaFederationIssuer": {
+        "description": "Registered external OIDC identity provider.\n\nRecords an external IdP the organization trusts for the RFC 7523\njwt-bearer grant. The `issuer_url` must match the JWT `iss` claim exactly.",
+        "properties": {
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "If set, all rules referencing this issuer reject token exchange.",
+            "title": "Archived At"
+          },
+          "archived_by_actor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tagged ID (`user_`/`svac_`) of the actor that archived this issuer.",
+            "title": "Archived By Actor Id"
+          },
+          "check_jti": {
+            "description": "Whether the jwt-bearer exchange enforces JTI single-use (replay protection) for tokens from this issuer. Applies only to assertions carrying a `jti` claim; tokens without one are accepted without single-use enforcement.",
+            "title": "Check Jti",
+            "type": "boolean"
+          },
+          "created_at": {
+            "description": "When this issuer was created.",
+            "examples": [
+              "2024-10-30T23:58:27.427722Z"
+            ],
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by_actor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tagged ID (`user_`/`svac_`) of the actor that created this issuer.",
+            "title": "Created By Actor Id"
+          },
+          "id": {
+            "description": "Tagged ID of the federation issuer.",
+            "examples": [
+              "fdis_01SDCCSbTxrXDpWc1phhtcfK"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "issuer_url": {
+            "description": "The `iss` claim value. Incoming JWTs must match exactly.",
+            "examples": [
+              "https://token.actions.githubusercontent.com"
+            ],
+            "title": "Issuer Url",
+            "type": "string"
+          },
+          "jwks": {
+            "description": "How signing keys are obtained for signature verification.",
+            "discriminator": {
+              "mapping": {
+                "discovery": "#/components/schemas/BetaJwksDiscovery",
+                "explicit_url": "#/components/schemas/BetaJwksExplicitUrl",
+                "inline": "#/components/schemas/BetaJwksInline"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaJwksDiscovery"
+              },
+              {
+                "$ref": "#/components/schemas/BetaJwksExplicitUrl"
+              },
+              {
+                "$ref": "#/components/schemas/BetaJwksInline"
+              }
+            ],
+            "title": "Jwks"
+          },
+          "jwks_polling_disabled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "If set, Anthropic's JWKS poller has paused polling for this issuer after repeated fetch failures. Re-enable by sending `jwks_polling_disabled: false` via the issuer update endpoint (POST) once the upstream JWKS endpoint is fixed. An OAuth caller cannot send this when the issuer backs a rule with any scope other than `workspace:developer` or `workspace:inference`; use a Console session.",
+            "title": "Jwks Polling Disabled At"
+          },
+          "max_jwt_lifetime_seconds": {
+            "description": "Maximum allowed iat→exp spread for assertions from this issuer (1-176400 seconds, i.e. up to 49h). Assertions must carry both `iat` and `exp`; a missing `iat` is rejected.",
+            "title": "Max Jwt Lifetime Seconds",
+            "type": "integer"
+          },
+          "name": {
+            "description": "Admin-chosen slug identifier.",
+            "examples": [
+              "github-actions"
+            ],
+            "title": "Name",
+            "type": "string"
+          },
+          "poll_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaIssuerPollStatus"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Live state of Anthropic's JWKS polling for this issuer. Populated on both single-issuer retrieval and list responses, including archived issuers. Typically null for inline-key issuers (no polling), or when poll status is temporarily unavailable or polling has not started yet."
+          },
+          "type": {
+            "const": "federation_issuer",
+            "default": "federation_issuer",
+            "title": "Type",
+            "type": "string"
+          },
+          "updated_at": {
+            "description": "When this issuer was last updated.",
+            "examples": [
+              "2024-10-30T23:58:27.427722Z"
+            ],
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "updated_by_actor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tagged ID (`user_`/`svac_`) of the actor that last updated this issuer.",
+            "title": "Updated By Actor Id"
+          }
+        },
+        "required": [
+          "archived_at",
+          "archived_by_actor_id",
+          "check_jti",
+          "created_at",
+          "created_by_actor_id",
+          "id",
+          "issuer_url",
+          "jwks",
+          "jwks_polling_disabled_at",
+          "max_jwt_lifetime_seconds",
+          "name",
+          "poll_status",
+          "type",
+          "updated_at",
+          "updated_by_actor_id"
+        ],
+        "title": "FederationIssuer",
+        "type": "object"
+      },
+      "BetaErrorResponse": {
+        "properties": {
+          "error": {
+            "discriminator": {
+              "mapping": {
+                "api_error": "#/components/schemas/BetaAPIError",
+                "authentication_error": "#/components/schemas/BetaAuthenticationError",
+                "billing_error": "#/components/schemas/BetaBillingError",
+                "invalid_request_error": "#/components/schemas/BetaInvalidRequestError",
+                "not_found_error": "#/components/schemas/BetaNotFoundError",
+                "overloaded_error": "#/components/schemas/BetaOverloadedError",
+                "permission_error": "#/components/schemas/BetaPermissionError",
+                "rate_limit_error": "#/components/schemas/BetaRateLimitError",
+                "timeout_error": "#/components/schemas/BetaGatewayTimeoutError"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaInvalidRequestError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaAuthenticationError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaBillingError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaPermissionError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaNotFoundError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRateLimitError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaGatewayTimeoutError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaAPIError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaOverloadedError"
+              }
+            ],
+            "title": "Error"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Id"
+          },
+          "type": {
+            "const": "error",
+            "default": "error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "request_id",
+          "type"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "BetaJwksDiscovery": {
+        "additionalProperties": false,
+        "description": "JWKS via the issuer's OIDC discovery document.",
+        "properties": {
+          "ca_cert_pem": {
+            "anyOf": [
+              {
+                "maxLength": 8192,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional custom CA (PEM) for TLS verification of the JWKS fetch.",
+            "title": "Ca Cert Pem"
+          },
+          "discovery_base": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set when the discovery URL differs from `issuer_url`.",
+            "title": "Discovery Base"
+          },
+          "type": {
+            "const": "discovery",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "JwksDiscovery",
+        "type": "object"
+      },
+      "BetaJwksExplicitUrl": {
+        "additionalProperties": false,
+        "description": "JWKS fetched from a fixed endpoint.",
+        "properties": {
+          "ca_cert_pem": {
+            "anyOf": [
+              {
+                "maxLength": 8192,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional custom CA (PEM) for TLS verification of the JWKS fetch.",
+            "title": "Ca Cert Pem"
+          },
+          "type": {
+            "const": "explicit_url",
+            "title": "Type",
+            "type": "string"
+          },
+          "url": {
+            "description": "JWKS endpoint.",
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "url"
+        ],
+        "title": "JwksExplicitUrl",
+        "type": "object"
+      },
+      "BetaJwksInline": {
+        "additionalProperties": false,
+        "description": "JWKS supplied directly; no network fetch.",
+        "properties": {
+          "keys": {
+            "description": "Inline JWK objects.",
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "minItems": 1,
+            "title": "Keys",
+            "type": "array"
+          },
+          "type": {
+            "const": "inline",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "keys",
+          "type"
+        ],
+        "title": "JwksInline",
+        "type": "object"
+      },
+      "BetaIssuerPollStatus": {
+        "description": "Status of automatic JWKS polling for a federation issuer.\n\nAnthropic periodically fetches the issuer's signing keys in the\nbackground. These fields summarize the most recent fetches so the\nhealth of the JWKS endpoint can be monitored.",
+        "properties": {
+          "consecutive_failures": {
+            "description": "Consecutive fetch failures since the last success.",
+            "title": "Consecutive Failures",
+            "type": "integer"
+          },
+          "last_fetched_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the last successful fetch completed.",
+            "title": "Last Fetched At"
+          },
+          "next_poll_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the next fetch is scheduled. Null if paused.",
+            "title": "Next Poll At"
+          }
+        },
+        "required": [
+          "consecutive_failures",
+          "last_fetched_at",
+          "next_poll_at"
+        ],
+        "title": "IssuerPollStatus",
+        "type": "object"
+      },
+      "BetaInvalidRequestError": {
+        "properties": {
+          "message": {
+            "default": "Invalid request",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "invalid_request_error",
+            "default": "invalid_request_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "InvalidRequestError",
+        "type": "object"
+      },
+      "BetaAuthenticationError": {
+        "properties": {
+          "message": {
+            "default": "Authentication error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "authentication_error",
+            "default": "authentication_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "AuthenticationError",
+        "type": "object"
+      },
+      "BetaBillingError": {
+        "properties": {
+          "message": {
+            "default": "Billing error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "billing_error",
+            "default": "billing_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "BillingError",
+        "type": "object"
+      },
+      "BetaPermissionError": {
+        "properties": {
+          "message": {
+            "default": "Permission denied",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "permission_error",
+            "default": "permission_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "PermissionError",
+        "type": "object"
+      },
+      "BetaNotFoundError": {
+        "properties": {
+          "message": {
+            "default": "Not found",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "not_found_error",
+            "default": "not_found_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "NotFoundError",
+        "type": "object"
+      },
+      "BetaRateLimitError": {
+        "properties": {
+          "message": {
+            "default": "Rate limited",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "rate_limit_error",
+            "default": "rate_limit_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "RateLimitError",
+        "type": "object"
+      },
+      "BetaGatewayTimeoutError": {
+        "properties": {
+          "message": {
+            "default": "Request timeout",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "timeout_error",
+            "default": "timeout_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "GatewayTimeoutError",
+        "type": "object"
+      },
+      "BetaAPIError": {
+        "properties": {
+          "message": {
+            "default": "Internal server error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "api_error",
+            "default": "api_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "APIError",
+        "type": "object"
+      },
+      "BetaOverloadedError": {
+        "properties": {
+          "message": {
+            "default": "Overloaded",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "overloaded_error",
+            "default": "overloaded_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "OverloadedError",
+        "type": "object"
+      }
+    }
+  }
+}
