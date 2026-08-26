@@ -1,0 +1,772 @@
+{
+  "description": "Parse a document image into structured output. Use `output_format` to select\nblocks or markdown (default).\n\nCurrently supports `document.type = image_url` only (data URI or remote http(s)\nimage URL). PDF / file URL inputs are not yet supported.\n\nImage limits: 20 MB file size; 50 megapixels or 200 MB decoded (whichever is\nexceeded first).\n",
+  "operationId": "parsev2",
+  "parameters": [
+    {
+      "$ref": "#/components/parameters/RequestSource"
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "properties": {
+            "document": {
+              "$ref": "#/components/schemas/ParseDocument"
+            },
+            "model": {
+              "description": "The name of a compatible Cohere parse model.",
+              "type": "string"
+            },
+            "output_format": {
+              "$ref": "#/components/schemas/ParseOutputFormat"
+            }
+          },
+          "required": [
+            "model",
+            "document"
+          ],
+          "type": "object"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ParseResponse"
+          }
+        }
+      },
+      "description": "OK"
+    },
+    "400": {
+      "$ref": "#/components/responses/BadRequest"
+    },
+    "401": {
+      "$ref": "#/components/responses/Unauthorized"
+    },
+    "403": {
+      "$ref": "#/components/responses/Forbidden"
+    },
+    "404": {
+      "$ref": "#/components/responses/NotFound"
+    },
+    "422": {
+      "$ref": "#/components/responses/UnprocessableEntity"
+    },
+    "429": {
+      "$ref": "#/components/responses/RateLimit"
+    },
+    "498": {
+      "$ref": "#/components/responses/InvalidToken"
+    },
+    "499": {
+      "$ref": "#/components/responses/RequestCancelled"
+    },
+    "500": {
+      "$ref": "#/components/responses/InternalServerError"
+    },
+    "501": {
+      "$ref": "#/components/responses/NotImplemented"
+    },
+    "503": {
+      "$ref": "#/components/responses/ServiceUnavailable"
+    },
+    "504": {
+      "$ref": "#/components/responses/GatewayTimeout"
+    }
+  },
+  "summary": "Parse API (v2)",
+  "components": {
+    "parameters": {
+      "RequestSource": {
+        "description": "The name of the project that is making the request.\n",
+        "example": "my-cool-project",
+        "in": "header",
+        "name": "X-Client-Name",
+        "required": false,
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "ParseDocument": {
+        "description": "Document to parse. Currently only `image_url` documents are supported.\n",
+        "properties": {
+          "image_url": {
+            "description": "Image URL or base64 data URI to parse.\n\nLimits:\n- Maximum file size: 20 MB (compressed upload, download, or decoded\n  data-URI payload)\n- Maximum decoded size: 50 megapixels or 200 MB decompressed\n  (whichever is exceeded first)\n",
+            "type": "string"
+          },
+          "type": {
+            "description": "Discriminator for the document payload.",
+            "enum": [
+              "image_url"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "image_url"
+        ],
+        "type": "object"
+      },
+      "ParseOutputFormat": {
+        "default": "markdown",
+        "description": "Selects the page payload shape in the response. Defaults to `\"markdown\"`.\n\n- `\"markdown\"`: each page includes markdown content. Tables are inlined as\n  HTML, and images are referenced as `![<description>](<image_id>)` with\n  matching entries in `page.markdown.images`.\n- `\"blocks\"`: each page includes an ordered `blocks` array of text, image,\n  and table content regions, including bounding boxes where available.\n",
+        "enum": [
+          "blocks",
+          "markdown"
+        ],
+        "type": "string"
+      },
+      "ParseResponse": {
+        "description": "Response from the v2 parse endpoint.",
+        "properties": {
+          "id": {
+            "description": "Unique identifier for the parse response.",
+            "type": "string"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ApiMeta"
+          },
+          "pages": {
+            "description": "Parsed pages in document order.",
+            "items": {
+              "$ref": "#/components/schemas/ParsePage"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "pages"
+        ],
+        "type": "object"
+      },
+      "ApiMeta": {
+        "properties": {
+          "api_version": {
+            "properties": {
+              "is_deprecated": {
+                "type": "boolean"
+              },
+              "is_experimental": {
+                "type": "boolean"
+              },
+              "version": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "version"
+            ],
+            "type": "object"
+          },
+          "billed_units": {
+            "properties": {
+              "classifications": {
+                "description": "The number of billed classifications units.\n",
+                "type": "number"
+              },
+              "image_tokens": {
+                "description": "The number of billed image tokens.\n",
+                "type": "number"
+              },
+              "images": {
+                "description": "The number of billed images.\n",
+                "type": "number"
+              },
+              "input_tokens": {
+                "description": "The number of billed input tokens.\n",
+                "type": "number"
+              },
+              "output_tokens": {
+                "description": "The number of billed output tokens.\n",
+                "type": "number"
+              },
+              "pages": {
+                "description": "The number of billed pages parsed.\n",
+                "type": "number"
+              },
+              "search_units": {
+                "description": "The number of billed search units.\n",
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "cached_tokens": {
+            "description": "The number of prompt tokens that hit the inference cache.\n",
+            "type": "number"
+          },
+          "tokens": {
+            "properties": {
+              "input_tokens": {
+                "description": "The number of tokens used as input to the model.\n",
+                "type": "number"
+              },
+              "output_tokens": {
+                "description": "The number of tokens produced by the model.\n",
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "ParsePage": {
+        "description": "A single parsed page. The payload shape depends on `output_format`.",
+        "discriminator": {
+          "mapping": {
+            "blocks": "#/components/schemas/ParseBlocksPageVariant",
+            "markdown": "#/components/schemas/ParseMarkdownPageVariant"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ParseBlocksPageVariant"
+          },
+          {
+            "$ref": "#/components/schemas/ParseMarkdownPageVariant"
+          }
+        ]
+      },
+      "ParseBlocksPageVariant": {
+        "description": "A parsed page with structured content blocks.",
+        "properties": {
+          "blocks": {
+            "description": "Ordered content blocks extracted from the page.",
+            "items": {
+              "$ref": "#/components/schemas/ParseBlock"
+            },
+            "type": "array"
+          },
+          "index": {
+            "description": "Zero-based page index.",
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "blocks"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "type",
+          "blocks"
+        ],
+        "type": "object"
+      },
+      "ParseMarkdownPageVariant": {
+        "description": "A parsed page with markdown content.",
+        "properties": {
+          "index": {
+            "description": "Zero-based page index.",
+            "type": "integer"
+          },
+          "markdown": {
+            "$ref": "#/components/schemas/ParseMarkdownPage"
+          },
+          "type": {
+            "enum": [
+              "markdown"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "type",
+          "markdown"
+        ],
+        "type": "object"
+      },
+      "ParseBlock": {
+        "description": "A content block on a parsed page.",
+        "discriminator": {
+          "mapping": {
+            "image": "#/components/schemas/ParseImageContentBlock",
+            "table": "#/components/schemas/ParseTableContentBlock",
+            "text": "#/components/schemas/ParseTextContentBlock"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ParseTextContentBlock"
+          },
+          {
+            "$ref": "#/components/schemas/ParseImageContentBlock"
+          },
+          {
+            "$ref": "#/components/schemas/ParseTableContentBlock"
+          }
+        ]
+      },
+      "ParseMarkdownPage": {
+        "description": "Markdown output payload for a parsed page.",
+        "properties": {
+          "content": {
+            "description": "Page content as markdown. Images are embedded as\n`![<description>](<image_id>)`. Tables are inlined as HTML.\n",
+            "type": "string"
+          },
+          "images": {
+            "description": "Image metadata referenced from `content`.",
+            "items": {
+              "$ref": "#/components/schemas/ParseImageBlock"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "type": "object"
+      },
+      "ParseTextContentBlock": {
+        "description": "A text content block.",
+        "properties": {
+          "text": {
+            "$ref": "#/components/schemas/ParseTextBlock"
+          },
+          "type": {
+            "enum": [
+              "text"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ],
+        "type": "object"
+      },
+      "ParseImageContentBlock": {
+        "description": "An image content block.",
+        "properties": {
+          "image": {
+            "$ref": "#/components/schemas/ParseImageBlock"
+          },
+          "type": {
+            "enum": [
+              "image"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "image"
+        ],
+        "type": "object"
+      },
+      "ParseTableContentBlock": {
+        "description": "A table content block.",
+        "properties": {
+          "table": {
+            "$ref": "#/components/schemas/ParseTableBlock"
+          },
+          "type": {
+            "enum": [
+              "table"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "table"
+        ],
+        "type": "object"
+      },
+      "ParseImageBlock": {
+        "description": "Payload for an image block.",
+        "properties": {
+          "bounding_box": {
+            "$ref": "#/components/schemas/ParseBoundingBox"
+          },
+          "bounding_box_normalized": {
+            "$ref": "#/components/schemas/ParseBoundingBoxNormalized"
+          },
+          "category": {
+            "$ref": "#/components/schemas/ParseImageCategory"
+          },
+          "description": {
+            "description": "Model-generated description of the image.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique identifier for the image within the page (for example `img-0`).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "description",
+          "category",
+          "bounding_box",
+          "bounding_box_normalized"
+        ],
+        "type": "object"
+      },
+      "ParseTextBlock": {
+        "description": "Payload for a text block.",
+        "properties": {
+          "content": {
+            "description": "Extracted text content.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "type": "object"
+      },
+      "ParseTableBlock": {
+        "description": "Payload for a table block.",
+        "properties": {
+          "bounding_box": {
+            "$ref": "#/components/schemas/ParseBoundingBox"
+          },
+          "bounding_box_normalized": {
+            "$ref": "#/components/schemas/ParseBoundingBoxNormalized"
+          },
+          "description": {
+            "description": "Optional table description when detected.",
+            "type": "string"
+          },
+          "html": {
+            "description": "Table content as HTML.",
+            "type": "string"
+          },
+          "title": {
+            "description": "Optional table title when detected.",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/ParseTableContentType"
+          }
+        },
+        "required": [
+          "type",
+          "html",
+          "bounding_box",
+          "bounding_box_normalized"
+        ],
+        "type": "object"
+      },
+      "ParseBoundingBox": {
+        "description": "A bounding box with pixel coordinates on the source document image.",
+        "properties": {
+          "bottom_right_x": {
+            "description": "X coordinate of the bottom-right corner.",
+            "type": "integer"
+          },
+          "bottom_right_y": {
+            "description": "Y coordinate of the bottom-right corner.",
+            "type": "integer"
+          },
+          "top_left_x": {
+            "description": "X coordinate of the top-left corner.",
+            "type": "integer"
+          },
+          "top_left_y": {
+            "description": "Y coordinate of the top-left corner.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "top_left_x",
+          "top_left_y",
+          "bottom_right_x",
+          "bottom_right_y"
+        ],
+        "type": "object"
+      },
+      "ParseBoundingBoxNormalized": {
+        "description": "A bounding box with coordinates in [0, 1] relative to the source page (model\ncoordinates are thousandths of page width/height).\n",
+        "properties": {
+          "bottom_right_x": {
+            "description": "Normalized X coordinate of the bottom-right corner.",
+            "format": "double",
+            "type": "number"
+          },
+          "bottom_right_y": {
+            "description": "Normalized Y coordinate of the bottom-right corner.",
+            "format": "double",
+            "type": "number"
+          },
+          "top_left_x": {
+            "description": "Normalized X coordinate of the top-left corner.",
+            "format": "double",
+            "type": "number"
+          },
+          "top_left_y": {
+            "description": "Normalized Y coordinate of the top-left corner.",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "top_left_x",
+          "top_left_y",
+          "bottom_right_x",
+          "bottom_right_y"
+        ],
+        "type": "object"
+      },
+      "ParseImageCategory": {
+        "description": "Image element category.",
+        "enum": [
+          "other",
+          "flowchart",
+          "logo",
+          "signature"
+        ],
+        "type": "string"
+      },
+      "ParseTableContentType": {
+        "description": "Table serialization format.",
+        "enum": [
+          "html"
+        ],
+        "type": "string"
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "description": "This error is returned when the request is not well formed. This could be because:\n  - JSON is invalid\n  - The request is missing required fields\n  - The request contains an invalid combination of fields\n"
+      },
+      "Unauthorized": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "description": "This error indicates that the operation attempted to be performed is not allowed. This could be because:\n  - The api token is invalid\n  - The user does not have the necessary permissions\n"
+      },
+      "Forbidden": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "description": "This error indicates that the operation attempted to be performed is not allowed. This could be because:\n  - The api token is invalid\n  - The user does not have the necessary permissions\n"
+      },
+      "NotFound": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "description": "This error is returned when a resource is not found. This could be because:\n  - The endpoint does not exist\n  - The resource does not exist eg model id, dataset id\n"
+      },
+      "UnprocessableEntity": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "description": "This error is returned when the request is not well formed. This could be because:\n  - JSON is invalid\n  - The request is missing required fields\n  - The request contains an invalid combination of fields\n"
+      },
+      "RateLimit": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "description": "Too many requests"
+      },
+      "InvalidToken": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "description": "This error is returned when a request or response contains a deny-listed token.\n"
+      },
+      "RequestCancelled": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "description": "This error is returned when a request is cancelled by the user.\n"
+      },
+      "InternalServerError": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "description": "This error is returned when an uncategorised internal server error occurs.\n"
+      },
+      "NotImplemented": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "description": "This error is returned when the requested feature is not implemented.\n"
+      },
+      "ServiceUnavailable": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "description": "This error is returned when the service is unavailable. This could be due to:\n  - Too many users trying to access the service at the same time\n"
+      },
+      "GatewayTimeout": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            }
+          }
+        },
+        "description": "This error is returned when a request to the server times out. This could be due to:\n  - An internal services taking too long to respond\n"
+      }
+    }
+  }
+}
