@@ -1,0 +1,291 @@
+{
+  "description": "Returns an organization's billing usage for a month as cost-annotated line items grouped into time windows. Finalized windows are returned through the end of yesterday at daily granularity, or the last completed hour at hourly granularity (UTC).\n",
+  "operationId": "getBillingUsage",
+  "parameters": [
+    {
+      "in": "query",
+      "name": "month",
+      "schema": {
+        "description": "Billing month in YYYY-MM format. Defaults to the current month, which returns data through yesterday (daily) or the last completed hour (hourly).",
+        "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "organization_id",
+      "schema": {
+        "description": "Organization to report on. Usage is always reported for the organization that owns the API key, so this is optional; supplying an ID that is not that organization returns 403.",
+        "minLength": 1,
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "granularity",
+      "schema": {
+        "default": "day",
+        "description": "Time window size for rows. 'hour' returns ~24x more rows than 'day'.",
+        "enum": [
+          "day",
+          "hour"
+        ],
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "limit",
+      "schema": {
+        "default": 100,
+        "description": "Maximum number of time windows per page (max 1000).",
+        "maximum": 1000,
+        "minimum": 1,
+        "type": "integer"
+      }
+    },
+    {
+      "in": "query",
+      "name": "after",
+      "schema": {
+        "description": "Opaque cursor from a previous response's `next_cursor`. Only valid for the month and granularity it was issued for. Current-month data is a moving snapshot: each page reflects data as of its request, so newly completed windows may appear at the end of the sequence.",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BillingUsageReport"
+          }
+        }
+      },
+      "description": "Billing usage report for the requested month"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Invalid request parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Unauthorized — missing or invalid API key"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Forbidden — organization_id does not match the organization that owns the API key"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Not found — the endpoint is not enabled for this organization"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Internal server error"
+    }
+  },
+  "summary": "Get billing usage",
+  "tags": [
+    "Billing"
+  ],
+  "components": {
+    "schemas": {
+      "BillingUsageReport": {
+        "properties": {
+          "billing_period": {
+            "description": "Billing month (YYYY-MM).",
+            "type": "string"
+          },
+          "currency": {
+            "const": "USD",
+            "type": "string"
+          },
+          "data": {
+            "description": "Time windows containing usage line items.",
+            "items": {
+              "$ref": "#/components/schemas/BillingUsageWindow"
+            },
+            "type": "array"
+          },
+          "earliest_window_start": {
+            "description": "Start of the earliest time window with usage in the month (UTC, ISO 8601); null when the month has no usage.",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "latest_window_end": {
+            "description": "Exclusive end of the latest time window with usage in the month (UTC, ISO 8601); null when the month has no usage. Describes the whole month, not the current page.",
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "next_cursor": {
+            "description": "Opaque cursor for the next page; null when this is the last page.",
+            "nullable": true,
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "type": "string"
+          },
+          "organization_id": {
+            "description": "ID of the organization the report belongs to.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "organization_id",
+          "billing_period",
+          "earliest_window_start",
+          "latest_window_end",
+          "currency",
+          "data",
+          "next_cursor"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "BillingUsageWindow": {
+        "properties": {
+          "date": {
+            "description": "Day this window covers (UTC, YYYY-MM-DD). Present for both granularities.",
+            "type": "string"
+          },
+          "end_time": {
+            "description": "Window end (UTC, ISO 8601), exclusive. Start of the next day (daily) or hour (hourly).",
+            "format": "date-time",
+            "type": "string"
+          },
+          "line_items": {
+            "description": "Usage line items in this time window.",
+            "items": {
+              "$ref": "#/components/schemas/BillingUsageLineItem"
+            },
+            "type": "array"
+          },
+          "start_time": {
+            "description": "Window start (UTC, ISO 8601). Start of the day (daily) or hour (hourly).",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "start_time",
+          "end_time",
+          "line_items"
+        ],
+        "type": "object"
+      },
+      "BillingUsageLineItem": {
+        "properties": {
+          "attributes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Resource identifiers for attribution, varying by product.",
+            "type": "object"
+          },
+          "cost": {
+            "description": "Total cost for this line item in USD as a decimal string.",
+            "type": "string"
+          },
+          "pricing_dimensions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Rate-determining dimensions (varies by product). Passthrough from Metronome pricing group values.",
+            "type": "object"
+          },
+          "product_name": {
+            "description": "Metronome product name (e.g. 'Serverless Inference - Input Tokens').",
+            "type": "string"
+          },
+          "quantity": {
+            "description": "Total usage for the window in the product's native unit (GPU-hours, tokens, ...) as a decimal string.",
+            "type": "string"
+          },
+          "unit_price": {
+            "description": "Per-unit price in USD as a decimal string.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "product_name",
+          "quantity",
+          "unit_price",
+          "cost",
+          "pricing_dimensions",
+          "attributes"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

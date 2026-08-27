@@ -131,18 +131,25 @@
       },
       "RL.TrainingSample": {
         "properties": {
-          "loss_inputs": {
-            "$ref": "#/components/schemas/RL.LossInputs",
-            "description": "Loss function inputs"
+          "loss_fn_inputs": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RL.TensorData"
+            },
+            "description": "Per-token loss tensors keyed by name. Include `target_tokens` and the inputs required by the selected loss. Each tensor must declare `int64` or `float32`, be one-dimensional, and have the same length.",
+            "type": "object"
           },
           "model_input": {
             "$ref": "#/components/schemas/RL.ModelInput",
             "description": "Model input"
+          },
+          "routed_experts": {
+            "$ref": "#/components/schemas/RL.RoutedExperts",
+            "description": "Optional MoE per-token routing captured at sample time. Replayed on every training operation, so expert selection matches the one used at sample time. Must cover the whole sample, or all but its last token."
           }
         },
         "required": [
           "model_input",
-          "loss_inputs"
+          "loss_fn_inputs"
         ],
         "type": "object"
       },
@@ -189,41 +196,67 @@
         ],
         "type": "string"
       },
-      "RL.LossInputs": {
-        "description": "Token-level inputs used to compute the loss for one training sample.",
+      "RL.TensorData": {
+        "description": "A tensor encoded as flattened row-major values, with an optional shape.",
         "properties": {
-          "cispo_inputs": {
-            "$ref": "#/components/schemas/RL.CISPOLossInputs"
+          "data": {
+            "description": "Flattened one-dimensional values encoded as JSON numbers.",
+            "example": [
+              1,
+              2,
+              3
+            ],
+            "items": {
+              "format": "double",
+              "type": "number"
+            },
+            "type": "array"
           },
-          "dro_inputs": {
-            "$ref": "#/components/schemas/RL.DROLossInputs"
+          "dtype": {
+            "description": "Tensor element type, either `int64` or `float32`.",
+            "enum": [
+              "int64",
+              "float32"
+            ],
+            "example": "int64",
+            "type": "string"
           },
-          "grpo_inputs": {
-            "$ref": "#/components/schemas/RL.GRPOLossInputs",
-            "description": "Inputs required when the loss type is GRPO"
+          "shape": {
+            "description": "Optional tensor shape; training operations accept one-dimensional tensors only, and the dimension must match the data length.",
+            "example": [
+              3
+            ],
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
           },
-          "importance_sampling_inputs": {
-            "$ref": "#/components/schemas/RL.ImportanceSamplingLossInputs",
-            "description": "Inputs required when the loss type is importance sampling"
+          "sparse_col_indices": {
+            "description": "Reserved for Tinker schema compatibility; current training operations reject sparse tensors.",
+            "example": [
+              0,
+              2
+            ],
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
           },
-          "ppo_inputs": {
-            "$ref": "#/components/schemas/RL.PPOLossInputs"
-          },
-          "routed_experts": {
-            "$ref": "#/components/schemas/RL.RoutedExperts",
-            "description": "Optional MoE per-token routing captured at sample time. Replayed on every training operation, so expert selection matches the one used at sample time. Must cover the whole sample, or all but its last token."
-          },
-          "target_tokens": {
-            "$ref": "#/components/schemas/RL.LossTargetTokens",
-            "description": "Target tokens for loss computation"
-          },
-          "weights": {
-            "$ref": "#/components/schemas/RL.Weights",
-            "description": "Per-token loss weights (>= 0), one weight per target token. Required for cross-entropy, which honors fractional weights; other loss types treat weights as a 0/1 mask."
+          "sparse_crow_indices": {
+            "description": "Reserved for Tinker schema compatibility; current training operations reject sparse tensors.",
+            "example": [
+              0,
+              2
+            ],
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
           }
         },
         "required": [
-          "target_tokens"
+          "data",
+          "dtype"
         ],
         "type": "object"
       },
@@ -240,133 +273,6 @@
         },
         "required": [
           "chunks"
-        ],
-        "type": "object"
-      },
-      "RL.TrainingOperationErrorCode": {
-        "default": "TRAINING_OPERATION_ERROR_CODE_UNSPECIFIED",
-        "description": "Application error code for a failed training operation",
-        "enum": [
-          "TRAINING_OPERATION_ERROR_CODE_UNSPECIFIED",
-          "TRAINING_OPERATION_ERROR_CODE_RESOURCE_EXHAUSTED",
-          "TRAINING_OPERATION_ERROR_CODE_TIMEOUT",
-          "TRAINING_OPERATION_ERROR_CODE_INTERNAL_ERROR",
-          "TRAINING_OPERATION_ERROR_CODE_SESSION_NOT_ACTIVE",
-          "TRAINING_OPERATION_ERROR_CODE_INVALID_INPUT",
-          "TRAINING_OPERATION_ERROR_CODE_NON_FINITE_LOSS"
-        ],
-        "type": "string"
-      },
-      "RL.TargetLogprobs": {
-        "description": "Per-token log-probabilities from the target model",
-        "properties": {
-          "data": {
-            "description": "Float array of per-token log probabilities",
-            "example": [
-              -1.2,
-              -0.8,
-              -1.5,
-              -0.9,
-              -1.1
-            ],
-            "items": {
-              "type": "number"
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "data"
-        ],
-        "type": "object"
-      },
-      "RL.CISPOLossInputs": {
-        "properties": {
-          "advantages": {
-            "$ref": "#/components/schemas/RL.LossAdvantages",
-            "description": "Per-token advantages for CISPO"
-          },
-          "logprobs": {
-            "$ref": "#/components/schemas/RL.LossLogprobs",
-            "description": "Log probabilities for CISPO"
-          }
-        },
-        "required": [
-          "advantages",
-          "logprobs"
-        ],
-        "type": "object"
-      },
-      "RL.DROLossInputs": {
-        "properties": {
-          "advantages": {
-            "$ref": "#/components/schemas/RL.LossAdvantages",
-            "description": "Per-token advantages for DRO"
-          },
-          "logprobs": {
-            "$ref": "#/components/schemas/RL.LossLogprobs",
-            "description": "Log probabilities for DRO"
-          }
-        },
-        "required": [
-          "advantages",
-          "logprobs"
-        ],
-        "type": "object"
-      },
-      "RL.GRPOLossInputs": {
-        "properties": {
-          "advantages": {
-            "$ref": "#/components/schemas/RL.LossAdvantages",
-            "description": "Per-token advantages for GRPO"
-          },
-          "logprobs": {
-            "$ref": "#/components/schemas/RL.LossLogprobs",
-            "description": "Log probabilities for GRPO"
-          },
-          "reference_logprobs": {
-            "$ref": "#/components/schemas/RL.LossLogprobs",
-            "description": "Reference model log probabilities (required if beta > 0)"
-          }
-        },
-        "required": [
-          "advantages",
-          "logprobs"
-        ],
-        "type": "object"
-      },
-      "RL.ImportanceSamplingLossInputs": {
-        "description": "Loss inputs for unclipped importance-sampling policy-gradient updates.",
-        "properties": {
-          "advantages": {
-            "$ref": "#/components/schemas/RL.LossAdvantages",
-            "description": "Per-token advantages for importance sampling"
-          },
-          "logprobs": {
-            "$ref": "#/components/schemas/RL.LossLogprobs",
-            "description": "Log probabilities for importance sampling"
-          }
-        },
-        "required": [
-          "advantages",
-          "logprobs"
-        ],
-        "type": "object"
-      },
-      "RL.PPOLossInputs": {
-        "properties": {
-          "advantages": {
-            "$ref": "#/components/schemas/RL.LossAdvantages",
-            "description": "Per-token advantages for PPO"
-          },
-          "logprobs": {
-            "$ref": "#/components/schemas/RL.LossLogprobs",
-            "description": "Log probabilities for PPO"
-          }
-        },
-        "required": [
-          "advantages",
-          "logprobs"
         ],
         "type": "object"
       },
@@ -408,58 +314,36 @@
         ],
         "type": "object"
       },
-      "RL.LossTargetTokens": {
-        "properties": {
-          "data": {
-            "description": "Integer array of target tokens",
-            "example": [
-              123,
-              456,
-              789
-            ],
-            "items": {
-              "oneOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array"
-          },
-          "dtype": {
-            "$ref": "#/components/schemas/RL.DType",
-            "description": "Data type of the integer array",
-            "example": "D_TYPE_INT64"
-          }
-        },
-        "required": [
-          "data"
+      "RL.TrainingOperationErrorCode": {
+        "default": "TRAINING_OPERATION_ERROR_CODE_UNSPECIFIED",
+        "description": "Application error code for a failed training operation",
+        "enum": [
+          "TRAINING_OPERATION_ERROR_CODE_UNSPECIFIED",
+          "TRAINING_OPERATION_ERROR_CODE_RESOURCE_EXHAUSTED",
+          "TRAINING_OPERATION_ERROR_CODE_TIMEOUT",
+          "TRAINING_OPERATION_ERROR_CODE_INTERNAL_ERROR",
+          "TRAINING_OPERATION_ERROR_CODE_SESSION_NOT_ACTIVE",
+          "TRAINING_OPERATION_ERROR_CODE_INVALID_INPUT",
+          "TRAINING_OPERATION_ERROR_CODE_NON_FINITE_LOSS"
         ],
-        "type": "object"
+        "type": "string"
       },
-      "RL.Weights": {
+      "RL.TargetLogprobs": {
+        "description": "Per-token log-probabilities from the target model",
         "properties": {
           "data": {
-            "description": "Per-token loss weights, one non-negative weight per target token. A weight of 0 excludes the token from loss; fractional weights are honored only by cross-entropy.",
+            "description": "Float array of per-token log probabilities",
             "example": [
-              0,
-              0,
-              0.5,
-              1
+              -1.2,
+              -0.8,
+              -1.5,
+              -0.9,
+              -1.1
             ],
             "items": {
-              "minimum": 0,
               "type": "number"
             },
             "type": "array"
-          },
-          "dtype": {
-            "$ref": "#/components/schemas/RL.DType",
-            "description": "Data type of the weights array (must be D_TYPE_FLOAT32).",
-            "example": "D_TYPE_FLOAT32"
           }
         },
         "required": [
@@ -479,64 +363,6 @@
           "encoded_text"
         ],
         "type": "object"
-      },
-      "RL.LossAdvantages": {
-        "properties": {
-          "data": {
-            "description": "Float array of per-token advantages",
-            "example": [
-              0.5,
-              0.5
-            ],
-            "items": {
-              "type": "number"
-            },
-            "type": "array"
-          },
-          "dtype": {
-            "$ref": "#/components/schemas/RL.DType",
-            "description": "Data type of the float array (D_TYPE_FLOAT32 or D_TYPE_BFLOAT16)",
-            "example": "D_TYPE_FLOAT32"
-          }
-        },
-        "required": [
-          "data"
-        ],
-        "type": "object"
-      },
-      "RL.LossLogprobs": {
-        "properties": {
-          "data": {
-            "description": "Float array of per-token log probabilities",
-            "example": [
-              -1.2,
-              -0.8
-            ],
-            "items": {
-              "type": "number"
-            },
-            "type": "array"
-          },
-          "dtype": {
-            "$ref": "#/components/schemas/RL.DType",
-            "description": "Data type of the float array (D_TYPE_FLOAT32 or D_TYPE_BFLOAT16)",
-            "example": "D_TYPE_FLOAT32"
-          }
-        },
-        "required": [
-          "data"
-        ],
-        "type": "object"
-      },
-      "RL.DType": {
-        "default": "D_TYPE_UNSPECIFIED",
-        "enum": [
-          "D_TYPE_UNSPECIFIED",
-          "D_TYPE_INT64",
-          "D_TYPE_FLOAT32",
-          "D_TYPE_BFLOAT16"
-        ],
-        "type": "string"
       },
       "RL.EncodedTextChunk": {
         "description": "Pre-tokenized text content for a model input chunk.",
