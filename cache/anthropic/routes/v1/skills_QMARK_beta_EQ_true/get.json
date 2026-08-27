@@ -20,13 +20,15 @@
       }
     },
     {
-      "description": "Number of results to return per page.\n\nMaximum value is 100. Defaults to 20.",
+      "description": "Number of results to return per page.\n\nRanges from `1` to `1000`. Defaults to `20`.",
       "in": "query",
       "name": "limit",
       "required": false,
       "schema": {
         "default": 20,
-        "description": "Number of results to return per page.\n\nMaximum value is 100. Defaults to 20.",
+        "description": "Number of results to return per page.\n\nRanges from `1` to `1000`. Defaults to `20`.",
+        "maximum": 1000,
+        "minimum": 1,
         "title": "Limit",
         "type": "integer"
       }
@@ -116,15 +118,10 @@
           "data": {
             "description": "List of skills.",
             "items": {
-              "$ref": "#/components/schemas/BetaGetSkillResponse"
+              "$ref": "#/components/schemas/BetaSkill"
             },
             "title": "Data",
             "type": "array"
-          },
-          "has_more": {
-            "description": "Whether there are more results available.\n\nIf `true`, there are additional results that can be fetched using the `next_page` token.",
-            "title": "Has More",
-            "type": "boolean"
           },
           "next_page": {
             "anyOf": [
@@ -135,18 +132,12 @@
                 "type": "null"
               }
             ],
-            "default": null,
             "description": "Token for fetching the next page of results.\n\nIf `null`, there are no more results available. Pass this value to the `page` parameter in the next request to get the next page.",
-            "examples": [
-              "page_MjAyNS0wNS0xNFQwMDowMDowMFo=",
-              null
-            ],
             "title": "Next Page"
           }
         },
         "required": [
           "data",
-          "has_more",
           "next_page"
         ],
         "title": "ListSkillsResponse",
@@ -227,30 +218,21 @@
         "title": "ErrorResponse",
         "type": "object"
       },
-      "BetaGetSkillResponse": {
+      "BetaSkill": {
         "properties": {
           "created_at": {
             "description": "ISO 8601 timestamp of when the skill was created.",
             "examples": [
               "2024-10-30T23:58:27.427722Z"
             ],
+            "format": "date-time",
             "title": "Created At",
             "type": "string"
           },
-          "display_title": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Display title for the skill.\n\nThis is a human-readable label that is not included in the prompt sent to the model.",
-            "examples": [
-              "My Custom Skill"
-            ],
-            "title": "Display Title"
+          "display_name": {
+            "description": "Human-readable, single-line label for the Skill. Maximum 255 characters.\nAlways set: derived from the SKILL.md frontmatter `name` when omitted at\ncreation. Not unique.",
+            "title": "Display Name",
+            "type": "string"
           },
           "id": {
             "description": "Unique identifier for the skill.\n\nThe format and length of IDs may change over time.",
@@ -260,30 +242,17 @@
             "title": "Id",
             "type": "string"
           },
-          "latest_version": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "The latest version identifier for the skill.\n\nThis represents the most recent version of the skill that has been created.",
-            "examples": [
-              "1759178010641129"
-            ],
-            "title": "Latest Version"
-          },
-          "source": {
-            "description": "Source of the skill.\n\nThis may be one of the following values:\n* `\"custom\"`: the skill was created by a user\n* `\"anthropic\"`: the skill was created by Anthropic",
-            "examples": [
-              "custom"
-            ],
-            "title": "Source",
+          "latest_version_id": {
+            "description": "ID of the newest Skill Version — what `latest` references resolve to. Always set: a Skill holds at least one version.",
+            "title": "Latest Version Id",
             "type": "string"
           },
+          "source": {
+            "$ref": "#/components/schemas/BetaSkillSource",
+            "description": "Where the Skill comes from.\n\nPossible values:\n* `\"custom\"`: authored by the platform user; private to their workspace\n* `\"anthropic\"`: published by Anthropic; shared and read-only\n* `\"anthropic_example\"`: Anthropic-published sample Skill\n* `\"plugin\"`: resolved from an installed plugin"
+          },
           "type": {
+            "const": "skill",
             "default": "skill",
             "description": "Object type.\n\nFor Skills, this is always `\"skill\"`.",
             "title": "Type",
@@ -294,20 +263,21 @@
             "examples": [
               "2024-10-30T23:58:27.427722Z"
             ],
+            "format": "date-time",
             "title": "Updated At",
             "type": "string"
           }
         },
         "required": [
           "created_at",
-          "display_title",
+          "display_name",
           "id",
-          "latest_version",
+          "latest_version_id",
           "source",
           "type",
           "updated_at"
         ],
-        "title": "GetSkillResponse",
+        "title": "Skill",
         "type": "object"
       },
       "BetaInvalidRequestError": {
@@ -497,6 +467,26 @@
           "type"
         ],
         "title": "OverloadedError",
+        "type": "object"
+      },
+      "BetaSkillSource": {
+        "properties": {
+          "type": {
+            "description": "Where the Skill comes from.\n\nPossible values:\n* `\"custom\"`: authored by the platform user; private to their workspace\n* `\"anthropic\"`: published by Anthropic; shared and read-only\n* `\"anthropic_example\"`: Anthropic-published sample Skill\n* `\"plugin\"`: resolved from an installed plugin",
+            "enum": [
+              "custom",
+              "anthropic",
+              "anthropic_example",
+              "plugin"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "SkillSource",
         "type": "object"
       }
     }
