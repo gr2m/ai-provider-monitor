@@ -1,0 +1,1015 @@
+{
+  "description": "Call Kimi models with an Anthropic Messages API compatible format, supporting streaming, tool use, image input, thinking, and structured output.",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/MessagesRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/MessagesResponse"
+          }
+        },
+        "text/event-stream": {
+          "schema": {
+            "$ref": "#/components/schemas/MessagesStreamEvent"
+          }
+        }
+      },
+      "description": "Message response"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/MessagesErrorResponse"
+          }
+        }
+      },
+      "description": "Bad request - Invalid parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Unauthorized - Invalid or missing API key"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/MessagesErrorResponse"
+          }
+        }
+      },
+      "description": "Server error"
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "summary": "Messages API",
+  "tags": [
+    "Messages"
+  ],
+  "components": {
+    "schemas": {
+      "MessagesRequest": {
+        "properties": {
+          "max_tokens": {
+            "description": "Maximum number of tokens to generate, required. If the limit is reached before the model finishes, `stop_reason` is `max_tokens`.",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "messages": {
+            "description": "The conversation messages. If the last message is from the assistant, the model continues from that content (Partial Mode).",
+            "items": {
+              "$ref": "#/components/schemas/MessagesMessageParam"
+            },
+            "type": "array"
+          },
+          "metadata": {
+            "properties": {
+              "user_id": {
+                "description": "A stable identifier for the end user or session, used to improve cache hit rate and for abuse detection. Use a hashed value; do not send personally identifiable information. For coding agents, pass the session id and keep it constant for the whole session.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "model": {
+            "default": "kimi-k3",
+            "description": "Model ID",
+            "enum": [
+              "kimi-k3"
+            ],
+            "type": "string"
+          },
+          "output_config": {
+            "description": "Output configuration: reasoning effort and structured output",
+            "properties": {
+              "effort": {
+                "default": "max",
+                "description": "Reasoning effort: low, high, or max; default max. Changing the level breaks prefix-cache hits, so decide it before the session starts.",
+                "enum": [
+                  "low",
+                  "high",
+                  "max"
+                ],
+                "type": "string"
+              },
+              "format": {
+                "description": "Structured output. When set, the model outputs JSON that strictly follows the given JSON Schema.",
+                "properties": {
+                  "schema": {
+                    "additionalProperties": true,
+                    "description": "The JSON Schema the output must follow",
+                    "type": "object"
+                  },
+                  "type": {
+                    "enum": [
+                      "json_schema"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "schema"
+                ],
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "stop_sequences": {
+            "description": "Stop sequences. Generation stops on an exact match; the matched sequence itself is not output. Up to 5 entries, each at most 32 bytes.",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "type": "array"
+          },
+          "stream": {
+            "default": false,
+            "description": "Whether to stream the response as Server-Sent Events, default false",
+            "type": "boolean"
+          },
+          "system": {
+            "description": "System prompt, either a string or an array of text blocks",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MessagesTextBlockParam"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "tool_choice": {
+            "$ref": "#/components/schemas/MessagesToolChoice"
+          },
+          "tools": {
+            "description": "List of tools the model may call",
+            "items": {
+              "$ref": "#/components/schemas/MessagesTool"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "model",
+          "messages",
+          "max_tokens"
+        ],
+        "title": "kimi-k3",
+        "type": "object"
+      },
+      "MessagesResponse": {
+        "properties": {
+          "content": {
+            "description": "Content blocks, ordered thinking → text → tool_use",
+            "items": {
+              "oneOf": [
+                {
+                  "properties": {
+                    "signature": {
+                      "type": "string"
+                    },
+                    "thinking": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "enum": [
+                        "thinking"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "thinking"
+                  ],
+                  "title": "thinking",
+                  "type": "object"
+                },
+                {
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "enum": [
+                        "text"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "text"
+                  ],
+                  "title": "text",
+                  "type": "object"
+                },
+                {
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "input": {
+                      "additionalProperties": true,
+                      "type": "object"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "enum": [
+                        "tool_use"
+                      ],
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "id",
+                    "name",
+                    "input"
+                  ],
+                  "title": "tool_use",
+                  "type": "object"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "id": {
+            "description": "Unique identifier of the response",
+            "type": "string"
+          },
+          "model": {
+            "description": "The model specified in the request",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "assistant"
+            ],
+            "type": "string"
+          },
+          "stop_reason": {
+            "description": "Stop reason. `end_turn`: finished naturally (including a `stop_sequences` match); `max_tokens`: reached the max_tokens limit; `tool_use`: the model issued a tool call; `refusal`: content safety review was triggered.",
+            "enum": [
+              "end_turn",
+              "max_tokens",
+              "tool_use",
+              "refusal",
+              null
+            ],
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "stop_sequence": {
+            "description": "The stop sequence that was matched",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "enum": [
+              "message"
+            ],
+            "example": "message",
+            "type": "string"
+          },
+          "usage": {
+            "description": "Token usage",
+            "properties": {
+              "cache_creation_input_tokens": {
+                "description": "Input tokens written to cache",
+                "type": "integer"
+              },
+              "cache_read_input_tokens": {
+                "description": "Input tokens served from cache",
+                "type": "integer"
+              },
+              "input_tokens": {
+                "description": "Input tokens (excluding cache hits)",
+                "type": "integer"
+              },
+              "output_tokens": {
+                "description": "Output tokens (including reasoning tokens)",
+                "type": "integer"
+              },
+              "output_tokens_details": {
+                "properties": {
+                  "thinking_tokens": {
+                    "description": "The portion of output tokens used for reasoning",
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "MessagesStreamEvent": {
+        "description": "Streaming events. Each SSE frame's `event` matches `data.type`; the order is message_start → (content_block_start → content_block_delta… → content_block_stop)… → message_delta → message_stop.",
+        "oneOf": [
+          {
+            "properties": {
+              "message": {
+                "$ref": "#/components/schemas/MessagesResponse"
+              },
+              "type": {
+                "enum": [
+                  "message_start"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "title": "message_start",
+            "type": "object"
+          },
+          {
+            "properties": {
+              "content_block": {
+                "oneOf": [
+                  {
+                    "properties": {
+                      "signature": {
+                        "type": "string"
+                      },
+                      "thinking": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "enum": [
+                          "thinking"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "thinking"
+                    ],
+                    "title": "thinking",
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "text": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "enum": [
+                          "text"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "text"
+                    ],
+                    "title": "text",
+                    "type": "object"
+                  },
+                  {
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "input": {
+                        "additionalProperties": true,
+                        "type": "object"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "enum": [
+                          "tool_use"
+                        ],
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "id",
+                      "name",
+                      "input"
+                    ],
+                    "title": "tool_use",
+                    "type": "object"
+                  }
+                ]
+              },
+              "index": {
+                "type": "integer"
+              },
+              "type": {
+                "enum": [
+                  "content_block_start"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "index",
+              "content_block"
+            ],
+            "title": "content_block_start",
+            "type": "object"
+          },
+          {
+            "properties": {
+              "delta": {
+                "properties": {
+                  "partial_json": {
+                    "description": "Partial JSON of the tool input for `input_json_delta`; concatenate before parsing",
+                    "type": "string"
+                  },
+                  "signature": {
+                    "description": "Signature for `signature_delta`",
+                    "type": "string"
+                  },
+                  "text": {
+                    "description": "Text fragment for `text_delta`",
+                    "type": "string"
+                  },
+                  "thinking": {
+                    "description": "Reasoning fragment for `thinking_delta`",
+                    "type": "string"
+                  },
+                  "type": {
+                    "enum": [
+                      "text_delta",
+                      "thinking_delta",
+                      "signature_delta",
+                      "input_json_delta"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              },
+              "index": {
+                "type": "integer"
+              },
+              "type": {
+                "enum": [
+                  "content_block_delta"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "index",
+              "delta"
+            ],
+            "title": "content_block_delta",
+            "type": "object"
+          },
+          {
+            "properties": {
+              "index": {
+                "type": "integer"
+              },
+              "type": {
+                "enum": [
+                  "content_block_stop"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "index"
+            ],
+            "title": "content_block_stop",
+            "type": "object"
+          },
+          {
+            "properties": {
+              "delta": {
+                "properties": {
+                  "stop_reason": {
+                    "description": "Stop reason. `end_turn`: finished naturally (including a `stop_sequences` match); `max_tokens`: reached the max_tokens limit; `tool_use`: the model issued a tool call; `refusal`: content safety review was triggered.",
+                    "enum": [
+                      "end_turn",
+                      "max_tokens",
+                      "tool_use",
+                      "refusal",
+                      null
+                    ],
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "stop_sequence": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              "type": {
+                "enum": [
+                  "message_delta"
+                ],
+                "type": "string"
+              },
+              "usage": {
+                "properties": {
+                  "cache_creation_input_tokens": {
+                    "description": "Input tokens written to cache",
+                    "type": "integer"
+                  },
+                  "cache_read_input_tokens": {
+                    "description": "Input tokens served from cache",
+                    "type": "integer"
+                  },
+                  "input_tokens": {
+                    "description": "Input tokens (excluding cache hits)",
+                    "type": "integer"
+                  },
+                  "output_tokens": {
+                    "description": "Output tokens (including reasoning tokens)",
+                    "type": "integer"
+                  },
+                  "output_tokens_details": {
+                    "properties": {
+                      "thinking_tokens": {
+                        "description": "The portion of output tokens used for reasoning",
+                        "type": "integer"
+                      }
+                    },
+                    "type": "object"
+                  }
+                },
+                "type": "object"
+              }
+            },
+            "required": [
+              "type",
+              "delta"
+            ],
+            "title": "message_delta",
+            "type": "object"
+          },
+          {
+            "properties": {
+              "type": {
+                "enum": [
+                  "message_stop"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "title": "message_stop",
+            "type": "object"
+          }
+        ]
+      },
+      "MessagesErrorResponse": {
+        "properties": {
+          "error": {
+            "properties": {
+              "message": {
+                "description": "Error message describing the cause",
+                "type": "string"
+              },
+              "type": {
+                "description": "Error type; see [Errors](/api/errors) for values",
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          },
+          "request_id": {
+            "description": "Request ID; include it when reporting issues",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "error"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "error"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "Error code",
+                "type": "string"
+              },
+              "message": {
+                "description": "Error message describing what went wrong",
+                "type": "string"
+              },
+              "type": {
+                "description": "Error type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "MessagesMessageParam": {
+        "properties": {
+          "content": {
+            "description": "Message content. Either a plain string or an array of content blocks (text / image / thinking / tool_use / tool_result).",
+            "example": "Hello",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "oneOf": [
+                    {
+                      "properties": {
+                        "text": {
+                          "description": "Text content",
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": [
+                            "text"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "text"
+                      ],
+                      "title": "text",
+                      "type": "object"
+                    },
+                    {
+                      "properties": {
+                        "source": {
+                          "description": "Image source. When `type` is `base64`, provide both `media_type` and `data`; when `type` is `url`, pass an `ms://<file_id>` file reference in `url`.",
+                          "properties": {
+                            "data": {
+                              "description": "Base64-encoded image content, required only when `type=base64`",
+                              "type": "string"
+                            },
+                            "media_type": {
+                              "description": "Image MIME type, required only when `type=base64`",
+                              "enum": [
+                                "image/jpeg",
+                                "image/png",
+                                "image/gif",
+                                "image/webp"
+                              ],
+                              "type": "string"
+                            },
+                            "type": {
+                              "enum": [
+                                "base64",
+                                "url"
+                              ],
+                              "type": "string"
+                            },
+                            "url": {
+                              "description": "Reference to an uploaded image by file ID in the form `ms://<file_id>`, required only when `type=url`. See [Upload File](/api/files-upload).",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ],
+                          "type": "object"
+                        },
+                        "type": {
+                          "enum": [
+                            "image"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "source"
+                      ],
+                      "title": "image",
+                      "type": "object"
+                    },
+                    {
+                      "description": "The model's reasoning. In multi-turn conversations, pass the thinking block from the response (including `signature`) back unchanged inside the assistant message.",
+                      "properties": {
+                        "signature": {
+                          "description": "Signature of the reasoning content; keep it unchanged when passing back",
+                          "type": "string"
+                        },
+                        "thinking": {
+                          "description": "Reasoning content",
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": [
+                            "thinking"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "thinking"
+                      ],
+                      "title": "thinking",
+                      "type": "object"
+                    },
+                    {
+                      "description": "A tool call issued by the model (appears in assistant messages)",
+                      "properties": {
+                        "id": {
+                          "description": "Tool call ID; must match `tool_use_id` when submitting the result",
+                          "type": "string"
+                        },
+                        "input": {
+                          "additionalProperties": true,
+                          "description": "Tool input",
+                          "type": "object"
+                        },
+                        "name": {
+                          "description": "Tool name",
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": [
+                            "tool_use"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "id",
+                        "name",
+                        "input"
+                      ],
+                      "title": "tool_use",
+                      "type": "object"
+                    },
+                    {
+                      "description": "The result of a tool execution (appears in user messages)",
+                      "properties": {
+                        "content": {
+                          "description": "Tool output, either a string or an array of text / image blocks",
+                          "oneOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "items": {
+                                "oneOf": [
+                                  {
+                                    "properties": {
+                                      "text": {
+                                        "description": "Text content",
+                                        "type": "string"
+                                      },
+                                      "type": {
+                                        "enum": [
+                                          "text"
+                                        ],
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "text"
+                                    ],
+                                    "title": "text",
+                                    "type": "object"
+                                  },
+                                  {
+                                    "properties": {
+                                      "source": {
+                                        "description": "Image source. When `type` is `base64`, provide both `media_type` and `data`; when `type` is `url`, pass an `ms://<file_id>` file reference in `url`.",
+                                        "properties": {
+                                          "data": {
+                                            "description": "Base64-encoded image content, required only when `type=base64`",
+                                            "type": "string"
+                                          },
+                                          "media_type": {
+                                            "description": "Image MIME type, required only when `type=base64`",
+                                            "enum": [
+                                              "image/jpeg",
+                                              "image/png",
+                                              "image/gif",
+                                              "image/webp"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "type": {
+                                            "enum": [
+                                              "base64",
+                                              "url"
+                                            ],
+                                            "type": "string"
+                                          },
+                                          "url": {
+                                            "description": "Reference to an uploaded image by file ID in the form `ms://<file_id>`, required only when `type=url`. See [Upload File](/api/files-upload).",
+                                            "type": "string"
+                                          }
+                                        },
+                                        "required": [
+                                          "type"
+                                        ],
+                                        "type": "object"
+                                      },
+                                      "type": {
+                                        "enum": [
+                                          "image"
+                                        ],
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "type",
+                                      "source"
+                                    ],
+                                    "title": "image",
+                                    "type": "object"
+                                  }
+                                ]
+                              },
+                              "type": "array"
+                            }
+                          ]
+                        },
+                        "tool_use_id": {
+                          "description": "The `id` of the corresponding tool_use block",
+                          "type": "string"
+                        },
+                        "type": {
+                          "enum": [
+                            "tool_result"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "tool_use_id",
+                        "content"
+                      ],
+                      "title": "tool_result",
+                      "type": "object"
+                    }
+                  ]
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "role": {
+            "description": "The role of the message. Supports user and assistant. Use the top-level `system` field for the system prompt.",
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "example": "user",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "type": "object"
+      },
+      "MessagesTextBlockParam": {
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "text"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ],
+        "type": "object"
+      },
+      "MessagesToolChoice": {
+        "description": "Controls whether the model calls tools. `auto` (default): the model decides; `any`: force a call to any tool; `none`: do not call tools.",
+        "properties": {
+          "type": {
+            "default": "auto",
+            "enum": [
+              "auto",
+              "any",
+              "none"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "MessagesTool": {
+        "properties": {
+          "description": {
+            "description": "Description of what the tool does",
+            "type": "string"
+          },
+          "input_schema": {
+            "additionalProperties": true,
+            "description": "JSON Schema for the tool input; the top-level `type` must be `object`. Must conform to the [MFJS (Moonshot Flavored JSON Schema) specification](https://github.com/MoonshotAI/walle/blob/main/docs/mfjs-spec.md).",
+            "type": "object"
+          },
+          "name": {
+            "description": "Tool name. Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9-_]{0,127}$",
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9-_]{0,127}$",
+            "type": "string"
+          },
+          "type": {
+            "description": "Tool type, may be omitted",
+            "enum": [
+              "custom"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "input_schema"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}
