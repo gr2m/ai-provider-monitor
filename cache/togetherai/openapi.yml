@@ -2501,7 +2501,7 @@ components:
           description: Optional final replica count for the source deployment. Defaults to 0, which drains and stops the source.
           type: integer
         finalTargetReplicas:
-          description: Optional target replica floor at completion. Must be at least 1 when set; defaults to the source deployment's replica count at create time, or to the source and target deployments' combined replica count when both already stand in the endpoint traffic split after a cancel. If this exceeds the target autoscaling max, the rollout raises that max once when first needed unless an operator changes max mid-run; the raised ceiling remains after completion. If the target's autoscaling min, or the source min inherited by a target that starts stopped, is higher, completion holds that higher floor and PreviewRolloutDefaults reports FINAL_BELOW_INHERITED_MIN.
+          description: Optional target replica floor at completion. Must be at least 1 when set; defaults to the source deployment's replica count at create time, or to the source and target deployments' combined replica count when both already stand in the endpoint traffic split after a cancel. If this exceeds the target autoscaling max, the rollout raises that max once when first needed unless an operator changes max mid-run; the raised ceiling remains after completion. A pre-existing target whose own autoscaling min is higher keeps that floor, reported as FINAL_BELOW_INHERITED_MIN. A target that starts stopped lands exactly at this value; if the source min was higher, PreviewRolloutDefaults reports FINAL_BELOW_SOURCE_MIN.
           type: integer
         metrics:
           description: Optional metric gates evaluated after each step's soak. Canary only; rejected on rolling and blue-green rollouts.
@@ -3974,7 +3974,7 @@ components:
       description: A non-blocking finding attached to a rollout defaults preview.
       properties:
         code:
-          description: Machine-readable warning code, such as START_WILL_REJECT, ROLLOUT_WILL_RAISE_TARGET_MAX, or FINAL_BELOW_INHERITED_MIN. Render message for unrecognized codes.
+          description: Machine-readable warning code, such as START_WILL_REJECT, ROLLOUT_WILL_RAISE_TARGET_MAX, FINAL_BELOW_INHERITED_MIN, or FINAL_BELOW_SOURCE_MIN. Render message for unrecognized codes.
           type: string
         message:
           description: Plain-language description of the finding, safe to show users as-is.
@@ -4217,7 +4217,7 @@ components:
       type: object
       x-stainless-empty-object: true
     DE.Rollout:
-      description: Public view of a rollout resource and its embedded runtime status.
+      description: Public view of a rollout resource, including runtime progress and any pause or abort reason.
       properties:
         completedAt:
           description: Output only. Timestamp when the rollout reached a terminal state.
@@ -4252,7 +4252,7 @@ components:
         pauseInfo:
           allOf:
             - $ref: "#/components/schemas/DE.PauseInfo"
-          description: Output only. Why and when the rollout was paused. Set while a pause is pending or effective (PAUSING, PAUSED, or SYSTEM_PAUSED); while PAUSING, pausedAt records when the pause was requested.
+          description: Output only. Why and when the rollout was paused. Set while a pause is pending or effective (PAUSING, PAUSED, or SYSTEM_PAUSED) and cleared after resume or abort; while PAUSING, pausedAt records when the pause was requested.
           readOnly: true
         sourceDeploymentId:
           description: Output only. Deployment that traffic is shifting away from.
@@ -4282,7 +4282,7 @@ components:
         status:
           allOf:
             - $ref: "#/components/schemas/DE.RolloutStatus"
-          description: Output only. Derived runtime progress and failure details.
+          description: Output only. Derived runtime progress, step summary, and pause or abort failure details.
           readOnly: true
         strategy:
           description: Output only. Rollout strategy selected at creation.
@@ -4396,7 +4396,7 @@ components:
         condition:
           allOf:
             - $ref: "#/components/schemas/DE.RolloutCondition"
-          description: Failure detail set when the rollout pauses, system-pauses, or aborts.
+          description: Failure detail set when the rollout pauses, system-pauses, or aborts; carries the human-readable reason and structured detail.
         conditions:
           description: Informational conditions that describe the rollout's current state. Omitted when empty; clients should treat an absent key as an empty list.
           items:
@@ -4484,7 +4484,16 @@ components:
       description: Metric and target used by the autoscaler to recommend a replica count.
       properties:
         name:
-          description: Metric name, such as `gpu_utilization`, `ttft`, `inflight_requests`, `e2e_latency`, `throughput_per_replica`, or `decoding_speed`.
+          description: Autoscaling metric name from the server allowlist.
+          enum:
+            - cache_hit_rate
+            - decoding_speed
+            - e2e_latency
+            - gpu_utilization
+            - inflight_requests
+            - throughput_per_replica
+            - token_utilization
+            - ttft
           type: string
         percentile:
           description: "Percentile to evaluate for latency-based metrics: `p50`, `p90`, `p95`, or `p99`."
@@ -8951,6 +8960,13 @@ components:
     RL.ComputeConfig:
       description: Compute layout for a model resource
       properties:
+        gpu_type:
+          description: GPU type selected for this resource.
+          enum:
+            - H100-80GB
+            - B200-SXM
+          example: H100-80GB
+          type: string
         num_generator_replicas:
           description: Number of generator replicas. 0 means the resource runs the trainer only, with no generator.
           example: 1
@@ -8962,6 +8978,13 @@ components:
     RL.ComputeConfigCreateRequest:
       description: Compute layout to provision for a model resource
       properties:
+        gpu_type:
+          description: GPU type to provision. Omit to use the model's default GPU type.
+          enum:
+            - H100-80GB
+            - B200-SXM
+          example: B200-SXM
+          type: string
         num_generator_replicas:
           default: "1"
           description: Number of generator replicas. 0 runs the trainer only, with no generator.
@@ -9395,7 +9418,7 @@ components:
         - max_seq_length
       type: object
     RL.ModelGeneratorConfig:
-      description: Inference config. If present, the model can be provisioned with one or more generator replicas.
+      description: Inference capabilities and limits for a model on one GPU type. If present, the model can be provisioned with one or more generator replicas.
       properties:
         context_length:
           description: Maximum tokens in a single inference request (prompt + completion)
@@ -9594,7 +9617,7 @@ components:
         - logprobs
       type: object
     RL.ModelTrainerConfig:
-      description: Training config. Each sub-mode is present only when the model supports that training mode.
+      description: Training capabilities and limits for a model on one GPU type. Each sub-mode is present only when the model supports that training mode.
       properties:
         full:
           $ref: "#/components/schemas/RL.ModelFullModeConfig"
@@ -9968,6 +9991,37 @@ components:
           example: 1
           type: number
       type: object
+    RL.SessionPolicyState:
+      description: Session-scoped policy and weight versions. Comparable to `policy_segments[].version` on sample results. Resets if the session is resumed or its training runtime restarts.
+      properties:
+        applied_weights_version:
+          description: Policy version successfully applied to the generator for this session.
+          example: "6"
+          oneOf:
+            - type: string
+            - type: integer
+        pending_publish:
+          description: True when a generator publish has been requested but has not finished.
+          example: true
+          type: boolean
+        target_weights_version:
+          description: Policy version promised to the generator by the latest weights-sync.
+          example: "7"
+          oneOf:
+            - type: string
+            - type: integer
+        trainer_step:
+          description: Policy version produced by the last completed optimizer step. Distinct from `TrainingSession.step`, which is the durable optimizer-step counter.
+          example: "7"
+          oneOf:
+            - type: string
+            - type: integer
+      required:
+        - trainer_step
+        - target_weights_version
+        - applied_weights_version
+        - pending_publish
+      type: object
     RL.StartTrainingSessionRequest:
       properties:
         display_name:
@@ -10013,14 +10067,40 @@ components:
           description: Base model identifier to pass as base_model when creating a model resource
           example: Qwen/Qwen3-0.6B
           type: string
-        generator_config:
-          $ref: "#/components/schemas/RL.ModelGeneratorConfig"
-          description: Inference config. Set when the model can be provisioned with generator replicas.
-        trainer_config:
-          $ref: "#/components/schemas/RL.ModelTrainerConfig"
-          description: Training config. Set when the model supports at least one training mode.
+        compute_configs:
+          description: Validated GPU configurations available for this base model.
+          items:
+            $ref: "#/components/schemas/RL.SupportedModelComputeConfig"
+          type: array
+        default_gpu_type:
+          description: GPU type used when model-resource creation omits gpu_type.
+          enum:
+            - H100-80GB
+            - B200-SXM
+          example: H100-80GB
+          type: string
       required:
         - base_model
+        - default_gpu_type
+      type: object
+    RL.SupportedModelComputeConfig:
+      description: A validated hardware configuration available for an RL base model.
+      properties:
+        generator_config:
+          $ref: "#/components/schemas/RL.ModelGeneratorConfig"
+          description: Inference config for this GPU type. Set when the model can be provisioned with generator replicas on this GPU type.
+        gpu_type:
+          description: GPU type this configuration provisions.
+          enum:
+            - H100-80GB
+            - B200-SXM
+          example: H100-80GB
+          type: string
+        trainer_config:
+          $ref: "#/components/schemas/RL.ModelTrainerConfig"
+          description: Training config for this GPU type. Set when the model supports at least one training mode on this GPU type.
+      required:
+        - gpu_type
       type: object
     RL.SupportedModelsListResponse:
       description: List of base models supported by the RL service
@@ -10281,6 +10361,9 @@ components:
           description: Model resource this session is attached to. The session runs on that resource's GPU pods.
           example: 123e4567-e89b-12d3-a456-426614174000
           type: string
+        policy_state:
+          $ref: "#/components/schemas/RL.SessionPolicyState"
+          description: Session-scoped policy and weight versions for this session
         resume_from_checkpoint_id:
           description: Checkpoint ID this session was resumed from
           example: 123e4567-e89b-12d3-a456-426614174000
@@ -10319,6 +10402,7 @@ components:
         - model_resources_id
         - created_by
         - base_model
+        - policy_state
       type: object
     RL.TrainingSessionError:
       description: Structured detail for the training session's current error
@@ -12728,6 +12812,17 @@ paths:
       summary: Get billing usage
       tags:
         - Billing
+      x-codeSamples:
+        - label: cURL
+          lang: Shell
+          source: |
+            # First page
+            curl "https://api.together.ai/v1/billing/usage?month=2026-06&granularity=day" \
+                 -H "Authorization: Bearer $TOGETHER_API_KEY"
+
+            # Next page: pass the previous response's next_cursor
+            curl "https://api.together.ai/v1/billing/usage?month=2026-06&granularity=day&after=NEXT_CURSOR" \
+                 -H "Authorization: Bearer $TOGETHER_API_KEY"
   /chat/completions:
     post:
       deprecated: false
