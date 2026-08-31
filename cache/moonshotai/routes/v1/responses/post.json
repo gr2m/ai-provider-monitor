@@ -1,0 +1,1065 @@
+{
+  "description": "Creates a model response. Provide text or image inputs to generate text or JSON outputs. Have the model call the function tools you define. When `stream` is `true`, the response is delivered as a stream of SSE events.",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/ResponsesRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ResponsesResponse"
+          }
+        },
+        "text/event-stream": {
+          "schema": {
+            "$ref": "#/components/schemas/ResponsesStreamEvent"
+          }
+        }
+      },
+      "description": "The response was created"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Bad request - invalid parameters"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Unauthorized - the API key is invalid or missing"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Access to the resource is forbidden"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Rate limited or out of quota"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Server error"
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "summary": "Create a model response",
+  "tags": [
+    "Responses"
+  ],
+  "components": {
+    "schemas": {
+      "ResponsesRequest": {
+        "properties": {
+          "input": {
+            "description": "Input for this request. A string is equivalent to a single user message. An array holds ordered typed items and may contain conversation history, tool calls, and tool results.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResponsesInputItem"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "instructions": {
+            "description": "Top-level system instructions, applied ahead of every input item.",
+            "type": "string"
+          },
+          "max_output_tokens": {
+            "description": "Maximum number of tokens to generate for this response. For `kimi-k3` it defaults to 131072 and can be set up to 1048576. This refers to the length of tokens you expect us to return, not the total length of input plus output. When the limit is reached, `status` is `incomplete` and `incomplete_details.reason` is `max_output_tokens`.",
+            "type": "integer"
+          },
+          "model": {
+            "description": "ID of the model to use. This endpoint currently supports `kimi-k3`.",
+            "example": "kimi-k3",
+            "type": "string"
+          },
+          "prompt_cache_key": {
+            "description": "Context cache identifier. Reusing the same value across a session improves cache hit rate.",
+            "type": "string"
+          },
+          "reasoning": {
+            "description": "Reasoning configuration.",
+            "properties": {
+              "effort": {
+                "default": "max",
+                "description": "Reasoning depth. Higher levels reason more thoroughly, which usually also increases latency and reasoning token usage.",
+                "enum": [
+                  "low",
+                  "high",
+                  "max"
+                ],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "safety_identifier": {
+            "description": "A stable identifier used to help detect users of your application that may be violating usage policies. The ID should be a string that uniquely identifies each user. It is recommended to hash the username or email address to avoid sending any identifying information",
+            "type": "string"
+          },
+          "stream": {
+            "default": false,
+            "description": "When true, the response is delivered as a stream of SSE events.",
+            "type": "boolean"
+          },
+          "text": {
+            "description": "Output text configuration.",
+            "properties": {
+              "format": {
+                "description": "Constrains the output structure with a JSON Schema.",
+                "properties": {
+                  "name": {
+                    "description": "Schema name. Defaults to `output`.",
+                    "type": "string"
+                  },
+                  "schema": {
+                    "description": "JSON Schema describing the output structure.",
+                    "type": "object"
+                  },
+                  "strict": {
+                    "description": "Whether the output must strictly conform to the schema.",
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "enum": [
+                      "json_schema"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "schema"
+                ],
+                "type": "object"
+              }
+            },
+            "type": "object"
+          },
+          "tool_choice": {
+            "$ref": "#/components/schemas/ResponsesToolChoice"
+          },
+          "tools": {
+            "description": "List of tools the model may call.",
+            "items": {
+              "$ref": "#/components/schemas/ResponsesTool"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "model",
+          "input"
+        ],
+        "type": "object"
+      },
+      "ResponsesResponse": {
+        "description": "A single model response.",
+        "properties": {
+          "background": {
+            "description": "Always `false`.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "completed_at": {
+            "description": "Unix timestamp of when the response finished. Present when `status` is `completed` or `incomplete`; `null` when `status` is `in_progress` or `failed`.",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "conversation": {
+            "description": "Always `null`.",
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "created_at": {
+            "description": "Unix timestamp of when the response was created.",
+            "type": "integer"
+          },
+          "error": {
+            "description": "Error information when `status` is `failed`.",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "Unique identifier of the response.",
+            "example": "resp_68f0c1c2d3e4f5a6b7c8d9e0",
+            "type": "string"
+          },
+          "incomplete_details": {
+            "description": "Reason the response is `incomplete`.",
+            "properties": {
+              "reason": {
+                "enum": [
+                  "max_output_tokens",
+                  "content_filter"
+                ],
+                "type": "string"
+              }
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "instructions": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "max_output_tokens": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "metadata": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "model": {
+            "description": "Model that produced the response.",
+            "type": "string"
+          },
+          "object": {
+            "enum": [
+              "response"
+            ],
+            "type": "string"
+          },
+          "output": {
+            "description": "Array of output items, ordered as reasoning, message, then tool calls.",
+            "items": {
+              "$ref": "#/components/schemas/ResponsesOutputItem"
+            },
+            "type": "array"
+          },
+          "parallel_tool_calls": {
+            "type": "boolean"
+          },
+          "previous_response_id": {
+            "description": "Always `null`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reasoning": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "service_tier": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "description": "Response status. The opening snapshot of a stream is `in_progress`.",
+            "enum": [
+              "in_progress",
+              "completed",
+              "incomplete",
+              "failed"
+            ],
+            "type": "string"
+          },
+          "store": {
+            "description": "Always `false`.",
+            "type": "boolean"
+          },
+          "temperature": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "text": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "tool_choice": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ResponsesToolChoice"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/ResponsesTool"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "top_p": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "usage": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ResponsesUsage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ResponsesStreamEvent": {
+        "description": "A single SSE event returned when `stream: true`. Each frame is `event: <type>` followed by `data: <json>`, and the remaining fields of the event body vary by `type`.",
+        "properties": {
+          "sequence_number": {
+            "description": "Event sequence number, increasing monotonically from 0.",
+            "type": "integer"
+          },
+          "type": {
+            "enum": [
+              "response.created",
+              "response.in_progress",
+              "response.output_item.added",
+              "response.output_item.done",
+              "response.content_part.added",
+              "response.content_part.done",
+              "response.output_text.delta",
+              "response.output_text.done",
+              "response.reasoning_summary_part.added",
+              "response.reasoning_summary_part.done",
+              "response.reasoning_summary_text.delta",
+              "response.reasoning_summary_text.done",
+              "response.function_call_arguments.delta",
+              "response.function_call_arguments.done",
+              "response.completed",
+              "response.incomplete",
+              "response.failed",
+              "error"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "sequence_number"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "Error code",
+                "type": "string"
+              },
+              "message": {
+                "description": "Error message describing what went wrong",
+                "type": "string"
+              },
+              "type": {
+                "description": "Error type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "ResponsesInputItem": {
+        "description": "An element of the input array, discriminated by `type`. When `type` is omitted the item is treated as `message`.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ResponsesMessageItem"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesReasoningItem"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesFunctionCallItem"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesFunctionCallOutputItem"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesAdditionalToolsItem"
+          }
+        ]
+      },
+      "ResponsesToolChoice": {
+        "description": "Controls tool-calling behavior. With `auto`, the model decides whether to call a tool.",
+        "enum": [
+          "auto"
+        ],
+        "type": "string"
+      },
+      "ResponsesTool": {
+        "description": "A tool definition, discriminated by `type`.",
+        "discriminator": {
+          "mapping": {
+            "function": "#/components/schemas/ResponsesFunctionTool",
+            "namespace": "#/components/schemas/ResponsesNamespaceTool"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ResponsesFunctionTool"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesNamespaceTool"
+          }
+        ]
+      },
+      "ResponsesOutputItem": {
+        "description": "An element of the output array, discriminated by `type`.",
+        "discriminator": {
+          "mapping": {
+            "function_call": "#/components/schemas/ResponsesOutputFunctionCallItem",
+            "message": "#/components/schemas/ResponsesOutputMessageItem",
+            "reasoning": "#/components/schemas/ResponsesOutputReasoningItem"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ResponsesOutputReasoningItem"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesOutputMessageItem"
+          },
+          {
+            "$ref": "#/components/schemas/ResponsesOutputFunctionCallItem"
+          }
+        ]
+      },
+      "ResponsesUsage": {
+        "description": "Token usage for this response.",
+        "properties": {
+          "input_tokens": {
+            "description": "Number of input tokens, including cached tokens.",
+            "type": "integer"
+          },
+          "input_tokens_details": {
+            "properties": {
+              "cache_write_tokens": {
+                "description": "Number of tokens written to the context cache.",
+                "type": "integer"
+              },
+              "cached_tokens": {
+                "description": "Number of tokens served from the context cache.",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "output_tokens": {
+            "description": "Number of output tokens, including reasoning tokens.",
+            "type": "integer"
+          },
+          "output_tokens_details": {
+            "properties": {
+              "reasoning_tokens": {
+                "description": "Number of tokens spent on reasoning.",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "total_tokens": {
+            "description": "Total number of tokens.",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "ResponsesMessageItem": {
+        "description": "A conversation message. `type` may be omitted.",
+        "properties": {
+          "content": {
+            "description": "Message content, either a string or an array of content parts.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResponsesInputContentPart"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "role": {
+            "description": "Message role. `developer` is handled as a system instruction.",
+            "enum": [
+              "user",
+              "assistant",
+              "developer"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "completed"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "message"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "title": "Message",
+        "type": "object"
+      },
+      "ResponsesReasoningItem": {
+        "description": "Replays reasoning content from a previous turn. `content` takes precedence over `summary`.",
+        "properties": {
+          "content": {
+            "items": {
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "type": {
+                  "enum": [
+                    "reasoning_text"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "text"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "completed"
+            ],
+            "type": "string"
+          },
+          "summary": {
+            "items": {
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "type": {
+                  "enum": [
+                    "summary_text"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "text"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "type": {
+            "enum": [
+              "reasoning"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "Reasoning",
+        "type": "object"
+      },
+      "ResponsesFunctionCallItem": {
+        "description": "Replays a function call.",
+        "properties": {
+          "arguments": {
+            "description": "JSON string of the function arguments.",
+            "type": "string"
+          },
+          "call_id": {
+            "description": "Call ID paired with the matching `function_call_output`.",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "namespace": {
+            "description": "Namespace the tool belongs to, returned for namespace tool calls.",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "completed"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "function_call"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "call_id",
+          "name",
+          "arguments"
+        ],
+        "title": "Function call",
+        "type": "object"
+      },
+      "ResponsesFunctionCallOutputItem": {
+        "description": "Result of executing a function call.",
+        "properties": {
+          "call_id": {
+            "description": "Same call ID as the matching `function_call`.",
+            "type": "string"
+          },
+          "output": {
+            "description": "Content returned by the tool.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ResponsesInputContentPart"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "completed"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "function_call_output"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "call_id",
+          "output"
+        ],
+        "title": "Function call output",
+        "type": "object"
+      },
+      "ResponsesAdditionalToolsItem": {
+        "description": "Adds callable tools partway through a conversation, effective from the position of this item.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "developer"
+            ],
+            "type": "string"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/ResponsesTool"
+            },
+            "type": "array"
+          },
+          "type": {
+            "enum": [
+              "additional_tools"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "role",
+          "tools"
+        ],
+        "title": "Additional tools",
+        "type": "object"
+      },
+      "ResponsesFunctionTool": {
+        "description": "A function tool whose arguments are described by a JSON Schema.",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "description": "Function name. Must follow the regex: ^[a-zA-Z_][a-zA-Z0-9-_]{0,127}$",
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9-_]{0,127}$",
+            "type": "string"
+          },
+          "parameters": {
+            "description": "JSON Schema describing the function arguments.",
+            "type": "object"
+          },
+          "strict": {
+            "type": "boolean"
+          },
+          "type": {
+            "enum": [
+              "function"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name"
+        ],
+        "title": "Function tool",
+        "type": "object"
+      },
+      "ResponsesNamespaceTool": {
+        "description": "Groups a set of function tools under a single namespace.",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/ResponsesFunctionTool"
+            },
+            "type": "array"
+          },
+          "type": {
+            "enum": [
+              "namespace"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description",
+          "tools"
+        ],
+        "title": "Namespace tool",
+        "type": "object"
+      },
+      "ResponsesOutputReasoningItem": {
+        "description": "Reasoning content produced by the model.",
+        "properties": {
+          "encrypted_content": {
+            "description": "Always `null`.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "example": "rs_68f0c1c2d3e4f5a6b7c8d9e0",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "in_progress",
+              "completed"
+            ],
+            "type": "string"
+          },
+          "summary": {
+            "description": "The reasoning content.",
+            "items": {
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "type": {
+                  "enum": [
+                    "summary_text"
+                  ],
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "type": {
+            "enum": [
+              "reasoning"
+            ],
+            "type": "string"
+          }
+        },
+        "title": "Reasoning",
+        "type": "object"
+      },
+      "ResponsesOutputMessageItem": {
+        "description": "Text reply produced by the model.",
+        "properties": {
+          "content": {
+            "items": {
+              "properties": {
+                "annotations": {
+                  "items": {},
+                  "type": "array"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "type": {
+                  "enum": [
+                    "output_text"
+                  ],
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "id": {
+            "example": "msg_68f0c1c2d3e4f5a6b7c8d9e0",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "assistant"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "in_progress",
+              "completed"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "message"
+            ],
+            "type": "string"
+          }
+        },
+        "title": "Message",
+        "type": "object"
+      },
+      "ResponsesOutputFunctionCallItem": {
+        "description": "A function call initiated by the model.",
+        "properties": {
+          "arguments": {
+            "description": "JSON string of the function arguments.",
+            "type": "string"
+          },
+          "call_id": {
+            "description": "Use this value in `function_call_output` when returning the result.",
+            "type": "string"
+          },
+          "id": {
+            "example": "fc_68f0c1c2d3e4f5a6b7c8d9e0",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "namespace": {
+            "description": "Returned for namespace tool calls.",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "in_progress",
+              "completed"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "function_call"
+            ],
+            "type": "string"
+          }
+        },
+        "title": "Function call",
+        "type": "object"
+      },
+      "ResponsesInputContentPart": {
+        "description": "An element of a content array, discriminated by `type`.",
+        "oneOf": [
+          {
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "input_text"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "text"
+            ],
+            "title": "Input text",
+            "type": "object"
+          },
+          {
+            "properties": {
+              "detail": {
+                "enum": [
+                  "auto",
+                  "low",
+                  "high",
+                  "original"
+                ],
+                "type": "string"
+              },
+              "image_url": {
+                "description": "Data URL of the image, for example `data:image/png;base64,<base64>`. Public http(s) URLs are not supported.",
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "input_image"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "image_url"
+            ],
+            "title": "Input image",
+            "type": "object"
+          },
+          {
+            "description": "Used when replaying assistant text from history.",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "type": {
+                "enum": [
+                  "output_text"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "text"
+            ],
+            "title": "Output text",
+            "type": "object"
+          }
+        ]
+      }
+    }
+  }
+}
