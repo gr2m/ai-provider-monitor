@@ -1,33 +1,7 @@
 {
-  "deprecated": true,
-  "description": "**Deprecated.** This Admin API endpoint is superseded by `/v1/tunnels` on the Claude API and will be removed after a migration window. New integrations should use [`/v1/tunnels`](/docs/en/api/beta/tunnels) with the `anthropic-beta: mcp-tunnels-2026-06-22` header and a WIF token carrying the `workspace:manage_tunnels` scope. Existing integrations continue to work with the `mcp-tunnels-2026-05-19` header and `org:manage_tunnels` scope during the migration window.\n\nReturn the tunnel's current connection token.\n\nThe value is fetched live on each call; Anthropic does not store it.\nRepeated calls return the same value until the token is rotated.\nExposed as `POST` so the token does not appear in intermediary\naccess logs.",
-  "operationId": "beta_reveal_tunnel_token_v1_organizations_tunnels__tunnel_id__reveal_token_post",
+  "description": "Update your organization's Compliance Settings.\n\nSetting `state` to `enabled` turns on the Compliance API and begins\ncapturing organization activity events. Setting it to `disabled` turns\nboth off. `state` reflects whether the Compliance API is enabled.\n\nA request that sets `state` to its current value succeeds and leaves the\nresource unchanged. A `disabled` request stays in effect until a later\n`enabled` request or the organization's next provisioning action that\nenables Access Transparency: enabling Access Transparency also enables\nthe Compliance API, which serves its activity events, so such\nprovisioning (including re-runs) re-enables the Compliance API even\nafter a `disabled` request. Automated provisioning never disables\ncompliance settings.",
+  "operationId": "beta_update_compliance_settings_v1_organizations_compliance_settings_post",
   "parameters": [
-    {
-      "description": "ID of the Tunnel.",
-      "in": "path",
-      "name": "tunnel_id",
-      "required": true,
-      "schema": {
-        "description": "ID of the Tunnel.",
-        "title": "Tunnel Id",
-        "type": "string"
-      }
-    },
-    {
-      "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
-      "in": "header",
-      "name": "anthropic-beta",
-      "required": true,
-      "schema": {
-        "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
-        "items": {
-          "type": "string"
-        },
-        "title": "Anthropic-Beta",
-        "type": "string"
-      }
-    },
     {
       "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
       "in": "header",
@@ -40,12 +14,22 @@
       }
     }
   ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/BetaComplianceSettingsUpdateParams"
+        }
+      }
+    },
+    "required": true
+  },
   "responses": {
     "200": {
       "content": {
         "application/json": {
           "schema": {
-            "$ref": "#/components/schemas/BetaOrganizationTunnelToken"
+            "$ref": "#/components/schemas/BetaComplianceSettings"
           }
         }
       },
@@ -62,41 +46,81 @@
       "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
     }
   },
-  "summary": "Reveal Tunnel Token",
+  "summary": "Update Compliance Settings",
   "components": {
     "schemas": {
-      "BetaOrganizationTunnelToken": {
+      "BetaComplianceSettingsUpdateParams": {
+        "additionalProperties": false,
         "properties": {
-          "id": {
-            "description": "Stable identifier for the current token value. Changes when the token is\nrotated.",
+          "state": {
+            "description": "Desired state. Accepts the string shorthand \"enabled\" or \"disabled\" in place of the object form; the response always returns the canonical object form.",
+            "discriminator": {
+              "mapping": {
+                "disabled": "#/components/schemas/BetaComplianceSettingsStateDisabledParams",
+                "enabled": "#/components/schemas/BetaComplianceSettingsStateEnabledParams"
+              },
+              "propertyName": "type"
+            },
             "examples": [
-              "ttkn_bb97000eaec162831399ca9b6684a4fdf5be49ace5683057b017aab5c87e19e0"
+              {
+                "type": "enabled"
+              }
             ],
-            "title": "Id",
-            "type": "string"
-          },
-          "tunnel_token": {
-            "description": "The tunnel's connection token.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaComplianceSettingsStateEnabledParams"
+              },
+              {
+                "$ref": "#/components/schemas/BetaComplianceSettingsStateDisabledParams"
+              }
+            ],
+            "title": "State"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "title": "ComplianceSettingsUpdateParams",
+        "type": "object"
+      },
+      "BetaComplianceSettings": {
+        "properties": {
+          "state": {
+            "description": "Whether the Compliance API is enabled for this organization.",
+            "discriminator": {
+              "mapping": {
+                "disabled": "#/components/schemas/BetaComplianceSettingsStateDisabled",
+                "enabled": "#/components/schemas/BetaComplianceSettingsStateEnabled"
+              },
+              "propertyName": "type"
+            },
             "examples": [
-              "eyJhIjoiRVhBTVBMRSIsInQiOiJFWEFNUExFIiwicyI6IkVYQU1QTEUifQ=="
+              {
+                "type": "enabled"
+              }
             ],
-            "title": "Tunnel Token",
-            "type": "string"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaComplianceSettingsStateEnabled"
+              },
+              {
+                "$ref": "#/components/schemas/BetaComplianceSettingsStateDisabled"
+              }
+            ],
+            "title": "State"
           },
           "type": {
-            "const": "tunnel_token",
-            "default": "tunnel_token",
-            "description": "Object type. Always `tunnel_token` for Tunnel Tokens.",
+            "const": "compliance_settings",
+            "default": "compliance_settings",
             "title": "Type",
             "type": "string"
           }
         },
         "required": [
-          "id",
-          "tunnel_token",
+          "state",
           "type"
         ],
-        "title": "OrganizationTunnelToken",
+        "title": "ComplianceSettings",
         "type": "object"
       },
       "BetaErrorResponse": {
@@ -172,6 +196,66 @@
           "type"
         ],
         "title": "ErrorResponse",
+        "type": "object"
+      },
+      "BetaComplianceSettingsStateEnabledParams": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "enabled",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "ComplianceSettingsStateEnabledParams",
+        "type": "object"
+      },
+      "BetaComplianceSettingsStateDisabledParams": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "disabled",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "ComplianceSettingsStateDisabledParams",
+        "type": "object"
+      },
+      "BetaComplianceSettingsStateEnabled": {
+        "properties": {
+          "type": {
+            "const": "enabled",
+            "default": "enabled",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "ComplianceSettingsStateEnabled",
+        "type": "object"
+      },
+      "BetaComplianceSettingsStateDisabled": {
+        "properties": {
+          "type": {
+            "const": "disabled",
+            "default": "disabled",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "ComplianceSettingsStateDisabled",
         "type": "object"
       },
       "BetaInvalidRequestError": {
