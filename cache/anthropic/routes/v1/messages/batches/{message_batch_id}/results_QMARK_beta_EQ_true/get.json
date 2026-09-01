@@ -538,6 +538,21 @@
             "title": "Id",
             "type": "string"
           },
+          "input_transformations": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BetaThinkingDroppedInputTransformation"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Changes the API made to the request's input before showing it to the model:\none entry per change, in request order. Today the only entry type is\n`thinking_dropped` — a `thinking`, `redacted_thinking` or `connector_text`\nblock from the request's `messages` that was removed from the prompt instead\nof being shown to the model because it failed a binding check. More entry\ntypes may be added over time; ignore types you do not recognize.\n\nRequires `anthropic-beta: thinking-binding-controls-2026-08-01`. Present on\nevery such response from a model that supports extended thinking, as `[]`\nwhen nothing was changed; without the beta, blocks are removed all the same\nbut nothing is reported. Removed blocks contribute nothing to\n`usage.input_tokens`. When streaming, the array is final in `message_start`;\nthe final `message_delta` event carries it only when a server-side model\nfallback happened mid-stream, in which case it holds the serving model's\nentries and replaces the one in `message_start`.",
+            "title": "Input Transformations"
+          },
           "model": {
             "$ref": "#/components/schemas/Model"
           },
@@ -823,10 +838,52 @@
         "title": "Diagnostics",
         "type": "object"
       },
+      "BetaThinkingDroppedInputTransformation": {
+        "properties": {
+          "path": {
+            "description": "Where the removed block was in your request, as `messages.{i}.content.{j}`:\n`i` indexes the `messages` array you sent and `j` that message's `content`\narray — the same form error messages use.",
+            "title": "Path",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Which binding check removed the block: `model_binding_mismatch` — it was\ncreated by a model whose reasoning the requested model may not read;\n`prefix_binding_mismatch` — the conversation before it differs from the\nconversation it was created in (the rest of that turn's consecutive thinking\nblocks are removed with it, each with this reason);\n`organization_binding_mismatch` — it was created under a different\norganization (an Anthropic organization, AWS account or Google Cloud project)\nand this organization is not one of its additional organizations;\n`end_user_binding_mismatch` — it was created for a different end user, or\nwas removed by the consumer-organization binding. A block that would fail\nseveral checks reports one reason, in this order of precedence:\n`organization_binding_mismatch`, `end_user_binding_mismatch`,\n`model_binding_mismatch`, `prefix_binding_mismatch`.",
+            "enum": [
+              "model_binding_mismatch",
+              "prefix_binding_mismatch",
+              "organization_binding_mismatch",
+              "end_user_binding_mismatch"
+            ],
+            "title": "Reason",
+            "type": "string"
+          },
+          "type": {
+            "const": "thinking_dropped",
+            "default": "thinking_dropped",
+            "description": "Always `thinking_dropped` for this entry type.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "reason",
+          "type"
+        ],
+        "title": "ThinkingDroppedInputTransformation",
+        "type": "object"
+      },
       "Model": {
         "anyOf": [
           {
             "type": "string"
+          },
+          {
+            "const": "claude-fable-5-1",
+            "description": "Frontier intelligence for ambitious tasks across coding, scientific discovery, and enterprise workflows"
+          },
+          {
+            "const": "claude-mythos-5-1",
+            "description": "Our most capable model for cybersecurity and biology research, available through trusted access programs"
           },
           {
             "const": "claude-sonnet-5",

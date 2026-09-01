@@ -540,6 +540,22 @@
           "propertyName": "role"
         },
         "properties": {
+          "clear_at": {
+            "anyOf": [
+              {
+                "enum": [
+                  "next_user_message",
+                  "never"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How long this system message's text stays in front of the model. `\"never\"` (the default) renders it on every request that includes it. `\"next_user_message\"` renders it only for the user turn it follows: once a later `role: \"user\"` message exists in `messages` the message stays in the array (send it unchanged) but is no longer shown to the model. Only permitted on `role: \"system\"` messages.",
+            "title": "Clear At"
+          },
           "content": {
             "anyOf": [
               {
@@ -559,6 +575,16 @@
               }
             ],
             "title": "Content"
+          },
+          "output_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaSystemMessageOutputConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "role": {
             "enum": [
@@ -581,6 +607,14 @@
         "anyOf": [
           {
             "type": "string"
+          },
+          {
+            "const": "claude-fable-5-1",
+            "description": "Frontier intelligence for ambitious tasks across coding, scientific discovery, and enterprise workflows"
+          },
+          {
+            "const": "claude-mythos-5-1",
+            "description": "Our most capable model for cybersecurity and biology research, available through trusted access programs"
           },
           {
             "const": "claude-sonnet-5",
@@ -1370,13 +1404,6 @@
         "additionalProperties": false,
         "description": "The browser toolset: a single ``tools[]`` entry (carrying no\n``name``) that declares the browser tool family. The model is served\nthe family's tool with any members disabled via ``configs`` removed\nfrom its schema.",
         "properties": {
-          "allowed_callers": {
-            "items": {
-              "$ref": "#/components/schemas/BetaAllowedCaller"
-            },
-            "title": "Allowed Callers",
-            "type": "array"
-          },
           "cache_control": {
             "anyOf": [
               {
@@ -1867,13 +1894,6 @@
         "additionalProperties": false,
         "description": "The computer toolset: a single ``tools[]`` entry (carrying no\n``name``) that declares the computer tool family. The model is\nserved the family's tool with any members disabled via ``configs``\nremoved from its schema. Every member is enabled by default, zoom\nincluded. The single-tool options ``display_number`` and\n``enable_zoom`` are not fields of a toolset entry — it carries only\n``type``, ``configs``, and ``cache_control``; zoom is controlled\nvia ``configs.zoom.enabled``.",
         "properties": {
-          "allowed_callers": {
-            "items": {
-              "$ref": "#/components/schemas/BetaAllowedCaller"
-            },
-            "title": "Allowed Callers",
-            "type": "array"
-          },
           "cache_control": {
             "anyOf": [
               {
@@ -3860,6 +3880,25 @@
           }
         ]
       },
+      "BetaSystemMessageOutputConfig": {
+        "additionalProperties": false,
+        "description": "Per-message output configuration on a role:\"system\" input message.\n\nFields here apply per-turn; ``format`` remains top-level only. An\nempty ``{}`` is accepted on a message that carries content; a message\nwith neither content nor output_config fields is rejected.",
+        "properties": {
+          "effort": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaEffortLevel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How much effort the model should put into its response. Higher effort levels may result in more thorough analysis but take longer.\n\nValid values are `low`, `medium`, `high`, `xhigh`, or `max`."
+          }
+        },
+        "title": "SystemMessageOutputConfig",
+        "type": "object"
+      },
       "BetaEffortLevel": {
         "description": "All possible effort levels.",
         "enum": [
@@ -4187,6 +4226,17 @@
       "BetaThinkingConfigEnabled": {
         "additionalProperties": false,
         "properties": {
+          "block_binding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaThinkingBlockBinding"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Controls for block binding: what happens when a thinking block this request sends back fails the conversation check. `null`, absent or an empty object means every default."
+          },
           "budget_tokens": {
             "description": "Determines how many tokens Claude can use for its internal reasoning process. Larger budgets can enable more thorough analysis for complex problems, improving response quality.\n\nMust be ≥1024 and less than `max_tokens`.\n\nSee [extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) for details.",
             "minimum": 1024,
@@ -4235,6 +4285,17 @@
       "BetaThinkingConfigAdaptive": {
         "additionalProperties": false,
         "properties": {
+          "block_binding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaThinkingBlockBinding"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Controls for block binding: what happens when a thinking block this request sends back fails the conversation check. `null`, absent or an empty object means every default."
+          },
           "display": {
             "anyOf": [
               {
@@ -6533,6 +6594,25 @@
           "type"
         ],
         "title": "RequestFallbackBlock",
+        "type": "object"
+      },
+      "BetaThinkingBlockBinding": {
+        "additionalProperties": false,
+        "description": "Controls for block binding: what happens when a thinking block this\nrequest sends back fails the conversation check. Every field is optional;\nan empty object means every default.",
+        "properties": {
+          "prefix_mismatch_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaThinkingPrefixMismatchBehavior"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "\"error\" (default) | \"drop_block\". What happens when a thinking block in `messages` fails the conversation check (it was created in a different conversation, or the messages before it have changed since). \"error\" fails the request with a 400 error. \"drop_block\" removes the failing blocks and the request proceeds; each removal is reported in `input_transformations`."
+          }
+        },
+        "title": "ThinkingBlockBinding",
         "type": "object"
       },
       "BetaThinkingDisplayMode": {
@@ -9172,6 +9252,15 @@
         ],
         "title": "RequestFallbackHopInfo",
         "type": "object"
+      },
+      "BetaThinkingPrefixMismatchBehavior": {
+        "description": "What happens when a thinking block in `messages` fails the conversation\ncheck: it was created in a different conversation, or the messages before\nit have changed since. `\"error\"` (the default) fails the request with a\n400 error. `\"drop_block\"` removes the failing blocks and the request\nproceeds; the model no longer sees the dropped reasoning.",
+        "enum": [
+          "error",
+          "drop_block"
+        ],
+        "title": "ThinkingPrefixMismatchBehavior",
+        "type": "string"
       },
       "BetaBrowserStateChangeTabOpened": {
         "additionalProperties": false,

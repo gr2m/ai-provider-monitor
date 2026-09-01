@@ -551,6 +551,21 @@
             "title": "Id",
             "type": "string"
           },
+          "input_transformations": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BetaThinkingDroppedInputTransformation"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Changes the API made to the request's input before showing it to the model:\none entry per change, in request order. Today the only entry type is\n`thinking_dropped` — a `thinking`, `redacted_thinking` or `connector_text`\nblock from the request's `messages` that was removed from the prompt instead\nof being shown to the model because it failed a binding check. More entry\ntypes may be added over time; ignore types you do not recognize.\n\nRequires `anthropic-beta: thinking-binding-controls-2026-08-01`. Present on\nevery such response from a model that supports extended thinking, as `[]`\nwhen nothing was changed; without the beta, blocks are removed all the same\nbut nothing is reported. Removed blocks contribute nothing to\n`usage.input_tokens`. When streaming, the array is final in `message_start`;\nthe final `message_delta` event carries it only when a server-side model\nfallback happened mid-stream, in which case it holds the serving model's\nentries and replaces the one in `message_start`.",
+            "title": "Input Transformations"
+          },
           "model": {
             "$ref": "#/components/schemas/Model"
           },
@@ -976,6 +991,22 @@
           "propertyName": "role"
         },
         "properties": {
+          "clear_at": {
+            "anyOf": [
+              {
+                "enum": [
+                  "next_user_message",
+                  "never"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How long this system message's text stays in front of the model. `\"never\"` (the default) renders it on every request that includes it. `\"next_user_message\"` renders it only for the user turn it follows: once a later `role: \"user\"` message exists in `messages` the message stays in the array (send it unchanged) but is no longer shown to the model. Only permitted on `role: \"system\"` messages.",
+            "title": "Clear At"
+          },
           "content": {
             "anyOf": [
               {
@@ -995,6 +1026,16 @@
               }
             ],
             "title": "Content"
+          },
+          "output_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaSystemMessageOutputConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "role": {
             "enum": [
@@ -1040,6 +1081,14 @@
         "anyOf": [
           {
             "type": "string"
+          },
+          {
+            "const": "claude-fable-5-1",
+            "description": "Frontier intelligence for ambitious tasks across coding, scientific discovery, and enterprise workflows"
+          },
+          {
+            "const": "claude-mythos-5-1",
+            "description": "Our most capable model for cybersecurity and biology research, available through trusted access programs"
           },
           {
             "const": "claude-sonnet-5",
@@ -1829,13 +1878,6 @@
         "additionalProperties": false,
         "description": "The browser toolset: a single ``tools[]`` entry (carrying no\n``name``) that declares the browser tool family. The model is served\nthe family's tool with any members disabled via ``configs`` removed\nfrom its schema.",
         "properties": {
-          "allowed_callers": {
-            "items": {
-              "$ref": "#/components/schemas/BetaAllowedCaller"
-            },
-            "title": "Allowed Callers",
-            "type": "array"
-          },
           "cache_control": {
             "anyOf": [
               {
@@ -2326,13 +2368,6 @@
         "additionalProperties": false,
         "description": "The computer toolset: a single ``tools[]`` entry (carrying no\n``name``) that declares the computer tool family. The model is\nserved the family's tool with any members disabled via ``configs``\nremoved from its schema. Every member is enabled by default, zoom\nincluded. The single-tool options ``display_number`` and\n``enable_zoom`` are not fields of a toolset entry — it carries only\n``type``, ``configs``, and ``cache_control``; zoom is controlled\nvia ``configs.zoom.enabled``.",
         "properties": {
-          "allowed_callers": {
-            "items": {
-              "$ref": "#/components/schemas/BetaAllowedCaller"
-            },
-            "title": "Allowed Callers",
-            "type": "array"
-          },
           "cache_control": {
             "anyOf": [
               {
@@ -3999,6 +4034,40 @@
         "title": "Diagnostics",
         "type": "object"
       },
+      "BetaThinkingDroppedInputTransformation": {
+        "properties": {
+          "path": {
+            "description": "Where the removed block was in your request, as `messages.{i}.content.{j}`:\n`i` indexes the `messages` array you sent and `j` that message's `content`\narray — the same form error messages use.",
+            "title": "Path",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Which binding check removed the block: `model_binding_mismatch` — it was\ncreated by a model whose reasoning the requested model may not read;\n`prefix_binding_mismatch` — the conversation before it differs from the\nconversation it was created in (the rest of that turn's consecutive thinking\nblocks are removed with it, each with this reason);\n`organization_binding_mismatch` — it was created under a different\norganization (an Anthropic organization, AWS account or Google Cloud project)\nand this organization is not one of its additional organizations;\n`end_user_binding_mismatch` — it was created for a different end user, or\nwas removed by the consumer-organization binding. A block that would fail\nseveral checks reports one reason, in this order of precedence:\n`organization_binding_mismatch`, `end_user_binding_mismatch`,\n`model_binding_mismatch`, `prefix_binding_mismatch`.",
+            "enum": [
+              "model_binding_mismatch",
+              "prefix_binding_mismatch",
+              "organization_binding_mismatch",
+              "end_user_binding_mismatch"
+            ],
+            "title": "Reason",
+            "type": "string"
+          },
+          "type": {
+            "const": "thinking_dropped",
+            "default": "thinking_dropped",
+            "description": "Always `thinking_dropped` for this entry type.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "reason",
+          "type"
+        ],
+        "title": "ThinkingDroppedInputTransformation",
+        "type": "object"
+      },
       "BetaRefusalStopDetails": {
         "description": "Structured information about a refusal.",
         "properties": {
@@ -4690,6 +4759,17 @@
       "BetaThinkingConfigEnabled": {
         "additionalProperties": false,
         "properties": {
+          "block_binding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaThinkingBlockBinding"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Controls for block binding: what happens when a thinking block this request sends back fails the conversation check. `null`, absent or an empty object means every default."
+          },
           "budget_tokens": {
             "description": "Determines how many tokens Claude can use for its internal reasoning process. Larger budgets can enable more thorough analysis for complex problems, improving response quality.\n\nMust be ≥1024 and less than `max_tokens`.\n\nSee [extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) for details.",
             "minimum": 1024,
@@ -4738,6 +4818,17 @@
       "BetaThinkingConfigAdaptive": {
         "additionalProperties": false,
         "properties": {
+          "block_binding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaThinkingBlockBinding"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Controls for block binding: what happens when a thinking block this request sends back fails the conversation check. `null`, absent or an empty object means every default."
+          },
           "display": {
             "anyOf": [
               {
@@ -4901,6 +4992,25 @@
             "$ref": "#/components/schemas/BetaRequestFallbackBlock"
           }
         ]
+      },
+      "BetaSystemMessageOutputConfig": {
+        "additionalProperties": false,
+        "description": "Per-message output configuration on a role:\"system\" input message.\n\nFields here apply per-turn; ``format`` remains top-level only. An\nempty ``{}`` is accepted on a message that carries content; a message\nwith neither content nor output_config fields is rejected.",
+        "properties": {
+          "effort": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaEffortLevel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How much effort the model should put into its response. Higher effort levels may result in more thorough analysis but take longer.\n\nValid values are `low`, `medium`, `high`, `xhigh`, or `max`."
+          }
+        },
+        "title": "SystemMessageOutputConfig",
+        "type": "object"
       },
       "BetaEffortLevel": {
         "description": "All possible effort levels.",
@@ -7194,6 +7304,25 @@
           "type"
         ],
         "title": "AllThinkingTurns",
+        "type": "object"
+      },
+      "BetaThinkingBlockBinding": {
+        "additionalProperties": false,
+        "description": "Controls for block binding: what happens when a thinking block this\nrequest sends back fails the conversation check. Every field is optional;\nan empty object means every default.",
+        "properties": {
+          "prefix_mismatch_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaThinkingPrefixMismatchBehavior"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "\"error\" (default) | \"drop_block\". What happens when a thinking block in `messages` fails the conversation check (it was created in a different conversation, or the messages before it have changed since). \"error\" fails the request with a 400 error. \"drop_block\" removes the failing blocks and the request proceeds; each removal is reported in `input_transformations`."
+          }
+        },
+        "title": "ThinkingBlockBinding",
         "type": "object"
       },
       "BetaThinkingDisplayMode": {
@@ -11493,6 +11622,15 @@
         ],
         "title": "FallbackMessageIterationUsage",
         "type": "object"
+      },
+      "BetaThinkingPrefixMismatchBehavior": {
+        "description": "What happens when a thinking block in `messages` fails the conversation\ncheck: it was created in a different conversation, or the messages before\nit have changed since. `\"error\"` (the default) fails the request with a\n400 error. `\"drop_block\"` removes the failing blocks and the request\nproceeds; the model no longer sees the dropped reasoning.",
+        "enum": [
+          "error",
+          "drop_block"
+        ],
+        "title": "ThinkingPrefixMismatchBehavior",
+        "type": "string"
       },
       "BetaBase64ImageSource": {
         "additionalProperties": false,

@@ -77,7 +77,10 @@
               "structured-outputs-2025-11-13",
               "task-budgets-2026-03-13",
               "thinking-display-updates-2026-08-18",
-              "ce-user-management-2026-07-13"
+              "ce-user-management-2026-07-13",
+              "mid-conversation-output-config-2026-07-01",
+              "thinking-binding-controls-2026-08-01",
+              "mid-conversation-system-clear-at-2026-08-21"
             ],
             "type": "string",
             "x-stainless-nominal": false
@@ -801,7 +804,7 @@
         "additionalProperties": false,
         "properties": {
           "kms_arn": {
-            "description": "Full ARN of the AWS KMS key.",
+            "description": "Full ARN of the AWS KMS key. On Claude Platform on AWS the key must be a single-Region key in your organization's own AWS account; cross-account keys, multi-Region keys, and alias ARNs are rejected.",
             "examples": [
               "arn:aws:kms:us-east-1:111122223333:key/abcd1234-5678-90ab-cdef-000011112222"
             ],
@@ -832,7 +835,7 @@
               }
             ],
             "deprecated": true,
-            "description": "IAM role ARN. Deprecated — Anthropic reaches the KMS key via a managed intermediate role; this field is ignored.",
+            "description": "IAM role ARN. Deprecated — Anthropic reaches the KMS key through its own intermediate role (or, on Claude Platform on AWS, with credentials AWS issues for the Workspace); this field is ignored.",
             "examples": ["arn:aws:iam::111122223333:role/anthropic-cmek"],
             "title": "Role Arn"
           },
@@ -2556,18 +2559,6 @@
         "additionalProperties": false,
         "description": "The browser toolset: a single ``tools[]`` entry (carrying no\n``name``) that declares the browser tool family. The model is served\nthe family's tool with any members disabled via ``configs`` removed\nfrom its schema.",
         "properties": {
-          "allowed_callers": {
-            "items": {
-              "$ref": "#/components/schemas/BetaAllowedCaller",
-              "x-stainless-naming": {
-                "csharp": {
-                  "type_name": "BetaBrowserToolset20260801AllowedCaller"
-                }
-              }
-            },
-            "title": "Allowed Callers",
-            "type": "array"
-          },
           "cache_control": {
             "anyOf": [
               {
@@ -3835,6 +3826,127 @@
         "title": "CompactionIterationUsage",
         "type": "object"
       },
+      "BetaComplianceSettings": {
+        "properties": {
+          "state": {
+            "description": "Whether the Compliance API is enabled for this organization.",
+            "discriminator": {
+              "mapping": {
+                "disabled": "#/components/schemas/BetaComplianceSettingsStateDisabled",
+                "enabled": "#/components/schemas/BetaComplianceSettingsStateEnabled"
+              },
+              "propertyName": "type"
+            },
+            "examples": [
+              {
+                "type": "enabled"
+              }
+            ],
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaComplianceSettingsStateEnabled"
+              },
+              {
+                "$ref": "#/components/schemas/BetaComplianceSettingsStateDisabled"
+              }
+            ],
+            "title": "State"
+          },
+          "type": {
+            "const": "compliance_settings",
+            "default": "compliance_settings",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["state", "type"],
+        "title": "ComplianceSettings",
+        "type": "object"
+      },
+      "BetaComplianceSettingsStateDisabled": {
+        "properties": {
+          "type": {
+            "const": "disabled",
+            "default": "disabled",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["type"],
+        "title": "ComplianceSettingsStateDisabled",
+        "type": "object"
+      },
+      "BetaComplianceSettingsStateDisabledParams": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "disabled",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["type"],
+        "title": "ComplianceSettingsStateDisabledParams",
+        "type": "object"
+      },
+      "BetaComplianceSettingsStateEnabled": {
+        "properties": {
+          "type": {
+            "const": "enabled",
+            "default": "enabled",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["type"],
+        "title": "ComplianceSettingsStateEnabled",
+        "type": "object"
+      },
+      "BetaComplianceSettingsStateEnabledParams": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "enabled",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["type"],
+        "title": "ComplianceSettingsStateEnabledParams",
+        "type": "object"
+      },
+      "BetaComplianceSettingsUpdateParams": {
+        "additionalProperties": false,
+        "properties": {
+          "state": {
+            "description": "Desired state. Accepts the string shorthand \"enabled\" or \"disabled\" in place of the object form; the response always returns the canonical object form.",
+            "discriminator": {
+              "mapping": {
+                "disabled": "#/components/schemas/BetaComplianceSettingsStateDisabledParams",
+                "enabled": "#/components/schemas/BetaComplianceSettingsStateEnabledParams"
+              },
+              "propertyName": "type"
+            },
+            "examples": [
+              {
+                "type": "enabled"
+              }
+            ],
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaComplianceSettingsStateEnabledParams"
+              },
+              {
+                "$ref": "#/components/schemas/BetaComplianceSettingsStateDisabledParams"
+              }
+            ],
+            "title": "State"
+          }
+        },
+        "required": ["state"],
+        "title": "ComplianceSettingsUpdateParams",
+        "type": "object"
+      },
       "BetaComputerCursorPositionConfig": {
         "additionalProperties": false,
         "description": "``cursor_position``'s config overrides.",
@@ -4433,18 +4545,6 @@
         "additionalProperties": false,
         "description": "The computer toolset: a single ``tools[]`` entry (carrying no\n``name``) that declares the computer tool family. The model is\nserved the family's tool with any members disabled via ``configs``\nremoved from its schema. Every member is enabled by default, zoom\nincluded. The single-tool options ``display_number`` and\n``enable_zoom`` are not fields of a toolset entry — it carries only\n``type``, ``configs``, and ``cache_control``; zoom is controlled\nvia ``configs.zoom.enabled``.",
         "properties": {
-          "allowed_callers": {
-            "items": {
-              "$ref": "#/components/schemas/BetaAllowedCaller",
-              "x-stainless-naming": {
-                "csharp": {
-                  "type_name": "BetaComputerToolset20260801AllowedCaller"
-                }
-              }
-            },
-            "title": "Allowed Callers",
-            "type": "array"
-          },
           "cache_control": {
             "anyOf": [
               {
@@ -6490,6 +6590,7 @@
         "additionalProperties": false,
         "example": {
           "external_id": "user_12345",
+          "external_user_onboarded_at": "2024-11-02T08:15:00Z",
           "metadata": {}
         },
         "properties": {
@@ -6516,6 +6617,16 @@
             "description": "Platform's own identifier for this user. Not enforced unique. Maximum 255 characters.",
             "examples": ["user_12345"]
           },
+          "external_user_onboarded_at": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BetaTimestamp"
+              }
+            ],
+            "description": "When the entity this profile represents opened its account with the platform, in RFC 3339 format: for an `application` profile, when the end-user signed up; for a `passthrough` profile, when the company became the platform's customer. Must be a complete timestamp no more than 1 minute in the future. Optional.",
+            "examples": ["2024-11-02T08:15:00Z"],
+            "x-anthropic-beta-required": ["user-profiles-2026-08-18"]
+          },
           "metadata": {
             "additionalProperties": {
               "type": "string"
@@ -6535,16 +6646,7 @@
                 "type": "null"
               }
             ],
-            "description": "Optional for all profiles. Real-world name of the entity this profile represents (company or individual); for a resold-to company (`relationship` `resold` / `access_type` `passthrough`), that company's name where known. Maximum 255 characters."
-          },
-          "relationship": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/BetaUserProfileRelationship"
-              }
-            ],
-            "description": "How the entity relates to the platform. `external` (default): an individual end-user. `resold`: a company the platform resells Claude access to. `internal`: the platform's own usage.",
-            "x-anthropic-beta-required": ["user-profiles-2026-03-24"]
+            "description": "Optional for all profiles. Real-world name of the entity this profile represents (company or individual); for a company the platform resells Claude access to (`access_type` `passthrough`), that company's name where known. Maximum 255 characters."
           }
         },
         "type": "object"
@@ -7258,21 +7360,59 @@
         ],
         "type": "object"
       },
+      "BetaDreamingError": {
+        "discriminator": {
+          "mapping": {
+            "api_error": "#/components/schemas/BetaAPIError",
+            "authentication_error": "#/components/schemas/BetaAuthenticationError",
+            "billing_error": "#/components/schemas/BetaBillingError",
+            "conflict_error": "#/components/schemas/BetaTargetStoreHeldError",
+            "invalid_request_error": "#/components/schemas/BetaInvalidRequestError",
+            "not_found_error": "#/components/schemas/BetaNotFoundError",
+            "overloaded_error": "#/components/schemas/BetaOverloadedError",
+            "permission_error": "#/components/schemas/BetaPermissionError",
+            "rate_limit_error": "#/components/schemas/BetaRateLimitError",
+            "timeout_error": "#/components/schemas/BetaGatewayTimeoutError"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaInvalidRequestError"
+          },
+          {
+            "$ref": "#/components/schemas/BetaAuthenticationError"
+          },
+          {
+            "$ref": "#/components/schemas/BetaBillingError"
+          },
+          {
+            "$ref": "#/components/schemas/BetaPermissionError"
+          },
+          {
+            "$ref": "#/components/schemas/BetaNotFoundError"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRateLimitError"
+          },
+          {
+            "$ref": "#/components/schemas/BetaGatewayTimeoutError"
+          },
+          {
+            "$ref": "#/components/schemas/BetaAPIError"
+          },
+          {
+            "$ref": "#/components/schemas/BetaOverloadedError"
+          },
+          {
+            "$ref": "#/components/schemas/BetaTargetStoreHeldError"
+          }
+        ]
+      },
       "BetaDreamingErrorResponse": {
         "properties": {
           "error": {
-            "discriminator": {
-              "mapping": {
-                "conflict_error": "#/components/schemas/BetaTargetStoreHeldError"
-              },
-              "propertyName": "type"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/BetaTargetStoreHeldError"
-              }
-            ],
-            "type": "object"
+            "$ref": "#/components/schemas/BetaDreamingError"
           },
           "type": {
             "const": "error",
@@ -9630,6 +9770,19 @@
           "propertyName": "role"
         },
         "properties": {
+          "clear_at": {
+            "anyOf": [
+              {
+                "enum": ["next_user_message", "never"],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How long this system message's text stays in front of the model. `\"never\"` (the default) renders it on every request that includes it. `\"next_user_message\"` renders it only for the user turn it follows: once a later `role: \"user\"` message exists in `messages` the message stays in the array (send it unchanged) but is no longer shown to the model. Only permitted on `role: \"system\"` messages.",
+            "title": "Clear At"
+          },
           "content": {
             "anyOf": [
               {
@@ -9650,6 +9803,16 @@
               }
             ],
             "title": "Content"
+          },
+          "output_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaSystemMessageOutputConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "role": {
             "enum": ["user", "assistant", "system"],
@@ -10602,12 +10765,13 @@
         "example": {
           "data": [
             {
+              "access_type": "application",
               "created_at": "2026-03-15T10:00:00Z",
               "external_id": "user_12345",
+              "external_user_onboarded_at": "2024-11-02T08:15:00Z",
               "id": "uprof_011CZkZCu8hGbp5mYRQgUmz9",
               "metadata": {},
               "name": "Example User",
-              "relationship": "external",
               "trust_grants": {
                 "cyber": {
                   "status": "active"
@@ -10625,12 +10789,13 @@
             "examples": [
               [
                 {
+                  "access_type": "application",
                   "created_at": "2026-03-15T10:00:00Z",
                   "external_id": "user_12345",
+                  "external_user_onboarded_at": "2024-11-02T08:15:00Z",
                   "id": "uprof_011CZkZCu8hGbp5mYRQgUmz9",
                   "metadata": {},
                   "name": "Example User",
-                  "relationship": "external",
                   "trust_grants": {
                     "cyber": {
                       "status": "active"
@@ -12746,7 +12911,7 @@
             "description": "UTF-8 text content for the new memory. Maximum 100 kB (102,400 bytes). Required; pass `\"\"` explicitly to create an empty memory."
           },
           "path": {
-            "description": "Hierarchical path for the new memory, e.g. `/projects/foo/notes.md`. Must start with `/`, contain at least one non-empty segment, and be at most 1,024 bytes. Must not contain empty segments, `.` or `..` segments, control or format characters, and must be NFC-normalized. Paths are case-sensitive.",
+            "description": "Hierarchical path for the new memory, e.g. `/projects/foo/notes.md`. Must start with `/`, contain at least one non-empty segment, and be at most 1,024 bytes. Must not contain empty segments, `.` or `..` segments, control or format characters, or the Unicode line and paragraph separators (U+2028, U+2029), and must be NFC-normalized. Paths are case-sensitive.",
             "maxLength": 1024,
             "minLength": 2,
             "type": "string"
@@ -13820,7 +13985,7 @@
                 "type": "null"
               }
             ],
-            "description": "Why the deployment is paused. Non-null exactly when status is paused; null otherwise.",
+            "description": "Why the deployment is `paused`. Non-null exactly when `status` is `paused`; null otherwise.",
             "examples": [null]
           },
           "resources": {
@@ -14071,7 +14236,7 @@
                 "type": "null"
               }
             ],
-            "description": "Populated on creation failure. Null on success. Exactly one of session_id or error is non-null."
+            "description": "Populated on creation failure. Null on success. Exactly one of `session_id` or `error` is non-null."
           },
           "id": {
             "description": "Unique identifier for this run (`drun_...`).",
@@ -14086,7 +14251,7 @@
                 "type": "null"
               }
             ],
-            "description": "Populated on success. Null on creation failure. Exactly one of session_id or error is non-null."
+            "description": "Populated on success. Null on creation failure. Exactly one of `session_id` or `error` is non-null."
           },
           "trigger_context": {
             "allOf": [
@@ -15701,7 +15866,7 @@
       },
       "BetaManagedAgentsListDeploymentRunsData": {
         "additionalProperties": false,
-        "description": "Paginated list of deployment runs. Sorted by created_at descending (most recent first).",
+        "description": "Paginated list of deployment runs. Sorted by `created_at` descending (most recent first).",
         "properties": {
           "data": {
             "description": "List of deployment runs.",
@@ -17283,7 +17448,7 @@
                 "type": "null"
               }
             ],
-            "description": "Access mode for the mounted store. Defaults to read_write. read_only mounts the store as a read-only filesystem."
+            "description": "Access mode for the mounted store. Defaults to `read_write`. `read_only` mounts the store as a read-only filesystem."
           },
           "description": {
             "description": "Description of the memory store, snapshotted at attach time. Rendered into the agent's system prompt. Empty string when the store has no description.",
@@ -17364,7 +17529,7 @@
                 "type": "null"
               }
             ],
-            "description": "Access mode for the mounted store. Defaults to read_write. read_only mounts the store as a read-only filesystem."
+            "description": "Access mode for the mounted store. Defaults to `read_write`. `read_only` mounts the store as a read-only filesystem."
           },
           "instructions": {
             "anyOf": [
@@ -17569,6 +17734,11 @@
         "anyOf": [
           {
             "type": "string"
+          },
+          {
+            "const": "claude-fable-5-1",
+            "description": "Frontier intelligence for ambitious tasks across coding, scientific discovery, and enterprise workflows",
+            "x-stainless-nominal": false
           },
           {
             "const": "claude-sonnet-5",
@@ -18000,7 +18170,7 @@
       },
       "BetaManagedAgentsOutcomeEvaluationResource": {
         "additionalProperties": false,
-        "description": "Evaluation state for a single outcome defined via a define_outcome event.",
+        "description": "Evaluation state for a single outcome defined via a `define_outcome` event.",
         "example": {
           "completed_at": "2026-03-15T10:02:31Z",
           "description": "Produce a 2-page summary as summary.md",
@@ -18020,7 +18190,7 @@
                 "type": "null"
               }
             ],
-            "description": "When the outcome reached a terminal result. Null while pending/running/evaluating.",
+            "description": "When the outcome reached a terminal result. Null while `pending`/`running`/`evaluating`.",
             "examples": ["2026-03-15T10:02:31Z"]
           },
           "description": {
@@ -18037,7 +18207,7 @@
                 "type": "null"
               }
             ],
-            "description": "Grader's verdict text from the most recent evaluation. For satisfied, explains why criteria are met; for needs_revision (intermediate), what's missing; for failed, why unrecoverable.",
+            "description": "Grader's verdict text from the most recent evaluation. For `satisfied`, explains why criteria are met; for `needs_revision` (intermediate), what's missing; for `failed`, why unrecoverable.",
             "examples": ["All five sections present with inline citations."]
           },
           "iteration": {
@@ -18482,7 +18652,7 @@
                 "$ref": "#/components/schemas/BetaTimestamp"
               }
             ],
-            "description": "The UTC instant at which the cron expression matched in the configured timezone, before jitter is applied. At most one run is recorded per (deployment_id, scheduled_at) pair."
+            "description": "The UTC instant at which the cron expression matched in the configured timezone, before jitter is applied. At most one run is recorded per (`deployment_id`, `scheduled_at`) pair."
           },
           "type": {
             "enum": ["schedule"],
@@ -18894,7 +19064,7 @@
             "type": "object"
           },
           "outcome_evaluations": {
-            "description": "Per-outcome evaluation state. One entry per define_outcome event sent to the session.",
+            "description": "Per-outcome evaluation state. One entry per `define_outcome` event sent to the session.",
             "examples": [
               [
                 {
@@ -19751,7 +19921,7 @@
         "description": "Timing statistics for a session.",
         "properties": {
           "active_seconds": {
-            "description": "Cumulative time in seconds the session spent in running status. Excludes idle time.",
+            "description": "Cumulative time in seconds the session spent in `running` status. Excludes idle time.",
             "format": "double",
             "type": "number"
           },
@@ -22377,7 +22547,7 @@
                 "type": "null"
               }
             ],
-            "description": "New path for the memory (a rename). Must start with `/`, contain at least one non-empty segment, and be at most 1,024 bytes. Must not contain empty segments, `.` or `..` segments, control or format characters, and must be NFC-normalized. Paths are case-sensitive. The memory's `id` is preserved across renames. Omit to leave the path unchanged."
+            "description": "New path for the memory (a rename). Must start with `/`, contain at least one non-empty segment, and be at most 1,024 bytes. Must not contain empty segments, `.` or `..` segments, control or format characters, or the Unicode line and paragraph separators (U+2028, U+2029), and must be NFC-normalized. Paths are case-sensitive. The memory's `id` is preserved across renames. Omit to leave the path unchanged."
           },
           "precondition": {
             "allOf": [
@@ -24099,6 +24269,21 @@
             "title": "Id",
             "type": "string"
           },
+          "input_transformations": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BetaThinkingDroppedInputTransformation"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Changes the API made to the request's input before showing it to the model:\none entry per change, in request order. Today the only entry type is\n`thinking_dropped` — a `thinking`, `redacted_thinking` or `connector_text`\nblock from the request's `messages` that was removed from the prompt instead\nof being shown to the model because it failed a binding check. More entry\ntypes may be added over time; ignore types you do not recognize.\n\nRequires `anthropic-beta: thinking-binding-controls-2026-08-01`. Present on\nevery such response from a model that supports extended thinking, as `[]`\nwhen nothing was changed; without the beta, blocks are removed all the same\nbut nothing is reported. Removed blocks contribute nothing to\n`usage.input_tokens`. When streaming, the array is final in `message_start`;\nthe final `message_delta` event carries it only when a server-side model\nfallback happened mid-stream, in which case it holds the serving model's\nentries and replaces the one in `message_start`.",
+            "title": "Input Transformations"
+          },
           "model": {
             "$ref": "#/components/schemas/Model"
           },
@@ -24439,6 +24624,21 @@
           },
           "delta": {
             "$ref": "#/components/schemas/BetaMessageDelta"
+          },
+          "input_transformations": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BetaThinkingDroppedInputTransformation"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Changes the API made to the request's input before showing it to the model:\none entry per change, in request order. Today the only entry type is\n`thinking_dropped` — a `thinking`, `redacted_thinking` or `connector_text`\nblock from the request's `messages` that was removed from the prompt instead\nof being shown to the model because it failed a binding check. More entry\ntypes may be added over time; ignore types you do not recognize.\n\nRequires `anthropic-beta: thinking-binding-controls-2026-08-01`. Present on\nevery such response from a model that supports extended thinking, as `[]`\nwhen nothing was changed; without the beta, blocks are removed all the same\nbut nothing is reported. Removed blocks contribute nothing to\n`usage.input_tokens`. When streaming, the array is final in `message_start`;\nthe final `message_delta` event carries it only when a server-side model\nfallback happened mid-stream, in which case it holds the serving model's\nentries and replaces the one in `message_start`.",
+            "title": "Input Transformations"
           },
           "type": {
             "const": "message_delta",
@@ -31557,6 +31757,25 @@
         "title": "SucceededResult",
         "type": "object"
       },
+      "BetaSystemMessageOutputConfig": {
+        "additionalProperties": false,
+        "description": "Per-message output configuration on a role:\"system\" input message.\n\nFields here apply per-turn; ``format`` remains top-level only. An\nempty ``{}`` is accepted on a message that carries content; a message\nwith neither content nor output_config fields is rejected.",
+        "properties": {
+          "effort": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaEffortLevel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How much effort the model should put into its response. Higher effort levels may result in more thorough analysis but take longer.\n\nValid values are `low`, `medium`, `high`, `xhigh`, or `max`."
+          }
+        },
+        "title": "SystemMessageOutputConfig",
+        "type": "object"
+      },
       "BetaTargetStoreHeldError": {
         "additionalProperties": false,
         "description": "The `output_behavior.memory_store_id` target is still held by a prior `{type: \"update_existing\"}` dream — one that is `pending` or `running`, or was canceled with its final writes still landing. Rarely the named dream has just finished (`completed`/`failed`) and its execution is still closing; an immediate retry then almost always succeeds. The message names the holding dream when the server can identify it (rarely omitted); poll it to a terminal state or cancel it, then retry. Carried with `x-should-retry: false`.",
@@ -31886,6 +32105,25 @@
         "title": "TextEditor_20250728",
         "type": "object"
       },
+      "BetaThinkingBlockBinding": {
+        "additionalProperties": false,
+        "description": "Controls for block binding: what happens when a thinking block this\nrequest sends back fails the conversation check. Every field is optional;\nan empty object means every default.",
+        "properties": {
+          "prefix_mismatch_behavior": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaThinkingPrefixMismatchBehavior"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "\"error\" (default) | \"drop_block\". What happens when a thinking block in `messages` fails the conversation check (it was created in a different conversation, or the messages before it have changed since). \"error\" fails the request with a 400 error. \"drop_block\" removes the failing blocks and the request proceeds; each removal is reported in `input_transformations`."
+          }
+        },
+        "title": "ThinkingBlockBinding",
+        "type": "object"
+      },
       "BetaThinkingCapability": {
         "description": "Thinking capability details.",
         "properties": {
@@ -31905,6 +32143,17 @@
       "BetaThinkingConfigAdaptive": {
         "additionalProperties": false,
         "properties": {
+          "block_binding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaThinkingBlockBinding"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Controls for block binding: what happens when a thinking block this request sends back fails the conversation check. `null`, absent or an empty object means every default."
+          },
           "display": {
             "anyOf": [
               {
@@ -31943,6 +32192,17 @@
       "BetaThinkingConfigEnabled": {
         "additionalProperties": false,
         "properties": {
+          "block_binding": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaThinkingBlockBinding"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Controls for block binding: what happens when a thinking block this request sends back fails the conversation check. `null`, absent or an empty object means every default."
+          },
           "budget_tokens": {
             "description": "Determines how many tokens Claude can use for its internal reasoning process. Larger budgets can enable more thorough analysis for complex problems, improving response quality.\n\nMust be ≥1024 and less than `max_tokens`.\n\nSee [extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) for details.",
             "minimum": 1024,
@@ -32037,6 +32297,42 @@
         "x-anthropic-beta-required-values": {
           "updates": ["thinking-display-updates-2026-08-18"]
         }
+      },
+      "BetaThinkingDroppedInputTransformation": {
+        "properties": {
+          "path": {
+            "description": "Where the removed block was in your request, as `messages.{i}.content.{j}`:\n`i` indexes the `messages` array you sent and `j` that message's `content`\narray — the same form error messages use.",
+            "title": "Path",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Which binding check removed the block: `model_binding_mismatch` — it was\ncreated by a model whose reasoning the requested model may not read;\n`prefix_binding_mismatch` — the conversation before it differs from the\nconversation it was created in (the rest of that turn's consecutive thinking\nblocks are removed with it, each with this reason);\n`organization_binding_mismatch` — it was created under a different\norganization (an Anthropic organization, AWS account or Google Cloud project)\nand this organization is not one of its additional organizations;\n`end_user_binding_mismatch` — it was created for a different end user, or\nwas removed by the consumer-organization binding. A block that would fail\nseveral checks reports one reason, in this order of precedence:\n`organization_binding_mismatch`, `end_user_binding_mismatch`,\n`model_binding_mismatch`, `prefix_binding_mismatch`.",
+            "enum": [
+              "model_binding_mismatch",
+              "prefix_binding_mismatch",
+              "organization_binding_mismatch",
+              "end_user_binding_mismatch"
+            ],
+            "title": "Reason",
+            "type": "string"
+          },
+          "type": {
+            "const": "thinking_dropped",
+            "default": "thinking_dropped",
+            "description": "Always `thinking_dropped` for this entry type.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["path", "reason", "type"],
+        "title": "ThinkingDroppedInputTransformation",
+        "type": "object"
+      },
+      "BetaThinkingPrefixMismatchBehavior": {
+        "description": "What happens when a thinking block in `messages` fails the conversation\ncheck: it was created in a different conversation, or the messages before\nit have changed since. `\"error\"` (the default) fails the request with a\n400 error. `\"drop_block\"` removes the failing blocks and the request\nproceeds; the model no longer sees the dropped reasoning.",
+        "enum": ["error", "drop_block"],
+        "title": "ThinkingPrefixMismatchBehavior",
+        "type": "string"
       },
       "BetaThinkingTurns": {
         "additionalProperties": false,
@@ -32890,6 +33186,15 @@
             "description": "If present, replaces the stored external_id. Omit to leave unchanged. Maximum 255 characters.",
             "examples": ["user_12345"]
           },
+          "external_user_onboarded_at": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BetaTimestamp"
+              }
+            ],
+            "description": "If present, replaces the stored account creation time. Omit to leave unchanged; once set, the value cannot be cleared and `null` is rejected. Must be a complete RFC 3339 timestamp no more than 1 minute in the future.",
+            "x-anthropic-beta-required": ["user-profiles-2026-08-18"]
+          },
           "metadata": {
             "additionalProperties": {
               "type": "string"
@@ -32909,18 +33214,6 @@
               }
             ],
             "description": "If present, replaces the stored name. Omit to leave unchanged. Maximum 255 characters."
-          },
-          "relationship": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BetaUserProfileRelationship"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "If present, replaces the stored relationship. Omit to leave unchanged.",
-            "x-anthropic-beta-required": ["user-profiles-2026-03-24"]
           }
         },
         "type": "object"
@@ -33232,12 +33525,13 @@
       "BetaUserProfile": {
         "additionalProperties": false,
         "example": {
+          "access_type": "application",
           "created_at": "2026-03-15T10:00:00Z",
           "external_id": "user_12345",
+          "external_user_onboarded_at": "2024-11-02T08:15:00Z",
           "id": "uprof_011CZkZCu8hGbp5mYRQgUmz9",
           "metadata": {},
           "name": "Example User",
-          "relationship": "external",
           "trust_grants": {
             "cyber": {
               "status": "active"
@@ -33254,6 +33548,7 @@
               }
             ],
             "description": "How the platform uses the API for this entity: `application` (default) or `passthrough`. Present under the `user-profiles-2026-08-18` beta header.",
+            "examples": ["application"],
             "x-anthropic-beta-required": ["user-profiles-2026-08-18"]
           },
           "created_at": {
@@ -33277,6 +33572,19 @@
             "description": "Platform's own identifier for this user. Not enforced unique.",
             "examples": ["user_12345"]
           },
+          "external_user_onboarded_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaTimestamp"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When the entity this profile represents opened its account with the platform, as stated by the platform, in RFC 3339 format (UTC). `null` until the platform supplies one. Present under the `user-profiles-2026-08-18` beta header.",
+            "examples": ["2024-11-02T08:15:00Z"],
+            "x-anthropic-beta-required": ["user-profiles-2026-08-18"]
+          },
           "id": {
             "description": "Unique identifier for this user profile, prefixed `uprof_`.",
             "examples": ["uprof_011CZkZCu8hGbp5mYRQgUmz9"],
@@ -33299,18 +33607,8 @@
                 "type": "null"
               }
             ],
-            "description": "Real-world name of the entity this profile represents (company or individual). For a resold-to company (`access_type` `passthrough`, or `relationship` `resold` under the `user-profiles-2026-03-24` header) this is that company's name.",
+            "description": "Real-world name of the entity this profile represents (company or individual). For a company the platform resells Claude access to (`access_type` `passthrough`) this is that company's name.",
             "examples": ["Example User"]
-          },
-          "relationship": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/BetaUserProfileRelationship"
-              }
-            ],
-            "description": "How the entity relates to the platform. `external` (default), `resold`, or `internal`. Present under the `user-profiles-2026-03-24` beta header.",
-            "examples": ["external"],
-            "x-anthropic-beta-required": ["user-profiles-2026-03-24"]
           },
           "trust_grants": {
             "additionalProperties": {
@@ -33362,9 +33660,9 @@
         "enum": ["asc", "desc"],
         "type": "string"
       },
-      "BetaUserProfileRelationship": {
-        "description": "How the entity behind a user profile relates to the platform that owns the API key. `external`: an individual end-user of the platform. `resold`: a company the platform resells Claude access to. `internal`: the platform's own usage.",
-        "enum": ["external", "resold", "internal"],
+      "BetaUserProfileListOrderBy": {
+        "description": "Sort field for listing user profiles: `created_at` (default) or `name` (case-insensitive; profiles without a name sort last).",
+        "enum": ["created_at", "name"],
         "type": "string"
       },
       "BetaUserProfileTrustGrant": {
@@ -35578,7 +35876,7 @@
             "title": "Archived At"
           },
           "compartment_id": {
-            "description": "Identifier for this Workspace's encryption compartment. When you configure a\ncustomer-managed encryption key (CMEK) on AWS, reference this value in your\nKMS key-policy condition so the key is scoped to this compartment. On GCP and\nAzure, Anthropic enforces the compartment binding automatically; you do not\nneed to reference this value in your key configuration. See the CMEK integration guide for the\nrequired key configuration, including the value used during key validation.",
+            "description": "Identifier for this Workspace's encryption compartment. When you configure a\ncustomer-managed encryption key (CMEK) on AWS, reference this value in your\nKMS key-policy condition so the key is scoped to this compartment. On GCP and\nAzure, Anthropic enforces the compartment binding automatically; you do not\nneed to reference this value in your key configuration. See the CMEK\nintegration guide for the required key configuration; unless your organization\nis on Claude Platform on AWS, it includes a separate value used during key\nvalidation. On Claude Platform on AWS there is no separate validation value:\nthe key is validated against this Workspace's own value when it is attached, so\nif your key policy uses the compartment condition, add this value to it before\nattaching the key.",
             "examples": ["f8a7b6c5-4d3e-4f1a-8b9c-0d1e2f3a4b5c"],
             "title": "Compartment Id",
             "type": "string"
@@ -35609,7 +35907,7 @@
                 "type": "null"
               }
             ],
-            "description": "ID of the customer-managed encryption key (CMEK) configuration to use for this\nWorkspace. Setting this field requires CMEK to be enabled for your\norganization. When set, data stored for this Workspace is encrypted with the\nreferenced key. Create key configurations with the External Keys API. This\nfield is write-once: once a key is attached to a Workspace it cannot be\ndetached or replaced. To rotate key material, rotate the underlying key on\nyour cloud KMS; the `external_key_id` stays the same.",
+            "description": "ID of the customer-managed encryption key (CMEK) configuration to use for this\nWorkspace. Setting this field requires CMEK to be enabled for your\norganization. When set, data stored for this Workspace is encrypted with the\nreferenced key. Create key configurations with the External Keys API. On\nClaude Platform on AWS the value is the AWS KMS key ARN, and the key must be a\nsingle-Region key in the same AWS account and Region as the Workspace. On that\nplatform the key is validated against this Workspace when it is attached, so a\nkey-policy problem is reported as an error on this request. This field is write-once:\nonce a key is attached to a Workspace it cannot be detached or replaced. To\nrotate key material, rotate the underlying key on your cloud KMS; the\n`external_key_id` stays the same.",
             "examples": ["ekey_01SDCCSbTxrXDpWc1phhtcfK"],
             "title": "External Key Id"
           },
@@ -35700,7 +35998,7 @@
                 "type": "null"
               }
             ],
-            "description": "ID of the customer-managed encryption key (CMEK) configuration to use for this\nWorkspace. Setting this field requires CMEK to be enabled for your\norganization. When set, data stored for this Workspace is encrypted with the\nreferenced key. Create key configurations with the External Keys API. This\nfield is write-once: once a key is attached to a Workspace it cannot be\ndetached or replaced. To rotate key material, rotate the underlying key on\nyour cloud KMS; the `external_key_id` stays the same.",
+            "description": "ID of the customer-managed encryption key (CMEK) configuration to use for this\nWorkspace. Setting this field requires CMEK to be enabled for your\norganization. When set, data stored for this Workspace is encrypted with the\nreferenced key. Create key configurations with the External Keys API. On\nClaude Platform on AWS the value is the AWS KMS key ARN, and the key must be a\nsingle-Region key in the same AWS account and Region as the Workspace. On that\nplatform the key is validated against this Workspace when it is attached, so a\nkey-policy problem is reported as an error on this request. This field is write-once:\nonce a key is attached to a Workspace it cannot be detached or replaced. To\nrotate key material, rotate the underlying key on your cloud KMS; the\n`external_key_id` stays the same.",
             "examples": ["ekey_01SDCCSbTxrXDpWc1phhtcfK"],
             "title": "External Key Id"
           },
@@ -35937,7 +36235,7 @@
             "type": "string"
           },
           "external_key_id": {
-            "description": "ID of the customer-managed encryption key (CMEK) configuration to use for this\nWorkspace. Setting this field requires CMEK to be enabled for your\norganization. When set, data stored for this Workspace is encrypted with the\nreferenced key. Create key configurations with the External Keys API. This\nfield is write-once: once a key is attached to a Workspace it cannot be\ndetached or replaced. To rotate key material, rotate the underlying key on\nyour cloud KMS; the `external_key_id` stays the same.",
+            "description": "ID of the customer-managed encryption key (CMEK) configuration to use for this\nWorkspace. Setting this field requires CMEK to be enabled for your\norganization. When set, data stored for this Workspace is encrypted with the\nreferenced key. Create key configurations with the External Keys API. On\nClaude Platform on AWS the value is the AWS KMS key ARN, and the key must be a\nsingle-Region key in the same AWS account and Region as the Workspace. On that\nplatform the key is validated against this Workspace when it is attached, so a\nkey-policy problem is reported as an error on this request. This field is write-once:\nonce a key is attached to a Workspace it cannot be detached or replaced. To\nrotate key material, rotate the underlying key on your cloud KMS; the\n`external_key_id` stays the same.",
             "examples": ["ekey_01SDCCSbTxrXDpWc1phhtcfK"],
             "title": "External Key Id",
             "type": "string"
@@ -37415,18 +37713,6 @@
         "additionalProperties": false,
         "description": "The browser toolset: a single ``tools[]`` entry (carrying no\n``name``) that declares the browser tool family. The model is served\nthe family's tool with any members disabled via ``configs`` removed\nfrom its schema.",
         "properties": {
-          "allowed_callers": {
-            "items": {
-              "$ref": "#/components/schemas/AllowedCaller",
-              "x-stainless-naming": {
-                "csharp": {
-                  "type_name": "BrowserToolset20260801AllowedCaller"
-                }
-              }
-            },
-            "title": "Allowed Callers",
-            "type": "array"
-          },
           "cache_control": {
             "anyOf": [
               {
@@ -38683,18 +38969,6 @@
         "additionalProperties": false,
         "description": "The computer toolset: a single ``tools[]`` entry (carrying no\n``name``) that declares the computer tool family. The model is\nserved the family's tool with any members disabled via ``configs``\nremoved from its schema. Every member is enabled by default, zoom\nincluded. The single-tool options ``display_number`` and\n``enable_zoom`` are not fields of a toolset entry — it carries only\n``type``, ``configs``, and ``cache_control``; zoom is controlled\nvia ``configs.zoom.enabled``.",
         "properties": {
-          "allowed_callers": {
-            "items": {
-              "$ref": "#/components/schemas/AllowedCaller",
-              "x-stainless-naming": {
-                "csharp": {
-                  "type_name": "ComputerToolset20260801AllowedCaller"
-                }
-              }
-            },
-            "title": "Allowed Callers",
-            "type": "array"
-          },
           "cache_control": {
             "anyOf": [
               {
@@ -41466,6 +41740,16 @@
         "anyOf": [
           {
             "type": "string"
+          },
+          {
+            "const": "claude-fable-5-1",
+            "description": "Frontier intelligence for ambitious tasks across coding, scientific discovery, and enterprise workflows",
+            "x-stainless-nominal": false
+          },
+          {
+            "const": "claude-mythos-5-1",
+            "description": "Our most capable model for cybersecurity and biology research, available through trusted access programs",
+            "x-stainless-nominal": false
           },
           {
             "const": "claude-sonnet-5",
@@ -49069,7 +49353,7 @@
             }
           },
           {
-            "description": "Opaque pagination cursor. Pass next_page from the previous response. Invalid or expired cursors return 400.",
+            "description": "Opaque pagination cursor. Pass `next_page` from the previous response. Invalid or expired cursors return 400.",
             "in": "query",
             "name": "page",
             "required": false,
@@ -49081,7 +49365,7 @@
             }
           },
           {
-            "description": "Filter to a specific deployment. Omit to list across all deployments in the workspace. Filtering by a non-existent deployment_id returns 200 with empty data.",
+            "description": "Filter to a specific deployment. Omit to list across all deployments in the workspace. Filtering by a non-existent `deployment_id` returns 200 with empty data.",
             "in": "query",
             "name": "deployment_id",
             "required": false,
@@ -49099,7 +49383,7 @@
             }
           },
           {
-            "description": "Filter: true for runs with non-null error, false for runs with non-null session_id. Omit for all.",
+            "description": "Filter: true for runs with non-null `error`, false for runs with non-null `session_id`. Omit for all.",
             "in": "query",
             "name": "has_error",
             "required": false,
@@ -50653,7 +50937,7 @@
             }
           },
           {
-            "description": "Filter by status: active or paused. Omit for both. To include archived deployments, use include_archived instead; the two cannot be combined.",
+            "description": "Filter by status: `active` or `paused`. Omit for both. To include archived deployments, use `include_archived` instead; the two cannot be combined.",
             "in": "query",
             "name": "status",
             "required": false,
@@ -59684,6 +59968,109 @@
         "summary": "List API Keys"
       }
     },
+    "/v1/organizations/compliance_settings?beta=true": {
+      "get": {
+        "description": "Retrieve your organization's Compliance Settings.\n\nCompliance Settings is a singleton resource: there is exactly one per\norganization, addressed without an identifier. The `state` field reflects\nwhether the Compliance API is enabled. An organization with a parent\norganization reads the state inherited from the parent's configuration.",
+        "operationId": "beta_get_compliance_settings_v1_organizations_compliance_settings_get",
+        "parameters": [
+          {
+            "description": "Your unique Admin API key for authentication. \n\nThis key is required in the header of all Admin API requests, to authenticate your account and access Anthropic's services. Get your Admin API key through the [Console](https://console.anthropic.com/settings/admin-keys).",
+            "in": "header",
+            "name": "x-api-key",
+            "required": false,
+            "schema": {
+              "description": "Your unique Admin API key for authentication. \n\nThis key is required in the header of all Admin API requests, to authenticate your account and access Anthropic's services. Get your Admin API key through the [Console](https://console.anthropic.com/settings/admin-keys).",
+              "title": "X-Api-Key",
+              "type": "string"
+            }
+          },
+          {
+            "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+            "in": "header",
+            "name": "anthropic-version",
+            "required": false,
+            "schema": {
+              "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+              "title": "Anthropic-Version",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BetaComplianceSettings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BetaErrorResponse"
+                }
+              }
+            },
+            "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
+          }
+        },
+        "summary": "Get Compliance Settings"
+      },
+      "post": {
+        "description": "Update your organization's Compliance Settings.\n\nSetting `state` to `enabled` turns on the Compliance API and begins\ncapturing organization activity events. Setting it to `disabled` turns\nboth off. `state` reflects whether the Compliance API is enabled.\n\nA request that sets `state` to its current value succeeds and leaves the\nresource unchanged. A `disabled` request stays in effect until a later\n`enabled` request or the organization's next provisioning action that\nenables Access Transparency: enabling Access Transparency also enables\nthe Compliance API, which serves its activity events, so such\nprovisioning (including re-runs) re-enables the Compliance API even\nafter a `disabled` request. Automated provisioning never disables\ncompliance settings.",
+        "operationId": "beta_update_compliance_settings_v1_organizations_compliance_settings_post",
+        "parameters": [
+          {
+            "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+            "in": "header",
+            "name": "anthropic-version",
+            "required": false,
+            "schema": {
+              "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+              "title": "Anthropic-Version",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BetaComplianceSettingsUpdateParams"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BetaComplianceSettings"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BetaErrorResponse"
+                }
+              }
+            },
+            "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
+          }
+        },
+        "summary": "Update Compliance Settings"
+      }
+    },
     "/v1/organizations/cost_report?beta=true": {
       "get": {
         "operationId": "beta_get_cost_report_v1_organizations_cost_report_get",
@@ -62691,12 +63078,12 @@
             }
           },
           {
-            "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+            "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
             "in": "header",
             "name": "anthropic-beta",
-            "required": false,
+            "required": true,
             "schema": {
-              "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+              "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
               "items": {
                 "type": "string"
               },
@@ -62747,7 +63134,8 @@
             "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
           }
         },
-        "summary": "Archive Tunnel"
+        "summary": "Archive Tunnel",
+        "x-anthropic-beta-required": ["mcp-tunnels-2026-05-19"]
       }
     },
     "/v1/organizations/tunnels/{tunnel_id}/certificates/{certificate_id}/archive?beta=true": {
@@ -62779,12 +63167,12 @@
             }
           },
           {
-            "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+            "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
             "in": "header",
             "name": "anthropic-beta",
-            "required": false,
+            "required": true,
             "schema": {
-              "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+              "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
               "items": {
                 "type": "string"
               },
@@ -62835,7 +63223,8 @@
             "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
           }
         },
-        "summary": "Archive Tunnel Certificate"
+        "summary": "Archive Tunnel Certificate",
+        "x-anthropic-beta-required": ["mcp-tunnels-2026-05-19"]
       }
     },
     "/v1/organizations/tunnels/{tunnel_id}/certificates/{certificate_id}?beta=true": {
@@ -62867,12 +63256,12 @@
             }
           },
           {
-            "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+            "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
             "in": "header",
             "name": "anthropic-beta",
-            "required": false,
+            "required": true,
             "schema": {
-              "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+              "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
               "items": {
                 "type": "string"
               },
@@ -62934,7 +63323,8 @@
             "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
           }
         },
-        "summary": "Get Tunnel Certificate"
+        "summary": "Get Tunnel Certificate",
+        "x-anthropic-beta-required": ["mcp-tunnels-2026-05-19"]
       }
     },
     "/v1/organizations/tunnels/{tunnel_id}/certificates?beta=true": {
@@ -62999,12 +63389,12 @@
             }
           },
           {
-            "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+            "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
             "in": "header",
             "name": "anthropic-beta",
-            "required": false,
+            "required": true,
             "schema": {
-              "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+              "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
               "items": {
                 "type": "string"
               },
@@ -63066,7 +63456,8 @@
             "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
           }
         },
-        "summary": "List Tunnel Certificates"
+        "summary": "List Tunnel Certificates",
+        "x-anthropic-beta-required": ["mcp-tunnels-2026-05-19"]
       },
       "post": {
         "deprecated": true,
@@ -63085,12 +63476,12 @@
             }
           },
           {
-            "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+            "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
             "in": "header",
             "name": "anthropic-beta",
-            "required": false,
+            "required": true,
             "schema": {
-              "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+              "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
               "items": {
                 "type": "string"
               },
@@ -63151,7 +63542,8 @@
             "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
           }
         },
-        "summary": "Create Tunnel Certificate"
+        "summary": "Create Tunnel Certificate",
+        "x-anthropic-beta-required": ["mcp-tunnels-2026-05-19"]
       }
     },
     "/v1/organizations/tunnels/{tunnel_id}/reveal_token?beta=true": {
@@ -63172,12 +63564,12 @@
             }
           },
           {
-            "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+            "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
             "in": "header",
             "name": "anthropic-beta",
-            "required": false,
+            "required": true,
             "schema": {
-              "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+              "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
               "items": {
                 "type": "string"
               },
@@ -63228,7 +63620,8 @@
             "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
           }
         },
-        "summary": "Reveal Tunnel Token"
+        "summary": "Reveal Tunnel Token",
+        "x-anthropic-beta-required": ["mcp-tunnels-2026-05-19"]
       }
     },
     "/v1/organizations/tunnels/{tunnel_id}/rotate_token?beta=true": {
@@ -63249,12 +63642,12 @@
             }
           },
           {
-            "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+            "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
             "in": "header",
             "name": "anthropic-beta",
-            "required": false,
+            "required": true,
             "schema": {
-              "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+              "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
               "items": {
                 "type": "string"
               },
@@ -63322,7 +63715,8 @@
             "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
           }
         },
-        "summary": "Rotate Tunnel Token"
+        "summary": "Rotate Tunnel Token",
+        "x-anthropic-beta-required": ["mcp-tunnels-2026-05-19"]
       }
     },
     "/v1/organizations/tunnels/{tunnel_id}?beta=true": {
@@ -63343,12 +63737,12 @@
             }
           },
           {
-            "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+            "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
             "in": "header",
             "name": "anthropic-beta",
-            "required": false,
+            "required": true,
             "schema": {
-              "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+              "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
               "items": {
                 "type": "string"
               },
@@ -63410,7 +63804,8 @@
             "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
           }
         },
-        "summary": "Get Tunnel"
+        "summary": "Get Tunnel",
+        "x-anthropic-beta-required": ["mcp-tunnels-2026-05-19"]
       }
     },
     "/v1/organizations/tunnels?beta=true": {
@@ -63484,12 +63879,12 @@
             }
           },
           {
-            "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+            "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
             "in": "header",
             "name": "anthropic-beta",
-            "required": false,
+            "required": true,
             "schema": {
-              "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+              "description": "This endpoint is in beta: requests must send `mcp-tunnels-2026-05-19` in this header.",
               "items": {
                 "type": "string"
               },
@@ -63551,7 +63946,8 @@
             "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
           }
         },
-        "summary": "List Tunnels"
+        "summary": "List Tunnels",
+        "x-anthropic-beta-required": ["mcp-tunnels-2026-05-19"]
       }
     },
     "/v1/organizations/usage_report/claude_code?beta=true": {
@@ -66183,7 +66579,7 @@
             }
           },
           {
-            "description": "Opaque pagination cursor from a previous response's next_page.",
+            "description": "Opaque pagination cursor from a previous response's `next_page`.",
             "in": "query",
             "name": "page",
             "required": false,
@@ -66192,7 +66588,7 @@
             }
           },
           {
-            "description": "Sort direction for results, ordered by the event's `processed_at`. Defaults to asc (chronological).",
+            "description": "Sort direction for results, ordered by the event's `processed_at`. Defaults to `asc` (chronological).",
             "in": "query",
             "name": "order",
             "required": false,
@@ -67375,7 +67771,7 @@
             }
           },
           {
-            "description": "Opaque cursor from a previous response's next_page field.",
+            "description": "Opaque cursor from a previous response's `next_page` field.",
             "in": "query",
             "name": "page",
             "required": false,
@@ -68761,7 +69157,7 @@
             }
           },
           {
-            "description": "Opaque pagination cursor from a previous response's next_page. Forward-only.",
+            "description": "Opaque pagination cursor from a previous response's `next_page`. Forward-only.",
             "in": "query",
             "name": "page",
             "required": false,
@@ -69700,7 +70096,7 @@
             }
           },
           {
-            "description": "Filter by agent version. Only applies when agent_id is also set.",
+            "description": "Filter by agent version. Only applies when `agent_id` is also set.",
             "in": "query",
             "name": "agent_version",
             "required": false,
@@ -69710,7 +70106,7 @@
             }
           },
           {
-            "description": "Sort direction for results, ordered by created_at. Defaults to desc (newest first).",
+            "description": "Sort direction for results, ordered by `created_at`. Defaults to `desc` (newest first).",
             "in": "query",
             "name": "order",
             "required": false,
@@ -69719,7 +70115,7 @@
             }
           },
           {
-            "description": "Filter sessions whose resources contain a memory_store with this memory store ID.",
+            "description": "Filter sessions whose resources contain a `memory_store` with this memory store ID.",
             "in": "query",
             "name": "memory_store_id",
             "required": false,
@@ -74506,6 +74902,15 @@
             "required": false,
             "schema": {
               "$ref": "#/components/schemas/BetaUserProfileListOrder"
+            }
+          },
+          {
+            "description": "Query parameter for order_by",
+            "in": "query",
+            "name": "order_by",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/BetaUserProfileListOrderBy"
             }
           }
         ],
