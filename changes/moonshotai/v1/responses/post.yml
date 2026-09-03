@@ -34,3 +34,105 @@
       after: '{"description":"Unix timestamp in milliseconds at which the Kimi API accepted this request. Only returned when the request carries a valid `X-Msh-Request-Nonce`.","schema":{"example":1786338000123,"format":"int64","type":"integer"}}'
   date: '2026-09-01'
   diff_url: https://github.com/gr2m/ai-provider-monitor/pull/980
+- change: added
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: Added optional 'include' to request to return web search sources and/or image results when using the web_search tool.
+  paths:
+    - path: components/schemas/ResponsesRequest/properties/include
+      before: 'null'
+      after: '{"description":"Additional fields to return. Only effective when the `web_search` tool is used. `web_search_call.action.sources` returns the web pages the search hit; `web_search_call.results` returns image search results.","items":{"enum":["web_search_call.results","web_search_call.action.sources"],"type":"string"},"type":"array"}'
+  date: '2026-09-03'
+- change: added
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: 'New tool types supported: custom (only `apply_patch`) and server-side `web_search`; namespace tool can now contain custom tools.'
+  paths:
+    - path: components/schemas/ResponsesTool/discriminator/mapping/custom
+      before: 'null'
+      after: '#/components/schemas/ResponsesCustomTool'
+    - path: components/schemas/ResponsesTool/discriminator/mapping/web_search
+      before: 'null'
+      after: '#/components/schemas/ResponsesWebSearchTool'
+    - path: components/schemas/ResponsesTool/oneOf
+      before: '["#/components/schemas/ResponsesFunctionTool","#/components/schemas/ResponsesNamespaceTool"]'
+      after: '["#/components/schemas/ResponsesFunctionTool","#/components/schemas/ResponsesCustomTool","#/components/schemas/ResponsesNamespaceTool","#/components/schemas/ResponsesWebSearchTool"]'
+    - path: components/schemas/ResponsesCustomTool
+      before: 'null'
+      after: '{"description":"A custom tool that takes free-form text input. Only the custom tool named `apply_patch` is supported, and it must define a `grammar` + `lark` format; when the model calls it, a `custom_tool_call` item is returned in the output.","properties":{"description":{"type":"string"},"format":{"description":"Input format constraint. Only the `grammar` type with `lark` syntax is supported.","properties":{"definition":{"description":"The Lark grammar definition.","type":"string"},"syntax":{"enum":["lark"],"type":"string"},"type":{"enum":["grammar"],"type":"string"}},"required":["type","syntax","definition"],"type":"object"},"name":{"description":"Tool name. Only `apply_patch` is supported.","enum":["apply_patch"],"type":"string"},"type":{"enum":["custom"],"type":"string"}},"required":["type","name","format"],"title":"Custom tool","type":"object"}'
+    - path: components/schemas/ResponsesWebSearchTool
+      before: 'null'
+      after: '{"description":"A web search tool executed on the server side. When present, the server first decides from the input whether a search is needed; if so, it runs the search, injects the results into the model context, and returns a `web_search_call` item in the output. At most one `web_search` tool is allowed per request. `search_context_size`, `blocked_domains`, and `filters.blocked_domains` are not supported and return `invalid_request_error`; `user_location`, `external_web_access`, and `indexed_web_access` are ignored.","properties":{"filters":{"description":"Search scope filters.","properties":{"allowed_domains":{"description":"Restrict the search to these domains, up to 100.","items":{"type":"string"},"maxItems":100,"type":"array"}},"type":"object"},"image_settings":{"description":"Image search settings. Only effective when `search_content_types` includes `image`.","properties":{"caption":{"default":false,"description":"Whether to generate a caption for each image.","type":"boolean"},"max_results":{"default":3,"description":"Maximum number of images to return.","maximum":10,"minimum":1,"type":"integer"}},"type":"object"},"search_content_types":{"default":["text"],"description":"Result types to search for. Defaults to `text` only. Including `image` additionally runs an image search.","items":{"enum":["text","image"],"type":"string"},"type":"array"},"type":{"enum":["web_search"],"type":"string"}},"required":["type"],"title":"Web search tool","type":"object"}'
+    - path: components/schemas/ResponsesNamespaceTool/properties/tools/items
+      before: '{"$ref":"#/components/schemas/ResponsesFunctionTool"}'
+      after: '{"oneOf":[{"$ref":"#/components/schemas/ResponsesFunctionTool"},{"$ref":"#/components/schemas/ResponsesCustomTool"}]}'
+  date: '2026-09-03'
+- change: added
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: 'New input item types supported for history replay: `custom_tool_call`, `custom_tool_call_output`, and `web_search_call`.'
+  paths:
+    - path: components/schemas/ResponsesInputItem/oneOf
+      before: '["ResponsesMessageItem","ResponsesReasoningItem","ResponsesFunctionCallItem","ResponsesFunctionCallOutputItem","ResponsesAdditionalToolsItem"]'
+      after: '["ResponsesMessageItem","ResponsesReasoningItem","ResponsesFunctionCallItem","ResponsesFunctionCallOutputItem","ResponsesCustomToolCallItem","ResponsesCustomToolCallOutputItem","ResponsesWebSearchCallItem","ResponsesAdditionalToolsItem"]'
+    - path: components/schemas/ResponsesCustomToolCallItem
+      before: 'null'
+      after: '{"description":"Replays a custom tool call.","properties":{"call_id":{"description":"Call ID paired with the matching `custom_tool_call_output`.","type":"string"},"id":{"type":"string"},"input":{"description":"Free-form text input generated by the model.","type":"string"},"name":{"type":"string"},"namespace":{"description":"Namespace the tool belongs to, returned for namespace tool calls.","type":"string"},"status":{"enum":["completed"],"type":"string"},"type":{"enum":["custom_tool_call"],"type":"string"}},"required":["type","call_id","name","input"],"title":"Custom tool call","type":"object"}'
+    - path: components/schemas/ResponsesCustomToolCallOutputItem
+      before: 'null'
+      after: '{"description":"Result of executing a custom tool call.","properties":{"call_id":{"description":"Same call ID as the matching `custom_tool_call`.","type":"string"},"output":{"description":"Content returned by the tool.","oneOf":[{"type":"string"},{"items":{"$ref":"#/components/schemas/ResponsesInputContentPart"},"type":"array"}]},"status":{"enum":["completed"],"type":"string"},"type":{"enum":["custom_tool_call_output"],"type":"string"}},"required":["type","call_id","output"],"title":"Custom tool call output","type":"object"}'
+    - path: components/schemas/ResponsesWebSearchCallItem
+      before: 'null'
+      after: '{"description":"Replays a previous web search call. Kept for history only and ignored during conversion; the search results are already carried by the assistant message that follows.","properties":{"action":{"properties":{"query":{"type":"string"},"type":{"enum":["search"],"type":"string"}},"type":"object"},"id":{"type":"string"},"status":{"enum":["completed"],"type":"string"},"type":{"enum":["web_search_call"],"type":"string"}},"required":["type"],"title":"Web search call","type":"object"}'
+  date: '2026-09-03'
+- change: added
+  target: response
+  breaking: true
+  deprecated: false
+  doc_only: false
+  note: 'New response output item types: `custom_tool_call` and `web_search_call` (the latter may appear first in the output).'
+  paths:
+    - path: components/schemas/ResponsesOutputItem/discriminator/mapping/custom_tool_call
+      before: 'null'
+      after: '#/components/schemas/ResponsesOutputCustomToolCallItem'
+    - path: components/schemas/ResponsesOutputItem/discriminator/mapping/web_search_call
+      before: 'null'
+      after: '#/components/schemas/ResponsesOutputWebSearchCallItem'
+    - path: components/schemas/ResponsesOutputItem/oneOf
+      before: '["#/components/schemas/ResponsesOutputReasoningItem","#/components/schemas/ResponsesOutputMessageItem","#/components/schemas/ResponsesOutputFunctionCallItem"]'
+      after: '["#/components/schemas/ResponsesOutputReasoningItem","#/components/schemas/ResponsesOutputMessageItem","#/components/schemas/ResponsesOutputFunctionCallItem","#/components/schemas/ResponsesOutputCustomToolCallItem","#/components/schemas/ResponsesOutputWebSearchCallItem"]'
+    - path: components/schemas/ResponsesOutputCustomToolCallItem
+      before: 'null'
+      after: '{"description":"A custom tool call initiated by the model.","properties":{"call_id":{"description":"Use this value in `custom_tool_call_output` when returning the result.","type":"string"},"id":{"example":"ctc_68f0c1c2d3e4f5a6b7c8d9e0","type":"string"},"input":{"description":"Free-form text input generated by the model.","type":"string"},"name":{"type":"string"},"namespace":{"description":"Returned for namespace tool calls.","type":"string"},"status":{"enum":["in_progress","completed"],"type":"string"},"type":{"enum":["custom_tool_call"],"type":"string"}},"title":"Custom tool call","type":"object"}'
+    - path: components/schemas/ResponsesOutputWebSearchCallItem
+      before: 'null'
+      after: '{"description":"A web search call executed on the server side. Returned only when the request includes the `web_search` tool and the server decides a search is needed. It appears first in the output array.","properties":{"action":{"description":"The action performed by this search.","properties":{"query":{"description":"The search query actually used.","type":"string"},"sources":{"description":"Web pages the search hit. Returned only when `include` contains `web_search_call.action.sources`.","items":{"properties":{"title":{"type":"string"},"type":{"enum":["url"],"type":"string"},"url":{"type":"string"}},"type":"object"},"type":"array"},"type":{"enum":["search"],"type":"string"}},"type":"object"},"id":{"example":"ws_68f0c1c2d3e4f5a6b7c8d9e0","type":"string"},"results":{"description":"Image search results. Returned only when `include` contains `web_search_call.results` and `search_content_types` includes `image`.","items":{"properties":{"caption":{"description":"Image caption. Returned only when `image_settings.caption` is enabled.","type":"string"},"image_url":{"type":"string"},"source_website_url":{"type":"string"},"thumbnail_url":{"type":"string"},"type":{"enum":["image_result"],"type":"string"}},"type":"object"},"type":"array"},"status":{"enum":["in_progress","completed"],"type":"string"},"type":{"enum":["web_search_call"],"type":"string"}},"title":"Web search call","type":"object"}'
+  date: '2026-09-03'
+- change: changed
+  target: response
+  breaking: false
+  deprecated: false
+  doc_only: true
+  note: 'Output ordering doc updated: when present, `web_search_call` appears first, followed by reasoning, message, and tool calls.'
+  paths:
+    - path: components/schemas/ResponsesResponse/properties/output/description
+      before: Array of output items, ordered as reasoning, message, then tool calls.
+      after: The output item array, ordered as web_search_call (if any), reasoning, message, tool calls.
+  date: '2026-09-03'
+- change: added
+  target: response
+  breaking: true
+  deprecated: false
+  doc_only: false
+  note: New SSE event types for custom tool input and web search lifecycle were added.
+  paths:
+    - path: components/schemas/ResponsesStreamEvent/properties/type/enum
+      before: '["response.created","response.in_progress","response.output_item.added","response.output_item.done","response.content_part.added","response.content_part.done","response.output_text.delta","response.output_text.done","response.reasoning_summary_part.added","response.reasoning_summary_part.done","response.reasoning_summary_text.delta","response.reasoning_summary_text.done","response.function_call_arguments.delta","response.function_call_arguments.done","response.completed","response.incomplete","response.failed","error"]'
+      after: '["response.created","response.in_progress","response.output_item.added","response.output_item.done","response.content_part.added","response.content_part.done","response.output_text.delta","response.output_text.done","response.reasoning_summary_part.added","response.reasoning_summary_part.done","response.reasoning_summary_text.delta","response.reasoning_summary_text.done","response.function_call_arguments.delta","response.function_call_arguments.done","response.custom_tool_call_input.delta","response.custom_tool_call_input.done","response.web_search_call.in_progress","response.web_search_call.searching","response.web_search_call.completed","response.completed","response.incomplete","response.failed","error"]'
+  date: '2026-09-03'
