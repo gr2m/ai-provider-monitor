@@ -105,7 +105,7 @@
             "type": "integer"
           },
           "finalTargetReplicas": {
-            "description": "Optional target replica floor at completion. Must be at least 1 when set; defaults to the source deployment's replica count at create time, or to the source and target deployments' combined replica count when both already stand in the endpoint traffic split after a cancel. If this exceeds the target autoscaling max, the rollout raises that max once when first needed unless an operator changes max mid-run; the raised ceiling remains after completion. A pre-existing target whose own autoscaling min is higher keeps that floor, reported as FINAL_BELOW_INHERITED_MIN. A target that starts stopped lands exactly at this value; if the source min was higher, PreviewRolloutDefaults reports FINAL_BELOW_SOURCE_MIN.",
+            "description": "Optional target replica floor at completion. Must be at least 1 when set; defaults to the source deployment's replica count at create time, or to the source and target deployments' combined replica count when both already stand in the endpoint traffic split after a cancel. The completed target's autoscaling max lands at the landing ceiling, max(this value, the source max, the target's own max); the rollout may lift the target max at first wake, at the first step that needs it, or at completion unless an operator changes max mid-run. The lifted ceiling remains after completion, and PreviewRolloutDefaults reports a coming lift as ROLLOUT_WILL_RAISE_TARGET_MAX. A pre-existing target whose own autoscaling min is higher keeps that floor, reported as FINAL_BELOW_INHERITED_MIN. A target that starts stopped lands exactly at this value; if the source min was higher, PreviewRolloutDefaults reports FINAL_BELOW_SOURCE_MIN.",
             "type": "integer"
           },
           "metrics": {
@@ -294,7 +294,7 @@
             "description": "Regression evaluation criteria. Mutually exclusive with thresholdCheck."
           },
           "stat": {
-            "description": "Required aggregation used for the metric.",
+            "description": "Aggregation used for the metric. Optional for router_error_rate and inflight_requests; omitted values default to METRIC_STAT_TYPE_AVG. Required for router_latency, where AVG or PERCENTILE may be used.",
             "enum": [
               "METRIC_STAT_TYPE_AVG",
               "METRIC_STAT_TYPE_MIN",
@@ -318,8 +318,7 @@
           }
         },
         "required": [
-          "name",
-          "stat"
+          "name"
         ],
         "type": "object"
       },
@@ -376,7 +375,7 @@
             "type": "string"
           },
           "maxRegressionPercent": {
-            "description": "Required maximum allowed regression percentage.",
+            "description": "Required finite maximum allowed regression percentage, greater than or equal to 0. A value of 0 is the strictest budget; any regression fails, and exactly-at-budget passes.",
             "type": "number"
           }
         },
@@ -400,7 +399,7 @@
             "type": "string"
           },
           "value": {
-            "description": "Required numeric threshold value.",
+            "description": "Required finite threshold value. Interpreted in the metric's unit:\nrouter_error_rate is a ratio in [0, 1], router_latency is\nmilliseconds, and inflight_requests is a raw count. Thresholds that\nno achievable value could pass, or that every achievable value\npasses, are rejected at create.",
             "type": "number"
           }
         },

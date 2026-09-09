@@ -91,3 +91,111 @@
       after: Failure detail set when the rollout pauses, system-pauses, or aborts; carries the human-readable reason and structured detail.
   date: '2026-08-31'
   diff_url: https://github.com/gr2m/ai-provider-monitor/pull/977
+- change: changed
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: Made DE.MetricRule.stat optional (removed from required fields).
+  paths:
+    - path: components/schemas/DE.MetricRule/required
+      before: '["name","stat"]'
+      after: '["name"]'
+  date: '2026-09-09'
+- change: changed
+  target: response
+  breaking: true
+  deprecated: false
+  doc_only: false
+  note: Expanded rollout step state enum with PAUSED, CANCELED, and SKIPPED.
+  paths:
+    - path: components/schemas/DE.RolloutStepStatus/properties/state/enum
+      before: '["ROLLOUT_STEP_STATE_PENDING","ROLLOUT_STEP_STATE_RUNNING","ROLLOUT_STEP_STATE_PASSED","ROLLOUT_STEP_STATE_FAILED"]'
+      after: '["ROLLOUT_STEP_STATE_PENDING","ROLLOUT_STEP_STATE_RUNNING","ROLLOUT_STEP_STATE_PASSED","ROLLOUT_STEP_STATE_FAILED","ROLLOUT_STEP_STATE_PAUSED","ROLLOUT_STEP_STATE_CANCELED","ROLLOUT_STEP_STATE_SKIPPED"]'
+  date: '2026-09-09'
+- change: changed
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: true
+  note: Clarified when DE.MetricRule.stat is required vs. optional and default behavior.
+  paths:
+    - path: components/schemas/DE.MetricRule/properties/stat/description
+      before: Required aggregation used for the metric.
+      after: Aggregation used for the metric. Optional for router_error_rate and inflight_requests; omitted values default to METRIC_STAT_TYPE_AVG. Required for router_latency, where AVG or PERCENTILE may be used.
+  date: '2026-09-09'
+- change: changed
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: true
+  note: Clarified autoscaling max handling and reporting for finalTargetReplicas.
+  paths:
+    - path: components/schemas/DE.CreateRolloutRequest/properties/finalTargetReplicas/description
+      before: Optional target replica floor at completion. Must be at least 1 when set; defaults to the source deployment's replica count at create time, or to the source and target deployments' combined replica count when both already stand in the endpoint traffic split after a cancel. If this exceeds the target autoscaling max, the rollout raises that max once when first needed unless an operator changes max mid-run; the raised ceiling remains after completion. A pre-existing target whose own autoscaling min is higher keeps that floor, reported as FINAL_BELOW_INHERITED_MIN. A target that starts stopped lands exactly at this value; if the source min was higher, PreviewRolloutDefaults reports FINAL_BELOW_SOURCE_MIN.
+      after: Optional target replica floor at completion. Must be at least 1 when set; defaults to the source deployment's replica count at create time, or to the source and target deployments' combined replica count when both already stand in the endpoint traffic split after a cancel. The completed target's autoscaling max lands at the landing ceiling, max(this value, the source max, the target's own max); the rollout may lift the target max at first wake, at the first step that needs it, or at completion unless an operator changes max mid-run. The lifted ceiling remains after completion, and PreviewRolloutDefaults reports a coming lift as ROLLOUT_WILL_RAISE_TARGET_MAX. A pre-existing target whose own autoscaling min is higher keeps that floor, reported as FINAL_BELOW_INHERITED_MIN. A target that starts stopped lands exactly at this value; if the source min was higher, PreviewRolloutDefaults reports FINAL_BELOW_SOURCE_MIN.
+  date: '2026-09-09'
+- change: changed
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: true
+  note: Detailed units, finiteness, and validation rules for threshold values.
+  paths:
+    - path: components/schemas/DE.ThresholdCheck/properties/value/description
+      before: Required numeric threshold value.
+      after: |-
+        Required finite threshold value. Interpreted in the metric's unit:
+        router_error_rate is a ratio in [0, 1], router_latency is
+        milliseconds, and inflight_requests is a raw count. Thresholds that
+        no achievable value could pass, or that every achievable value
+        passes, are rejected at create.
+  date: '2026-09-09'
+- change: changed
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: true
+  note: Clarified constraints and semantics for regression budget percentage.
+  paths:
+    - path: components/schemas/DE.RegressionCheck/properties/maxRegressionPercent/description
+      before: Required maximum allowed regression percentage.
+      after: Required finite maximum allowed regression percentage, greater than or equal to 0. A value of 0 is the strictest budget; any regression fails, and exactly-at-budget passes.
+  date: '2026-09-09'
+- change: changed
+  target: response
+  breaking: false
+  deprecated: false
+  doc_only: true
+  note: Clarified rollout step timing fields semantics (completedAt, startedAt).
+  paths:
+    - path: components/schemas/DE.RolloutStepStatus/properties/completedAt/description
+      before: Timestamp when this step completed.
+      after: Timestamp when this step finished, was skipped over, or the rollout ended on it. Unset while in progress.
+    - path: components/schemas/DE.RolloutStepStatus/properties/startedAt/description
+      before: Timestamp when this step started.
+      after: Timestamp when this step's first sub-step ran. Unset for steps no sub-step reached.
+  date: '2026-09-09'
+- change: changed
+  target: response
+  breaking: false
+  deprecated: false
+  doc_only: true
+  note: Documented synthesized entries for unmeasured metric rules and when values are present.
+  paths:
+    - path: components/schemas/DE.RolloutCondition/properties/metrics/description
+      before: Metrics observed at the failing gate, enriched with their criteria.
+      after: Metrics observed at the failing gate, enriched with their criteria. Unmeasured rules appear as synthesized rows with verdict METRIC_VERDICT_UNAVAILABLE and no measured values.
+    - path: components/schemas/DE.RolloutStepStatus/properties/metrics/description
+      before: Metric gate results for this step.
+      after: Metric gate results for this step, enriched with criteria and verdict. Unmeasured rules appear as synthesized rows with verdict METRIC_VERDICT_UNAVAILABLE and no measured values.
+    - path: components/schemas/DE.MetricResult/description
+      before: Observed metric value enriched with its rollout rule and verdict.
+      after: Observed metric result enriched with rollout rule criteria and verdict. Unmeasured rules are synthesized with verdict METRIC_VERDICT_UNAVAILABLE and no source or target value.
+    - path: components/schemas/DE.MetricResult/properties/sourceValue/description
+      before: Observed source baseline. Set only for regression checks; a 0 reading serializes explicitly.
+      after: Observed source baseline. Set only for regression checks with a recorded observation; a 0 reading serializes explicitly.
+    - path: components/schemas/DE.MetricResult/properties/targetValue/description
+      before: Observed target value. A 0 reading serializes explicitly.
+      after: Observed target value. Set when the gate recorded an observation; absent on synthesized unavailable results. A 0 reading serializes explicitly.
+  date: '2026-09-09'

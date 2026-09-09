@@ -338,7 +338,7 @@
             "type": "string"
           },
           "metrics": {
-            "description": "Metrics observed at the failing gate, enriched with their criteria.",
+            "description": "Metrics observed at the failing gate, enriched with their criteria. Unmeasured rules appear as synthesized rows with verdict METRIC_VERDICT_UNAVAILABLE and no measured values.",
             "items": {
               "$ref": "#/components/schemas/DE.MetricResult"
             },
@@ -363,33 +363,36 @@
         "description": "Collapsed execution state for one rollout step.",
         "properties": {
           "completedAt": {
-            "description": "Timestamp when this step completed.",
+            "description": "Timestamp when this step finished, was skipped over, or the rollout ended on it. Unset while in progress.",
             "format": "date-time",
             "type": "string"
           },
           "failureReason": {
-            "description": "Failure reason when this step failed.",
+            "description": "Failure reason set only when this step failed.",
             "type": "string"
           },
           "metrics": {
-            "description": "Metric gate results for this step.",
+            "description": "Metric gate results for this step, enriched with criteria and verdict. Unmeasured rules appear as synthesized rows with verdict METRIC_VERDICT_UNAVAILABLE and no measured values.",
             "items": {
               "$ref": "#/components/schemas/DE.MetricResult"
             },
             "type": "array"
           },
           "startedAt": {
-            "description": "Timestamp when this step started.",
+            "description": "Timestamp when this step's first sub-step ran. Unset for steps no sub-step reached.",
             "format": "date-time",
             "type": "string"
           },
           "state": {
-            "description": "Execution state of this rollout step.",
+            "description": "Outcome of this step. Finished steps are PASSED, the live step mirrors the rollout state, skipped-over steps are SKIPPED, and unreached steps are PENDING.",
             "enum": [
               "ROLLOUT_STEP_STATE_PENDING",
               "ROLLOUT_STEP_STATE_RUNNING",
               "ROLLOUT_STEP_STATE_PASSED",
-              "ROLLOUT_STEP_STATE_FAILED"
+              "ROLLOUT_STEP_STATE_FAILED",
+              "ROLLOUT_STEP_STATE_PAUSED",
+              "ROLLOUT_STEP_STATE_CANCELED",
+              "ROLLOUT_STEP_STATE_SKIPPED"
             ],
             "type": "string"
           },
@@ -405,7 +408,7 @@
         "type": "object"
       },
       "DE.MetricResult": {
-        "description": "Observed metric value enriched with its rollout rule and verdict.",
+        "description": "Observed metric result enriched with rollout rule criteria and verdict. Unmeasured rules are synthesized with verdict METRIC_VERDICT_UNAVAILABLE and no source or target value.",
         "properties": {
           "check": {
             "description": "Evaluation form used by the metric rule.",
@@ -446,7 +449,7 @@
             "type": "integer"
           },
           "sourceValue": {
-            "description": "Observed source baseline. Set only for regression checks; a 0 reading serializes explicitly.",
+            "description": "Observed source baseline. Set only for regression checks with a recorded observation; a 0 reading serializes explicitly.",
             "type": "number"
           },
           "stat": {
@@ -460,7 +463,7 @@
             "type": "string"
           },
           "targetValue": {
-            "description": "Observed target value. A 0 reading serializes explicitly.",
+            "description": "Observed target value. Set when the gate recorded an observation; absent on synthesized unavailable results. A 0 reading serializes explicitly.",
             "type": "number"
           },
           "threshold": {
