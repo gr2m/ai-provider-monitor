@@ -8965,6 +8965,21 @@ components:
         - CHECKPOINT_VARIANT_MERGED
         - CHECKPOINT_VARIANT_ADAPTER
       type: string
+    RL.CheckpointsListResponse:
+      description: A page of training checkpoints
+      properties:
+        data:
+          description: Training checkpoints in this page
+          items:
+            $ref: "#/components/schemas/RL.Checkpoint"
+          type: array
+        meta:
+          $ref: "#/components/schemas/RL.ListMeta"
+          description: Pagination metadata
+      required:
+        - data
+        - meta
+      type: object
     RL.ComputeConfig:
       description: Compute layout for a model resource
       properties:
@@ -9108,6 +9123,10 @@ components:
       type: object
     RL.ForwardBackwardBody:
       properties:
+        forward_only:
+          description: "Run the forward pass only: report the loss and metrics, and the per-sample outputs when requested, without accumulating gradients. Defaults to false. Pair it with `return_loss_fn_outputs` to score a batch and read back its per-token log-probabilities."
+          example: true
+          type: boolean
         loss:
           $ref: "#/components/schemas/RL.LossConfig"
           description: Loss function configuration
@@ -9147,7 +9166,7 @@ components:
         - status
       type: object
     RL.ForwardBackwardResult:
-      description: Result of a forward-backward pass operation
+      description: Result of a scored forward or forward-backward operation
       properties:
         loss:
           description: Loss value
@@ -9168,49 +9187,6 @@ components:
           type: object
       required:
         - loss
-      type: object
-    RL.ForwardBody:
-      description: Request body for a forward pass.
-      properties:
-        samples:
-          description: Batch of training samples for which to compute per-token log-probabilities
-          items:
-            $ref: "#/components/schemas/RL.TrainingSample"
-          type: array
-      required:
-        - samples
-      type: object
-    RL.ForwardOperation:
-      description: Async forward pass operation
-      properties:
-        error:
-          $ref: "#/components/schemas/RL.TrainingOperationError"
-          description: Error details on failure
-        id:
-          description: Operation ID
-          example: 550e8400-e29b-41d4-a716-446655440000
-          type: string
-        output:
-          $ref: "#/components/schemas/RL.ForwardResult"
-          description: Result on success
-        status:
-          $ref: "#/components/schemas/RL.TrainingOperationStatus"
-          description: Operation status
-          example: TRAINING_OPERATION_STATUS_PENDING
-      required:
-        - id
-        - status
-      type: object
-    RL.ForwardResult:
-      description: Result of a forward pass operation
-      properties:
-        logprobs:
-          description: Per-sample per-token log-probabilities
-          items:
-            $ref: "#/components/schemas/RL.TargetLogprobs"
-          type: array
-      required:
-        - logprobs
       type: object
     RL.GRPOLossAggregationType:
       default: GRPO_LOSS_AGGREGATION_TYPE_UNSPECIFIED
@@ -9413,7 +9389,7 @@ components:
         tensors:
           additionalProperties:
             $ref: "#/components/schemas/RL.TensorData"
-          description: "Output tensors keyed by name. Built-in losses return `logprobs`: the model's float32 per-token log-probabilities under the current policy, one value per token of the sample's input. Values at positions excluded from the loss are unspecified."
+          description: "Output tensors keyed by name. Built-in losses return `logprobs`: the model's float32 per-token log-probabilities under the current policy, one value per token of the sample's input. Positions excluded from the loss, such as zero-weight positions, are masked to zero rather than true log-probabilities."
           type: object
       required:
         - tensors
@@ -10159,23 +10135,6 @@ components:
           $ref: "#/components/schemas/RL.DType"
           description: Data type of the float array
           example: D_TYPE_FLOAT32
-      required:
-        - data
-      type: object
-    RL.TargetLogprobs:
-      description: Per-token log-probabilities from the target model
-      properties:
-        data:
-          description: Float array of per-token log probabilities
-          example:
-            - -1.2
-            - -0.8
-            - -1.5
-            - -0.9
-            - -1.1
-          items:
-            type: number
-          type: array
       required:
         - data
       type: object
@@ -22158,6 +22117,52 @@ paths:
                       "text": "The wild Bactrian camel (Camelus ferus) is an endangered species of camel endemic to Northwest China and southwestern Mongolia."
                     }]
                  }'
+  /rl/checkpoints:
+    get:
+      description: Lists training checkpoints owned by the caller. Filter by session or base model to recover a checkpoint ID for resume. Inference checkpoints are not included; they remain on the training session and in the model catalog.
+      operationId: listCheckpoints
+      parameters:
+        - in: query
+          name: session_id
+          required: false
+          schema:
+            description: Only return checkpoints produced by this training session
+            type: string
+        - in: query
+          name: base_model
+          required: false
+          schema:
+            description: Only return checkpoints trained from this base model. Match is exact.
+            type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            default: "20"
+            description: Maximum number of checkpoints to return (1-100)
+            type: integer
+        - in: query
+          name: after
+          required: false
+          schema:
+            description: Cursor for pagination (ID of the last checkpoint from the previous page)
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RL.CheckpointsListResponse"
+          description: List of training checkpoints
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: An unexpected error response.
+      summary: List training checkpoints
+      tags:
+        - RL
   /rl/checkpoints/{id}:
     get:
       description: "Returns metadata for a checkpoint: type, base model, LoRA rank, step, and owning session."
@@ -22622,39 +22627,6 @@ paths:
       summary: Get custom forward-backward operation
       tags:
         - RL
-  /rl/training-sessions/{session_id}/operations/forward:
-    post:
-      description: Submits a forward operation that will asynchronously run a no-grad forward pass and return per-token log-probabilities for each sample.
-      operationId: forward
-      parameters:
-        - in: path
-          name: session_id
-          required: true
-          schema:
-            description: Training session ID
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RL.ForwardBody"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RL.ForwardOperation"
-          description: ""
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorData"
-          description: An unexpected error response.
-      summary: Forward pass
-      tags:
-        - RL
   /rl/training-sessions/{session_id}/operations/forward-backward:
     post:
       description: Submits a forward-backward pass operation that will asynchronously compute gradients via backpropagation.
@@ -22719,39 +22691,6 @@ paths:
                 $ref: "#/components/schemas/ErrorData"
           description: An unexpected error response.
       summary: Get forward-backward operation
-      tags:
-        - RL
-  /rl/training-sessions/{session_id}/operations/forward/{operation_id}:
-    get:
-      description: Retrieves the current status and result of a forward operation.
-      operationId: getForwardOperation
-      parameters:
-        - in: path
-          name: session_id
-          required: true
-          schema:
-            description: Training session ID
-            type: string
-        - in: path
-          name: operation_id
-          required: true
-          schema:
-            description: Operation ID
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RL.ForwardOperation"
-          description: Forward operation details
-        default:
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorData"
-          description: An unexpected error response.
-      summary: Get forward operation
       tags:
         - RL
   /rl/training-sessions/{session_id}/operations/inference-checkpoint:

@@ -1,0 +1,215 @@
+{
+  "description": "Lists training checkpoints owned by the caller. Filter by session or base model to recover a checkpoint ID for resume. Inference checkpoints are not included; they remain on the training session and in the model catalog.",
+  "operationId": "listCheckpoints",
+  "parameters": [
+    {
+      "in": "query",
+      "name": "session_id",
+      "required": false,
+      "schema": {
+        "description": "Only return checkpoints produced by this training session",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "base_model",
+      "required": false,
+      "schema": {
+        "description": "Only return checkpoints trained from this base model. Match is exact.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "default": "20",
+        "description": "Maximum number of checkpoints to return (1-100)",
+        "type": "integer"
+      }
+    },
+    {
+      "in": "query",
+      "name": "after",
+      "required": false,
+      "schema": {
+        "description": "Cursor for pagination (ID of the last checkpoint from the previous page)",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/RL.CheckpointsListResponse"
+          }
+        }
+      },
+      "description": "List of training checkpoints"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "An unexpected error response."
+    }
+  },
+  "summary": "List training checkpoints",
+  "tags": [
+    "RL"
+  ],
+  "components": {
+    "schemas": {
+      "RL.CheckpointsListResponse": {
+        "description": "A page of training checkpoints",
+        "properties": {
+          "data": {
+            "description": "Training checkpoints in this page",
+            "items": {
+              "$ref": "#/components/schemas/RL.Checkpoint"
+            },
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/RL.ListMeta",
+            "description": "Pagination metadata"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "RL.Checkpoint": {
+        "description": "Metadata for a saved checkpoint",
+        "properties": {
+          "base_model": {
+            "description": "Base model the checkpoint was trained from",
+            "example": "Qwen/Qwen3-0.6B",
+            "type": "string"
+          },
+          "created_at": {
+            "description": "Timestamp when the checkpoint was created",
+            "example": "2026-01-02T00:00:00Z",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique identifier for the checkpoint",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "lora_rank": {
+            "description": "LoRA rank of the session that produced this checkpoint. Absent for full-weight sessions and for checkpoints saved before this field was recorded.",
+            "example": 32,
+            "type": "integer"
+          },
+          "session_id": {
+            "description": "Training session that produced the checkpoint",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          },
+          "step": {
+            "description": "Training step at time of save",
+            "example": "42",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "type": {
+            "$ref": "#/components/schemas/RL.CheckpointType",
+            "description": "Whether this is a training checkpoint or an inference checkpoint",
+            "example": "CHECKPOINT_TYPE_TRAINING"
+          }
+        },
+        "required": [
+          "id",
+          "session_id",
+          "base_model",
+          "type",
+          "step",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "RL.ListMeta": {
+        "description": "Pagination metadata for list responses",
+        "properties": {
+          "has_more": {
+            "description": "Whether more items exist beyond this page",
+            "example": true,
+            "type": "boolean"
+          },
+          "limit": {
+            "description": "Maximum number of items returned per page",
+            "example": 20,
+            "type": "integer"
+          },
+          "next_cursor": {
+            "description": "Cursor to use as the 'after' parameter for the next page. Empty when has_more is false.",
+            "example": "123e4567-e89b-12d3-a456-426614174000",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "RL.CheckpointType": {
+        "description": "Whether a checkpoint is saved for training resume or inference download.",
+        "enum": [
+          "CHECKPOINT_TYPE_TRAINING",
+          "CHECKPOINT_TYPE_INFERENCE"
+        ],
+        "type": "string"
+      }
+    }
+  }
+}
