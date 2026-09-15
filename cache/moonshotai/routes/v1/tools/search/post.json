@@ -1,0 +1,263 @@
+{
+  "description": "Run a web search and get structured results with title, snippet, site, and URL. You are charged once per successful call that returns at least one result; failed or empty-result calls are free. See [WebSearch Pricing](/pricing/tools).",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/ToolsSearchRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ToolsSearchResponse"
+          }
+        }
+      },
+      "description": "Search results",
+      "headers": {
+        "X-Msh-Chat-Id": {
+          "description": "Session ID, always `toolgw-{X-Msh-Track-Id}`; provide both IDs when troubleshooting.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        "X-Msh-Track-Id": {
+          "description": "Request ID. If the client sends this header, its value is reused; otherwise the server generates one. Provide this ID when troubleshooting.",
+          "schema": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Bad request - Invalid parameters or missing required fields"
+    },
+    "401": {
+      "description": "Unauthorized - Invalid or missing API key (status code only, no error body)"
+    },
+    "403": {
+      "description": "Forbidden - account inactive or suspended (status code only, no error body)"
+    },
+    "408": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Client canceled the request"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Too many requests - rate or concurrency limit exceeded, or rate-limit service temporarily unavailable",
+      "headers": {
+        "X-RateLimit-Limit": {
+          "description": "The rate limit that was hit.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        "X-RateLimit-Remaining": {
+          "description": "Remaining quota in the current window.",
+          "schema": {
+            "type": "string"
+          }
+        },
+        "X-RateLimit-Reset": {
+          "description": "When the rate-limit window resets (Unix timestamp in seconds; returned when a per-second rate limit is hit).",
+          "schema": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Internal server error"
+    },
+    "502": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Service temporarily unavailable; retry later"
+    },
+    "504": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Request timed out"
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "summary": "Web Search Basic",
+  "tags": [
+    "Tools"
+  ],
+  "components": {
+    "schemas": {
+      "ToolsSearchRequest": {
+        "properties": {
+          "include_content": {
+            "default": false,
+            "description": "Whether to return full page content in each result's `text` field. Defaults to false.",
+            "type": "boolean"
+          },
+          "limit": {
+            "default": 5,
+            "description": "Maximum number of results to return, from 1 to 20. Defaults to 5.",
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "text_query": {
+            "description": "Search query text. Must not be empty.",
+            "type": "string"
+          },
+          "timeout_seconds": {
+            "description": "Search timeout in seconds, from 1 to 60. If omitted, no per-request timeout is applied.",
+            "maximum": 60,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "text_query"
+        ],
+        "type": "object"
+      },
+      "ToolsSearchResponse": {
+        "properties": {
+          "search_results": {
+            "description": "List of search results; an empty array when nothing matches.",
+            "items": {
+              "$ref": "#/components/schemas/ToolsSearchResult"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "search_results"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "description": "Error code",
+                "type": "string"
+              },
+              "message": {
+                "description": "Error message describing what went wrong",
+                "type": "string"
+              },
+              "type": {
+                "description": "Error type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "ToolsSearchResult": {
+        "properties": {
+          "authority": {
+            "description": "Authority level of the source.",
+            "type": "string"
+          },
+          "date": {
+            "description": "Date of the search result.",
+            "type": "string"
+          },
+          "icon": {
+            "description": "Site icon URL.",
+            "type": "string"
+          },
+          "mime": {
+            "description": "MIME type of the content.",
+            "type": "string"
+          },
+          "site_name": {
+            "description": "Site name.",
+            "type": "string"
+          },
+          "snippet": {
+            "description": "Snippet of the search result.",
+            "type": "string"
+          },
+          "text": {
+            "description": "Full page content; returned when include_content=true, otherwise an empty string.",
+            "type": "string"
+          },
+          "title": {
+            "description": "Title of the search result.",
+            "type": "string"
+          },
+          "url": {
+            "description": "URL of the search result.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "authority",
+          "date",
+          "icon",
+          "mime",
+          "site_name",
+          "snippet",
+          "text",
+          "title",
+          "url"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}
