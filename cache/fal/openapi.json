@@ -28984,6 +28984,513 @@
         }
       }
     },
+    "/models/insights": {
+      "get": {
+        "description": "Experimental (beta): model guidance and tiering may change as we refine recommendations. Find model guidance by task or endpoint. Only current public models visible to the caller are returned. Statistics are optional, dated observations, not prices or quality benchmarks.",
+        "operationId": "getModelInsights",
+        "parameters": [
+          {
+            "description": "Model endpoint IDs to inspect. Repeat the parameter for multiple models; provide endpoint_id or q.",
+            "explode": true,
+            "in": "query",
+            "name": "endpoint_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 200,
+                  "minLength": 3,
+                  "pattern": "^[a-zA-Z0-9_.-]+(?:\\/[a-zA-Z0-9_.-]+)+$",
+                  "type": "string"
+                },
+                {
+                  "items": {
+                    "maxLength": 200,
+                    "minLength": 3,
+                    "pattern": "^[a-zA-Z0-9_.-]+(?:\\/[a-zA-Z0-9_.-]+)+$",
+                    "type": "string"
+                  },
+                  "maxItems": 20,
+                  "minItems": 1,
+                  "type": "array"
+                }
+              ],
+              "description": "Model endpoint IDs to inspect. Repeat the parameter for multiple models; provide endpoint_id or q.",
+              "example": ["fal-ai/flux/dev"]
+            },
+            "style": "form"
+          },
+          {
+            "description": "Task description used to search published model guidance; provide q or endpoint_id.",
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "description": "Task description used to search published model guidance; provide q or endpoint_id.",
+              "example": "Product photography with clear lettering",
+              "maxLength": 1000,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Maximum number of account-visible models to return.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "description": "Maximum number of account-visible models to return.",
+              "example": 5,
+              "maximum": 20,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "models": [
+                    {
+                      "category": "text-to-image",
+                      "display_name": "FLUX.1 [dev]",
+                      "endpoint_id": "fal-ai/flux/dev",
+                      "insights": [],
+                      "relevance": null,
+                      "stats": {
+                        "speed_tier": "typical",
+                        "usage_tier": "high",
+                        "window_end": "2026-09-14T00:00:00.000Z",
+                        "window_start": "2026-09-07T00:00:00.000Z"
+                      }
+                    }
+                  ],
+                  "note": "Category-relative observations; not prices or quality benchmarks.",
+                  "stats_available": true,
+                  "unavailable_endpoint_ids": []
+                },
+                "schema": {
+                  "properties": {
+                    "models": {
+                      "description": "Current public models visible to the authenticated caller.",
+                      "items": {
+                        "properties": {
+                          "category": {
+                            "description": "Catalog category used for within-category tier comparisons.",
+                            "type": "string"
+                          },
+                          "display_name": {
+                            "description": "Current public model display name.",
+                            "type": "string"
+                          },
+                          "endpoint_id": {
+                            "description": "Public model endpoint identifier.",
+                            "type": "string"
+                          },
+                          "insights": {
+                            "description": "Published guidance for this model; may be empty.",
+                            "items": {
+                              "properties": {
+                                "body": {
+                                  "description": "Published guidance text for the model.",
+                                  "type": "string"
+                                },
+                                "kind": {
+                                  "description": "Guidance kind, such as a strength, limitation, or default pick.",
+                                  "type": "string"
+                                },
+                                "rank": {
+                                  "description": "Published recommendation order for this guidance, or null when unranked.",
+                                  "type": ["number", "null"]
+                                },
+                                "source": {
+                                  "description": "Whether the published guidance was curated or learned.",
+                                  "type": "string"
+                                },
+                                "task": {
+                                  "description": "Associated task, or null for general model guidance.",
+                                  "properties": {
+                                    "category": {
+                                      "description": "Task's catalog category, or null when unspecified.",
+                                      "type": ["string", "null"]
+                                    },
+                                    "name": {
+                                      "description": "Name of the task associated with this guidance.",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": ["name", "category"],
+                                  "type": ["object", "null"]
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "body",
+                                "source",
+                                "task",
+                                "rank"
+                              ],
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          "relevance": {
+                            "description": "Search relevance score, or null without a search match; not a quality score.",
+                            "type": ["number", "null"]
+                          },
+                          "stats": {
+                            "description": "Coarse statistics for the last completed week, or null when unavailable.",
+                            "properties": {
+                              "speed_tier": {
+                                "description": "Coarse execution-speed tier within the model's category, or null for insufficient evidence. Mixes workloads and excludes queue/startup; not a benchmark.",
+                                "enum": ["fast", "typical", "slow"],
+                                "type": ["string", "null"]
+                              },
+                              "usage_tier": {
+                                "description": "Coarse usage tier within the model's category, or null for insufficient evidence. Exact counts are never returned.",
+                                "enum": ["high", "medium", "low"],
+                                "type": ["string", "null"]
+                              },
+                              "window_end": {
+                                "description": "Exclusive UTC end of the observation week.",
+                                "type": "string"
+                              },
+                              "window_start": {
+                                "description": "Inclusive UTC start of the observation week.",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "window_start",
+                              "window_end",
+                              "usage_tier",
+                              "speed_tier"
+                            ],
+                            "type": ["object", "null"]
+                          }
+                        },
+                        "required": [
+                          "endpoint_id",
+                          "display_name",
+                          "category",
+                          "relevance",
+                          "insights",
+                          "stats"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "note": {
+                      "description": "Guidance on interpreting relevance and coarse observation tiers.",
+                      "type": "string"
+                    },
+                    "stats_available": {
+                      "description": "Whether a valid snapshot for the last completed week was available; individual model tiers may still be unknown.",
+                      "type": "boolean"
+                    },
+                    "unavailable_endpoint_ids": {
+                      "description": "Explicitly requested endpoint IDs that are not public or accessible to this caller.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "required": [
+                    "models",
+                    "unavailable_endpoint_ids",
+                    "stats_available",
+                    "note"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Model insights"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Invalid request parameters",
+                    "type": "validation_error"
+                  }
+                },
+                "schema": {
+                  "description": "Standard error response format",
+                  "properties": {
+                    "error": {
+                      "description": "Error details",
+                      "properties": {
+                        "docs_url": {
+                          "description": "Link to relevant documentation",
+                          "format": "uri",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error message",
+                          "type": "string"
+                        },
+                        "request_id": {
+                          "description": "Unique request identifier for debugging",
+                          "type": "string"
+                        },
+                        "type": {
+                          "description": "The category of error that occurred",
+                          "enum": [
+                            "authorization_error",
+                            "validation_error",
+                            "not_found",
+                            "rate_limited",
+                            "server_error",
+                            "not_implemented"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["type", "message"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["error"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Invalid request parameters"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Authentication required",
+                    "type": "authorization_error"
+                  }
+                },
+                "schema": {
+                  "description": "Standard error response format",
+                  "properties": {
+                    "error": {
+                      "description": "Error details",
+                      "properties": {
+                        "docs_url": {
+                          "description": "Link to relevant documentation",
+                          "format": "uri",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error message",
+                          "type": "string"
+                        },
+                        "request_id": {
+                          "description": "Unique request identifier for debugging",
+                          "type": "string"
+                        },
+                        "type": {
+                          "description": "The category of error that occurred",
+                          "enum": [
+                            "authorization_error",
+                            "validation_error",
+                            "not_found",
+                            "rate_limited",
+                            "server_error",
+                            "not_implemented"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["type", "message"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["error"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Authentication required"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Resource not found",
+                    "type": "not_found"
+                  }
+                },
+                "schema": {
+                  "description": "Standard error response format",
+                  "properties": {
+                    "error": {
+                      "description": "Error details",
+                      "properties": {
+                        "docs_url": {
+                          "description": "Link to relevant documentation",
+                          "format": "uri",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error message",
+                          "type": "string"
+                        },
+                        "request_id": {
+                          "description": "Unique request identifier for debugging",
+                          "type": "string"
+                        },
+                        "type": {
+                          "description": "The category of error that occurred",
+                          "enum": [
+                            "authorization_error",
+                            "validation_error",
+                            "not_found",
+                            "rate_limited",
+                            "server_error",
+                            "not_implemented"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["type", "message"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["error"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Resource not found"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Rate limit exceeded",
+                    "type": "rate_limited"
+                  }
+                },
+                "schema": {
+                  "description": "Standard error response format",
+                  "properties": {
+                    "error": {
+                      "description": "Error details",
+                      "properties": {
+                        "docs_url": {
+                          "description": "Link to relevant documentation",
+                          "format": "uri",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error message",
+                          "type": "string"
+                        },
+                        "request_id": {
+                          "description": "Unique request identifier for debugging",
+                          "type": "string"
+                        },
+                        "type": {
+                          "description": "The category of error that occurred",
+                          "enum": [
+                            "authorization_error",
+                            "validation_error",
+                            "not_found",
+                            "rate_limited",
+                            "server_error",
+                            "not_implemented"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["type", "message"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["error"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Rate limit exceeded"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "An unexpected error occurred",
+                    "type": "server_error"
+                  }
+                },
+                "schema": {
+                  "description": "Standard error response format",
+                  "properties": {
+                    "error": {
+                      "description": "Error details",
+                      "properties": {
+                        "docs_url": {
+                          "description": "Link to relevant documentation",
+                          "format": "uri",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error message",
+                          "type": "string"
+                        },
+                        "request_id": {
+                          "description": "Unique request identifier for debugging",
+                          "type": "string"
+                        },
+                        "type": {
+                          "description": "The category of error that occurred",
+                          "enum": [
+                            "authorization_error",
+                            "validation_error",
+                            "not_found",
+                            "rate_limited",
+                            "server_error",
+                            "not_implemented"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["type", "message"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["error"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "summary": "Published model insights and weekly statistics (beta)",
+        "tags": ["Models"],
+        "x-hidden": true,
+        "x-mint": {
+          "href": "/platform-apis/v1/models/insights",
+          "metadata": {
+            "noindex": true,
+            "sidebarTitle": "Model insights",
+            "tag": "Beta"
+          }
+        }
+      }
+    },
     "/models/pricing": {
       "get": {
         "description": "\nReturns unit pricing for requested endpoint IDs. Most models use\n**output-based** pricing (e.g., per image/video with proportional\nadjustments for resolution/length). Some models use **GPU-based** pricing\ndepending on architecture. Values are expressed per model's billing unit\nin a given currency.\n\n**Authentication:** Required. Users must provide a valid API key. \nCustom pricing or discounts may be applied based on account status.\n\n**Common Use Cases:**\n- Display pricing in user interfaces\n- Compare pricing across different models\n- Build cost estimation tools\n- Check current billing rates\n\nSee [fal.ai pricing](https://fal.ai/pricing) for more details.\n    ",
