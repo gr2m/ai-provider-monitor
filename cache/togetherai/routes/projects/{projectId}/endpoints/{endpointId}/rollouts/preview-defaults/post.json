@@ -24,6 +24,57 @@
   "requestBody": {
     "content": {
       "application/json": {
+        "examples": {
+          "blueGreen": {
+            "summary": "Blue-green cutover",
+            "value": {
+              "blueGreen": {},
+              "sourceDeploymentId": "dep_source123",
+              "targetDeploymentId": "dep_target456"
+            }
+          },
+          "canary": {
+            "summary": "Canary rollout with a metric gate",
+            "value": {
+              "canary": {
+                "stepInterval": "300s",
+                "steps": [
+                  {
+                    "traffic": 25
+                  },
+                  {
+                    "traffic": 50
+                  },
+                  {
+                    "traffic": 100
+                  }
+                ]
+              },
+              "metrics": [
+                {
+                  "name": "serving_latency",
+                  "percentile": 95,
+                  "stat": "METRIC_STAT_TYPE_PERCENTILE",
+                  "thresholdCheck": {
+                    "operator": "THRESHOLD_OPERATOR_LT",
+                    "value": 30000
+                  },
+                  "window": "300s"
+                }
+              ],
+              "sourceDeploymentId": "dep_source123",
+              "targetDeploymentId": "dep_target456"
+            }
+          },
+          "rolling": {
+            "summary": "Rolling replica swap",
+            "value": {
+              "rolling": {},
+              "sourceDeploymentId": "dep_source123",
+              "targetDeploymentId": "dep_target456"
+            }
+          }
+        },
         "schema": {
           "$ref": "#/components/schemas/DE.CreateRolloutRequest"
         }
@@ -35,6 +86,49 @@
     "200": {
       "content": {
         "application/json": {
+          "examples": {
+            "canary": {
+              "summary": "Preview of a canary create form with defaults filled in",
+              "value": {
+                "frozenPair": false,
+                "sourceReplicas": 4,
+                "spec": {
+                  "canary": {
+                    "stepInterval": "300s",
+                    "steps": [
+                      {
+                        "traffic": 25
+                      },
+                      {
+                        "traffic": 50
+                      },
+                      {
+                        "traffic": 100
+                      }
+                    ]
+                  },
+                  "metrics": [
+                    {
+                      "name": "serving_latency",
+                      "percentile": 95,
+                      "stat": "METRIC_STAT_TYPE_PERCENTILE",
+                      "thresholdCheck": {
+                        "operator": "THRESHOLD_OPERATOR_LT",
+                        "value": 30000
+                      },
+                      "window": "300s"
+                    }
+                  ],
+                  "sourceDeploymentId": "dep_source123",
+                  "targetDeploymentId": "dep_target456"
+                },
+                "targetMaxReplicas": 8,
+                "targetMinReplicas": 1,
+                "targetReplicas": 1,
+                "warnings": []
+              }
+            }
+          },
           "schema": {
             "$ref": "#/components/schemas/DE.RolloutDefaultsPreview"
           }
@@ -140,6 +234,44 @@
       },
       "DE.RolloutDefaultsPreview": {
         "description": "Completed create-form state — the caller's spec with defaulted values filled in, the steps the rollout is expected to walk, and the capacity context the defaults were computed from. Display only.",
+        "example": {
+          "frozenPair": false,
+          "sourceReplicas": 4,
+          "spec": {
+            "canary": {
+              "stepInterval": "300s",
+              "steps": [
+                {
+                  "traffic": 25
+                },
+                {
+                  "traffic": 50
+                },
+                {
+                  "traffic": 100
+                }
+              ]
+            },
+            "metrics": [
+              {
+                "name": "serving_latency",
+                "percentile": 95,
+                "stat": "METRIC_STAT_TYPE_PERCENTILE",
+                "thresholdCheck": {
+                  "operator": "THRESHOLD_OPERATOR_LT",
+                  "value": 30000
+                },
+                "window": "300s"
+              }
+            ],
+            "sourceDeploymentId": "dep_source123",
+            "targetDeploymentId": "dep_target456"
+          },
+          "targetMaxReplicas": 8,
+          "targetMinReplicas": 1,
+          "targetReplicas": 1,
+          "warnings": []
+        },
         "properties": {
           "estimatedEffectiveSteps": {
             "description": "Steps the rollout is expected to walk when the caller leaves steps unset. Display only. Empty when the caller supplied steps or no ladder applies.",
@@ -297,8 +429,6 @@
             "description": "Aggregation used for the metric. Optional for router_error_rate and inflight_requests; omitted values default to METRIC_STAT_TYPE_AVG. Required for router_latency, where AVG or PERCENTILE may be used.",
             "enum": [
               "METRIC_STAT_TYPE_AVG",
-              "METRIC_STAT_TYPE_MIN",
-              "METRIC_STAT_TYPE_MAX",
               "METRIC_STAT_TYPE_PERCENTILE"
             ],
             "type": "string"
