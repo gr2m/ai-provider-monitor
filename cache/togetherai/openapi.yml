@@ -2323,6 +2323,13 @@ components:
         - model
         - modelRevisionId
       type: object
+    DE.CompliancePolicy:
+      description: Compliance regimes required by a deployment placement policy.
+      properties:
+        hipaa:
+          description: Restrict placement to HIPAA-attested clusters.
+          type: boolean
+      type: object
     DE.Config:
       description: Resolved inference engine, orchestration framework, and selectors for one config revision.
       properties:
@@ -3207,6 +3214,10 @@ components:
     DE.InlinePlacement:
       description: Inline placement parameters expanded into scheduling rules by the server.
       properties:
+        compliancePolicy:
+          allOf:
+            - $ref: "#/components/schemas/DE.CompliancePolicy"
+          description: Compliance regimes required for clusters that run the deployment.
         constraint:
           description: How strictly the regions list is enforced.
           enum:
@@ -3634,7 +3645,7 @@ components:
         - object
       type: object
     DE.MetricResult:
-      description: Observed metric result enriched with rollout rule criteria and verdict. Unmeasured rules are synthesized with verdict METRIC_VERDICT_UNAVAILABLE and no source or target value.
+      description: Observed metric result enriched with rollout rule criteria and the rule's recorded verdict. Unmeasured rules are synthesized with verdict METRIC_VERDICT_UNAVAILABLE and no source or target value.
       properties:
         check:
           description: Evaluation form used by the metric rule.
@@ -3647,6 +3658,9 @@ components:
           enum:
             - REGRESSION_DIRECTION_HIGHER_IS_WORSE
             - REGRESSION_DIRECTION_LOWER_IS_WORSE
+          type: string
+        failureReason:
+          description: Rule-specific failure text. Set only when verdict is METRIC_VERDICT_BREACHED and the gate recorded one.
           type: string
         maxRegressionPercent:
           description: Regression percentage limit used when check is METRIC_CHECK_TYPE_REGRESSION.
@@ -3683,7 +3697,7 @@ components:
           description: Threshold criteria used when check is METRIC_CHECK_TYPE_THRESHOLD.
           type: number
         verdict:
-          description: Result of evaluating this metric at the gate.
+          description: Rule decision recorded by the metric gate. Absent when no decision was recorded.
           enum:
             - METRIC_VERDICT_PASS
             - METRIC_VERDICT_BREACHED
@@ -4044,10 +4058,9 @@ components:
             - REGRESSION_DIRECTION_LOWER_IS_WORSE
           type: string
         maxRegressionPercent:
-          description: Required finite maximum allowed regression percentage, greater than or equal to 0. A value of 0 is the strictest budget; any regression fails, and exactly-at-budget passes.
+          description: Finite maximum allowed regression percentage, greater than or equal to 0. Omitting this value is read as 0. A value of 0 is the strictest budget; any regression fails, and exactly-at-budget passes.
           type: number
       required:
-        - maxRegressionPercent
         - direction
       type: object
     DE.RemoteUpload:
@@ -5075,14 +5088,17 @@ components:
           type: string
         value:
           description: |-
-            Required finite threshold value. Interpreted in the metric's unit:
+            Finite threshold value. Interpreted in the metric's unit:
             router_error_rate is a ratio in [0, 1], router_latency is
-            milliseconds, and inflight_requests is a raw count. Thresholds that
-            no achievable value could pass, or that every achievable value
-            passes, are rejected at create.
+            milliseconds, and inflight_requests is in-flight requests per ready
+            replica averaged over the rule window. Thresholds that no
+            achievable value could pass, or that every achievable value passes,
+            are rejected at create.
+
+            Omitting this value is read as 0. Set 0 explicitly for the strictest
+            threshold: nothing at all is tolerated.
           type: number
       required:
-        - value
         - operator
       type: object
     DE.ThroughputMetrics:
@@ -8821,6 +8837,12 @@ components:
         - messages_waiting
         - total_jobs
       type: object
+    RL.AdamConfig:
+      additionalProperties: false
+      description: Adam optimizer configuration
+      properties: {}
+      type: object
+      x-stainless-empty-object: true
     RL.AdamParams:
       description: Per-step Adam optimizer overrides.
       properties:
@@ -8854,12 +8876,6 @@ components:
           example: 0.1
           type: number
       type: object
-    RL.AdamWOptimizerConfig:
-      additionalProperties: false
-      description: AdamW optimizer configuration
-      properties: {}
-      type: object
-      x-stainless-empty-object: true
     RL.CISPOLossParams:
       properties:
         clip_high_threshold:
@@ -9630,12 +9646,12 @@ components:
           $ref: "#/components/schemas/RL.ModelLoraModeConfig"
           description: LoRA training config. Set when the model supports LoRA training.
       type: object
-    RL.MuonOptimizerConfig:
+    RL.MuonConfig:
       description: Advanced configuration for the Muon optimizer.
       properties:
         scaling_strategy:
           $ref: "#/components/schemas/RL.MuonScalingStrategy"
-          default: MUON_SCALING_STRATEGY_MATCH_ADAMW
+          default: MUON_SCALING_STRATEGY_MATCH_ADAM
           description: Scaling strategy for the Muon optimizer.
           example: MUON_SCALING_STRATEGY_ORIGINAL
       type: object
@@ -9674,7 +9690,7 @@ components:
       default: MUON_SCALING_STRATEGY_UNSPECIFIED
       enum:
         - MUON_SCALING_STRATEGY_UNSPECIFIED
-        - MUON_SCALING_STRATEGY_MATCH_ADAMW
+        - MUON_SCALING_STRATEGY_MATCH_ADAM
         - MUON_SCALING_STRATEGY_ORIGINAL
       type: string
     RL.OptimStepBody:
@@ -9722,11 +9738,11 @@ components:
     RL.OptimizerConfig:
       description: Optimizer configuration
       properties:
-        adamw:
-          $ref: "#/components/schemas/RL.AdamWOptimizerConfig"
-          description: Use the AdamW optimizer.
+        adam:
+          $ref: "#/components/schemas/RL.AdamConfig"
+          description: Use the Adam optimizer.
         muon:
-          $ref: "#/components/schemas/RL.MuonOptimizerConfig"
+          $ref: "#/components/schemas/RL.MuonConfig"
           description: Use the Muon optimizer.
       type: object
     RL.PPOLossParams:
