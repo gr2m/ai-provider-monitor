@@ -29002,7 +29002,7 @@
     },
     "/models/insights": {
       "get": {
-        "description": "Experimental (beta): model guidance and tiering may change as we refine recommendations. Find model guidance by task or endpoint. Only current public models visible to the caller are returned. Statistics are optional, dated observations, not prices or quality benchmarks.",
+        "description": "Experimental (beta): model guidance and evidence may change as we refine recommendations. Find model guidance by task or endpoint. Only current public models visible to the caller are returned. Version 3 evidence includes p50/p90 in milliseconds, analytics category trending rank and registry publication dates. Statistics are optional, dated observations, not prices or quality benchmarks. Use get_pricing for current prices with their units and required configuration.",
         "operationId": "getModelInsights",
         "parameters": [
           {
@@ -29069,27 +29069,182 @@
             "content": {
               "application/json": {
                 "example": {
+                  "evidence": {
+                    "compiled_at": null,
+                    "evaluated_at": "2026-09-17T00:00:00.000Z",
+                    "instructions": "Missing measurements stay unknown. Use the pricing tool for current prices.",
+                    "latency_definition": "Successful execution observations in milliseconds; mixed workloads; excludes queue/startup; not runtime guarantees.",
+                    "models": [
+                      {
+                        "endpoint_id": "fal-ai/flux/dev",
+                        "evidence": null
+                      }
+                    ],
+                    "version": 3,
+                    "window_end": null,
+                    "window_start": null
+                  },
                   "models": [
                     {
                       "category": "text-to-image",
                       "display_name": "FLUX.1 [dev]",
                       "endpoint_id": "fal-ai/flux/dev",
                       "insights": [],
-                      "relevance": null,
-                      "stats": {
-                        "speed_tier": "typical",
-                        "usage_tier": "high",
-                        "window_end": "2026-09-14T00:00:00.000Z",
-                        "window_start": "2026-09-07T00:00:00.000Z"
-                      }
+                      "relevance": null
                     }
                   ],
                   "note": "Category-relative observations; not prices or quality benchmarks.",
-                  "stats_available": true,
+                  "stats_available": false,
                   "unavailable_endpoint_ids": []
                 },
                 "schema": {
                   "properties": {
+                    "evidence": {
+                      "description": "Version 3 evidence for account-visible models. Weekly windows are execution measurements; trending carries its own source date. Missing evidence stays null.",
+                      "properties": {
+                        "compiled_at": {
+                          "description": "UTC time when the weekly snapshot was compiled, or null when no valid snapshot is available.",
+                          "type": ["string", "null"]
+                        },
+                        "evaluated_at": {
+                          "description": "UTC time when newness and trending freshness were evaluated for this response.",
+                          "type": "string"
+                        },
+                        "instructions": {
+                          "description": "How to interpret observations, unknowns, trending, adoption, newness and authored guidance; use the pricing tool for current prices.",
+                          "type": "string"
+                        },
+                        "latency_definition": {
+                          "description": "Execution measurement definition and limitations: mixed workloads, excluding queue/startup, with no runtime guarantee.",
+                          "type": "string"
+                        },
+                        "models": {
+                          "description": "Evidence for the selected current public models visible to this caller.",
+                          "items": {
+                            "properties": {
+                              "endpoint_id": {
+                                "description": "Current public model endpoint identifier visible to this caller.",
+                                "type": "string"
+                              },
+                              "evidence": {
+                                "description": "Weekly evidence for this model, or null when the snapshot is unavailable or the current model category does not match.",
+                                "properties": {
+                                  "category": {
+                                    "description": "Catalog category used for adoption tiers and analytics trending rank.",
+                                    "type": "string"
+                                  },
+                                  "endpoint_id": {
+                                    "description": "Model endpoint identifier recorded in the weekly snapshot.",
+                                    "type": "string"
+                                  },
+                                  "is_new": {
+                                    "description": "Whether registry publication is within the inclusive 30 days ending at evaluated_at. Future publication is false; unknown publication is null.",
+                                    "type": ["boolean", "null"]
+                                  },
+                                  "latency": {
+                                    "description": "Observed execution latency across mixed workloads, excluding queue/startup; not a benchmark or runtime guarantee.",
+                                    "properties": {
+                                      "latest_request_at": {
+                                        "description": "Latest observed request end time in UTC for this endpoint within the measurement week, or null when missing; not proof of source completeness.",
+                                        "type": ["string", "null"]
+                                      },
+                                      "p50_ms": {
+                                        "description": "Observed successful execution p50 in milliseconds over window_start to window_end, or null for missing or insufficient measurements.",
+                                        "type": ["number", "null"]
+                                      },
+                                      "p90_ms": {
+                                        "description": "Observed successful execution p90 in milliseconds over window_start to window_end, or null for missing or insufficient measurements.",
+                                        "type": ["number", "null"]
+                                      },
+                                      "sufficient_evidence": {
+                                        "description": "Whether at least 30 successful execution samples, 10 distinct callers and both percentiles were available; not a confidence interval or runtime guarantee.",
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "p50_ms",
+                                      "p90_ms",
+                                      "sufficient_evidence",
+                                      "latest_request_at"
+                                    ],
+                                    "type": "object"
+                                  },
+                                  "published_at": {
+                                    "description": "Registry publication time in UTC recorded in the snapshot, or null when unknown; not first usage.",
+                                    "type": ["string", "null"]
+                                  },
+                                  "title": {
+                                    "description": "Model title recorded in the weekly snapshot.",
+                                    "type": "string"
+                                  },
+                                  "trending": {
+                                    "description": "Category trending evidence from the existing analytics model, or null when missing, category-mismatched, future-dated or more than seven days old at evaluated_at.",
+                                    "properties": {
+                                      "category_rank": {
+                                        "description": "Existing analytics model's rank within this category; separate from adoption tiers and authored recommendation order.",
+                                        "type": "number"
+                                      },
+                                      "computed_at": {
+                                        "description": "UTC source timestamp when analytics computed the trending rank, independent of the weekly execution window.",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "category_rank",
+                                      "computed_at"
+                                    ],
+                                    "type": ["object", "null"]
+                                  },
+                                  "usage_tier": {
+                                    "description": "Coarse category-relative adoption tier, or null for insufficient evidence. No raw counts are exposed; this is not trending or quality.",
+                                    "enum": ["high", "medium", "low"],
+                                    "type": ["string", "null"]
+                                  }
+                                },
+                                "required": [
+                                  "endpoint_id",
+                                  "title",
+                                  "category",
+                                  "usage_tier",
+                                  "latency",
+                                  "trending",
+                                  "published_at",
+                                  "is_new"
+                                ],
+                                "type": ["object", "null"]
+                              }
+                            },
+                            "required": ["endpoint_id", "evidence"],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "version": {
+                          "description": "Version of the model evidence contract.",
+                          "enum": [3],
+                          "type": "number"
+                        },
+                        "window_end": {
+                          "description": "Exclusive UTC end of the execution and adoption measurement week, or null when unavailable.",
+                          "type": ["string", "null"]
+                        },
+                        "window_start": {
+                          "description": "Inclusive UTC start of the execution and adoption measurement week, or null when unavailable.",
+                          "type": ["string", "null"]
+                        }
+                      },
+                      "required": [
+                        "version",
+                        "compiled_at",
+                        "window_start",
+                        "window_end",
+                        "evaluated_at",
+                        "latency_definition",
+                        "instructions",
+                        "models"
+                      ],
+                      "type": "object"
+                    },
                     "models": {
                       "description": "Current public models visible to the authenticated caller.",
                       "items": {
@@ -29156,36 +29311,6 @@
                           "relevance": {
                             "description": "Search relevance score, or null without a search match; not a quality score.",
                             "type": ["number", "null"]
-                          },
-                          "stats": {
-                            "description": "Coarse statistics for the last completed week, or null when unavailable.",
-                            "properties": {
-                              "speed_tier": {
-                                "description": "Coarse execution-speed tier within the model's category, or null for insufficient evidence. Mixes workloads and excludes queue/startup; not a benchmark.",
-                                "enum": ["fast", "typical", "slow"],
-                                "type": ["string", "null"]
-                              },
-                              "usage_tier": {
-                                "description": "Coarse usage tier within the model's category, or null for insufficient evidence. Exact counts are never returned.",
-                                "enum": ["high", "medium", "low"],
-                                "type": ["string", "null"]
-                              },
-                              "window_end": {
-                                "description": "Exclusive UTC end of the observation week.",
-                                "type": "string"
-                              },
-                              "window_start": {
-                                "description": "Inclusive UTC start of the observation week.",
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "window_start",
-                              "window_end",
-                              "usage_tier",
-                              "speed_tier"
-                            ],
-                            "type": ["object", "null"]
                           }
                         },
                         "required": [
@@ -29193,19 +29318,18 @@
                           "display_name",
                           "category",
                           "relevance",
-                          "insights",
-                          "stats"
+                          "insights"
                         ],
                         "type": "object"
                       },
                       "type": "array"
                     },
                     "note": {
-                      "description": "Guidance on interpreting relevance and coarse observation tiers.",
+                      "description": "Guidance on interpreting observations, trending, adoption, newness and recommendations.",
                       "type": "string"
                     },
                     "stats_available": {
-                      "description": "Whether a valid snapshot for the last completed week was available; individual model tiers may still be unknown.",
+                      "description": "Whether a valid snapshot for the last completed week was available; individual model evidence may still be unknown.",
                       "type": "boolean"
                     },
                     "unavailable_endpoint_ids": {
@@ -29217,6 +29341,7 @@
                     }
                   },
                   "required": [
+                    "evidence",
                     "models",
                     "unavailable_endpoint_ids",
                     "stats_available",
