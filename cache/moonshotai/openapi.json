@@ -255,6 +255,21 @@
                 "description": "Number of tokens in the prompt",
                 "type": "integer"
               },
+              "prompt_tokens_details": {
+                "description": "Breakdown of prompt tokens. cached_tokens, cache_write_tokens and the uncached remainder are mutually exclusive and sum to prompt_tokens",
+                "properties": {
+                  "cache_write_tokens": {
+                    "description": "Number of tokens written to the cache by this request. Billed according to the TTL tier at write time; see prompt_cache_options",
+                    "type": "integer"
+                  },
+                  "cached_tokens": {
+                    "description": "Number of tokens served from cache",
+                    "type": "integer"
+                  }
+                },
+                "required": ["cached_tokens", "cache_write_tokens"],
+                "type": "object"
+              },
               "total_tokens": {
                 "description": "Total number of tokens used",
                 "type": "integer"
@@ -359,6 +374,21 @@
                 "description": "Number of tokens in the prompt",
                 "type": "integer"
               },
+              "prompt_tokens_details": {
+                "description": "Breakdown of prompt tokens. cached_tokens, cache_write_tokens and the uncached remainder are mutually exclusive and sum to prompt_tokens",
+                "properties": {
+                  "cache_write_tokens": {
+                    "description": "Number of tokens written to the cache by this request. Billed according to the TTL tier at write time; see prompt_cache_options",
+                    "type": "integer"
+                  },
+                  "cached_tokens": {
+                    "description": "Number of tokens served from cache",
+                    "type": "integer"
+                  }
+                },
+                "required": ["cached_tokens", "cache_write_tokens"],
+                "type": "object"
+              },
               "total_tokens": {
                 "description": "Total number of tokens used",
                 "type": "integer"
@@ -421,6 +451,24 @@
             "default": null,
             "description": "Used to cache responses for similar requests to optimize cache hit rates. For Coding Agents, this is typically a session id or task id representing a single session; if the session is exited and later resumed, this value should remain the same. For Kimi Code Plan, this field is required to improve cache hit rates. For other agents involving multi-turn conversations, it is also recommended to implement this field",
             "type": "string"
+          },
+          "prompt_cache_options": {
+            "description": "Context cache write options. When omitted, cache write is enabled by default (5m tier): the system automatically writes the request prefix to the 5m cache tier",
+            "properties": {
+              "mode": {
+                "default": "implicit",
+                "description": "Cache write mode. Only implicit is supported: automatically writes the request prefix to the cache",
+                "enum": ["implicit"],
+                "type": "string"
+              },
+              "ttl": {
+                "default": "5m",
+                "description": "Lifetime of the written cache. The 5m and 1h tiers are independent of each other. When a request with the same prefix hits the cache within its lifetime, the cache entry is refreshed with its original TTL",
+                "enum": ["5m", "1h"],
+                "type": "string"
+              }
+            },
+            "type": "object"
           },
           "response_format": {
             "description": "Controls the model output format. Default is {\"type\": \"text\"} for plain text output. Set to {\"type\": \"json_object\"} to enable JSON mode, ensuring output is a valid JSON object (you must guide the model to output JSON in the prompt). Set to {\"type\": \"json_schema\"} to enable Structured Output, constraining output to match a specified JSON Schema (recommended, requires the json_schema field). If you encounter schema validation issues, please submit feedback at walle GitHub Issues (https://github.com/MoonshotAI/walle/issues).",
@@ -583,6 +631,24 @@
             "default": null,
             "description": "Used to cache responses for similar requests to optimize cache hit rates. For Coding Agents, this is typically a session id or task id representing a single session; if the session is exited and later resumed, this value should remain the same. For Kimi Code Plan, this field is required to improve cache hit rates. For other agents involving multi-turn conversations, it is also recommended to implement this field",
             "type": "string"
+          },
+          "prompt_cache_options": {
+            "description": "Context cache write options. When omitted, cache write is enabled by default (5m tier): the system automatically writes the request prefix to the 5m cache tier",
+            "properties": {
+              "mode": {
+                "default": "implicit",
+                "description": "Cache write mode. Only implicit is supported: automatically writes the request prefix to the cache",
+                "enum": ["implicit"],
+                "type": "string"
+              },
+              "ttl": {
+                "default": "5m",
+                "description": "Lifetime of the written cache. The 5m and 1h tiers are independent of each other. When a request with the same prefix hits the cache within its lifetime, the cache entry is refreshed with its original TTL",
+                "enum": ["5m", "1h"],
+                "type": "string"
+              }
+            },
+            "type": "object"
           },
           "response_format": {
             "description": "Controls the model output format. Default is {\"type\": \"text\"} for plain text output. Set to {\"type\": \"json_object\"} to enable JSON mode, ensuring output is a valid JSON object (you must guide the model to output JSON in the prompt). Set to {\"type\": \"json_schema\"} to enable Structured Output, constraining output to match a specified JSON Schema (recommended, requires the json_schema field). If you encounter schema validation issues, please submit feedback at walle GitHub Issues (https://github.com/MoonshotAI/walle/issues).",
@@ -1413,6 +1479,24 @@
       },
       "MessagesRequest": {
         "properties": {
+          "cache_control": {
+            "description": "Context cache write options. Only effective when passed at the top level; cache_control markers inside the messages array are ignored. When omitted, the request only attempts to read the cache (5m tier) and does not write",
+            "properties": {
+              "ttl": {
+                "default": "5m",
+                "description": "Lifetime of the written cache. The 5m and 1h tiers are independent of each other. When a request with the same prefix hits the cache within its lifetime, the cache entry is refreshed with its original TTL",
+                "enum": ["5m", "1h"],
+                "type": "string"
+              },
+              "type": {
+                "description": "Cache type, fixed as ephemeral",
+                "enum": ["ephemeral"],
+                "type": "string"
+              }
+            },
+            "required": ["type"],
+            "type": "object"
+          },
           "max_tokens": {
             "description": "Maximum number of tokens to generate, required. If the limit is reached before the model finishes, `stop_reason` is `max_tokens`.",
             "minimum": 1,
@@ -1601,6 +1685,24 @@
           "usage": {
             "description": "Token usage",
             "properties": {
+              "cache_creation": {
+                "description": "Cache write breakdown by TTL tier",
+                "properties": {
+                  "ephemeral_1h_input_tokens": {
+                    "description": "Input tokens written to the 1-hour cache tier",
+                    "type": "integer"
+                  },
+                  "ephemeral_5m_input_tokens": {
+                    "description": "Input tokens written to the 5-minute cache tier",
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "ephemeral_5m_input_tokens",
+                  "ephemeral_1h_input_tokens"
+                ],
+                "type": "object"
+              },
               "cache_creation_input_tokens": {
                 "description": "Input tokens written to cache",
                 "type": "integer"
@@ -1610,7 +1712,7 @@
                 "type": "integer"
               },
               "input_tokens": {
-                "description": "Input tokens (excluding cache hits)",
+                "description": "Input tokens (excluding cache hits and cache writes). Total input = input_tokens + cache_read_input_tokens + cache_creation_input_tokens",
                 "type": "integer"
               },
               "output_tokens": {
@@ -1805,6 +1907,24 @@
               },
               "usage": {
                 "properties": {
+                  "cache_creation": {
+                    "description": "Cache write breakdown by TTL tier",
+                    "properties": {
+                      "ephemeral_1h_input_tokens": {
+                        "description": "Input tokens written to the 1-hour cache tier",
+                        "type": "integer"
+                      },
+                      "ephemeral_5m_input_tokens": {
+                        "description": "Input tokens written to the 5-minute cache tier",
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "ephemeral_5m_input_tokens",
+                      "ephemeral_1h_input_tokens"
+                    ],
+                    "type": "object"
+                  },
                   "cache_creation_input_tokens": {
                     "description": "Input tokens written to cache",
                     "type": "integer"
@@ -1814,7 +1934,7 @@
                     "type": "integer"
                   },
                   "input_tokens": {
-                    "description": "Input tokens (excluding cache hits)",
+                    "description": "Input tokens (excluding cache hits and cache writes). Total input = input_tokens + cache_read_input_tokens + cache_creation_input_tokens",
                     "type": "integer"
                   },
                   "output_tokens": {
@@ -2628,6 +2748,24 @@
             "description": "Context cache identifier. Reusing the same value across a session improves cache hit rate.",
             "type": "string"
           },
+          "prompt_cache_options": {
+            "description": "Context cache write options. When omitted, cache write is enabled by default (5m tier): the system automatically writes the request prefix to the 5m cache tier",
+            "properties": {
+              "mode": {
+                "default": "implicit",
+                "description": "Cache write mode. Only implicit is supported: automatically writes the request prefix to the cache",
+                "enum": ["implicit"],
+                "type": "string"
+              },
+              "ttl": {
+                "default": "5m",
+                "description": "Lifetime of the written cache. The 5m and 1h tiers are independent of each other. When a request with the same prefix hits the cache within its lifetime, the cache entry is refreshed with its original TTL",
+                "enum": ["5m", "1h"],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
           "reasoning": {
             "description": "Reasoning configuration.",
             "properties": {
@@ -2768,6 +2906,22 @@
           "previous_response_id": {
             "description": "Always `null`.",
             "type": ["string", "null"]
+          },
+          "prompt_cache_options": {
+            "description": "The context cache write options actually applied by the server. When the request omits prompt_cache_options, refer to the mode and ttl returned here",
+            "properties": {
+              "mode": {
+                "description": "The write mode actually applied",
+                "enum": ["implicit"],
+                "type": "string"
+              },
+              "ttl": {
+                "description": "The cache lifetime actually applied",
+                "enum": ["5m", "1h"],
+                "type": "string"
+              }
+            },
+            "type": "object"
           },
           "reasoning": {
             "type": ["object", "null"]
