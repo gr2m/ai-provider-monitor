@@ -100,6 +100,31 @@
     "schemas": {
       "MessagesRequest": {
         "properties": {
+          "cache_control": {
+            "description": "Context cache write options. Only effective when passed at the top level; cache_control markers inside the messages array are ignored. When omitted, the request only attempts to read the cache (5m tier) and does not write",
+            "properties": {
+              "ttl": {
+                "default": "5m",
+                "description": "Lifetime of the written cache. The 5m and 1h tiers are independent of each other. When a request with the same prefix hits the cache within its lifetime, the cache entry is refreshed with its original TTL",
+                "enum": [
+                  "5m",
+                  "1h"
+                ],
+                "type": "string"
+              },
+              "type": {
+                "description": "Cache type, fixed as ephemeral",
+                "enum": [
+                  "ephemeral"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "type": "object"
+          },
           "max_tokens": {
             "description": "Maximum number of tokens to generate, required. If the limit is reached before the model finishes, `stop_reason` is `max_tokens`.",
             "minimum": 1,
@@ -336,6 +361,24 @@
           "usage": {
             "description": "Token usage",
             "properties": {
+              "cache_creation": {
+                "description": "Cache write breakdown by TTL tier",
+                "properties": {
+                  "ephemeral_1h_input_tokens": {
+                    "description": "Input tokens written to the 1-hour cache tier",
+                    "type": "integer"
+                  },
+                  "ephemeral_5m_input_tokens": {
+                    "description": "Input tokens written to the 5-minute cache tier",
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "ephemeral_5m_input_tokens",
+                  "ephemeral_1h_input_tokens"
+                ],
+                "type": "object"
+              },
               "cache_creation_input_tokens": {
                 "description": "Input tokens written to cache",
                 "type": "integer"
@@ -345,7 +388,7 @@
                 "type": "integer"
               },
               "input_tokens": {
-                "description": "Input tokens (excluding cache hits)",
+                "description": "Input tokens (excluding cache hits and cache writes). Total input = input_tokens + cache_read_input_tokens + cache_creation_input_tokens",
                 "type": "integer"
               },
               "output_tokens": {
@@ -589,6 +632,24 @@
               },
               "usage": {
                 "properties": {
+                  "cache_creation": {
+                    "description": "Cache write breakdown by TTL tier",
+                    "properties": {
+                      "ephemeral_1h_input_tokens": {
+                        "description": "Input tokens written to the 1-hour cache tier",
+                        "type": "integer"
+                      },
+                      "ephemeral_5m_input_tokens": {
+                        "description": "Input tokens written to the 5-minute cache tier",
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "ephemeral_5m_input_tokens",
+                      "ephemeral_1h_input_tokens"
+                    ],
+                    "type": "object"
+                  },
                   "cache_creation_input_tokens": {
                     "description": "Input tokens written to cache",
                     "type": "integer"
@@ -598,7 +659,7 @@
                     "type": "integer"
                   },
                   "input_tokens": {
-                    "description": "Input tokens (excluding cache hits)",
+                    "description": "Input tokens (excluding cache hits and cache writes). Total input = input_tokens + cache_read_input_tokens + cache_creation_input_tokens",
                     "type": "integer"
                   },
                   "output_tokens": {
