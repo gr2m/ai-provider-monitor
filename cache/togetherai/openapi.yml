@@ -2215,6 +2215,14 @@ components:
         minReplicas:
           description: Minimum number of replicas. Omit on update to preserve the current value. Set both `minReplicas` and `maxReplicas` to `0` to stop the deployment.
           type: integer
+        scaleDown:
+          allOf:
+            - $ref: "#/components/schemas/DE.ScalingRules"
+          description: |-
+            Rate limits applied when scaling down. Stabilization remains controlled by `scaleDownWindow`.
+            Omitted fields are preserved on update; a non-empty policy list replaces the previous list.
+            To clear policies or reset the selector, explicitly mask that leaf field. Empty lists in
+            parent-only updates are treated as omitted.
         scaleDownWindow:
           description: Time a lower replica recommendation must remain stable before scaling down. Defaults to `5m`.
           pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
@@ -2223,6 +2231,14 @@ components:
           description: Idle period after which the deployment automatically stops and releases its replicas.
           pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
           type: string
+        scaleUp:
+          allOf:
+            - $ref: "#/components/schemas/DE.ScalingRules"
+          description: |-
+            Rate limits applied when scaling up. Stabilization remains controlled by `scaleUpWindow`.
+            Omitted fields are preserved on update; a non-empty policy list replaces the previous list.
+            To clear policies or reset the selector, explicitly mask that leaf field. Empty lists in
+            parent-only updates are treated as omitted.
         scaleUpWindow:
           description: Stabilization window before scaling up.
           pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
@@ -2408,9 +2424,9 @@ components:
         configId:
           description: Deprecated. Use `config`. Config revision identifier to deploy, accepted when `config` is unset.
           type: string
-        enableLora:
-          description: Enables dynamic loading of LoRA adapters on the deployment.
-          type: boolean
+        inactiveTimeout:
+          description: Inactive timeout in minutes. Use 0 or omit to disable automatic stopping; otherwise accepted values are 30 through 1440.
+          type: integer
         model:
           description: Model resource name in the form `projects/{projectId}/models/{modelId}[/revisions/{revisionId}]`. Omit the revision segment to pin the latest revision at creation time.
           type: string
@@ -2592,9 +2608,6 @@ components:
           description: Number of replicas the autoscaler currently wants across all regions.
           readOnly: true
           type: integer
-        enableLora:
-          description: Whether the deployment can dynamically load LoRA adapters.
-          type: boolean
         endpointId:
           description: ID of the endpoint that contains the deployment.
           type: string
@@ -2614,6 +2627,9 @@ components:
           description: Unique deployment identifier.
           readOnly: true
           type: string
+        inactiveTimeout:
+          description: Minutes without an inference request before the deployment stops automatically. Omitted or 0 means automatic stopping is disabled.
+          type: integer
         model:
           description: Pinned model resource in the form `projects/{projectId}/models/{modelId}/revisions/{revisionId}`.
           type: string
@@ -4366,7 +4382,7 @@ components:
               - traffic: 50
               - traffic: 100
           metrics:
-            - name: serving_latency
+            - name: router_latency
               percentile: 95
               stat: METRIC_STAT_TYPE_PERCENTILE
               thresholdCheck:
@@ -4546,6 +4562,69 @@ components:
         - name
         - type
         - target
+      type: object
+    DE.ScalingPolicy:
+      description: Replica rate-limit policy applied over a trailing window.
+      properties:
+        periodSeconds:
+          description: Trailing rate-limit window in seconds, from 1 to 1800.
+          maximum: 1800
+          minimum: 1
+          type: integer
+        type:
+          description: |-
+            Whether `value` is a replica count or a percentage of the replica count at the start
+            of the trailing period. Scaling events within that period count against the allowance;
+            percentages are rounded to whole replicas.
+          enum:
+            - SCALING_POLICY_TYPE_PODS
+            - SCALING_POLICY_TYPE_PERCENT
+          type: string
+        value:
+          description: Positive replica count or percentage used as the rate-limit amount.
+          maximum: 2147483647
+          minimum: 1
+          type: integer
+      required:
+        - type
+        - value
+        - periodSeconds
+      type: object
+    DE.ScalingRules:
+      description: Rate limits applied after stabilization and before replica bounds.
+      example:
+        policies:
+          - periodSeconds: 60
+            type: SCALING_POLICY_TYPE_PERCENT
+            value: 25
+          - periodSeconds: 60
+            type: SCALING_POLICY_TYPE_PODS
+            value: 10
+        selectPolicy: SCALING_POLICY_SELECT_MIN
+      properties:
+        policies:
+          description: |-
+            Non-empty lists replace the existing policies. To clear policies, include
+            `autoscaling.scaleDown.policies` or `autoscaling.scaleUp.policies` in the update mask
+            and supply an empty scaling rules object or `policies: []`.
+          items:
+            $ref: "#/components/schemas/DE.ScalingPolicy"
+          type: array
+        selectPolicy:
+          description: |-
+            `SCALING_POLICY_SELECT_MIN` chooses the policy allowing the smallest replica change;
+            `SCALING_POLICY_SELECT_MAX` chooses the largest. These are caps, not guaranteed changes.
+            `SCALING_POLICY_SELECT_DISABLED` holds this direction steady while replica bounds still apply.
+            Omitted preserves the existing selector on update. When no selector is configured,
+            authored policies use MAX; with no policies configured, the platform defaults apply.
+            To reset the selector, include `autoscaling.scaleDown.selectPolicy` or
+            `autoscaling.scaleUp.selectPolicy` in the update mask and omit `selectPolicy`.
+            Clear both policies and `selectPolicy` to restore inherited defaults.
+          enum:
+            - SCALING_POLICY_SELECT_MAX
+            - SCALING_POLICY_SELECT_MIN
+            - SCALING_POLICY_SELECT_DISABLED
+          type: string
       type: object
     DE.Selector:
       description: Hardware or runtime requirement expressed as a key-value pair.
@@ -4976,6 +5055,9 @@ components:
               - MODALITY_VIDEO
             type: string
           type: array
+        pricing:
+          $ref: "#/components/schemas/DE.SupportedModelPricing"
+          description: Serverless pricing in USD per one million tokens, if available.
         products:
           description: Product surfaces where the model is offered.
           items:
@@ -5092,6 +5174,22 @@ components:
         timeToFirstTokenMs:
           description: Time to first token in milliseconds.
           type: integer
+      type: object
+    DE.SupportedModelPricing:
+      description: Serverless token pricing for a supported model.
+      properties:
+        cachedInput:
+          description: Price in USD per one million cached input tokens.
+          format: double
+          type: number
+        input:
+          description: Price in USD per one million input tokens.
+          format: double
+          type: number
+        output:
+          description: Price in USD per one million output tokens.
+          format: double
+          type: number
       type: object
     DE.ThresholdCheck:
       description: Threshold criteria that fail when the target metric violates the configured bound.
@@ -5219,6 +5317,9 @@ components:
         etag:
           description: Current deployment version. The update is rejected if this value no longer matches.
           type: string
+        inactiveTimeout:
+          description: Updated inactive timeout in minutes. Use 0 to disable automatic stopping; otherwise accepted values are 30 through 1440.
+          type: integer
         name:
           description: Updated endpoint string.
           type: string
@@ -9588,6 +9689,7 @@ components:
       enum:
         - MODEL_RESOURCES_ERROR_CODE_CAPACITY_WAIT_TIMEOUT
         - MODEL_RESOURCES_ERROR_CODE_PROVISIONING_FAILED
+        - MODEL_RESOURCES_ERROR_CODE_RESOURCE_UNAVAILABLE
       type: string
     RL.ModelResourcesEstimateCostResponse:
       properties:
@@ -19668,7 +19770,7 @@ paths:
                       - traffic: 50
                       - traffic: 100
                   metrics:
-                    - name: serving_latency
+                    - name: router_latency
                       percentile: 95
                       stat: METRIC_STAT_TYPE_PERCENTILE
                       thresholdCheck:
@@ -19706,7 +19808,7 @@ paths:
                           - traffic: 50
                           - traffic: 100
                       metrics:
-                        - name: serving_latency
+                        - name: router_latency
                           percentile: 95
                           stat: METRIC_STAT_TYPE_PERCENTILE
                           thresholdCheck:
