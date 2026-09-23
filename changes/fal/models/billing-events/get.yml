@@ -233,3 +233,51 @@
       after: '["request_id","endpoint_id","timestamp","quantity","output_units","unit","unit_price","percent_discount","cost_subtotal","cost_discount","cost_total","cost_estimate_nano_usd"]'
   date: '2026-09-15'
   diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1027
+- change: added
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: Added 'source' query parameter to choose data feed ('billed' or 'tagged-billed'); defaults to 'billed'.
+  paths:
+    - path: parameters[name=source]
+      before: 'null'
+      after: '{"in":"query","name":"source","required":false,"description":"Data source. ''billed'' is the default billed-event feed. ''tagged-billed'' reads the tagged billing-event pivot instead, populating each row''s ''tags'' and enabling the ''tag'' filter; it requires tagged reporting to be enabled for the account, and recent events are delayed relative to ''billed''.","schema":{"type":"string","enum":["billed","tagged-billed"],"default":"billed","example":"billed"}}'
+  date: '2026-09-23'
+  diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1055
+- change: added
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: Added 'tag' query parameter to filter results by X-Fal-Tags key=value pairs (AND across different keys; OR across repeated values for the same key).
+  paths:
+    - path: parameters[name=tag]
+      before: 'null'
+      after: '{"in":"query","name":"tag","required":false,"explode":true,"style":"form","description":"Filter by X-Fal-Tags ''key=value'' pairs. Accepts 1-10 filters: different keys are AND-combined (?tag=env=prod&tag=team=design), and repeating a key matches any of its values. Use the value ''(untagged)'' to match requests that did not set the key.","schema":{"anyOf":[{"type":"string"},{"type":"array","items":{"type":"string"}}],"example":["env=prod"]}}'
+  date: '2026-09-23'
+  diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1055
+- change: added
+  target: response
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: Added 'tags' object on each billing event, populated when source=tagged-billed, containing the request's activated X-Fal-Tags.
+  paths:
+    - path: responses.200.content.application/json.schema.properties.billing_events.items.properties.tags
+      before: 'null'
+      after: '{"type":"object","additionalProperties":{"type":"string"},"description":"Activated X-Fal-Tags key/values set on this request. Only populated when source=tagged-billed; a key the request did not set is omitted, so a request that set none reports {}."}'
+  date: '2026-09-23'
+  diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1055
+- change: changed
+  target: route
+  breaking: false
+  deprecated: false
+  doc_only: true
+  note: Route description expanded to document tagged billing events, the 'source=tagged-billed' mode, and 'tag' filtering semantics.
+  paths:
+    - path: description
+      before: '\nReturns paginated individual billing event records with filters\nfor endpoint and date range. Each record includes the request ID, timestamp,\nendpoint, output units billed, and a cost breakdown in USD (cost_subtotal,\ncost_discount, cost_total; cost_estimate_nano_usd carries cost_total in nano USD).\n\n**Key Features:**\n- Individual billing event records for each API request\n- Per-request cost breakdown before and after discounts\n- Flexible date range filtering\n- Optional endpoint filtering\n- Cursor-based pagination for efficient large dataset queries\n- Limited to 10000 records per page for performance\n- Date range capped at 90 days per request\n\n**Common Use Cases:**\n- Audit individual billing events\n- Track request patterns and volumes\n- Debug specific requests by ID\n- Monitor billing unit consumption per request\n\nSee [fal.ai docs](https://fal.ai/docs/documentation/model-apis/faq) for more details.\n    '
+      after: '\nReturns paginated individual billing event records with filters\nfor endpoint and date range. Each record includes the request ID, timestamp,\nendpoint, output units billed, and a cost breakdown in USD (cost_subtotal,\ncost_discount, cost_total; cost_estimate_nano_usd carries cost_total in nano USD).\n\n**Key Features:**\n- Individual billing event records for each API request\n- Per-request cost breakdown before and after discounts\n- Flexible date range filtering\n- Optional endpoint filtering\n- Cursor-based pagination for efficient large dataset queries\n- Limited to 10000 records per page for performance\n- Date range capped at 90 days per request\n\n**Tagged billing events:** pass `source=tagged-billed` to read the tagged\nbilling-event pivot instead of the default feed. Each row then carries a `tags`\nobject built from the `X-Fal-Tags` tags set on that request, and\n`tag=key=value` filters narrow the results — repeating the parameter with\ndifferent keys ANDs them, repeating one key matches any of its values. Requires\ntagged reporting to be enabled for the account; recent events are delayed\nrelative to the default source.\n\n**Common Use Cases:**\n- Audit individual billing events\n- Track request patterns and volumes\n- Debug specific requests by ID\n- Monitor billing unit consumption per request\n\nSee [fal.ai docs](https://fal.ai/docs/documentation/model-apis/faq) for more details.\n    '
+  date: '2026-09-23'
+  diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1055

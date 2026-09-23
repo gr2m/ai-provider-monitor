@@ -1,5 +1,5 @@
 {
-  "description": "\nReturns paginated usage records for your workspace with filters for endpoint,\nuser, date range, and auth method. Each item includes the billed unit\nquantity, the pre-discount unit price and cost_subtotal, any percentage discount\napplied, and the final cost_total (cost_subtotal − cost_discount).\n\n**Key Features:**\n- Usage data for all endpoints or filtered by specific endpoint(s)\n- Flexible date range filtering\n- User-specific usage tracking\n- Detailed usage line items with unit quantity, price, and discount breakdown\n- Paginated results for large datasets\n\n**Common Use Cases:**\n- Generate usage reports for all endpoints or specific models\n- Track usage patterns\n- Monitor endpoint usage across different auth methods\n- Build usage dashboards and visualizations\n\nSee [fal.ai docs](https://fal.ai/docs/documentation/model-apis/faq) for more details.\n    ",
+  "description": "\nReturns paginated usage records for your workspace with filters for endpoint,\nuser, date range, and auth method. Each item includes the billed unit\nquantity, the pre-discount unit price and cost_subtotal, any percentage discount\napplied, and the final cost_total (cost_subtotal − cost_discount).\n\n**Key Features:**\n- Usage data for all endpoints or filtered by specific endpoint(s)\n- Flexible date range filtering\n- User-specific usage tracking\n- Detailed usage line items with unit quantity, price, and discount breakdown\n- Paginated results for large datasets\n\n**Tagged usage:** pass `source=tagged-estimate` to read the tagged aggregate\ninstead of the default estimate. Each row then carries a `tags` object built\nfrom the `X-Fal-Tags` tags set on your requests, and `tag=key=value` filters\nnarrow the results — repeat the parameter to AND several pairs together.\nRequires tagged reporting to be enabled for the account; recent usage is delayed\nrelative to the default source.\n\n**Common Use Cases:**\n- Generate usage reports for all endpoints or specific models\n- Track usage patterns\n- Monitor endpoint usage across different auth methods\n- Build usage dashboards and visualizations\n\nSee [fal.ai docs](https://fal.ai/docs/documentation/model-apis/faq) for more details.\n    ",
   "operationId": "getUsage",
   "parameters": [
     {
@@ -112,6 +112,22 @@
       }
     },
     {
+      "description": "Data source. 'estimate' is the default usage estimate. 'tagged-estimate' reads the tagged aggregate instead, populating each row's 'tags' and enabling the 'tag' filter; it requires tagged reporting to be enabled for the account, and recent usage is delayed relative to 'estimate'.",
+      "in": "query",
+      "name": "source",
+      "required": false,
+      "schema": {
+        "default": "estimate",
+        "description": "Data source. 'estimate' is the default usage estimate. 'tagged-estimate' reads the tagged aggregate instead, populating each row's 'tags' and enabling the 'tag' filter; it requires tagged reporting to be enabled for the account, and recent usage is delayed relative to 'estimate'.",
+        "enum": [
+          "estimate",
+          "tagged-estimate"
+        ],
+        "example": "estimate",
+        "type": "string"
+      }
+    },
+    {
       "description": "Filter by specific endpoint ID(s). Accepts 1-50 endpoint IDs. Supports comma-separated values: ?endpoint_id=model1,model2 or array syntax: ?endpoint_id=model1&endpoint_id=model2",
       "explode": true,
       "in": "query",
@@ -182,6 +198,31 @@
         "description": "Filter by team member login username(s) (nickname). Accepts 1-50 usernames. Supports comma-separated values: ?login_username=alice,bob or array syntax: ?login_username=alice&login_username=bob",
         "example": [
           "alice"
+        ]
+      },
+      "style": "form"
+    },
+    {
+      "description": "Filter by X-Fal-Tags 'key=value' pairs. Accepts 1-10 filters: different keys are AND-combined (?tag=env=prod&tag=team=design), and repeating a key matches any of its values. Use the value '(untagged)' to match requests that did not set the key.",
+      "explode": true,
+      "in": "query",
+      "name": "tag",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        ],
+        "description": "Filter by X-Fal-Tags 'key=value' pairs. Accepts 1-10 filters: different keys are AND-combined (?tag=env=prod&tag=team=design), and repeating a key matches any of its values. Use the value '(untagged)' to match requests that did not set the key.",
+        "example": [
+          "env=prod"
         ]
       },
       "style": "form"
@@ -333,6 +374,13 @@
                       "minimum": 0,
                       "type": "number"
                     },
+                    "tags": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "Activated X-Fal-Tags key/values represented by this row. Only populated when source=tagged-estimate; a key the row's requests did not set is omitted, so a row that set none reports {}.",
+                      "type": "object"
+                    },
                     "unit": {
                       "description": "The billing unit (e.g., 'image', 'video', or a GPU/compute unit for some models)",
                       "type": "string"
@@ -442,6 +490,13 @@
                             "description": "Quantity of usage in the specified billing unit",
                             "minimum": 0,
                             "type": "number"
+                          },
+                          "tags": {
+                            "additionalProperties": {
+                              "type": "string"
+                            },
+                            "description": "Activated X-Fal-Tags key/values represented by this row. Only populated when source=tagged-estimate; a key the row's requests did not set is omitted, so a row that set none reports {}.",
+                            "type": "object"
                           },
                           "unit": {
                             "description": "The billing unit (e.g., 'image', 'video', or a GPU/compute unit for some models)",
