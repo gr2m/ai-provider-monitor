@@ -10,6 +10,15 @@
         "description": "Training session ID",
         "type": "string"
       }
+    },
+    {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+        "description": "Required key that makes retries return the original operation; use a new key for changed request bodies.",
+        "type": "string"
+      }
     }
   ],
   "requestBody": {
@@ -61,26 +70,20 @@
             "type": "array"
           },
           "num_samples": {
-            "default": "1",
+            "default": 1,
             "description": "Number of completions to generate per prompt",
             "example": 1,
             "type": "integer"
           },
           "prompt_logprobs": {
-            "default": "false",
+            "default": false,
             "description": "When true, also compute teacher-forced log-probabilities for the model input tokens and return them in `SampleResult.prompt_logprobs`.",
             "example": false,
             "type": "boolean"
           },
           "return_routed_experts": {
-            "default": "false",
-            "description": "When true, capture the mixture-of-experts routing decisions made while generating and return them in `SampledSequence.routed_experts`, so training can reuse the same expert selection. Only available on mixture-of-experts models; ignored otherwise. The captured buffer scales with sequence length, so leave it off unless you replay routing during training.",
-            "example": false,
-            "type": "boolean"
-          },
-          "return_routed_experts_object_uri": {
-            "default": "false",
-            "description": "When true together with `return_routed_experts`, return each routing capture as a backend-owned `object_uri` plus shape instead of inline base64 data. Clients that do not opt in keep the legacy inline response.",
+            "default": false,
+            "description": "When true, enable reuse of the expert selections from sampled sequences during training. Only supported for mixture-of-experts models; ignored for other models.",
             "example": false,
             "type": "boolean"
           },
@@ -89,7 +92,7 @@
             "description": "Optional sampling parameters"
           },
           "topk_prompt_logprobs": {
-            "default": "0",
+            "default": 0,
             "description": "Number of most likely alternative tokens to return per model input token in `SampleResult.topk_prompt_logprobs`. 0 disables top-k prompt log-probabilities. Maximum 20.",
             "example": 0,
             "maximum": 20,
@@ -184,13 +187,13 @@
       "RL.SamplingParams": {
         "properties": {
           "max_tokens": {
-            "default": "512",
+            "default": 512,
             "description": "Maximum number of tokens to generate per completion",
             "example": 512,
             "type": "integer"
           },
           "seed": {
-            "description": "Random seed for reproducible sampling for the same prompt and model state. Per-completion seeds remain stable if the request is split across generator replicas.",
+            "description": "Random seed for reproducible sampling for the same prompt and model state.",
             "example": "42",
             "oneOf": [
               {
@@ -213,19 +216,19 @@
             "type": "array"
           },
           "temperature": {
-            "default": "1.0",
+            "default": 1,
             "description": "Sampling temperature",
             "example": 1,
             "type": "number"
           },
           "top_k": {
-            "default": "-1",
+            "default": -1,
             "description": "Top-k sampling limit",
             "example": -1,
             "type": "integer"
           },
           "top_p": {
-            "default": "1.0",
+            "default": 1,
             "description": "Nucleus sampling probability threshold",
             "example": 1,
             "type": "number"
@@ -422,9 +425,9 @@
             "format": "int32",
             "type": "integer"
           },
-          "routed_experts": {
-            "$ref": "#/components/schemas/RL.RoutedExperts",
-            "description": "MoE per-token routing decisions captured during generation; absent for dense models or when capture is disabled."
+          "routed_experts_key": {
+            "description": "Opaque key for reusing this sequence's expert selections during training. Pass it unchanged with the corresponding training sample. Absent for non-mixture-of-experts models or when `return_routed_experts` is disabled.",
+            "type": "string"
           },
           "stop_reason": {
             "$ref": "#/components/schemas/RL.StopReason",
@@ -486,44 +489,6 @@
             "type": "array"
           }
         },
-        "type": "object"
-      },
-      "RL.RoutedExperts": {
-        "description": "Mixture-of-experts routing decisions captured while generating, so training can reuse the same expert selection. Exactly one source is set—legacy inline `data`, or a backend-owned `object_uri` that the manager hydrates before training. The contiguous int32 buffer is reshaped by `shape`, which is always `[num_tokens, num_layers, width]`; packed buffers carry fp32-bitcast routing weights in the trailing top-k columns.",
-        "properties": {
-          "data": {
-            "description": "Legacy base64-encoded contiguous int32 routing buffer, row-major over (token, layer, width).",
-            "format": "byte",
-            "type": "string"
-          },
-          "object_uri": {
-            "description": "Backend-owned S3/R2 object URI containing the contiguous int32 routing buffer. Clients relay this URI unchanged; the manager validates and downloads it before training.",
-            "format": "uri",
-            "type": "string"
-          },
-          "shape": {
-            "description": "Buffer shape as `[num_tokens, num_layers, width]`.",
-            "example": [
-              "512",
-              "64",
-              "8"
-            ],
-            "items": {
-              "oneOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "shape"
-        ],
         "type": "object"
       },
       "RL.StopReason": {

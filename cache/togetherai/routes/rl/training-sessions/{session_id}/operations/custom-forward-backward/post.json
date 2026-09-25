@@ -10,6 +10,15 @@
         "description": "Training session ID",
         "type": "string"
       }
+    },
+    {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+        "description": "Required key that makes retries return the original operation; use a new key for changed request bodies.",
+        "type": "string"
+      }
     }
   ],
   "requestBody": {
@@ -178,9 +187,12 @@
             "$ref": "#/components/schemas/RL.ModelInput",
             "description": "Model input"
           },
-          "routed_experts": {
-            "$ref": "#/components/schemas/RL.RoutedExperts",
-            "description": "Optional MoE per-token routing captured at sample time. Replayed on every training operation, so expert selection matches the one used at sample time. Must cover the whole sample, or all but its last token."
+          "routed_experts_key": {
+            "description": "Opaque key returned with a sampled sequence. Pass it unchanged with the corresponding training sample to reuse the same expert selections. The selections must cover the entire training sample or all but its final token. Training fails if the key is no longer available.",
+            "maxLength": 256,
+            "minLength": 1,
+            "pattern": "^routing/[A-Za-z0-9._-]+/[0-9a-f]{32}\\.[1-9][0-9]*$",
+            "type": "string"
           }
         },
         "required": [
@@ -268,7 +280,7 @@
             "type": "array"
           },
           "sparse_col_indices": {
-            "description": "Reserved for Tinker schema compatibility; current training operations reject sparse tensors.",
+            "description": "Unsupported for training operations. Omit this field.",
             "example": [
               0,
               2
@@ -279,7 +291,7 @@
             "type": "array"
           },
           "sparse_crow_indices": {
-            "description": "Reserved for Tinker schema compatibility; current training operations reject sparse tensors.",
+            "description": "Unsupported for training operations. Omit this field.",
             "example": [
               0,
               2
@@ -309,44 +321,6 @@
         },
         "required": [
           "chunks"
-        ],
-        "type": "object"
-      },
-      "RL.RoutedExperts": {
-        "description": "Mixture-of-experts routing decisions captured while generating, so training can reuse the same expert selection. Exactly one source is set—legacy inline `data`, or a backend-owned `object_uri` that the manager hydrates before training. The contiguous int32 buffer is reshaped by `shape`, which is always `[num_tokens, num_layers, width]`; packed buffers carry fp32-bitcast routing weights in the trailing top-k columns.",
-        "properties": {
-          "data": {
-            "description": "Legacy base64-encoded contiguous int32 routing buffer, row-major over (token, layer, width).",
-            "format": "byte",
-            "type": "string"
-          },
-          "object_uri": {
-            "description": "Backend-owned S3/R2 object URI containing the contiguous int32 routing buffer. Clients relay this URI unchanged; the manager validates and downloads it before training.",
-            "format": "uri",
-            "type": "string"
-          },
-          "shape": {
-            "description": "Buffer shape as `[num_tokens, num_layers, width]`.",
-            "example": [
-              "512",
-              "64",
-              "8"
-            ],
-            "items": {
-              "oneOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "shape"
         ],
         "type": "object"
       },
