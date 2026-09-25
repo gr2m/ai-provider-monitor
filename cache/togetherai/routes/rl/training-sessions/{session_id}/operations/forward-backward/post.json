@@ -10,6 +10,15 @@
         "description": "Training session ID",
         "type": "string"
       }
+    },
+    {
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": true,
+      "schema": {
+        "description": "Required key that makes retries return the original operation; use a new key for changed request bodies.",
+        "type": "string"
+      }
     }
   ],
   "requestBody": {
@@ -152,6 +161,10 @@
           "cross_entropy_params": {
             "$ref": "#/components/schemas/RL.CrossEntropyLossParams"
           },
+          "dppo_params": {
+            "$ref": "#/components/schemas/RL.DPPOLossParams",
+            "description": "Parameters for DPPO loss. Only valid when `type` is `LOSS_TYPE_DPPO`."
+          },
           "dro_params": {
             "$ref": "#/components/schemas/RL.DROLossParams"
           },
@@ -185,9 +198,12 @@
             "$ref": "#/components/schemas/RL.ModelInput",
             "description": "Model input"
           },
-          "routed_experts": {
-            "$ref": "#/components/schemas/RL.RoutedExperts",
-            "description": "Optional MoE per-token routing captured at sample time. Replayed on every training operation, so expert selection matches the one used at sample time. Must cover the whole sample, or all but its last token."
+          "routed_experts_key": {
+            "description": "Opaque key returned with a sampled sequence. Pass it unchanged with the corresponding training sample to reuse the same expert selections. The selections must cover the entire training sample or all but its final token. Training fails if the key is no longer available.",
+            "maxLength": 256,
+            "minLength": 1,
+            "pattern": "^routing/[A-Za-z0-9._-]+/[0-9a-f]{32}\\.[1-9][0-9]*$",
+            "type": "string"
           }
         },
         "required": [
@@ -258,15 +274,15 @@
       "RL.CISPOLossParams": {
         "properties": {
           "clip_high_threshold": {
-            "default": "4.0",
-            "description": "Upper absolute bound for the importance ratio; the clipped ratio is applied as a detached coefficient",
+            "default": 4,
+            "description": "Upper bound for clipping the importance-sampling ratio.",
             "example": 4,
             "format": "float",
             "type": "number"
           },
           "clip_low_threshold": {
-            "default": "0.0",
-            "description": "Lower absolute bound for the importance ratio; the clipped ratio is applied as a detached coefficient",
+            "default": 0,
+            "description": "Lower bound for clipping the importance-sampling ratio.",
             "example": 0,
             "format": "float",
             "type": "number"
@@ -278,6 +294,30 @@
         "additionalProperties": false,
         "description": "Cross-entropy loss parameters (currently empty).",
         "properties": {},
+        "type": "object"
+      },
+      "RL.DPPOLossParams": {
+        "description": "Parameters for DPPO loss. Both probability-change limits must be in [0, 1] and default to 0.15.",
+        "properties": {
+          "delta_high": {
+            "default": 0.15,
+            "description": "Probability-change limit for tokens with positive advantage. Measured in probability space, not log-probability space. Must be in [0, 1]. Defaults to 0.15.",
+            "example": 0.15,
+            "format": "float",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          },
+          "delta_low": {
+            "default": 0.15,
+            "description": "Probability-change limit for tokens with negative advantage. Measured in probability space, not log-probability space. Must be in [0, 1]. Defaults to 0.15.",
+            "example": 0.15,
+            "format": "float",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
         "type": "object"
       },
       "RL.DROLossParams": {
@@ -303,20 +343,20 @@
             "example": "GRPO_LOSS_AGGREGATION_TYPE_FIXED_HORIZON"
           },
           "beta": {
-            "default": "0.0",
+            "default": 0,
             "description": "KL penalty coefficient",
             "example": 0.1,
             "type": "number"
           },
           "clip_high_threshold": {
-            "default": "1.2",
+            "default": 1.2,
             "description": "Upper clip threshold for the importance-sampling ratio. The ratio is clamped to this bound; tighter clipping makes policy updates more conservative. Must be >= 1.",
             "example": 1.2,
             "format": "float",
             "type": "number"
           },
           "clip_low_threshold": {
-            "default": "0.8",
+            "default": 0.8,
             "description": "Lower clip threshold for the importance-sampling ratio. The ratio is clamped to this bound; tighter clipping makes policy updates more conservative. Must be <= 1.",
             "example": 0.8,
             "format": "float",
@@ -334,14 +374,14 @@
       "RL.PPOLossParams": {
         "properties": {
           "clip_high_threshold": {
-            "default": "1.2",
+            "default": 1.2,
             "description": "Upper absolute bound for the importance ratio in the clipped surrogate. Must be >= 1.",
             "example": 1.2,
             "format": "float",
             "type": "number"
           },
           "clip_low_threshold": {
-            "default": "0.8",
+            "default": 0.8,
             "description": "Lower absolute bound for the importance ratio in the clipped surrogate. Must be <= 1.",
             "example": 0.8,
             "format": "float",
@@ -360,7 +400,8 @@
           "LOSS_TYPE_IMPORTANCE_SAMPLING",
           "LOSS_TYPE_PPO",
           "LOSS_TYPE_CISPO",
-          "LOSS_TYPE_DRO"
+          "LOSS_TYPE_DRO",
+          "LOSS_TYPE_DPPO"
         ],
         "type": "string"
       },
@@ -400,7 +441,7 @@
             "type": "array"
           },
           "sparse_col_indices": {
-            "description": "Reserved for Tinker schema compatibility; current training operations reject sparse tensors.",
+            "description": "Unsupported for training operations. Omit this field.",
             "example": [
               0,
               2
@@ -411,7 +452,7 @@
             "type": "array"
           },
           "sparse_crow_indices": {
-            "description": "Reserved for Tinker schema compatibility; current training operations reject sparse tensors.",
+            "description": "Unsupported for training operations. Omit this field.",
             "example": [
               0,
               2
@@ -441,44 +482,6 @@
         },
         "required": [
           "chunks"
-        ],
-        "type": "object"
-      },
-      "RL.RoutedExperts": {
-        "description": "Mixture-of-experts routing decisions captured while generating, so training can reuse the same expert selection. Exactly one source is set—legacy inline `data`, or a backend-owned `object_uri` that the manager hydrates before training. The contiguous int32 buffer is reshaped by `shape`, which is always `[num_tokens, num_layers, width]`; packed buffers carry fp32-bitcast routing weights in the trailing top-k columns.",
-        "properties": {
-          "data": {
-            "description": "Legacy base64-encoded contiguous int32 routing buffer, row-major over (token, layer, width).",
-            "format": "byte",
-            "type": "string"
-          },
-          "object_uri": {
-            "description": "Backend-owned S3/R2 object URI containing the contiguous int32 routing buffer. Clients relay this URI unchanged; the manager validates and downloads it before training.",
-            "format": "uri",
-            "type": "string"
-          },
-          "shape": {
-            "description": "Buffer shape as `[num_tokens, num_layers, width]`.",
-            "example": [
-              "512",
-              "64",
-              "8"
-            ],
-            "items": {
-              "oneOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array"
-          }
-        },
-        "required": [
-          "shape"
         ],
         "type": "object"
       },
