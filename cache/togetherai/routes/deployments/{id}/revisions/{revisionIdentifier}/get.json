@@ -1,0 +1,324 @@
+{
+  "description": "Returns the deployment configuration defined by the specified revision.\nOnly the 50 most recent revisions per deployment retain their configuration; older revisions return 404 even while they still appear in the revision history.\nThe deployment's currently active revision is always available, regardless of age.",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+        "description": "Deployment ID or name.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "path",
+      "name": "revisionIdentifier",
+      "required": true,
+      "schema": {
+        "description": "Revision number or revision ID.",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/RevisionDetailResponse"
+          }
+        }
+      },
+      "description": "Configuration of the specified revision"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid revision identifier"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object"
+          }
+        }
+      },
+      "description": "Deployment not found, or revision not found / no longer retained"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "type": "object"
+          }
+        }
+      },
+      "description": "Internal server error"
+    }
+  },
+  "summary": "Get the full configuration of a specific revision",
+  "tags": [
+    "Deployments"
+  ],
+  "components": {
+    "schemas": {
+      "RevisionDetailResponse": {
+        "description": "Deployment configuration captured for one retained revision.",
+        "properties": {
+          "args": {
+            "description": "Arguments passed to the container command.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "autoscaling": {
+            "description": "Autoscaling configuration captured for this revision.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/HTTPAutoscalingConfig"
+              },
+              {
+                "$ref": "#/components/schemas/QueueAutoscalingConfig"
+              },
+              {
+                "$ref": "#/components/schemas/CustomMetricAutoscalingConfig"
+              }
+            ]
+          },
+          "capacity_type": {
+            "description": "Capacity behavior for replicas above reserved capacity.",
+            "enum": [
+              "stable",
+              "preemptible"
+            ],
+            "type": "string"
+          },
+          "command": {
+            "description": "Entrypoint command run by the container.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "cpu": {
+            "description": "CPU cores allocated to each replica.",
+            "type": "number"
+          },
+          "created_at": {
+            "description": "Time when this revision was created.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "environment_variables": {
+            "description": "Environment variables configured on this revision.",
+            "items": {
+              "$ref": "#/components/schemas/EnvironmentVariable"
+            },
+            "type": "array"
+          },
+          "gpu_count": {
+            "description": "Number of GPUs allocated to each replica.",
+            "type": "integer"
+          },
+          "gpu_type": {
+            "description": "GPU hardware type configured for this revision.",
+            "type": "string"
+          },
+          "health_check_path": {
+            "description": "HTTP path used for health checks.",
+            "type": "string"
+          },
+          "image": {
+            "description": "Container image used by this revision.",
+            "type": "string"
+          },
+          "max_replicas": {
+            "description": "Maximum number of replicas configured for this revision.",
+            "type": "integer"
+          },
+          "memory": {
+            "description": "Memory allocated to each replica in GiB.",
+            "type": "number"
+          },
+          "min_replicas": {
+            "description": "Minimum number of replicas configured for this revision.",
+            "type": "integer"
+          },
+          "object": {
+            "const": "revision",
+            "description": "The object type, which is always `revision`."
+          },
+          "port": {
+            "description": "Container port exposed by this revision.",
+            "type": "integer"
+          },
+          "protocol": {
+            "description": "Network protocol served by the deployment revision.",
+            "type": "string"
+          },
+          "revision_id": {
+            "description": "Unique revision identifier.",
+            "type": "string"
+          },
+          "storage": {
+            "description": "Ephemeral storage allocated to each replica.",
+            "type": "integer"
+          },
+          "termination_grace_period_seconds": {
+            "description": "Seconds to wait for graceful shutdown before forcefully terminating a replica.",
+            "type": "integer"
+          },
+          "volumes": {
+            "description": "Volume mounts attached to this revision.",
+            "items": {
+              "$ref": "#/components/schemas/VolumeMount"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "object",
+          "revision_id",
+          "image",
+          "min_replicas",
+          "max_replicas",
+          "port",
+          "protocol",
+          "capacity_type",
+          "command",
+          "args",
+          "environment_variables",
+          "volumes",
+          "gpu_type",
+          "gpu_count",
+          "cpu",
+          "memory",
+          "storage",
+          "health_check_path",
+          "created_at"
+        ],
+        "type": "object"
+      },
+      "HTTPAutoscalingConfig": {
+        "description": "Autoscaling config for HTTPTotalRequests and HTTPAvgRequestDuration metrics",
+        "properties": {
+          "metric": {
+            "description": "Metric must be HTTPTotalRequests or HTTPAvgRequestDuration",
+            "enum": [
+              "HTTPTotalRequests",
+              "HTTPAvgRequestDuration"
+            ],
+            "example": "HTTPTotalRequests",
+            "type": "string"
+          },
+          "target": {
+            "description": "Target is the threshold value. Default: 100 for HTTPTotalRequests, 500 (ms) for HTTPAvgRequestDuration",
+            "example": 100,
+            "type": "number"
+          },
+          "time_interval_minutes": {
+            "description": "TimeIntervalMinutes is the rate window in minutes. Default: 10",
+            "example": 10,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "QueueAutoscalingConfig": {
+        "description": "Autoscaling config for QueueBacklogPerWorker metric",
+        "properties": {
+          "metric": {
+            "description": "Metric must be QueueBacklogPerWorker",
+            "enum": [
+              "QueueBacklogPerWorker"
+            ],
+            "example": "QueueBacklogPerWorker",
+            "type": "string"
+          },
+          "model": {
+            "description": "Model overrides the model name for queue status lookup. Defaults to the deployment app name",
+            "type": "string"
+          },
+          "target": {
+            "description": "Target is the threshold value. Default: 1.01",
+            "example": 1.01,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "CustomMetricAutoscalingConfig": {
+        "description": "Autoscaling config for CustomMetric metric",
+        "properties": {
+          "custom_metric_name": {
+            "description": "CustomMetricName is the Prometheus metric name. Must match [a-zA-Z_:][a-zA-Z0-9_:]*",
+            "example": "my_custom_metric",
+            "type": "string"
+          },
+          "metric": {
+            "description": "Metric must be CustomMetric",
+            "enum": [
+              "CustomMetric"
+            ],
+            "example": "CustomMetric",
+            "type": "string"
+          },
+          "target": {
+            "description": "Target is the threshold value. Default: 500",
+            "example": 500,
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "EnvironmentVariable": {
+        "properties": {
+          "name": {
+            "description": "Name is the environment variable name (e.g., \"DATABASE_URL\"). Must start with a letter or underscore, followed by letters, numbers, or underscores",
+            "type": "string"
+          },
+          "value": {
+            "description": "Value is the plain text value for the environment variable. Use this for non-sensitive values. Either Value or ValueFromSecret must be set, but not both",
+            "type": "string"
+          },
+          "value_from_secret": {
+            "description": "ValueFromSecret references a secret by name or ID to use as the value. Use this for sensitive values like API keys or passwords. Either Value or ValueFromSecret must be set, but not both",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "VolumeMount": {
+        "properties": {
+          "mount_path": {
+            "description": "MountPath is the path in the container where the volume mounts (e.g., \"/data\").",
+            "type": "string"
+          },
+          "name": {
+            "description": "Name is the name of the volume to mount. Must reference an existing volume by name or ID",
+            "type": "string"
+          },
+          "version": {
+            "description": "Version is the volume version to mount. On create, defaults to the latest version. On update, defaults to the currently mounted version.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "mount_path",
+          "name"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}
