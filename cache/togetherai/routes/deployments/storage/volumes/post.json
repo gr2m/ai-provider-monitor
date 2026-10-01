@@ -114,6 +114,14 @@
             "description": "Object is the type identifier for this response (always \"volume\")",
             "type": "string"
           },
+          "status": {
+            "$ref": "#/components/schemas/VolumeStatus",
+            "description": "Status of the current volume version."
+          },
+          "status_message": {
+            "description": "Message explaining why the current volume version failed, when applicable.",
+            "type": "string"
+          },
           "type": {
             "$ref": "#/components/schemas/VolumeType"
           },
@@ -134,8 +142,12 @@
       "VolumeContentRequest": {
         "description": "Content specifies the new content to preload to this volume.",
         "properties": {
+          "origin": {
+            "$ref": "#/components/schemas/VolumeOrigin",
+            "description": "External source Together copies into a new volume version; mutually exclusive with source_prefix."
+          },
           "source_prefix": {
-            "description": "SourcePrefix is the file path prefix for the content to be preloaded into the volume",
+            "description": "SourcePrefix is the file path prefix for the content to be preloaded into the volume. Mutually exclusive with Origin",
             "example": "models/",
             "type": "string"
           },
@@ -157,6 +169,7 @@
         "type": "string"
       },
       "VolumeContent": {
+        "description": "Content currently available on a volume version.",
         "properties": {
           "files": {
             "description": "Files is the list of files to preload into the volume, if the volume content type is \"files\".",
@@ -165,6 +178,10 @@
             },
             "type": "array",
             "uniqueItems": false
+          },
+          "origin": {
+            "$ref": "#/components/schemas/VolumeOrigin",
+            "description": "External source Together copied into this volume version."
           },
           "source_prefix": {
             "description": "SourcePrefix is the file path prefix for the content to be preloaded into the volume",
@@ -182,22 +199,57 @@
         },
         "type": "object"
       },
+      "VolumeStatus": {
+        "description": "Status of a volume version. Only ready versions can be mounted.",
+        "enum": [
+          "ready",
+          "pending",
+          "syncing",
+          "failed"
+        ],
+        "type": "string"
+      },
       "VersionHistoryItem": {
+        "description": "Metadata for a previous volume version.",
         "properties": {
           "content": {
-            "$ref": "#/components/schemas/VolumeContentRequest"
+            "$ref": "#/components/schemas/VolumeContentRequest",
+            "description": "Content configuration used to create this version."
           },
           "mounted_by": {
+            "description": "Deployment IDs currently mounting this version.",
             "items": {
               "type": "string"
             },
             "type": "array",
             "uniqueItems": false
           },
+          "status": {
+            "$ref": "#/components/schemas/VolumeStatus",
+            "description": "Status of this volume version."
+          },
+          "status_message": {
+            "description": "Message explaining why this volume version failed, when applicable.",
+            "type": "string"
+          },
           "version": {
+            "description": "Numeric version identifier for this volume content.",
             "type": "integer"
           }
         },
+        "type": "object"
+      },
+      "VolumeOrigin": {
+        "description": "External source Together copies into a new volume version.",
+        "properties": {
+          "s3": {
+            "$ref": "#/components/schemas/S3Origin",
+            "description": "S3 bucket or prefix source for the volume sync."
+          }
+        },
+        "required": [
+          "s3"
+        ],
         "type": "object"
       },
       "FileInfo": {
@@ -215,6 +267,26 @@
             "type": "integer"
           }
         },
+        "type": "object"
+      },
+      "S3Origin": {
+        "description": "S3 source configuration for volume sync.",
+        "properties": {
+          "role_arn": {
+            "description": "IAM role ARN Together assumes to read the S3 bucket or prefix.",
+            "example": "arn:aws:iam::123456789012:role/together-volumes",
+            "type": "string"
+          },
+          "uri": {
+            "description": "S3 bucket or prefix to copy into the volume.",
+            "example": "s3://my-bucket/models/custom-weights",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role_arn",
+          "uri"
+        ],
         "type": "object"
       }
     }
