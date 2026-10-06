@@ -1,0 +1,331 @@
+{
+  "operationId": "handle_get_deferred_image_request",
+  "parameters": [
+    {
+      "description": "The deferred request id returned by a previous image request.",
+      "in": "path",
+      "name": "request_id",
+      "required": true,
+      "schema": {
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "example": {
+            "data": [
+              {
+                "url": "..."
+              }
+            ],
+            "request_id": "e5b1b4d4-7b6a-4a0e-9c0d-7f3c7d8a1b2c",
+            "status": "done",
+            "usage": {
+              "image_cost": 2000000,
+              "total_tokens": 0
+            }
+          },
+          "schema": {
+            "$ref": "#/components/schemas/GetDeferredImageResponse"
+          }
+        }
+      },
+      "description": "The generation finished."
+    },
+    "202": {
+      "description": "The generation is still pending."
+    },
+    "404": {
+      "description": "Unknown request id or the result has expired."
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "summary": "`GET /v1/images/{request_id}`: 202 while pending, 200 with `data` when\ndone or with `error` when failed (a failed generation is a body, not an\nHTTP error, so pollers do not retry-storm).",
+  "tags": [
+    "v1"
+  ],
+  "components": {
+    "schemas": {
+      "GetDeferredImageResponse": {
+        "description": "Response for `GET /v1/images/{request_id}`.",
+        "properties": {
+          "data": {
+            "description": "The generated images. Present when done.",
+            "items": {
+              "$ref": "#/components/schemas/GeneratedImage"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageError",
+                "description": "Why the generation failed. Present iff `status == \"failed\"`."
+              }
+            ]
+          },
+          "request_id": {
+            "description": "The polled request id.",
+            "type": "string"
+          },
+          "status": {
+            "description": "`\"pending\"`, `\"done\"` or `\"failed\"`.",
+            "type": "string"
+          },
+          "usage": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaUsage",
+                "description": "Billing information. Present when done."
+              }
+            ]
+          }
+        },
+        "required": [
+          "request_id",
+          "status"
+        ],
+        "type": "object"
+      },
+      "GeneratedImage": {
+        "description": "Generated images",
+        "properties": {
+          "b64_json": {
+            "description": "A base64-encoded string representation of the generated image (without the data-URI prefix), if `b64_json` is specified as `response_format` in the request.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "file_output": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/FileOutput",
+                "description": "Storage info for the generated image. Only present when the request\nincluded a `storage_options` configuration and the upload succeeded."
+              }
+            ]
+          },
+          "mime_type": {
+            "description": "The MIME type of the generated image (e.g. `image/png`, `image/jpeg`, `image/webp`).",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "storage_error": {
+            "description": "Human-readable error when `storage_options` was set but the upload\nfailed. Absent on success or when storage was not requested.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "description": "A url to the generated image, if `response_format` is not specified or with `url` in the request.",
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ImageError": {
+        "description": "Structured error returned when a deferred image generation fails.",
+        "properties": {
+          "code": {
+            "description": "Machine-readable error code: `invalid_argument`, `permission_denied`,\n`failed_precondition`, `service_unavailable` or `internal_error`.",
+            "type": "string"
+          },
+          "message": {
+            "description": "Human-readable error message describing the failure.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "MediaUsage": {
+        "description": "Billing and cost information for media generation requests (image and video).\n\nThe optional token fields follow the OpenAI Images API shape\n(`input_tokens` / `output_tokens` / `total_tokens` with per-side detail\nobjects) and are populated only for image models with token-based usage\nreporting. They are omitted entirely for models billed per image and for\nvideo requests.",
+        "properties": {
+          "cost_in_usd_ticks": {
+            "description": "The cost of this request expressed in USD ticks.\nOne USD cent equals 100,000,000 ticks, so one US dollar equals\n10,000,000,000 ticks.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "input_tokens": {
+            "description": "Total input tokens: prompt text tokens + input image tokens\n(the sum of `input_tokens_details`, where `cached_tokens` is a subset\nof `text_tokens`, not additive).",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "input_tokens_details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaInputTokensDetails",
+                "description": "Breakdown of `input_tokens`."
+              }
+            ]
+          },
+          "output_tokens": {
+            "description": "Total output tokens: rewritten-prompt text tokens + reasoning tokens\n+ generated image tokens (the sum of `output_tokens_details`).",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "output_tokens_details": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaOutputTokensDetails",
+                "description": "Breakdown of `output_tokens`."
+              }
+            ]
+          },
+          "total_tokens": {
+            "description": "Total tokens (input + output).",
+            "format": "int32",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "cost_in_usd_ticks"
+        ],
+        "type": "object"
+      },
+      "FileOutput": {
+        "description": "Information about a generated file stored in the Files API.",
+        "properties": {
+          "expires_at": {
+            "description": "Unix timestamp (seconds) when the stored file expires and will be\nautomatically deleted. Only present when the file has an expiration.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "file_id": {
+            "description": "Files API file_id of the stored file.",
+            "type": "string"
+          },
+          "filename": {
+            "description": "Filename of the stored file.",
+            "type": "string"
+          },
+          "public_url": {
+            "description": "Public URL for the stored file. Only present when the request included\n`storage_options.public_url` and creation succeeded.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "public_url_error": {
+            "description": "Human-readable error when `storage_options.public_url` was set but\npublic URL creation failed. The file was stored successfully.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "public_url_expires_at": {
+            "description": "Unix timestamp (seconds) when the public URL expires. Present when\nthe public URL has an expiry, either from an explicit `expires_after`\nin the request or inherited from the file's TTL.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "file_id",
+          "filename"
+        ],
+        "type": "object"
+      },
+      "MediaInputTokensDetails": {
+        "description": "Breakdown of media generation input tokens.",
+        "properties": {
+          "cached_tokens": {
+            "description": "Text tokens served from cache from previous requests (a subset of\n`text_tokens`).",
+            "format": "int32",
+            "type": "integer"
+          },
+          "image_tokens": {
+            "description": "Input image tokens, as reported by the image engine.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "text_tokens": {
+            "description": "Prompt text tokens consumed by the prompt-rewriting (upsampler) LLM,\nincluding any served from cache.",
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "text_tokens",
+          "image_tokens",
+          "cached_tokens"
+        ],
+        "type": "object"
+      },
+      "MediaOutputTokensDetails": {
+        "description": "Breakdown of media generation output tokens.",
+        "properties": {
+          "image_tokens": {
+            "description": "Generated image tokens, as reported by the image engine.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "reasoning_tokens": {
+            "description": "Reasoning (thinking) tokens generated by the prompt-rewriting\n(upsampler) LLM.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "text_tokens": {
+            "description": "Rewritten-prompt text tokens generated by the prompt-rewriting\n(upsampler) LLM, excluding reasoning tokens.",
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "reasoning_tokens",
+          "text_tokens",
+          "image_tokens"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

@@ -1158,6 +1158,10 @@
               }
             ]
           },
+          "deferred": {
+            "description": "If set, the request returns immediately with a `request_id` and the\nedit is generated in the background. Poll `GET /v1/images/{request_id}`\nfor the result. Only `response_format: \"url\"` is supported in this mode.",
+            "type": ["boolean", "null"]
+          },
           "image": {
             "oneOf": [
               {
@@ -1185,6 +1189,17 @@
             "description": "Number of image edits to be generated.",
             "format": "int32",
             "type": ["integer", "null"]
+          },
+          "output": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageOutput",
+                "description": "Optional output destination. When present, each edited image is\nuploaded via HTTP PUT to the matching signed URL instead of xAI-hosted\nstorage and the response `url` is that upload URL. Requires\n`response_format: \"url\"`; Zero Data Retention teams must set this to\nuse `deferred`."
+              }
+            ]
           },
           "prompt": {
             "description": "Prompt for image editing.",
@@ -1843,6 +1858,10 @@
               }
             ]
           },
+          "deferred": {
+            "description": "If set, the request returns immediately with a `request_id` and the\nimage is generated in the background. Poll `GET /v1/images/{request_id}`\nfor the result. Only `response_format: \"url\"` is supported in this mode.",
+            "type": ["boolean", "null"]
+          },
           "model": {
             "description": "Model to be used.",
             "example": "grok-imagine-image",
@@ -1855,6 +1874,17 @@
             "maximum": 10,
             "minimum": 1,
             "type": ["integer", "null"]
+          },
+          "output": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageOutput",
+                "description": "Optional output destination. When present, each generated image is\nuploaded via HTTP PUT to the matching signed URL instead of xAI-hosted\nstorage and the response `url` is that upload URL. Requires\n`response_format: \"url\"`; Zero Data Retention teams must set this to\nuse `deferred`."
+              }
+            ]
           },
           "prompt": {
             "description": "Prompt for image generation.",
@@ -2090,6 +2120,50 @@
           }
         },
         "required": ["duration", "respect_moderation"],
+        "type": "object"
+      },
+      "GetDeferredImageResponse": {
+        "description": "Response for `GET /v1/images/{request_id}`.",
+        "properties": {
+          "data": {
+            "description": "The generated images. Present when done.",
+            "items": {
+              "$ref": "#/components/schemas/GeneratedImage"
+            },
+            "type": ["array", "null"]
+          },
+          "error": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ImageError",
+                "description": "Why the generation failed. Present iff `status == \"failed\"`."
+              }
+            ]
+          },
+          "request_id": {
+            "description": "The polled request id.",
+            "type": "string"
+          },
+          "status": {
+            "description": "`\"pending\"`, `\"done\"` or `\"failed\"`.",
+            "type": "string"
+          },
+          "usage": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/MediaUsage",
+                "description": "Billing information. Present when done."
+              }
+            ]
+          }
+        },
+        "required": ["request_id", "status"],
         "type": "object"
       },
       "GetDeferredVideoRequest": {
@@ -2339,6 +2413,21 @@
         ],
         "type": "string"
       },
+      "ImageError": {
+        "description": "Structured error returned when a deferred image generation fails.",
+        "properties": {
+          "code": {
+            "description": "Machine-readable error code: `invalid_argument`, `permission_denied`,\n`failed_precondition`, `service_unavailable` or `internal_error`.",
+            "type": "string"
+          },
+          "message": {
+            "description": "Human-readable error message describing the failure.",
+            "type": "string"
+          }
+        },
+        "required": ["code", "message"],
+        "type": "object"
+      },
       "ImageGenerationCall": {
         "description": "The output of an image generation tool call.",
         "properties": {
@@ -2451,6 +2540,20 @@
           "image_price",
           "aliases"
         ],
+        "type": "object"
+      },
+      "ImageOutput": {
+        "description": "Output destination for generated images.",
+        "properties": {
+          "upload_urls": {
+            "description": "Signed URLs to upload the generated images via HTTP PUT, one per\nimage: the list length must equal `n` (default 1). Each PUT sends a\n`Content-Type` equal to the image's `mime_type` in the response\n(`image/jpeg` unless the requested quality produces PNG), so sign the\nURL for that type or without a Content-Type constraint.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": ["upload_urls"],
         "type": "object"
       },
       "ImagePricingTier": {
@@ -8196,6 +8299,60 @@
           }
         ],
         "summary": "Generate an image based on a prompt. This is the endpoint for making generation requests to image generation models.",
+        "tags": ["v1"]
+      }
+    },
+    "/v1/images/{request_id}": {
+      "get": {
+        "operationId": "handle_get_deferred_image_request",
+        "parameters": [
+          {
+            "description": "The deferred request id returned by a previous image request.",
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "data": [
+                    {
+                      "url": "..."
+                    }
+                  ],
+                  "request_id": "e5b1b4d4-7b6a-4a0e-9c0d-7f3c7d8a1b2c",
+                  "status": "done",
+                  "usage": {
+                    "image_cost": 2000000,
+                    "total_tokens": 0
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/GetDeferredImageResponse"
+                }
+              }
+            },
+            "description": "The generation finished."
+          },
+          "202": {
+            "description": "The generation is still pending."
+          },
+          "404": {
+            "description": "Unknown request id or the result has expired."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "`GET /v1/images/{request_id}`: 202 while pending, 200 with `data` when\ndone or with `error` when failed (a failed generation is a body, not an\nHTTP error, so pollers do not retry-storm).",
         "tags": ["v1"]
       }
     },
