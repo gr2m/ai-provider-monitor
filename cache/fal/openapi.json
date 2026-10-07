@@ -27335,7 +27335,7 @@
     },
     "/models": {
       "get": {
-        "description": "\nUnified endpoint for discovering model endpoints. Supports three usage modes:\n\n**1. List Mode** (no parameters):\nPaginated list of all available model endpoints with minimal metadata.\n\n**2. Find Mode** (`endpoint_id` parameter):\nRetrieve specific model endpoint(s) by ID. Supports single or multiple IDs.\n\n**3. Search Mode** (search parameters):\nFilter models by free-text query, category, or status.\n\n**Expansion:**\nUse `expand` to include additional data in each model object:\n- `openapi-3.0` — full OpenAPI 3.0 schema in the `openapi` field\n- `enterprise_status` — enterprise readiness status (`ready` or `pending`) in the `enterprise_status` field\n\n**Examples of `endpoint_id` values:**\n- `fal-ai/flux/dev`\n- `fal-ai/wan/v2.2-a14b/text-to-video`\n- `fal-ai/minimax/video-01/image-to-video`\n- `fal-ai/hunyuan3d-v21`\n\nSee [fal.ai Model APIs](https://fal.ai/docs/documentation/model-apis/overview) for more details.\n\n**Authentication:** Optional. Providing an API key grants higher rate limits.\n\n**Common Use Cases:**\n- Browse available models for integration\n- Retrieve metadata for specific endpoints\n- Search for models by category or keywords\n- Get OpenAPI schemas for code generation\n- Build model selection interfaces\n    ",
+        "description": "\nUnified endpoint for discovering model endpoints. Supports three usage modes:\n\n**1. List Mode** (no parameters):\nPaginated list of all available model endpoints with minimal metadata.\n\n**2. Find Mode** (`endpoint_id` parameter):\nRetrieve specific model endpoint(s) by ID. Supports single or multiple IDs.\n\n**3. Search Mode** (search parameters):\nFilter models by free-text query, category, or status.\n\n**Ordering (list/search):**\n- `sort=relevant` uses Explore's shared Trending browse order without keywords and relevance order with keywords. Trending data can fall back to publication dates when unavailable.\n- `sort=recent` sorts the complete filtered set by publication date (creation date when the publication date is missing), before pagination.\n- An explicit sort is acknowledged by `ordering.sort`. Omitting sort preserves the default response. Find mode always preserves the supplied endpoint ID order and has no ordering acknowledgement.\n- Keep sort, filters and limit unchanged when following `next_cursor`; cursors are page positions, not snapshots, and catalog/ranking updates can change later pages.\n\n**Expansion:**\nUse `expand` to include additional data in each model object:\n- `openapi-3.0` — full OpenAPI 3.0 schema in the `openapi` field\n- `enterprise_status` — enterprise readiness status (`ready` or `pending`) in the `enterprise_status` field\n\n**Examples of `endpoint_id` values:**\n- `fal-ai/flux/dev`\n- `fal-ai/wan/v2.2-a14b/text-to-video`\n- `fal-ai/minimax/video-01/image-to-video`\n- `fal-ai/hunyuan3d-v21`\n\nSee [fal.ai Model APIs](https://fal.ai/docs/documentation/model-apis/overview) for more details.\n\n**Authentication:** Optional. Providing an API key grants higher rate limits.\n\n**Common Use Cases:**\n- Browse available models for integration\n- Retrieve metadata for specific endpoints\n- Search for models by category or keywords\n- Get OpenAPI schemas for code generation\n- Build model selection interfaces\n    ",
         "operationId": "getModels",
         "parameters": [
           {
@@ -27415,6 +27415,18 @@
               "description": "Filter models by status - omit to include all statuses",
               "enum": ["active", "deprecated"],
               "example": "active",
+              "type": "string"
+            }
+          },
+          {
+            "description": "List/search ordering: relevant uses Explore's shared Trending browse order or keyword relevance; recent sorts by publication date (creation date when the publication date is missing). Defaults to relevant. Ignored in endpoint_id find mode, which preserves input order. Keep sort, filters and limit unchanged when following a cursor.",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "description": "List/search ordering: relevant uses Explore's shared Trending browse order or keyword relevance; recent sorts by publication date (creation date when the publication date is missing). Defaults to relevant. Ignored in endpoint_id find mode, which preserves input order. Keep sort, filters and limit unchanged when following a cursor.",
+              "enum": ["relevant", "recent"],
+              "example": "recent",
               "type": "string"
             }
           },
@@ -27696,6 +27708,18 @@
                     "next_cursor": {
                       "description": "Cursor for the next page of results, null if no more pages",
                       "type": ["string", "null"]
+                    },
+                    "ordering": {
+                      "description": "Acknowledges an explicitly requested list/search sort. Absent on legacy default requests and endpoint_id find mode. Relevant is shared discovery ordering, not a quality or latency ranking; its Trending data can fall back to publication dates when unavailable.",
+                      "properties": {
+                        "sort": {
+                          "description": "List/search ordering applied to this response",
+                          "enum": ["relevant", "recent"],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["sort"],
+                      "type": "object"
                     }
                   },
                   "required": ["models", "has_more"],
