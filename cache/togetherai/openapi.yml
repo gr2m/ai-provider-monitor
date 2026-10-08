@@ -587,6 +587,68 @@ components:
         - min_replicas
         - max_replicas
       type: object
+    BaseShapingEvent:
+      description: Public fields common to shaping events.
+      properties:
+        created_at:
+          description: Time when the event was created.
+          format: date-time
+          type: string
+        hash:
+          description: Event hash used for deduplication.
+          type: string
+        level:
+          $ref: "#/components/schemas/EventLevel"
+          description: Event severity level.
+        message:
+          description: Human-readable event message.
+          type: string
+        object:
+          const: shaping
+          description: Object type, always `shaping`.
+          type: string
+        type:
+          description: Event type identifier.
+          type: string
+      required:
+        - object
+        - created_at
+        - level
+        - message
+        - type
+      type: object
+    BaseShapingJob:
+      description: Public fields common to shaping jobs.
+      properties:
+        created_at:
+          description: Time when the job was created.
+          format: date-time
+          type: string
+        id:
+          description: Unique shaping job ID.
+          pattern: ^shp-quant-[a-f0-9-]+$
+          type: string
+        job_type:
+          $ref: "#/components/schemas/ShapingJobType"
+          description: Type of shaping job.
+        status:
+          $ref: "#/components/schemas/ShapingJobStatus"
+          description: Current job status.
+        updated_at:
+          description: Time when the job was last updated.
+          format: date-time
+          type: string
+        user_id:
+          description: User that created the job.
+          type: string
+      required:
+        - id
+        - job_type
+        - status
+        - created_at
+        - updated_at
+        - user_id
+      type: object
     BatchErrorResponse:
       properties:
         error:
@@ -2167,6 +2229,9 @@ components:
         etag:
           description: Row-level etag required for UpdateAdapter and RemoveAdapter.
           type: string
+        id:
+          description: Row identifier for this adapter attachment; changes if the adapter is removed and re-added.
+          type: string
         perCluster:
           description: Per-cluster adapter load state reported by the controller.
           items:
@@ -2177,6 +2242,7 @@ components:
         - desiredRevisionId
         - perCluster
         - etag
+        - id
       type: object
     DE.AddAdapterRequest:
       description: Configuration for attaching a LoRA adapter to a deployment that has adapter loading enabled.
@@ -2744,6 +2810,12 @@ components:
           type: string
         adapterModelId:
           description: Adapter model identifier for this status row.
+          type: string
+        adapterValid:
+          description: Optional inference-probe verdict for this adapter on this cluster; absent until validation concludes.
+          type: boolean
+        adapterValidReason:
+          description: Human-readable probe rejection detail when adapterValid is false.
           type: string
         clusterId:
           description: Cluster reporting this adapter status.
@@ -4296,7 +4368,7 @@ components:
       type: object
     DE.RollingConfig:
       additionalProperties: false
-      description: Rolling strategy configuration for capacity-preserving batches that ramp target replicas up while draining source replicas.
+      description: Rolling strategy configuration for small batches that ramp target replicas up while shrinking source replicas to what their remaining traffic share needs.
       properties: {}
       type: object
       x-stainless-empty-object: true
@@ -5188,6 +5260,13 @@ components:
     DE.SupportedModelDeploymentProfile:
       description: Certified deployment profile for a supported model.
       properties:
+        adapterMode:
+          description: Adapter serving mode for deployments created from this profile; omitted when no certified config is pinned.
+          enum:
+            - ADAPTER_MODE_FIXED
+            - ADAPTER_MODE_DYNAMIC
+            - ADAPTER_MODE_DISABLED
+          type: string
         certifiedConfigRevisionId:
           description: Certified configuration revision identifier.
           type: string
@@ -6265,6 +6344,29 @@ components:
         - type
         - parameters
       type: object
+    EventLevel:
+      description: Severity level for a shaping event.
+      enum:
+        - Info
+        - Warning
+        - Error
+      type: string
+    EventsList:
+      description: List response containing shaping events.
+      properties:
+        data:
+          description: Shaping events.
+          items:
+            $ref: "#/components/schemas/QuantizationEvent"
+          type: array
+        object:
+          const: list
+          description: Object type, always `list`.
+          type: string
+      required:
+        - data
+        - object
+      type: object
     ExecuteRequest:
       properties:
         code:
@@ -6479,6 +6581,7 @@ components:
       description: The purpose of the file
       enum:
         - fine-tune
+        - calibration
         - eval
         - batch-api
       example: fine-tune
@@ -6514,7 +6617,7 @@ components:
           $ref: "#/components/schemas/FileProcessingStatus"
           description: |
             Lifecycle state of the file validation pipeline. Files for
-            non-`fine-tune` purposes skip validation.
+            purposes that do not require validation skip validation.
         purpose:
           $ref: "#/components/schemas/FilePurpose"
           description: The purpose of the file as it was uploaded.
@@ -6523,7 +6626,7 @@ components:
           description: |
             Report produced by the file validation pipeline. Present once
             validation has run; absent on files that bypassed validation
-            (non-`fine-tune` purposes) or have not yet been validated.
+            or have not yet been validated.
       required:
         - id
         - object
@@ -6545,8 +6648,8 @@ components:
       type: string
     FileValidationReport:
       description: |
-        Validation outcome for a fine-tune training file, produced by the
-        file validation pipeline.
+        Validation outcome for a fine-tune or calibration file, produced by
+        the file validation pipeline.
       properties:
         dataset_format:
           description: Detected dataset format (e.g. `CONVERSATION`, `INSTRUCTION`).
@@ -7389,18 +7492,10 @@ components:
       type: object
     GPUClusterCreateRequest:
       anyOf:
-        - not:
-            anyOf:
-              - required:
-                  - cuda_version
-              - required:
-                  - nvidia_driver_version
-          required:
-            - nvidia_version_id
-        - required:
-            - cuda_version
-            - nvidia_driver_version
+        - $ref: "#/components/schemas/GPUClusterCreateRequestNvidiaVersion"
+        - $ref: "#/components/schemas/GPUClusterCreateRequestLegacyNvidia"
       description: GPU Cluster create request
+    GPUClusterCreateRequestCommon:
       properties:
         acceptance_tests_params:
           $ref: "#/components/schemas/AcceptanceTestsParams"
@@ -7521,6 +7616,27 @@ components:
         - cluster_name
         - billing_type
       type: object
+    GPUClusterCreateRequestLegacyNvidia:
+      allOf:
+        - $ref: "#/components/schemas/GPUClusterCreateRequestCommon"
+        - required:
+            - cuda_version
+            - nvidia_driver_version
+          type: object
+      description: Create a cluster with the legacy CUDA and NVIDIA driver selectors. nvidia_version_id may also be set when it resolves to the same catalog entry.
+    GPUClusterCreateRequestNvidiaVersion:
+      allOf:
+        - $ref: "#/components/schemas/GPUClusterCreateRequestCommon"
+        - not:
+            anyOf:
+              - required:
+                  - cuda_version
+              - required:
+                  - nvidia_driver_version
+          required:
+            - nvidia_version_id
+          type: object
+      description: Create a cluster with a canonical NVIDIA version id. Do not also set cuda_version or nvidia_driver_version.
     GPUClusterDeleteResponse:
       properties:
         cluster_id:
@@ -8421,6 +8537,24 @@ components:
         - alerts
         - next_page_token
       type: object
+    ListProjectsResponse:
+      description: One page of projects available to the authenticated caller.
+      properties:
+        data:
+          items:
+            $ref: "#/components/schemas/Project"
+          type: array
+        next_cursor:
+          description: Opaque cursor for the next page. Empty when this is the last page.
+          type: string
+        object:
+          const: list
+          description: Object type. Always `list`.
+      required:
+        - object
+        - data
+        - next_cursor
+      type: object
     ListRemediationsResponse:
       description: ListRemediationsResponse is the response for ListRemediations.
       properties:
@@ -8555,6 +8689,9 @@ components:
             - embedding
             - moderation
             - rerank
+            - audio
+            - transcribe
+            - video
           example: chat
       required:
         - id
@@ -8860,6 +8997,31 @@ components:
         - base
         - finetune
       type: object
+    Project:
+      description: A project the authenticated caller can access.
+      properties:
+        id:
+          description: Unique project identifier.
+          type: string
+        name:
+          description: Display name of the project.
+          type: string
+        organization_id:
+          description: ID of the organization that owns the project.
+          type: string
+        organization_name:
+          description: Display name of the organization that owns the project.
+          type: string
+        slug:
+          description: Customer-facing project slug.
+          type: string
+      required:
+        - id
+        - name
+        - slug
+        - organization_id
+        - organization_name
+      type: object
     PromptPart:
       items:
         properties:
@@ -8870,6 +9032,177 @@ components:
             type: string
         type: object
       type: array
+    QuantizationEstimate:
+      description: Price and duration estimate for a quantization job.
+      properties:
+        allowed_to_proceed:
+          description: Whether a create request at this price would be accepted.
+          example: true
+          type: boolean
+        credit_limit:
+          description: Project credit limit in US dollars.
+          example: 500
+          format: double
+          type: number
+        price_usd:
+          description: Expected total run cost in US dollars.
+          example: 28.76
+          format: double
+          type: number
+        time_hours:
+          description: Expected wall-clock run time in hours, excluding queue time.
+          example: 4
+          format: double
+          type: number
+      required:
+        - price_usd
+        - time_hours
+        - credit_limit
+        - allowed_to_proceed
+      type: object
+    QuantizationEvent:
+      allOf:
+        - $ref: "#/components/schemas/BaseShapingEvent"
+        - description: Event emitted by a quantization job.
+          properties:
+            result:
+              $ref: "#/components/schemas/QuantizationResults"
+              description: Result attached to completion events.
+            type:
+              description: Quantization event type.
+              enum:
+                - SHAPING_ERROR
+                - SHAPING_USER_ERROR
+                - QUANTIZATION_JOB_START
+                - QUANTIZATION_MODEL_DOWNLOAD_COMPLETE
+                - QUANTIZATION_MERGE_COMPLETE
+                - QUANTIZATION_QUANTIZE_PROCESS_START
+                - QUANTIZATION_QUANTIZE_PROCESS_COMPLETE
+                - QUANTIZATION_MODEL_UPLOAD_COMPLETE
+                - QUANTIZATION_JOB_COMPLETE
+              type: string
+          type: object
+      description: Event emitted by a quantization job.
+    QuantizationJob:
+      allOf:
+        - $ref: "#/components/schemas/BaseShapingJob"
+        - description: Quantization job that prepares an adapter for FP4 inference.
+          properties:
+            events:
+              description: Events emitted by the job.
+              items:
+                $ref: "#/components/schemas/QuantizationEvent"
+              type: array
+            params:
+              $ref: "#/components/schemas/QuantizationPipelineSpec"
+              description: Job specification.
+            results:
+              $ref: "#/components/schemas/QuantizationResults"
+              description: Model artifacts produced by the job.
+          required:
+            - params
+            - events
+          type: object
+      description: Quantization job that prepares an adapter for FP4 inference.
+    QuantizationPipelineConfiguration:
+      description: Server-resolved configuration for a quantization job.
+      properties:
+        adapter_model_name:
+          description: Qualified adapter model name.
+          example: ft-qa-artifacts/glm-5.3-e2e-test-adapter
+          type: string
+        adapter_project_id:
+          description: Project that owns the adapter.
+          example: proj_CczF9KYFantA84sNYDTJd
+          type: string
+        adapter_revision_id:
+          description: Adapter revision selected for preparation.
+          example: rv_CeERyXMBQCJTRC1yqGTpk
+          type: string
+        base_model_name:
+          description: Qualified name of the base model.
+          example: zai-org/GLM-5.3-NVFP4
+          type: string
+        base_object_id:
+          description: Model object ID of the adapter's base model.
+          example: ml_CbJ9yCnij7A47b1xkpioB
+          type: string
+        base_revision_id:
+          description: Revision ID of the adapter's base model.
+          example: rv_CbJ9yNrws93VQrZum1fTE
+          type: string
+        user_id:
+          description: User whose scope is used to fetch the adapter weights.
+          example: user_CKfewYkQBpaEmN7wuQS3W
+          type: string
+      readOnly: true
+      required:
+        - user_id
+        - adapter_project_id
+        - adapter_revision_id
+        - adapter_model_name
+        - base_object_id
+        - base_revision_id
+        - base_model_name
+      type: object
+    QuantizationPipelineInputs:
+      description: Adapter identifiers to prepare.
+      example:
+        adapter_object_id: ml_CeG3fF6pyEViU8dE8pk7R
+        adapter_revision_id: rv_CeG3faPBj2ABwbAaHPTmx
+        calibration_file_id: file-5f1b0c7a-2d19-4a3e-9c60-8ab41c2f7d35
+      properties:
+        adapter_object_id:
+          description: Model object ID of the adapter to prepare.
+          pattern: ^ml_.+
+          type: string
+        adapter_revision_id:
+          description: Adapter revision ID to prepare. Omit to use the adapter's current revision.
+          pattern: ^rv_.+
+          type: string
+        calibration_file_id:
+          description: |
+            Conversation dataset file ID to use for calibration. Upload it first with `POST /v1/files` using purpose `calibration` and file type `jsonl`. Each JSONL row must contain a `messages` array and may contain a `tools` array.
+            When provided, the job draws half of the calibration corpus from this file and half from a general-text corpus. When omitted, the job calibrates on the general-text corpus only.
+            The request is rejected unless the file exists in the request project, has finished uploading, has passed files API validation as a conversation dataset, is not empty, and is at most 64 MiB. A `fine-tune` purpose file is also accepted so a training file can be reused.
+          example: file-5f1b0c7a-2d19-4a3e-9c60-8ab41c2f7d35
+          pattern: ^file-.+
+          type: string
+      required:
+        - adapter_object_id
+      type: object
+    QuantizationPipelineSpec:
+      description: Stored job specification containing the request and resolved configuration.
+      properties:
+        configuration:
+          $ref: "#/components/schemas/QuantizationPipelineConfiguration"
+          description: Server-resolved configuration for the run.
+        inputs:
+          $ref: "#/components/schemas/QuantizationPipelineInputs"
+          description: Adapter inputs requested by the caller.
+      required:
+        - inputs
+        - configuration
+      type: object
+    QuantizationRequest:
+      description: Request body for preparing an adapter for FP4 inference.
+      properties:
+        inputs:
+          $ref: "#/components/schemas/QuantizationPipelineInputs"
+          description: Adapter inputs to prepare.
+      required:
+        - inputs
+      type: object
+    QuantizationResults:
+      description: Model artifact produced by a completed quantization job.
+      properties:
+        model_object_id:
+          description: Model object ID registered by the job.
+          type: string
+        model_revision_id:
+          description: Model revision ID registered by the job.
+          type: string
+      type: object
     QueueAutoscalingConfig:
       description: Autoscaling config for QueueBacklogPerWorker metric
       properties:
@@ -9143,6 +9476,9 @@ components:
           description: Unique identifier for the checkpoint
           example: 123e4567-e89b-12d3-a456-426614174000
           type: string
+        inference_registration:
+          $ref: "#/components/schemas/RL.InferenceCheckpointRegistration"
+          description: Model registry artifacts to deploy or download this inference checkpoint from. Absent for training checkpoints and when the checkpoint was not uploaded to the registry.
         lora_rank:
           description: LoRA rank of the session that produced this checkpoint. Absent for full-weight sessions and for checkpoints saved before this field was recorded.
           example: 32
@@ -9157,9 +9493,12 @@ components:
           oneOf:
             - type: string
             - type: integer
+        training_registration:
+          $ref: "#/components/schemas/RL.ModelRegistryArtifact"
+          description: Model registry artifact holding this training checkpoint's training state, used to resume training rather than to deploy. Absent for inference checkpoints and when the checkpoint was not uploaded to the registry.
         type:
           $ref: "#/components/schemas/RL.CheckpointType"
-          description: Whether this is a training checkpoint or an inference checkpoint
+          description: Kind of checkpoint. CHECKPOINT_TYPE_TRAINING is the full training state (weights and optimizer state), for resuming a training session with its optimizer state; CHECKPOINT_TYPE_INFERENCE is a model ready for serving or download, also added to your models.
           example: CHECKPOINT_TYPE_TRAINING
       required:
         - id
@@ -9218,10 +9557,10 @@ components:
         - CHECKPOINT_VARIANT_ADAPTER
       type: string
     RL.CheckpointsListResponse:
-      description: A page of training checkpoints
+      description: A page of checkpoints
       properties:
         data:
-          description: Training checkpoints in this page
+          description: Checkpoints in this page
           items:
             $ref: "#/components/schemas/RL.Checkpoint"
           type: array
@@ -9525,7 +9864,7 @@ components:
           type: string
         registration:
           $ref: "#/components/schemas/RL.InferenceCheckpointRegistration"
-          description: Model registration details
+          description: Model registry artifacts to deploy or download this checkpoint from. Absent when the checkpoint was not uploaded to the registry.
         step:
           description: Training step at time of save
           example: "42"
@@ -9559,42 +9898,23 @@ components:
         - status
       type: object
     RL.InferenceCheckpointRegistration:
-      description: Model registration details for an inference checkpoint
+      description: Where an inference checkpoint's weights are stored in the Together model registry. At least one of `model` and `adapter` is set.
       properties:
-        adapter_object_id:
-          description: Together model registry object ID for the adapter checkpoint (e.g. `ml_...`), set on LoRA training sessions
-          type: string
-        adapter_object_revision_id:
-          description: Together model registry revision ID for the adapter checkpoint (e.g. `rv_...`)
-          type: string
-        model_name:
-          description: Registered model name for downloading the checkpoint
-          example: username/Meta-Llama-3-8B-rl-step-42-20260216
-          type: string
-        model_object_id:
-          description: Together model registry object ID for the model checkpoint (e.g. `ml_...`), set on full-weight training sessions
-          type: string
-        model_object_revision_id:
-          description: Together model registry revision ID for the model checkpoint (e.g. `rv_...`)
-          type: string
-        registered_at:
-          description: Timestamp when the model was registered
-          example: "2026-01-02T00:00:00Z"
-          format: date-time
-          type: string
-      required:
-        - model_name
-        - registered_at
+        adapter:
+          $ref: "#/components/schemas/RL.ModelRegistryArtifact"
+          description: LoRA adapter weights, deployed on top of the base model. Set for LoRA training on the base model's own weights.
+        model:
+          $ref: "#/components/schemas/RL.ModelRegistryArtifact"
+          description: Full model weights. Set for full-weight training, and for LoRA training on custom base weights, where the merged model is deployed instead of the adapter.
       type: object
     RL.InferenceCheckpointResult:
       description: Result of an inference checkpoint operation
       properties:
-        model_name:
-          description: Registered model name for downloading the checkpoint
-          example: username/Meta-Llama-3-8B-rl-step-42-20260216
-          type: string
+        checkpoint:
+          $ref: "#/components/schemas/RL.InferenceCheckpoint"
+          description: The checkpoint this operation created. The training session lists the same checkpoint in `inference_checkpoints`.
       required:
-        - model_name
+        - checkpoint
       type: object
     RL.ListMeta:
       description: Pagination metadata for list responses
@@ -9756,6 +10076,21 @@ components:
         - max_batch_size
         - max_seq_length
         - max_rank
+      type: object
+    RL.ModelRegistryArtifact:
+      description: A specific revision of a model in the Together model registry
+      properties:
+        id:
+          description: ID of the model in the Together model registry, as used by the models API
+          example: ml_abc123
+          type: string
+        revision_id:
+          description: Revision of the model that holds this checkpoint
+          example: rv_def456
+          type: string
+      required:
+        - id
+        - revision_id
       type: object
     RL.ModelResources:
       description: Allocated GPU resources that training sessions attach to
@@ -10291,7 +10626,7 @@ components:
           maxLength: 128
           type: string
         load_optimizer:
-          description: Whether to restore optimizer state and step from a training checkpoint. Omitted or true restores them; false loads weights only with a fresh optimizer and step 0. Not valid for inference or HuggingFace checkpoints, which have no optimizer state.
+          description: Whether to restore optimizer state and step from a training checkpoint. Omitted or true restores them; false loads weights only with a fresh optimizer and step 0. Not valid for inference checkpoints, which have no optimizer state.
           example: true
           type: boolean
         lora_config:
@@ -10307,10 +10642,6 @@ components:
         resume_from_checkpoint_id:
           description: Checkpoint ID to resume from. LoRA training checkpoints may resume on another model resource with compatible base-model weights. Full-weight training checkpoints require the original base model.
           example: 123e4567-e89b-12d3-a456-426614174000
-          type: string
-        resume_from_hf_checkpoint:
-          description: HuggingFace repo (or hf://) to resume model weights from. Accepts either a full model or a PEFT adapter directory. Mutually exclusive with resume_from_checkpoint_id.
-          example: your-org/llama-3-8b-finetuned
           type: string
       required:
         - model_resources_id
@@ -10455,8 +10786,8 @@ components:
           example: 123e4567-e89b-12d3-a456-426614174000
           type: string
         registration:
-          $ref: "#/components/schemas/RL.TrainingCheckpointRegistration"
-          description: Together model registry details, set when the checkpoint was uploaded to the registry
+          $ref: "#/components/schemas/RL.ModelRegistryArtifact"
+          description: Model registry artifact holding this checkpoint's training state, used to resume training rather than to deploy. Absent when the checkpoint was not uploaded to the registry.
         step:
           description: Training step at time of save
           example: "42"
@@ -10469,7 +10800,7 @@ components:
         - created_at
       type: object
     RL.TrainingCheckpointOperation:
-      description: Async save training checkpoint operation
+      description: Async training checkpoint operation
       properties:
         error:
           $ref: "#/components/schemas/RL.TrainingOperationError"
@@ -10489,27 +10820,14 @@ components:
         - id
         - status
       type: object
-    RL.TrainingCheckpointRegistration:
-      description: Together model registry details for a training checkpoint
-      properties:
-        object_id:
-          description: Together model registry object ID for the training checkpoint artifact (e.g. `ml_...`)
-          type: string
-        object_revision_id:
-          description: Together model registry revision ID for the training checkpoint artifact (e.g. `rv_...`), empty when the upload reported no revision
-          type: string
-      required:
-        - object_id
-      type: object
     RL.TrainingCheckpointResult:
-      description: Result of a save training checkpoint operation
+      description: Result of a training checkpoint operation
       properties:
-        checkpoint_id:
-          description: ID of the saved training checkpoint (use for resume via Start)
-          example: 550e8400-e29b-41d4-a716-446655440000
-          type: string
+        checkpoint:
+          $ref: "#/components/schemas/RL.TrainingCheckpoint"
+          description: The checkpoint this operation created. The training session lists the same checkpoint in `training_checkpoints`.
       required:
-        - checkpoint_id
+        - checkpoint
       type: object
     RL.TrainingOperationError:
       description: Error details for a failed training operation
@@ -11458,6 +11776,39 @@ components:
                 - sessions
           type: object
       title: SessionListResponse
+      type: object
+    ShapingJobStatus:
+      description: Lifecycle status of a shaping job.
+      enum:
+        - pending
+        - queued
+        - running
+        - completed
+        - cancelled
+        - cancel_requested
+        - error
+        - user_error
+      type: string
+    ShapingJobType:
+      description: Kind of shaping job.
+      enum:
+        - quantization
+      type: string
+    ShapingJobsList:
+      description: List response containing shaping jobs.
+      properties:
+        data:
+          description: Shaping jobs.
+          items:
+            $ref: "#/components/schemas/QuantizationJob"
+          type: array
+        object:
+          const: list
+          description: Object type, always `list`.
+          type: string
+      required:
+        - data
+        - object
       type: object
     SignedURLResponse:
       properties:
@@ -19238,6 +19589,73 @@ paths:
       summary: List organization models
       tags:
         - VolumeService
+  /projects:
+    get:
+      description: Retrieve a list of accessible projects.
+      operationId: listProjects
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            description: Maximum number of user projects in the page.
+            type: integer
+        - in: query
+          name: after
+          schema:
+            description: Paginate the response utilizing a responses next_cursor field.
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListProjectsResponse"
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Invalid request
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Authentication failed
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Not found
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Resource exhausted
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Internal server error
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Service unavailable
+        "504":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Request timed out
+      summary: List available projects
+      tags:
+        - Projects
   /projects/{projectId}/configs:
     get:
       description: Lists production-ready configuration revisions compatible with a reference model. Specify the model with `referenceModel` or the deprecated `referenceModelId`; if both are supplied, they must identify the same model. Results include public configurations and configurations owned by the specified project.
@@ -22828,7 +23246,7 @@ paths:
                  }'
   /rl/checkpoints:
     get:
-      description: Lists training checkpoints owned by the caller. Filter by session or base model to recover a checkpoint ID for resume. Inference checkpoints are not included; they remain on the training session and in the model catalog.
+      description: Lists training and inference checkpoints owned by the caller, newest first. Filter by type, session, or base model, for example to recover a checkpoint ID for resume.
       operationId: listCheckpoints
       parameters:
         - in: query
@@ -22856,20 +23274,29 @@ paths:
           schema:
             description: Cursor for pagination (ID of the last checkpoint from the previous page)
             type: string
+        - in: query
+          name: type
+          required: false
+          schema:
+            description: Only return checkpoints of this type. CHECKPOINT_TYPE_TRAINING is the full training state (weights and optimizer state), for resuming a training session with its optimizer state; CHECKPOINT_TYPE_INFERENCE is a model ready for serving or download, also added to your models. When set, it must be CHECKPOINT_TYPE_TRAINING or CHECKPOINT_TYPE_INFERENCE; when omitted, checkpoints of both types are returned.
+            enum:
+              - CHECKPOINT_TYPE_TRAINING
+              - CHECKPOINT_TYPE_INFERENCE
+            type: string
       responses:
         "200":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/RL.CheckpointsListResponse"
-          description: List of training checkpoints
+          description: List of checkpoints
         default:
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorData"
           description: An unexpected error response.
-      summary: List training checkpoints
+      summary: List checkpoints
       tags:
         - RL
   /rl/checkpoints/{id}:
@@ -22915,7 +23342,7 @@ paths:
           required: true
           schema:
             $ref: "#/components/schemas/RL.CheckpointVariant"
-            description: "Checkpoint variant to download: merged (full model) or adapter (LoRA weights only)"
+            description: Files to download. CHECKPOINT_VARIANT_MERGED is the full model with the trained weights applied; CHECKPOINT_VARIANT_ADAPTER is the LoRA adapter weights only, available for checkpoints from LoRA training sessions.
       responses:
         "200":
           content:
@@ -23003,6 +23430,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/RL.ModelResources"
           description: Model resource details
+        "429":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Model resource create request rejected because the organization GPU quota was exceeded.
         default:
           content:
             application/json:
@@ -23789,6 +24222,260 @@ paths:
       summary: Stop training session
       tags:
         - RL
+  /shaping:
+    get:
+      description: List shaping jobs owned by the caller's project.
+      operationId: listShapingJobs
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShapingJobsList"
+          description: List of shaping jobs.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Missing or invalid API key.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Internal server error.
+      summary: List shaping jobs
+      tags:
+        - Shaping
+  /shaping/prepare-for-fp4-inference:
+    post:
+      description: |
+        Merges a fine-tuned adapter into its base model and prepares the result for FP4 inference. The adapter is resolved when the request is made, so a request naming a model that does not exist in the project, is not an adapter, was not produced by fine-tuning, has no base model to merge into, or uses an unsupported base model is rejected with 400 rather than accepted and failed later. The run is priced before it is created, and a project that cannot cover it is answered 402.
+      operationId: createQuantizationJob
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuantizationRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuantizationJob"
+          description: Quantization job created successfully.
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Invalid request parameters.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Missing or invalid API key.
+        "402":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: The project cannot cover the estimated price of the run.
+        "403":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: The project is blocked and cannot start a run.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Internal server error.
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Preparing models for FP4 inference is not available.
+      summary: Prepare a fine-tuned model for FP4 inference
+      tags:
+        - Shaping
+  /shaping/prepare-for-fp4-inference/estimate:
+    post:
+      description: |
+        Reports the price and expected wall-clock time for preparing the named adapter without creating a job. The request body is the same as POST /shaping/prepare-for-fp4-inference, so a caller can price exactly the job it is about to submit.
+      operationId: estimateQuantizationJob
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuantizationRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuantizationEstimate"
+          description: Estimate for the described job.
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Invalid request parameters.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Missing or invalid API key.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Internal server error.
+        "503":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Preparing models for FP4 inference is not available.
+      summary: Estimate FP4 preparation cost
+      tags:
+        - Shaping
+  /shaping/{id}:
+    get:
+      description: Retrieve a shaping job owned by the caller's project.
+      operationId: getShapingJob
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            description: Shaping job ID beginning with `shp-quant-`.
+            pattern: ^shp-quant-[a-f0-9-]+$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuantizationJob"
+          description: Shaping job retrieved successfully.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Missing or invalid API key.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Shaping job not found.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Internal server error.
+      summary: Get shaping job
+      tags:
+        - Shaping
+  /shaping/{id}/cancel:
+    post:
+      description: Request cancellation of a shaping job owned by the caller's project.
+      operationId: cancelShapingJob
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            description: Shaping job ID beginning with `shp-quant-`.
+            pattern: ^shp-quant-[a-f0-9-]+$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuantizationJob"
+          description: Cancellation requested successfully.
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Invalid request parameters.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Missing or invalid API key.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Shaping job not found.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Internal server error.
+      summary: Cancel shaping job
+      tags:
+        - Shaping
+  /shaping/{id}/events:
+    get:
+      description: List events for a shaping job owned by the caller's project.
+      operationId: getShapingEvents
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            description: Shaping job ID beginning with `shp-quant-`.
+            pattern: ^shp-quant-[a-f0-9-]+$
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventsList"
+          description: Events retrieved successfully.
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Missing or invalid API key.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Shaping job not found.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Internal server error.
+      summary: List shaping job events
+      tags:
+        - Shaping
   /supported-models:
     get:
       description: Lists Together-hosted base models that can be deployed for dedicated inference, together with their capabilities and certified deployment profiles.
@@ -23817,6 +24504,15 @@ paths:
           name: search
           schema:
             description: Case-insensitive search across model IDs, names, and descriptions.
+            type: string
+        - in: query
+          name: adapterMode
+          schema:
+            description: Filter models to those with a deployment profile in the selected adapter serving mode.
+            enum:
+              - ADAPTER_MODE_FIXED
+              - ADAPTER_MODE_DYNAMIC
+              - ADAPTER_MODE_DISABLED
             type: string
         - in: query
           name: limit

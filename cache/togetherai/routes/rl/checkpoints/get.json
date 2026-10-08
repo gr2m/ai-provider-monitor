@@ -1,5 +1,5 @@
 {
-  "description": "Lists training checkpoints owned by the caller. Filter by session or base model to recover a checkpoint ID for resume. Inference checkpoints are not included; they remain on the training session and in the model catalog.",
+  "description": "Lists training and inference checkpoints owned by the caller, newest first. Filter by type, session, or base model, for example to recover a checkpoint ID for resume.",
   "operationId": "listCheckpoints",
   "parameters": [
     {
@@ -38,6 +38,19 @@
         "description": "Cursor for pagination (ID of the last checkpoint from the previous page)",
         "type": "string"
       }
+    },
+    {
+      "in": "query",
+      "name": "type",
+      "required": false,
+      "schema": {
+        "description": "Only return checkpoints of this type. CHECKPOINT_TYPE_TRAINING is the full training state (weights and optimizer state), for resuming a training session with its optimizer state; CHECKPOINT_TYPE_INFERENCE is a model ready for serving or download, also added to your models. When set, it must be CHECKPOINT_TYPE_TRAINING or CHECKPOINT_TYPE_INFERENCE; when omitted, checkpoints of both types are returned.",
+        "enum": [
+          "CHECKPOINT_TYPE_TRAINING",
+          "CHECKPOINT_TYPE_INFERENCE"
+        ],
+        "type": "string"
+      }
     }
   ],
   "responses": {
@@ -49,7 +62,7 @@
           }
         }
       },
-      "description": "List of training checkpoints"
+      "description": "List of checkpoints"
     },
     "default": {
       "content": {
@@ -62,17 +75,17 @@
       "description": "An unexpected error response."
     }
   },
-  "summary": "List training checkpoints",
+  "summary": "List checkpoints",
   "tags": [
     "RL"
   ],
   "components": {
     "schemas": {
       "RL.CheckpointsListResponse": {
-        "description": "A page of training checkpoints",
+        "description": "A page of checkpoints",
         "properties": {
           "data": {
-            "description": "Training checkpoints in this page",
+            "description": "Checkpoints in this page",
             "items": {
               "$ref": "#/components/schemas/RL.Checkpoint"
             },
@@ -143,6 +156,10 @@
             "example": "123e4567-e89b-12d3-a456-426614174000",
             "type": "string"
           },
+          "inference_registration": {
+            "$ref": "#/components/schemas/RL.InferenceCheckpointRegistration",
+            "description": "Model registry artifacts to deploy or download this inference checkpoint from. Absent for training checkpoints and when the checkpoint was not uploaded to the registry."
+          },
           "lora_rank": {
             "description": "LoRA rank of the session that produced this checkpoint. Absent for full-weight sessions and for checkpoints saved before this field was recorded.",
             "example": 32,
@@ -165,9 +182,13 @@
               }
             ]
           },
+          "training_registration": {
+            "$ref": "#/components/schemas/RL.ModelRegistryArtifact",
+            "description": "Model registry artifact holding this training checkpoint's training state, used to resume training rather than to deploy. Absent for inference checkpoints and when the checkpoint was not uploaded to the registry."
+          },
           "type": {
             "$ref": "#/components/schemas/RL.CheckpointType",
-            "description": "Whether this is a training checkpoint or an inference checkpoint",
+            "description": "Kind of checkpoint. CHECKPOINT_TYPE_TRAINING is the full training state (weights and optimizer state), for resuming a training session with its optimizer state; CHECKPOINT_TYPE_INFERENCE is a model ready for serving or download, also added to your models.",
             "example": "CHECKPOINT_TYPE_TRAINING"
           }
         },
@@ -200,6 +221,40 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "RL.InferenceCheckpointRegistration": {
+        "description": "Where an inference checkpoint's weights are stored in the Together model registry. At least one of `model` and `adapter` is set.",
+        "properties": {
+          "adapter": {
+            "$ref": "#/components/schemas/RL.ModelRegistryArtifact",
+            "description": "LoRA adapter weights, deployed on top of the base model. Set for LoRA training on the base model's own weights."
+          },
+          "model": {
+            "$ref": "#/components/schemas/RL.ModelRegistryArtifact",
+            "description": "Full model weights. Set for full-weight training, and for LoRA training on custom base weights, where the merged model is deployed instead of the adapter."
+          }
+        },
+        "type": "object"
+      },
+      "RL.ModelRegistryArtifact": {
+        "description": "A specific revision of a model in the Together model registry",
+        "properties": {
+          "id": {
+            "description": "ID of the model in the Together model registry, as used by the models API",
+            "example": "ml_abc123",
+            "type": "string"
+          },
+          "revision_id": {
+            "description": "Revision of the model that holds this checkpoint",
+            "example": "rv_def456",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "revision_id"
+        ],
         "type": "object"
       },
       "RL.CheckpointType": {
