@@ -1,0 +1,400 @@
+{
+  "description": "Request cancellation of a shaping job owned by the caller's project.",
+  "operationId": "cancelShapingJob",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+        "description": "Shaping job ID beginning with `shp-quant-`.",
+        "pattern": "^shp-quant-[a-f0-9-]+$",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/QuantizationJob"
+          }
+        }
+      },
+      "description": "Cancellation requested successfully."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Invalid request parameters."
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Missing or invalid API key."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Shaping job not found."
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Internal server error."
+    }
+  },
+  "summary": "Cancel shaping job",
+  "tags": [
+    "Shaping"
+  ],
+  "components": {
+    "schemas": {
+      "QuantizationJob": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseShapingJob"
+          },
+          {
+            "description": "Quantization job that prepares an adapter for FP4 inference.",
+            "properties": {
+              "events": {
+                "description": "Events emitted by the job.",
+                "items": {
+                  "$ref": "#/components/schemas/QuantizationEvent"
+                },
+                "type": "array"
+              },
+              "params": {
+                "$ref": "#/components/schemas/QuantizationPipelineSpec",
+                "description": "Job specification."
+              },
+              "results": {
+                "$ref": "#/components/schemas/QuantizationResults",
+                "description": "Model artifacts produced by the job."
+              }
+            },
+            "required": [
+              "params",
+              "events"
+            ],
+            "type": "object"
+          }
+        ],
+        "description": "Quantization job that prepares an adapter for FP4 inference."
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "BaseShapingJob": {
+        "description": "Public fields common to shaping jobs.",
+        "properties": {
+          "created_at": {
+            "description": "Time when the job was created.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique shaping job ID.",
+            "pattern": "^shp-quant-[a-f0-9-]+$",
+            "type": "string"
+          },
+          "job_type": {
+            "$ref": "#/components/schemas/ShapingJobType",
+            "description": "Type of shaping job."
+          },
+          "status": {
+            "$ref": "#/components/schemas/ShapingJobStatus",
+            "description": "Current job status."
+          },
+          "updated_at": {
+            "description": "Time when the job was last updated.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user_id": {
+            "description": "User that created the job.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "job_type",
+          "status",
+          "created_at",
+          "updated_at",
+          "user_id"
+        ],
+        "type": "object"
+      },
+      "QuantizationEvent": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseShapingEvent"
+          },
+          {
+            "description": "Event emitted by a quantization job.",
+            "properties": {
+              "result": {
+                "$ref": "#/components/schemas/QuantizationResults",
+                "description": "Result attached to completion events."
+              },
+              "type": {
+                "description": "Quantization event type.",
+                "enum": [
+                  "SHAPING_ERROR",
+                  "SHAPING_USER_ERROR",
+                  "QUANTIZATION_JOB_START",
+                  "QUANTIZATION_MODEL_DOWNLOAD_COMPLETE",
+                  "QUANTIZATION_MERGE_COMPLETE",
+                  "QUANTIZATION_QUANTIZE_PROCESS_START",
+                  "QUANTIZATION_QUANTIZE_PROCESS_COMPLETE",
+                  "QUANTIZATION_MODEL_UPLOAD_COMPLETE",
+                  "QUANTIZATION_JOB_COMPLETE"
+                ],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        ],
+        "description": "Event emitted by a quantization job."
+      },
+      "QuantizationPipelineSpec": {
+        "description": "Stored job specification containing the request and resolved configuration.",
+        "properties": {
+          "configuration": {
+            "$ref": "#/components/schemas/QuantizationPipelineConfiguration",
+            "description": "Server-resolved configuration for the run."
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/QuantizationPipelineInputs",
+            "description": "Adapter inputs requested by the caller."
+          }
+        },
+        "required": [
+          "inputs",
+          "configuration"
+        ],
+        "type": "object"
+      },
+      "QuantizationResults": {
+        "description": "Model artifact produced by a completed quantization job.",
+        "properties": {
+          "model_object_id": {
+            "description": "Model object ID registered by the job.",
+            "type": "string"
+          },
+          "model_revision_id": {
+            "description": "Model revision ID registered by the job.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "ShapingJobType": {
+        "description": "Kind of shaping job.",
+        "enum": [
+          "quantization"
+        ],
+        "type": "string"
+      },
+      "ShapingJobStatus": {
+        "description": "Lifecycle status of a shaping job.",
+        "enum": [
+          "pending",
+          "queued",
+          "running",
+          "completed",
+          "cancelled",
+          "cancel_requested",
+          "error",
+          "user_error"
+        ],
+        "type": "string"
+      },
+      "BaseShapingEvent": {
+        "description": "Public fields common to shaping events.",
+        "properties": {
+          "created_at": {
+            "description": "Time when the event was created.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "hash": {
+            "description": "Event hash used for deduplication.",
+            "type": "string"
+          },
+          "level": {
+            "$ref": "#/components/schemas/EventLevel",
+            "description": "Event severity level."
+          },
+          "message": {
+            "description": "Human-readable event message.",
+            "type": "string"
+          },
+          "object": {
+            "const": "shaping",
+            "description": "Object type, always `shaping`.",
+            "type": "string"
+          },
+          "type": {
+            "description": "Event type identifier.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "created_at",
+          "level",
+          "message",
+          "type"
+        ],
+        "type": "object"
+      },
+      "QuantizationPipelineConfiguration": {
+        "description": "Server-resolved configuration for a quantization job.",
+        "properties": {
+          "adapter_model_name": {
+            "description": "Qualified adapter model name.",
+            "example": "ft-qa-artifacts/glm-5.3-e2e-test-adapter",
+            "type": "string"
+          },
+          "adapter_project_id": {
+            "description": "Project that owns the adapter.",
+            "example": "proj_CczF9KYFantA84sNYDTJd",
+            "type": "string"
+          },
+          "adapter_revision_id": {
+            "description": "Adapter revision selected for preparation.",
+            "example": "rv_CeERyXMBQCJTRC1yqGTpk",
+            "type": "string"
+          },
+          "base_model_name": {
+            "description": "Qualified name of the base model.",
+            "example": "zai-org/GLM-5.3-NVFP4",
+            "type": "string"
+          },
+          "base_object_id": {
+            "description": "Model object ID of the adapter's base model.",
+            "example": "ml_CbJ9yCnij7A47b1xkpioB",
+            "type": "string"
+          },
+          "base_revision_id": {
+            "description": "Revision ID of the adapter's base model.",
+            "example": "rv_CbJ9yNrws93VQrZum1fTE",
+            "type": "string"
+          },
+          "user_id": {
+            "description": "User whose scope is used to fetch the adapter weights.",
+            "example": "user_CKfewYkQBpaEmN7wuQS3W",
+            "type": "string"
+          }
+        },
+        "readOnly": true,
+        "required": [
+          "user_id",
+          "adapter_project_id",
+          "adapter_revision_id",
+          "adapter_model_name",
+          "base_object_id",
+          "base_revision_id",
+          "base_model_name"
+        ],
+        "type": "object"
+      },
+      "QuantizationPipelineInputs": {
+        "description": "Adapter identifiers to prepare.",
+        "example": {
+          "adapter_object_id": "ml_CeG3fF6pyEViU8dE8pk7R",
+          "adapter_revision_id": "rv_CeG3faPBj2ABwbAaHPTmx",
+          "calibration_file_id": "file-5f1b0c7a-2d19-4a3e-9c60-8ab41c2f7d35"
+        },
+        "properties": {
+          "adapter_object_id": {
+            "description": "Model object ID of the adapter to prepare.",
+            "pattern": "^ml_.+",
+            "type": "string"
+          },
+          "adapter_revision_id": {
+            "description": "Adapter revision ID to prepare. Omit to use the adapter's current revision.",
+            "pattern": "^rv_.+",
+            "type": "string"
+          },
+          "calibration_file_id": {
+            "description": "Conversation dataset file ID to use for calibration. Upload it first with `POST /v1/files` using purpose `calibration` and file type `jsonl`. Each JSONL row must contain a `messages` array and may contain a `tools` array.\nWhen provided, the job draws half of the calibration corpus from this file and half from a general-text corpus. When omitted, the job calibrates on the general-text corpus only.\nThe request is rejected unless the file exists in the request project, has finished uploading, has passed files API validation as a conversation dataset, is not empty, and is at most 64 MiB. A `fine-tune` purpose file is also accepted so a training file can be reused.\n",
+            "example": "file-5f1b0c7a-2d19-4a3e-9c60-8ab41c2f7d35",
+            "pattern": "^file-.+",
+            "type": "string"
+          }
+        },
+        "required": [
+          "adapter_object_id"
+        ],
+        "type": "object"
+      },
+      "EventLevel": {
+        "description": "Severity level for a shaping event.",
+        "enum": [
+          "Info",
+          "Warning",
+          "Error"
+        ],
+        "type": "string"
+      }
+    }
+  }
+}

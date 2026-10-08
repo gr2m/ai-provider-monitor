@@ -1,0 +1,218 @@
+{
+  "description": "List events for a shaping job owned by the caller's project.",
+  "operationId": "getShapingEvents",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+        "description": "Shaping job ID beginning with `shp-quant-`.",
+        "pattern": "^shp-quant-[a-f0-9-]+$",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/EventsList"
+          }
+        }
+      },
+      "description": "Events retrieved successfully."
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Missing or invalid API key."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Shaping job not found."
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Internal server error."
+    }
+  },
+  "summary": "List shaping job events",
+  "tags": [
+    "Shaping"
+  ],
+  "components": {
+    "schemas": {
+      "EventsList": {
+        "description": "List response containing shaping events.",
+        "properties": {
+          "data": {
+            "description": "Shaping events.",
+            "items": {
+              "$ref": "#/components/schemas/QuantizationEvent"
+            },
+            "type": "array"
+          },
+          "object": {
+            "const": "list",
+            "description": "Object type, always `list`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "data",
+          "object"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "QuantizationEvent": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseShapingEvent"
+          },
+          {
+            "description": "Event emitted by a quantization job.",
+            "properties": {
+              "result": {
+                "$ref": "#/components/schemas/QuantizationResults",
+                "description": "Result attached to completion events."
+              },
+              "type": {
+                "description": "Quantization event type.",
+                "enum": [
+                  "SHAPING_ERROR",
+                  "SHAPING_USER_ERROR",
+                  "QUANTIZATION_JOB_START",
+                  "QUANTIZATION_MODEL_DOWNLOAD_COMPLETE",
+                  "QUANTIZATION_MERGE_COMPLETE",
+                  "QUANTIZATION_QUANTIZE_PROCESS_START",
+                  "QUANTIZATION_QUANTIZE_PROCESS_COMPLETE",
+                  "QUANTIZATION_MODEL_UPLOAD_COMPLETE",
+                  "QUANTIZATION_JOB_COMPLETE"
+                ],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        ],
+        "description": "Event emitted by a quantization job."
+      },
+      "BaseShapingEvent": {
+        "description": "Public fields common to shaping events.",
+        "properties": {
+          "created_at": {
+            "description": "Time when the event was created.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "hash": {
+            "description": "Event hash used for deduplication.",
+            "type": "string"
+          },
+          "level": {
+            "$ref": "#/components/schemas/EventLevel",
+            "description": "Event severity level."
+          },
+          "message": {
+            "description": "Human-readable event message.",
+            "type": "string"
+          },
+          "object": {
+            "const": "shaping",
+            "description": "Object type, always `shaping`.",
+            "type": "string"
+          },
+          "type": {
+            "description": "Event type identifier.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "created_at",
+          "level",
+          "message",
+          "type"
+        ],
+        "type": "object"
+      },
+      "QuantizationResults": {
+        "description": "Model artifact produced by a completed quantization job.",
+        "properties": {
+          "model_object_id": {
+            "description": "Model object ID registered by the job.",
+            "type": "string"
+          },
+          "model_revision_id": {
+            "description": "Model revision ID registered by the job.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "EventLevel": {
+        "description": "Severity level for a shaping event.",
+        "enum": [
+          "Info",
+          "Warning",
+          "Error"
+        ],
+        "type": "string"
+      }
+    }
+  }
+}

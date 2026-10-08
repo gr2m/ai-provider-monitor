@@ -1,0 +1,187 @@
+{
+  "description": "Reports the price and expected wall-clock time for preparing the named adapter without creating a job. The request body is the same as POST /shaping/prepare-for-fp4-inference, so a caller can price exactly the job it is about to submit.\n",
+  "operationId": "estimateQuantizationJob",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/QuantizationRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/QuantizationEstimate"
+          }
+        }
+      },
+      "description": "Estimate for the described job."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Invalid request parameters."
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Missing or invalid API key."
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Internal server error."
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Preparing models for FP4 inference is not available."
+    }
+  },
+  "summary": "Estimate FP4 preparation cost",
+  "tags": [
+    "Shaping"
+  ],
+  "components": {
+    "schemas": {
+      "QuantizationRequest": {
+        "description": "Request body for preparing an adapter for FP4 inference.",
+        "properties": {
+          "inputs": {
+            "$ref": "#/components/schemas/QuantizationPipelineInputs",
+            "description": "Adapter inputs to prepare."
+          }
+        },
+        "required": [
+          "inputs"
+        ],
+        "type": "object"
+      },
+      "QuantizationEstimate": {
+        "description": "Price and duration estimate for a quantization job.",
+        "properties": {
+          "allowed_to_proceed": {
+            "description": "Whether a create request at this price would be accepted.",
+            "example": true,
+            "type": "boolean"
+          },
+          "credit_limit": {
+            "description": "Project credit limit in US dollars.",
+            "example": 500,
+            "format": "double",
+            "type": "number"
+          },
+          "price_usd": {
+            "description": "Expected total run cost in US dollars.",
+            "example": 28.76,
+            "format": "double",
+            "type": "number"
+          },
+          "time_hours": {
+            "description": "Expected wall-clock run time in hours, excluding queue time.",
+            "example": 4,
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "price_usd",
+          "time_hours",
+          "credit_limit",
+          "allowed_to_proceed"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "QuantizationPipelineInputs": {
+        "description": "Adapter identifiers to prepare.",
+        "example": {
+          "adapter_object_id": "ml_CeG3fF6pyEViU8dE8pk7R",
+          "adapter_revision_id": "rv_CeG3faPBj2ABwbAaHPTmx",
+          "calibration_file_id": "file-5f1b0c7a-2d19-4a3e-9c60-8ab41c2f7d35"
+        },
+        "properties": {
+          "adapter_object_id": {
+            "description": "Model object ID of the adapter to prepare.",
+            "pattern": "^ml_.+",
+            "type": "string"
+          },
+          "adapter_revision_id": {
+            "description": "Adapter revision ID to prepare. Omit to use the adapter's current revision.",
+            "pattern": "^rv_.+",
+            "type": "string"
+          },
+          "calibration_file_id": {
+            "description": "Conversation dataset file ID to use for calibration. Upload it first with `POST /v1/files` using purpose `calibration` and file type `jsonl`. Each JSONL row must contain a `messages` array and may contain a `tools` array.\nWhen provided, the job draws half of the calibration corpus from this file and half from a general-text corpus. When omitted, the job calibrates on the general-text corpus only.\nThe request is rejected unless the file exists in the request project, has finished uploading, has passed files API validation as a conversation dataset, is not empty, and is at most 64 MiB. A `fine-tune` purpose file is also accepted so a training file can be reused.\n",
+            "example": "file-5f1b0c7a-2d19-4a3e-9c60-8ab41c2f7d35",
+            "pattern": "^file-.+",
+            "type": "string"
+          }
+        },
+        "required": [
+          "adapter_object_id"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}
