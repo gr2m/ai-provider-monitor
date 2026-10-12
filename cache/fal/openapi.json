@@ -26417,7 +26417,7 @@
     },
     "/keys": {
       "get": {
-        "description": "Returns the API keys in the authenticated user's workspace that are on the `API` preset\nor the legacy `API` scope. Keys on other presets or custom policies are not listed.\n\n**Key Features:**\n- View all API keys with their aliases and creation dates\n- Optionally expand to include creator information\n- Paginated results for workspaces with many keys\n\n**Expansion Options:**\n- `expand=creator_info`: Include creator_nickname and creator_email for each key\n\n**Common Use Cases:**\n- Audit existing API keys\n- Find keys by alias\n- Monitor key creation activity\n- Build key management interfaces\n\n**Required permissions:** `auth:keys:read`. Key presets that include them: `BILLING`, `FULL`. See [key permissions](https://fal.ai/docs/documentation/model-apis/authentication/key-based#permissions).",
+        "description": "Returns a list of all API keys belonging to the authenticated user's workspace.\n\n**Key Features:**\n- View all API keys with their aliases and creation dates\n- See how each key is permissioned via `mode`, `preset` and `permissions`\n- Optionally expand to include creator information\n- Paginated results for workspaces with many keys\n\n**Key Modes:**\n- `preset`: created from a named permission preset, reported in `preset`\n- `custom`: created with an explicit list of permissions\n- `legacy`: predates granular permissions and carries a coarse scope\n\n**Expansion Options:**\n- `expand=creator_info`: Include creator_nickname and creator_email for each key\n\n**Common Use Cases:**\n- Audit existing API keys\n- Find keys by alias\n- Monitor key creation activity\n- Build key management interfaces\n\n**Required permissions:** `auth:keys:read`. Key presets that include them: `BILLING`, `FULL`. See [key permissions](https://fal.ai/docs/documentation/model-apis/authentication/key-based#permissions).",
         "operationId": "listApiKeys",
         "parameters": [
           {
@@ -26477,13 +26477,22 @@
                     {
                       "alias": "Production Key",
                       "created_at": "2025-01-15T12:00:00Z",
+                      "expires_at": null,
                       "key_id": "abc123def456",
+                      "mode": "preset",
+                      "permissions": [
+                        "models:requests:read",
+                        "models:requests:write"
+                      ],
+                      "preset": "API",
                       "scope": "API"
                     },
                     {
                       "alias": "Development Key",
                       "created_at": "2025-01-10T09:30:00Z",
+                      "expires_at": null,
                       "key_id": "xyz789ghi012",
+                      "mode": "legacy",
                       "scope": "API"
                     }
                   ],
@@ -26521,20 +26530,69 @@
                             "example": "developer",
                             "type": "string"
                           },
+                          "description": {
+                            "description": "User-provided description of what the key is for",
+                            "example": "CI deploy key for the main environment",
+                            "type": "string"
+                          },
+                          "expires_at": {
+                            "description": "ISO8601 timestamp when the key expires, or null if it doesn't",
+                            "example": "2025-07-15T12:00:00Z",
+                            "type": ["string", "null"]
+                          },
                           "key_id": {
                             "description": "Unique identifier for the API key",
                             "example": "abc123def456",
                             "type": "string"
                           },
+                          "mode": {
+                            "description": "How the key's permissions are expressed: a named preset, a custom permission list, or a legacy scope.",
+                            "enum": ["legacy", "preset", "custom"],
+                            "example": "preset",
+                            "type": "string"
+                          },
+                          "permissions": {
+                            "description": "Resolved permissions, present for preset and custom keys",
+                            "example": [
+                              "models:requests:read",
+                              "models:requests:write"
+                            ],
+                            "items": {
+                              "type": "string"
+                            },
+                            "minItems": 1,
+                            "type": "array"
+                          },
+                          "preset": {
+                            "description": "Preset the key was created from, present when mode is preset",
+                            "enum": [
+                              "FULL",
+                              "AGENT",
+                              "API",
+                              "DEPLOY",
+                              "READONLY",
+                              "BILLING",
+                              "COMPUTE",
+                              "SERVERLESS"
+                            ],
+                            "example": "API",
+                            "type": "string"
+                          },
                           "scope": {
                             "deprecated": true,
-                            "description": "Deprecated: always `API`. This API lists and manages only keys on the `API` preset or the legacy `API` scope; keys on other presets or custom policies are not listed.",
-                            "enum": ["API"],
+                            "description": "Coarse scope of a legacy API key. Deprecated: superseded by mode, preset and permissions, and omitted for keys that carry granular permissions.",
+                            "enum": ["API", "ADMIN"],
                             "example": "API",
                             "type": "string"
                           }
                         },
-                        "required": ["key_id", "alias", "scope", "created_at"],
+                        "required": [
+                          "key_id",
+                          "alias",
+                          "created_at",
+                          "mode",
+                          "expires_at"
+                        ],
                         "type": "object"
                       },
                       "type": "array"
@@ -26779,22 +26837,62 @@
         }
       },
       "post": {
-        "description": "Creates a new API key on the `API` preset with the specified alias.\n\n**Important Security Notice:**\nThe `key_secret` is only returned once at creation time. Store it securely immediately\nas it cannot be retrieved again. If lost, you must delete the key and create a new one.\n\n**Key Features:**\n- Create API keys programmatically without UI access\n- Assign meaningful aliases for key identification\n- Keys are immediately active upon creation\n\n**Common Use Cases:**\n- Programmatic key provisioning for CI/CD pipelines\n- Self-serve key generation for team members\n- Automated key rotation workflows\n- Integration with secret management systems\n\n**Required permissions:** `auth:keys:write`. Key presets that include them: `FULL`. See [key permissions](https://fal.ai/docs/documentation/model-apis/authentication/key-based#permissions).",
+        "description": "Creates a new API key with the specified alias.\n\nKeys are created with granular permissions. Pass `preset` for a named preset\nor `permissions` to list them explicitly; omit both to get the `API` preset.\n\n**Important Security Notice:**\nThe `key_secret` is only returned once at creation time. Store it securely immediately\nas it cannot be retrieved again. If lost, you must delete the key and create a new one.\n\n**Key Features:**\n- Create API keys programmatically without UI access\n- Assign meaningful aliases for key identification\n- Scope a key with a named preset or an explicit list of permissions\n- Optionally set an expiry with `expires_at`\n- Keys are immediately active upon creation\n\n**Common Use Cases:**\n- Programmatic key provisioning for CI/CD pipelines\n- Self-serve key generation for team members\n- Automated key rotation workflows\n- Integration with secret management systems\n\n**Required permissions:** `auth:keys:write`. Key presets that include them: `FULL`. See [key permissions](https://fal.ai/docs/documentation/model-apis/authentication/key-based#permissions).",
         "operationId": "createApiKey",
         "requestBody": {
           "content": {
             "application/json": {
               "example": {
-                "alias": "Production Key"
+                "alias": "Production Key",
+                "preset": "API"
               },
               "schema": {
-                "description": "Request body for creating a new API key",
+                "additionalProperties": false,
                 "properties": {
                   "alias": {
                     "description": "Required friendly name for the API key",
                     "example": "Production Key",
                     "maxLength": 255,
                     "minLength": 1,
+                    "type": "string"
+                  },
+                  "description": {
+                    "description": "Optional description of what the key is for",
+                    "example": "CI deploy key for the main environment",
+                    "maxLength": 1000,
+                    "type": "string"
+                  },
+                  "expires_at": {
+                    "description": "ISO8601 timestamp after which the key stops working",
+                    "example": "2025-07-15T12:00:00Z",
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "permissions": {
+                    "description": "Explicit list of permissions to grant instead of a preset. Mutually exclusive with preset.",
+                    "example": [
+                      "models:requests:read",
+                      "models:requests:write"
+                    ],
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "preset": {
+                    "description": "Named permission preset to apply. Defaults to \"API\" when neither preset nor permissions is given. Mutually exclusive with permissions.",
+                    "enum": [
+                      "FULL",
+                      "AGENT",
+                      "API",
+                      "DEPLOY",
+                      "READONLY",
+                      "BILLING",
+                      "COMPUTE",
+                      "SERVERLESS"
+                    ],
+                    "example": "API",
                     "type": "string"
                   }
                 },
@@ -27122,7 +27220,8 @@
     },
     "/keys/{key_id}": {
       "delete": {
-        "description": "Deletes an API key by its ID. This action is irreversible.\n\n**Requirements:**\n- Key must belong to the authenticated user's workspace\n\n**Key Features:**\n- Permanently revoke API key access\n- Idempotent operation (safe to retry)\n- Optional Idempotency-Key header for safe retries\n\n**Important:**\n- This action cannot be undone\n- Any applications using this key will immediately lose access\n- Returns 204 even if the key doesn't exist (idempotent behavior)\n\n**Common Use Cases:**\n- Revoke compromised keys\n- Clean up unused keys\n- Implement key rotation (delete old, create new)\n- Offboard team members\n\n**Required permissions:** `auth:keys:write`. Key presets that include them: `FULL`. See [key permissions](https://fal.ai/docs/documentation/model-apis/authentication/key-based#permissions).",
+        "deprecated": true,
+        "description": "Deprecated: an alias for `POST /v1/keys/{key_id}/revoke`, which it calls.\nUse that endpoint instead.\n\nRevokes an API key by its ID. This action is irreversible.\n\n**Requirements:**\n- Key must belong to the authenticated user's workspace\n\n**Key Features:**\n- Permanently revoke API key access\n- Idempotent operation (safe to retry)\n- Optional Idempotency-Key header for safe retries\n\n**Important:**\n- This action cannot be undone\n- Any applications using this key will immediately lose access\n- Returns 204 even if the key doesn't exist or is already revoked\n\n**Common Use Cases:**\n- Revoke compromised keys\n- Clean up unused keys\n- Implement key rotation (revoke old, create new)\n- Offboard team members\n\n**Required permissions:** `auth:keys:write`. Key presets that include them: `FULL`. See [key permissions](https://fal.ai/docs/documentation/model-apis/authentication/key-based#permissions).",
         "operationId": "deleteApiKey",
         "parameters": [
           {
@@ -27151,7 +27250,7 @@
         ],
         "responses": {
           "204": {
-            "description": "API key deleted successfully (or already deleted)"
+            "description": "API key revoked successfully (or already revoked)"
           },
           "401": {
             "content": {
@@ -27377,6 +27476,267 @@
           "href": "/platform-apis/v1/keys/delete",
           "metadata": {
             "sidebarTitle": "Delete API Key"
+          }
+        }
+      }
+    },
+    "/keys/{key_id}/revoke": {
+      "post": {
+        "description": "Revokes an API key by its ID, so it can no longer be used. This action is irreversible.\n\nThe key stops working immediately and drops out of `GET /v1/keys`, but the\nrecord is retained with when it was revoked and by whom.\n\n**Requirements:**\n- Key must belong to the authenticated user's workspace\n\n**Key Features:**\n- Permanently revoke API key access while retaining the audit record\n- Idempotent operation (safe to retry)\n- Optional Idempotency-Key header for safe retries\n\n**Important:**\n- This action cannot be undone\n- Any applications using this key will immediately lose access\n- Returns 204 even if the key doesn't exist or is already revoked\n\n**Common Use Cases:**\n- Revoke compromised keys\n- Clean up unused keys\n- Implement key rotation (revoke old, create new)\n- Offboard team members\n\n**Required permissions:** `auth:keys:write`. Key presets that include them: `FULL`. See [key permissions](https://fal.ai/docs/documentation/model-apis/authentication/key-based#permissions).",
+        "operationId": "revokeApiKey",
+        "parameters": [
+          {
+            "description": "Unique identifier of the API key to revoke",
+            "in": "path",
+            "name": "key_id",
+            "required": true,
+            "schema": {
+              "description": "Unique identifier of the API key to revoke",
+              "example": "abc123def456",
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "description": "Optional idempotency key for safe request retries",
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "description": "Optional idempotency key for safe request retries",
+              "example": "550e8400-e29b-41d4-a716-446655440000",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "API key revoked successfully (or already revoked)"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Authentication required",
+                    "type": "authorization_error"
+                  }
+                },
+                "schema": {
+                  "description": "Standard error response format",
+                  "properties": {
+                    "error": {
+                      "description": "Error details",
+                      "properties": {
+                        "docs_url": {
+                          "description": "Link to relevant documentation",
+                          "format": "uri",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error message",
+                          "type": "string"
+                        },
+                        "request_id": {
+                          "description": "Unique request identifier for debugging",
+                          "type": "string"
+                        },
+                        "type": {
+                          "description": "The category of error that occurred",
+                          "enum": [
+                            "authorization_error",
+                            "validation_error",
+                            "not_found",
+                            "rate_limited",
+                            "server_error",
+                            "not_implemented"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["type", "message"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["error"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Authentication required"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Access denied",
+                    "type": "authorization_error"
+                  }
+                },
+                "schema": {
+                  "description": "Standard error response format",
+                  "properties": {
+                    "error": {
+                      "description": "Error details",
+                      "properties": {
+                        "docs_url": {
+                          "description": "Link to relevant documentation",
+                          "format": "uri",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error message",
+                          "type": "string"
+                        },
+                        "request_id": {
+                          "description": "Unique request identifier for debugging",
+                          "type": "string"
+                        },
+                        "type": {
+                          "description": "The category of error that occurred",
+                          "enum": [
+                            "authorization_error",
+                            "validation_error",
+                            "not_found",
+                            "rate_limited",
+                            "server_error",
+                            "not_implemented"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["type", "message"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["error"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Access denied"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "Rate limit exceeded",
+                    "type": "rate_limited"
+                  }
+                },
+                "schema": {
+                  "description": "Standard error response format",
+                  "properties": {
+                    "error": {
+                      "description": "Error details",
+                      "properties": {
+                        "docs_url": {
+                          "description": "Link to relevant documentation",
+                          "format": "uri",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error message",
+                          "type": "string"
+                        },
+                        "request_id": {
+                          "description": "Unique request identifier for debugging",
+                          "type": "string"
+                        },
+                        "type": {
+                          "description": "The category of error that occurred",
+                          "enum": [
+                            "authorization_error",
+                            "validation_error",
+                            "not_found",
+                            "rate_limited",
+                            "server_error",
+                            "not_implemented"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["type", "message"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["error"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Rate limit exceeded"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "message": "An unexpected error occurred",
+                    "type": "server_error"
+                  }
+                },
+                "schema": {
+                  "description": "Standard error response format",
+                  "properties": {
+                    "error": {
+                      "description": "Error details",
+                      "properties": {
+                        "docs_url": {
+                          "description": "Link to relevant documentation",
+                          "format": "uri",
+                          "type": "string"
+                        },
+                        "message": {
+                          "description": "Human-readable error message",
+                          "type": "string"
+                        },
+                        "request_id": {
+                          "description": "Unique request identifier for debugging",
+                          "type": "string"
+                        },
+                        "type": {
+                          "description": "The category of error that occurred",
+                          "enum": [
+                            "authorization_error",
+                            "validation_error",
+                            "not_found",
+                            "rate_limited",
+                            "server_error",
+                            "not_implemented"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": ["type", "message"],
+                      "type": "object"
+                    }
+                  },
+                  "required": ["error"],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "fullApiKey": []
+          }
+        ],
+        "summary": "Revoke API Key",
+        "tags": ["Keys"],
+        "x-fal-permissions": {
+          "all_of": ["auth:keys:write"],
+          "requires_auth": true
+        },
+        "x-mint": {
+          "href": "/platform-apis/v1/keys/revoke",
+          "metadata": {
+            "sidebarTitle": "Revoke API Key"
           }
         }
       }
