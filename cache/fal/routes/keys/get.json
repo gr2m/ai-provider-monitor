@@ -1,5 +1,5 @@
 {
-  "description": "Returns the API keys in the authenticated user's workspace that are on the `API` preset\nor the legacy `API` scope. Keys on other presets or custom policies are not listed.\n\n**Key Features:**\n- View all API keys with their aliases and creation dates\n- Optionally expand to include creator information\n- Paginated results for workspaces with many keys\n\n**Expansion Options:**\n- `expand=creator_info`: Include creator_nickname and creator_email for each key\n\n**Common Use Cases:**\n- Audit existing API keys\n- Find keys by alias\n- Monitor key creation activity\n- Build key management interfaces\n\n**Required permissions:** `auth:keys:read`. Key presets that include them: `BILLING`, `FULL`. See [key permissions](https://fal.ai/docs/documentation/model-apis/authentication/key-based#permissions).",
+  "description": "Returns a list of all API keys belonging to the authenticated user's workspace.\n\n**Key Features:**\n- View all API keys with their aliases and creation dates\n- See how each key is permissioned via `mode`, `preset` and `permissions`\n- Optionally expand to include creator information\n- Paginated results for workspaces with many keys\n\n**Key Modes:**\n- `preset`: created from a named permission preset, reported in `preset`\n- `custom`: created with an explicit list of permissions\n- `legacy`: predates granular permissions and carries a coarse scope\n\n**Expansion Options:**\n- `expand=creator_info`: Include creator_nickname and creator_email for each key\n\n**Common Use Cases:**\n- Audit existing API keys\n- Find keys by alias\n- Monitor key creation activity\n- Build key management interfaces\n\n**Required permissions:** `auth:keys:read`. Key presets that include them: `BILLING`, `FULL`. See [key permissions](https://fal.ai/docs/documentation/model-apis/authentication/key-based#permissions).",
   "operationId": "listApiKeys",
   "parameters": [
     {
@@ -61,13 +61,22 @@
               {
                 "alias": "Production Key",
                 "created_at": "2025-01-15T12:00:00Z",
+                "expires_at": null,
                 "key_id": "abc123def456",
+                "mode": "preset",
+                "permissions": [
+                  "models:requests:read",
+                  "models:requests:write"
+                ],
+                "preset": "API",
                 "scope": "API"
               },
               {
                 "alias": "Development Key",
                 "created_at": "2025-01-10T09:30:00Z",
+                "expires_at": null,
                 "key_id": "xyz789ghi012",
+                "mode": "legacy",
                 "scope": "API"
               }
             ],
@@ -105,16 +114,67 @@
                       "example": "developer",
                       "type": "string"
                     },
+                    "description": {
+                      "description": "User-provided description of what the key is for",
+                      "example": "CI deploy key for the main environment",
+                      "type": "string"
+                    },
+                    "expires_at": {
+                      "description": "ISO8601 timestamp when the key expires, or null if it doesn't",
+                      "example": "2025-07-15T12:00:00Z",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "key_id": {
                       "description": "Unique identifier for the API key",
                       "example": "abc123def456",
                       "type": "string"
                     },
+                    "mode": {
+                      "description": "How the key's permissions are expressed: a named preset, a custom permission list, or a legacy scope.",
+                      "enum": [
+                        "legacy",
+                        "preset",
+                        "custom"
+                      ],
+                      "example": "preset",
+                      "type": "string"
+                    },
+                    "permissions": {
+                      "description": "Resolved permissions, present for preset and custom keys",
+                      "example": [
+                        "models:requests:read",
+                        "models:requests:write"
+                      ],
+                      "items": {
+                        "type": "string"
+                      },
+                      "minItems": 1,
+                      "type": "array"
+                    },
+                    "preset": {
+                      "description": "Preset the key was created from, present when mode is preset",
+                      "enum": [
+                        "FULL",
+                        "AGENT",
+                        "API",
+                        "DEPLOY",
+                        "READONLY",
+                        "BILLING",
+                        "COMPUTE",
+                        "SERVERLESS"
+                      ],
+                      "example": "API",
+                      "type": "string"
+                    },
                     "scope": {
                       "deprecated": true,
-                      "description": "Deprecated: always `API`. This API lists and manages only keys on the `API` preset or the legacy `API` scope; keys on other presets or custom policies are not listed.",
+                      "description": "Coarse scope of a legacy API key. Deprecated: superseded by mode, preset and permissions, and omitted for keys that carry granular permissions.",
                       "enum": [
-                        "API"
+                        "API",
+                        "ADMIN"
                       ],
                       "example": "API",
                       "type": "string"
@@ -123,8 +183,9 @@
                   "required": [
                     "key_id",
                     "alias",
-                    "scope",
-                    "created_at"
+                    "created_at",
+                    "mode",
+                    "expires_at"
                   ],
                   "type": "object"
                 },
