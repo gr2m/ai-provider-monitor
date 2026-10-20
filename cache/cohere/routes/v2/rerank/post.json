@@ -23,7 +23,7 @@
               "type": "integer"
             },
             "model": {
-              "description": "The identifier of the model to use, eg `rerank-v3.5`.",
+              "description": "The identifier of the model to use, eg `rerank-v5.0-pro`.",
               "type": "string"
             },
             "priority": {
@@ -36,6 +36,9 @@
             "query": {
               "description": "The search query",
               "type": "string"
+            },
+            "relevant_spans": {
+              "$ref": "#/components/schemas/RerankRelevantSpans"
             },
             "top_n": {
               "description": "Limits the number of returned rerank results to the specified value. If not passed, all the rerank results will be returned.",
@@ -78,6 +81,13 @@
                       "description": "Relevance scores are normalized to be in the range `[0, 1]`. Scores close to `1` indicate a high relevance to the query, and scores closer to `0` indicate low relevance. It is not accurate to assume a score of 0.9 means the document is 2x more relevant than a document with a score of 0.45",
                       "format": "float",
                       "type": "number"
+                    },
+                    "relevant_spans": {
+                      "description": "The spans of this document that are most relevant to the query, ordered from most to least relevant. Only returned when the request enabled `relevant_spans` and the model found at least one span for the document.",
+                      "items": {
+                        "$ref": "#/components/schemas/RerankRelevantSpanResponse"
+                      },
+                      "type": "array"
                     }
                   },
                   "required": [
@@ -150,6 +160,37 @@
       }
     },
     "schemas": {
+      "RerankRelevantSpans": {
+        "description": "Configures context compression, which reports the spans of each document that are most relevant to the query instead of treating the whole document as relevant. Only supported by Rerank v5 and newer models (for example, `rerank-v5.0-pro`).",
+        "properties": {
+          "max_spans": {
+            "description": "Optional. The most spans to return per document, out of the spans scoring above `threshold`. Must be greater than `0`. If not set, all of them are returned. Can only be set when `mode` is `enabled`.",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "mode": {
+            "description": "Whether the model prunes each document down to its relevant spans. Pruning is off unless `relevant_spans` is passed with `\"mode\": \"enabled\"`.",
+            "enum": [
+              "enabled",
+              "disabled"
+            ],
+            "type": "string"
+          },
+          "threshold": {
+            "default": 0.1,
+            "description": "The score a span must reach to be considered relevant. A higher value prunes more of each document. Defaults to `0.1`. Can only be set when `mode` is `enabled`.",
+            "format": "float",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "Rerank Relevant Spans",
+        "type": "object"
+      },
       "ApiMeta": {
         "properties": {
           "api_version": {
@@ -226,6 +267,31 @@
             "type": "array"
           }
         },
+        "type": "object"
+      },
+      "RerankRelevantSpanResponse": {
+        "description": "A stretch of a document that the model found relevant to the query, returned when context compression is enabled through `relevant_spans`.",
+        "properties": {
+          "end": {
+            "description": "The position just past the span's last character, counted in Unicode codepoints, so the span covers `[start, end)` of the document.",
+            "type": "integer"
+          },
+          "score": {
+            "description": "How relevant the span is to the query, in the range `[0, 1]`. Only spans reaching the requested `threshold` are returned.",
+            "format": "float",
+            "type": "number"
+          },
+          "start": {
+            "description": "The position of the span's first character in the document, counted in Unicode codepoints.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "score"
+        ],
+        "title": "Rerank Relevant Span Response",
         "type": "object"
       }
     },
