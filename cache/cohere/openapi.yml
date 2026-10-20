@@ -6248,6 +6248,67 @@ components:
       type: object
       x-fern-type: map<string, string>
       x-fern-type-name: RerankDocument
+    RerankRelevantSpanResponse:
+      description: A stretch of a document that the model found relevant to the query, returned when context compression is enabled through `relevant_spans`.
+      properties:
+        end:
+          description: The position just past the span's last character, counted in Unicode codepoints, so the span covers `[start, end)` of the document.
+          type: integer
+          x-fern-audiences:
+            - public
+        score:
+          description: How relevant the span is to the query, in the range `[0, 1]`. Only spans reaching the requested `threshold` are returned.
+          format: float
+          type: number
+          x-fern-audiences:
+            - public
+        start:
+          description: The position of the span's first character in the document, counted in Unicode codepoints.
+          type: integer
+          x-fern-audiences:
+            - public
+      required:
+        - start
+        - end
+        - score
+      title: Rerank Relevant Span Response
+      type: object
+      x-fern-audiences:
+        - public
+      x-fern-type-name: RerankRelevantSpanResponse
+    RerankRelevantSpans:
+      description: Configures context compression, which reports the spans of each document that are most relevant to the query instead of treating the whole document as relevant. Only supported by Rerank v5 and newer models (for example, `rerank-v5.0-pro`).
+      properties:
+        max_spans:
+          description: Optional. The most spans to return per document, out of the spans scoring above `threshold`. Must be greater than `0`. If not set, all of them are returned. Can only be set when `mode` is `enabled`.
+          minimum: 1
+          type: integer
+          x-fern-audiences:
+            - public
+        mode:
+          description: 'Whether the model prunes each document down to its relevant spans. Pruning is off unless `relevant_spans` is passed with `"mode": "enabled"`.'
+          enum:
+            - enabled
+            - disabled
+          type: string
+          x-fern-audiences:
+            - public
+        threshold:
+          default: 0.1
+          description: The score a span must reach to be considered relevant. A higher value prunes more of each document. Defaults to `0.1`. Can only be set when `mode` is `enabled`.
+          format: float
+          maximum: 1
+          minimum: 0
+          type: number
+          x-fern-audiences:
+            - public
+      required:
+        - mode
+      title: Rerank Relevant Spans
+      type: object
+      x-fern-audiences:
+        - public
+      x-fern-type-name: RerankRelevantSpans
     RerankerDataMetrics:
       properties:
         num_eval_hard_negatives:
@@ -27795,7 +27856,7 @@ paths:
                   x-fern-audiences:
                     - public
                 model:
-                  description: The identifier of the model to use, eg `rerank-v3.5`.
+                  description: The identifier of the model to use, eg `rerank-v5.0-pro`.
                   type: string
                   x-fern-audiences:
                     - public
@@ -27810,6 +27871,10 @@ paths:
                 query:
                   description: The search query
                   type: string
+                  x-fern-audiences:
+                    - public
+                relevant_spans:
+                  $ref: "#/components/schemas/RerankRelevantSpans"
                   x-fern-audiences:
                     - public
                 top_n:
@@ -27854,6 +27919,13 @@ paths:
                           description: Relevance scores are normalized to be in the range `[0, 1]`. Scores close to `1` indicate a high relevance to the query, and scores closer to `0` indicate low relevance. It is not accurate to assume a score of 0.9 means the document is 2x more relevant than a document with a score of 0.45
                           format: float
                           type: number
+                          x-fern-audiences:
+                            - public
+                        relevant_spans:
+                          description: The spans of this document that are most relevant to the query, ordered from most to least relevant. Only returned when the request enabled `relevant_spans` and the model found at least one span for the document.
+                          items:
+                            $ref: "#/components/schemas/RerankRelevantSpanResponse"
+                          type: array
                           x-fern-audiences:
                             - public
                       required:
@@ -27914,11 +27986,12 @@ paths:
                       'The Commonwealth of the Northern Mariana Islands is a group of islands in the Pacific Ocean. Its capital is Saipan.',
                       'Capitalization or capitalisation in English grammar is the use of a capital letter at the start of a word. English usage varies from capitalization in other languages.',
                       'Washington, D.C. (also known as simply Washington or D.C., and officially as the District of Columbia) is the capital of the United States. It is a federal district.',
-                      'Capital punishment has existed in the United States since beforethe United States was a country. As of 2017, capital punishment is legal in 30 of the 50 states.',
+                      'Capital gains are profits from the sale of an asset such as stocks or real estate. In the United States, long-term capital gains are taxed at lower rates than ordinary income.',
                     ],
                     query: 'What is the capital of the United States?',
                     topN: 3,
-                    model: 'rerank-v4.0-pro',
+                    model: 'rerank-v5.0-pro',
+                    relevantSpans: { mode: 'enabled', threshold: 0.1, maxSpans: 3 },
                   });
 
                   console.log(rerank);
@@ -27935,14 +28008,15 @@ paths:
                     "The Commonwealth of the Northern Mariana Islands is a group of islands in the Pacific Ocean. Its capital is Saipan.",
                     "Capitalization or capitalisation in English grammar is the use of a capital letter at the start of a word. English usage varies from capitalization in other languages.",
                     "Washington, D.C. (also known as simply Washington or D.C., and officially as the District of Columbia) is the capital of the United States. It is a federal district.",
-                    "Capital punishment has existed in the United States since beforethe United States was a country. As of 2017, capital punishment is legal in 30 of the 50 states.",
+                    "Capital gains are profits from the sale of an asset such as stocks or real estate. In the United States, long-term capital gains are taxed at lower rates than ordinary income.",
                 ]
 
                 response = co.rerank(
-                    model="rerank-v4.0-pro",
+                    model="rerank-v5.0-pro",
                     query="What is the capital of the United States?",
                     documents=docs,
                     top_n=3,
+                    relevant_spans={"mode": "enabled", "threshold": 0.1, "max_spans": 3},
                 )
                 print(response)
               name: Sync
@@ -27955,16 +28029,17 @@ paths:
 
                 async def main():
                     response = await co.rerank(
-                        model="rerank-v4.0-pro",
+                        model="rerank-v5.0-pro",
                         query="What is the capital of the United States?",
                         documents=[
                             "Carson City is the capital city of the American state of Nevada.",
                             "The Commonwealth of the Northern Mariana Islands is a group of islands in the Pacific Ocean. Its capital is Saipan.",
                             "Capitalization or capitalisation in English grammar is the use of a capital letter at the start of a word. English usage varies from capitalization in other languages.",
                             "Washington, D.C. (also known as simply Washington or D.C., and officially as the District of Columbia) is the capital of the United States. It is a federal district.",
-                            "Capital punishment has existed in the United States since beforethe United States was a country. As of 2017, capital punishment is legal in 30 of the 50 states.",
+                            "Capital gains are profits from the sale of an asset such as stocks or real estate. In the United States, long-term capital gains are taxed at lower rates than ordinary income.",
                         ],
-                        top_n=3
+                        top_n=3,
+                        relevant_spans={"mode": "enabled", "threshold": 0.1, "max_spans": 3},
                     )
                     print(response)
 
@@ -27977,6 +28052,8 @@ paths:
                 import com.cohere.api.Cohere;
                 import com.cohere.api.resources.v2.requests.V2RerankRequest;
                 import com.cohere.api.resources.v2.types.V2RerankResponse;
+                import com.cohere.api.types.RerankRelevantSpans;
+                import com.cohere.api.types.RerankRelevantSpansMode;
                 import java.util.List;
 
                 public class RerankV2Post {
@@ -27988,7 +28065,7 @@ paths:
                             .v2()
                             .rerank(
                                 V2RerankRequest.builder()
-                                    .model("rerank-v4.0-pro")
+                                    .model("rerank-v5.0-pro")
                                     .query("What is the capital of the United States?")
                                     .documents(
                                         List.of(
@@ -28001,10 +28078,16 @@ paths:
                                             "Washington, D.C. (also known as simply Washington or D.C., and"
                                                 + " officially as the District of Columbia) is the capital of the"
                                                 + " United States. It is a federal district.",
-                                            "Capital punishment has existed in the United States since before the"
-                                                + " United States was a country. As of 2017, capital punishment is"
-                                                + " legal in 30 of the 50 states."))
+                                            "Capital gains are profits from the sale of an asset such as stocks or"
+                                                + " real estate. In the United States, long-term capital gains are"
+                                                + " taxed at lower rates than ordinary income."))
                                     .topN(3)
+                                    .relevantSpans(
+                                        RerankRelevantSpans.builder()
+                                            .mode(RerankRelevantSpansMode.ENABLED)
+                                            .threshold(0.1f)
+                                            .maxSpans(3)
+                                            .build())
                                     .build());
 
                     System.out.println(response);
@@ -28019,14 +28102,15 @@ paths:
                   --header 'content-type: application/json' \
                   --header "Authorization: bearer $CO_API_KEY" \
                   --data '{
-                    "model": "rerank-v4.0-pro",
+                    "model": "rerank-v5.0-pro",
                     "query": "What is the capital of the United States?",
                     "top_n": 3,
                     "documents": ["Carson City is the capital city of the American state of Nevada.",
                                   "The Commonwealth of the Northern Mariana Islands is a group of islands in the Pacific Ocean. Its capital is Saipan.",
-                                  "Washington, D.C. (also known as simply Washington or D.C., and officially as the District of Columbia) is the capital of the United States. It is a federal district.",
                                   "Capitalization or capitalisation in English grammar is the use of a capital letter at the start of a word. English usage varies from capitalization in other languages.",
-                                  "Capital punishment has existed in the United States since beforethe United States was a country. As of 2017, capital punishment is legal in 30 of the 50 states."]
+                                  "Washington, D.C. (also known as simply Washington or D.C., and officially as the District of Columbia) is the capital of the United States. It is a federal district.",
+                                  "Capital gains are profits from the sale of an asset such as stocks or real estate. In the United States, long-term capital gains are taxed at lower rates than ordinary income."],
+                    "relevant_spans": {"mode": "enabled", "threshold": 0.1, "max_spans": 3}
                   }'
               name: cURL
               sdk: curl
@@ -28036,26 +28120,47 @@ paths:
               - The Commonwealth of the Northern Mariana Islands is a group of islands in the Pacific Ocean. Its capital is Saipan.
               - Capitalization or capitalisation in English grammar is the use of a capital letter at the start of a word. English usage varies from capitalization in other languages.
               - Washington, D.C. (also known as simply Washington or D.C., and officially as the District of Columbia) is the capital of the United States. It is a federal district.
-              - Capital punishment has existed in the United States since beforethe United States was a country. As of 2017, capital punishment is legal in 30 of the 50 states.
-            model: rerank-v4.0-pro
+              - Capital gains are profits from the sale of an asset such as stocks or real estate. In the United States, long-term capital gains are taxed at lower rates than ordinary income.
+            model: rerank-v5.0-pro
             query: What is the capital of the United States?
+            relevant_spans:
+              max_spans: 3
+              mode: enabled
+              threshold: 0.1
             top_n: 3
           response:
             body:
-              id: 07734bd2-2473-4f07-94e1-0d9f0e6843cf
+              id: 9f75d94c-5047-4f9f-ad14-4a42ef5d3ff3
               meta:
                 api_version:
-                  is_experimental: false
                   version: "2"
                 billed_units:
-                  search_units: 1
+                  input_tokens: 192
               results:
-                - index: 3
-                  relevance_score: 0.999071
-                - index: 4
-                  relevance_score: 0.7867867
+                - index: 2
+                  relevance_score: 0.8428898
+                  relevant_spans:
+                    - end: 139
+                      score: 0.9997249
+                      start: 0
+                    - end: 165
+                      score: 0.33812714
+                      start: 139
                 - index: 0
-                  relevance_score: 0.32713068
+                  relevance_score: 0.085889876
+                  relevant_spans:
+                    - end: 64
+                      score: 0.33498195
+                      start: 0
+                - index: 4
+                  relevance_score: 0.04667134
+                  relevant_spans:
+                    - end: 82
+                      score: 0.15934227
+                      start: 0
+                    - end: 175
+                      score: 0.118320465
+                      start: 82
       x-fern-sdk-group-name: v2
       x-fern-sdk-method-name: rerank
 security:
