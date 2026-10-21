@@ -1,0 +1,333 @@
+{
+  "description": "Lists an endpoint's audit and lifecycle events newest first. The feed combines endpoint changes with provisioning, scaling, readiness, rollout, and other events from deployments under the endpoint.",
+  "operationId": "EndpointService_ListEndpointEvents",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "projectId",
+      "required": true,
+      "schema": {
+        "description": "Project identifier.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+        "description": "Endpoint identifier.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "limit",
+      "schema": {
+        "description": "Maximum number of events to return. Max 10000, defaults to 50.",
+        "type": "integer"
+      }
+    },
+    {
+      "in": "query",
+      "name": "after",
+      "schema": {
+        "description": "Cursor from a previous endpoint event list response.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "types",
+      "schema": {
+        "description": "Event types to include, such as `deployment.scaled` or `condition.set`. Combined with other filters using AND.",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    {
+      "in": "query",
+      "name": "minLevel",
+      "schema": {
+        "description": "Minimum severity. Omit to disable severity filtering.",
+        "enum": [
+          "LEVEL_DEBUG",
+          "LEVEL_INFO",
+          "LEVEL_WARN",
+          "LEVEL_ERROR"
+        ],
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "since",
+      "schema": {
+        "description": "Return only events at or after this time.",
+        "format": "date-time",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "until",
+      "schema": {
+        "description": "Return only events strictly before this time.",
+        "format": "date-time",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "deploymentIds",
+      "schema": {
+        "description": "Deployment IDs whose events should be included. Every ID must belong to the endpoint. Supplying this filter excludes endpoint-scoped events unless `SOURCE_KIND_ENDPOINT` is also included in `sourceKinds`.",
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    {
+      "in": "query",
+      "name": "sourceKinds",
+      "schema": {
+        "description": "Resource kinds whose events should be included. Omit to include both endpoint- and deployment-scoped events.",
+        "items": {
+          "enum": [
+            "SOURCE_KIND_ENDPOINT",
+            "SOURCE_KIND_DEPLOYMENT"
+          ],
+          "type": "string"
+        },
+        "type": "array"
+      }
+    },
+    {
+      "in": "query",
+      "name": "subjectId",
+      "schema": {
+        "description": "ID of a subject associated with the event, such as a rollout. Combined with other filters using AND.",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/DE.ListEndpointEventsResponse"
+          }
+        }
+      },
+      "description": "OK"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Default error response"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.together.ai/v2"
+    }
+  ],
+  "summary": "List endpoint events",
+  "tags": [
+    "EndpointService"
+  ],
+  "components": {
+    "schemas": {
+      "DE.ListEndpointEventsResponse": {
+        "description": "Endpoint and deployment lifecycle events, ordered newest first.",
+        "properties": {
+          "data": {
+            "description": "Events for the endpoint, newest first.",
+            "items": {
+              "$ref": "#/components/schemas/DE.EndpointEvent"
+            },
+            "type": "array"
+          },
+          "next_cursor": {
+            "description": "Cursor for the next page. Null if there are no more results.",
+            "type": "string"
+          },
+          "object": {
+            "const": "list",
+            "description": "Object type. Always `list`."
+          }
+        },
+        "required": [
+          "data",
+          "object"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "DE.EndpointEvent": {
+        "description": "One endpoint- or deployment-scoped entry in an endpoint's combined audit and lifecycle feed.",
+        "properties": {
+          "clusterId": {
+            "description": "ID of the cluster associated with a cluster-scoped event.",
+            "type": "string"
+          },
+          "containerName": {
+            "description": "Stable public component label associated with a replica event, such as `engine`, `model-download`, or `sidecar`.",
+            "type": "string"
+          },
+          "createdAt": {
+            "description": "Output only. Event creation time.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "deploymentId": {
+            "description": "Output only. Deployment associated with the event when `sourceKind` is `SOURCE_KIND_DEPLOYMENT`.",
+            "type": "string"
+          },
+          "endpointId": {
+            "description": "Output only. The endpoint this event belongs to. Always set.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Output only. Unique event identifier.",
+            "type": "string"
+          },
+          "level": {
+            "description": "Output only. Severity level.",
+            "enum": [
+              "LEVEL_DEBUG",
+              "LEVEL_INFO",
+              "LEVEL_WARN",
+              "LEVEL_ERROR"
+            ],
+            "type": "string"
+          },
+          "logExcerpt": {
+            "description": "Short diagnostic log excerpt captured with a pod event, for example during a crash, out-of-memory termination, or image pull failure. This field is truncated and is not a streaming log API.",
+            "type": "string"
+          },
+          "message": {
+            "description": "Output only. Human-readable description of the event. Short and stable; not structured data.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Resource name at the time of the event. Populated by: deployment.created, deployment.deleted, endpoint.created, endpoint.deleted",
+            "type": "string"
+          },
+          "newReplicas": {
+            "description": "New replica count for a `deployment.scaled` event.",
+            "type": "integer"
+          },
+          "nodeId": {
+            "description": "Opaque node handle for correlating replica failures on the same node. Omitted when the replica is unscheduled or the node is unknown.",
+            "type": "string"
+          },
+          "oldReplicas": {
+            "description": "Replica-count transition. Populated by: deployment.scaled",
+            "type": "integer"
+          },
+          "paths": {
+            "description": "Field-mask paths that were modified. Populated by: deployment.updated, endpoint.updated",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "reason": {
+            "description": "Stable condition reason, such as `AllReplicasReady`, `ReplicasProgressing`, or `ApplySuccessful`.",
+            "type": "string"
+          },
+          "replicaId": {
+            "description": "Opaque replica identity associated with a `pod.*` event, stable for grouping events from the same replica.",
+            "type": "string"
+          },
+          "serviceType": {
+            "description": "Deployment subservice associated with the event, such as `model-deployment` or `speculator-deployment`.",
+            "type": "string"
+          },
+          "source": {
+            "description": "Output only. Service, cluster, or controller that emitted the event.",
+            "type": "string"
+          },
+          "sourceKind": {
+            "description": "Output only. Whether this row describes the endpoint or one of its deployments.",
+            "enum": [
+              "SOURCE_KIND_ENDPOINT",
+              "SOURCE_KIND_DEPLOYMENT"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "description": "Condition status for `condition.set` and `cluster_condition.set`: `True`, `False`, or `Unknown`. The condition type is carried in `subjectId`.",
+            "type": "string"
+          },
+          "subjectId": {
+            "description": "Output only. ID of the event's subject, such as a rollout, shadow target, or condition type.",
+            "type": "string"
+          },
+          "type": {
+            "description": "Output only. Stable event type, such as `endpoint.updated`, `deployment.created`, `deployment.scaled`, `condition.set`, or `pod.log`.",
+            "type": "string"
+          },
+          "version": {
+            "description": "Target version. Populated by `target.created`; the target ID is carried in `subjectId`.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "level",
+          "type",
+          "source",
+          "sourceKind",
+          "endpointId"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}
