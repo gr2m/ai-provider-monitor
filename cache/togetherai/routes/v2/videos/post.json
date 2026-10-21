@@ -1,0 +1,315 @@
+{
+  "description": "Create a video",
+  "operationId": "createVideo",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/CreateVideoBody"
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/VideoJob"
+          }
+        }
+      },
+      "description": "Success"
+    }
+  },
+  "summary": "Create video",
+  "tags": [
+    "Video"
+  ],
+  "components": {
+    "schemas": {
+      "CreateVideoBody": {
+        "description": "Parameters for creating a new video generation job.",
+        "properties": {
+          "fps": {
+            "description": "Frames per second. Defaults to 24.",
+            "type": "integer"
+          },
+          "generate_audio": {
+            "description": "Whether to generate audio for the video.",
+            "type": "boolean"
+          },
+          "guidance_scale": {
+            "description": "Controls how closely the video generation follows your prompt. Higher values make the model adhere more strictly to your text description, while lower values allow more creative freedom. guidence_scale affects both visual content and temporal consistency.Recommended range is 6.0-10.0 for most video models. Values above 12 may cause over-guidance artifacts or unnatural motion patterns.",
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "media": {
+            "$ref": "#/components/schemas/VideoMedia",
+            "description": "Media inputs for video generation. The accepted fields depend on the model type (e.g. i2v, r2v, t2v, videoedit)."
+          },
+          "model": {
+            "description": "The model to be used for the video creation request.",
+            "type": "string"
+          },
+          "negative_prompt": {
+            "description": "Similar to prompt, but specifies what to avoid instead of what to include",
+            "type": "string"
+          },
+          "output_format": {
+            "$ref": "#/components/schemas/VideoOutputFormat",
+            "description": "Specifies the format of the output video. Defaults to MP4."
+          },
+          "output_quality": {
+            "description": "Compression quality. Defaults to 20.",
+            "type": "integer"
+          },
+          "prompt": {
+            "description": "Text prompt that describes the video to generate.",
+            "maxLength": 32000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "ratio": {
+            "description": "Aspect ratio of the video.",
+            "type": "string"
+          },
+          "resolution": {
+            "description": "Video resolution.",
+            "type": "string"
+          },
+          "seconds": {
+            "description": "Clip duration in seconds.",
+            "type": "string"
+          },
+          "seed": {
+            "description": "Seed to use in initializing the video generation.  Using the same seed allows deterministic video generation.  If not provided a random seed is generated for each request.",
+            "type": "integer"
+          },
+          "steps": {
+            "description": "The number of denoising steps the model performs during video generation. More steps typically result in higher quality output but require longer processing time.",
+            "maximum": 50,
+            "minimum": 10,
+            "type": "integer"
+          },
+          "width": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "title": "Create video request",
+        "type": "object"
+      },
+      "VideoJob": {
+        "description": "Structured information describing a generated video job.",
+        "properties": {
+          "completed_at": {
+            "description": "Unix timestamp (seconds) for when the job completed, if finished.",
+            "type": "number"
+          },
+          "created_at": {
+            "description": "Unix timestamp (seconds) for when the job was created.",
+            "type": "number"
+          },
+          "error": {
+            "description": "Error payload that explains why generation failed, if applicable.",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "message"
+            ],
+            "type": "object"
+          },
+          "id": {
+            "description": "Unique identifier for the video job.",
+            "type": "string"
+          },
+          "model": {
+            "description": "The video generation model that produced the job.",
+            "type": "string"
+          },
+          "object": {
+            "const": "video",
+            "description": "The object type, which is always video."
+          },
+          "outputs": {
+            "description": "Available upon completion, the outputs provides the cost charged and the hosted url to access the video",
+            "properties": {
+              "cost": {
+                "description": "The cost of generated video charged to the owners account.",
+                "type": "integer"
+              },
+              "video_url": {
+                "description": "URL hosting the generated video",
+                "type": "string"
+              }
+            },
+            "required": [
+              "cost",
+              "video_url"
+            ],
+            "type": "object"
+          },
+          "seconds": {
+            "description": "Duration of the generated clip in seconds.",
+            "type": "string"
+          },
+          "size": {
+            "description": "The resolution of the generated video.",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/VideoStatus",
+            "description": "Current lifecycle status of the video job."
+          }
+        },
+        "required": [
+          "id",
+          "model",
+          "status",
+          "size",
+          "seconds",
+          "created_at"
+        ],
+        "title": "Video job",
+        "type": "object"
+      },
+      "VideoMedia": {
+        "description": "Contains all media inputs for video generation. Accepted fields depend on the model type.",
+        "properties": {
+          "audio_inputs": {
+            "description": "Array of audio inputs. Each element accepts a URL string or an object with an \"audio\" key.",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "#/components/schemas/AudioRef"
+                }
+              ]
+            },
+            "type": "array"
+          },
+          "frame_images": {
+            "description": "Array of images to guide video generation at specific timeline positions.",
+            "items": {
+              "$ref": "#/components/schemas/VideoFrameImageInput"
+            },
+            "type": "array"
+          },
+          "frame_videos": {
+            "description": "Array of video clips to use as starting clips.",
+            "items": {
+              "$ref": "#/components/schemas/VideoRef"
+            },
+            "type": "array"
+          },
+          "reference_images": {
+            "description": "Array of image URLs that guide the general appearance across the video.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "reference_videos": {
+            "description": "Array of reference videos.",
+            "items": {
+              "$ref": "#/components/schemas/VideoRef"
+            },
+            "type": "array"
+          },
+          "source_video": {
+            "description": "Source video to edit. Accepts a URL string or an object with a \"video\" key.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "$ref": "#/components/schemas/VideoRef"
+              }
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "VideoOutputFormat": {
+        "enum": [
+          "MP4",
+          "WEBM"
+        ],
+        "type": "string"
+      },
+      "VideoStatus": {
+        "description": "Current lifecycle status of the video job.",
+        "enum": [
+          "in_progress",
+          "completed",
+          "failed"
+        ],
+        "type": "string"
+      },
+      "AudioRef": {
+        "properties": {
+          "audio": {
+            "description": "URL of the audio.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "audio"
+        ],
+        "type": "object"
+      },
+      "VideoFrameImageInput": {
+        "properties": {
+          "frame": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "enum": [
+                  "first",
+                  "last"
+                ],
+                "type": "string"
+              }
+            ],
+            "description": "Optional param to specify where to insert the frame. If this is omitted, the following heuristics are applied:\n- frame_images size is one, frame is first.\n- If size is two, frames are first and last.\n- If size is larger, frames are first, last and evenly spaced between.\n"
+          },
+          "input_image": {
+            "description": "URL path to hosted image that is used for a frame",
+            "type": "string"
+          }
+        },
+        "required": [
+          "input_image"
+        ],
+        "type": "object"
+      },
+      "VideoRef": {
+        "properties": {
+          "video": {
+            "description": "URL of the video.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "video"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}
