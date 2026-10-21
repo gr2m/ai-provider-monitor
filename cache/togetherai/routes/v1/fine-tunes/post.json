@@ -1,0 +1,791 @@
+{
+  "description": "Create a fine-tuning job with the provided model and training data.",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "properties": {
+            "batch_size": {
+              "default": "max",
+              "description": "Number of training examples processed together (larger batches use more memory but may train faster). Defaults to \"max\". We use training optimizations like packing, so the effective batch size may be different than the value you set.",
+              "oneOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "enum": [
+                    "max"
+                  ],
+                  "type": "string"
+                }
+              ]
+            },
+            "early_stopping_enabled": {
+              "default": false,
+              "description": "Whether to stop training early when validation loss stops improving. Requires a validation_file, and n_evals must be at least early_stopping_patience + early_stopping_warmup_evals + 1 so a plateau can be detected.\n",
+              "type": "boolean"
+            },
+            "early_stopping_min_delta": {
+              "default": 0,
+              "description": "Minimum decrease in validation loss for an evaluation to count as an improvement. Larger values treat small gains as non-improvements, causing training to stop sooner. Only applies when early_stopping_enabled is true.\n",
+              "minimum": 0,
+              "type": "number"
+            },
+            "early_stopping_patience": {
+              "default": 2,
+              "description": "Number of consecutive evaluations with no improvement in validation loss to allow before stopping. Only applies when early_stopping_enabled is true.\n",
+              "minimum": 1,
+              "type": "integer"
+            },
+            "early_stopping_warmup_evals": {
+              "default": 1,
+              "description": "Number of initial evaluations excluded from the early-stopping decision. These still establish the baseline validation loss but do not count toward patience. Set to 0 to disable warmup; if omitted, defaults to 1. Only applies when early_stopping_enabled is true.\n",
+              "minimum": 0,
+              "nullable": true,
+              "type": "integer"
+            },
+            "from_checkpoint": {
+              "description": "The checkpoint identifier to continue training from a previous fine-tuning job. Format is `{$JOB_ID}` or `{$OUTPUT_MODEL_NAME}` or `{$JOB_ID}:{$STEP}` or `{$OUTPUT_MODEL_NAME}:{$STEP}`. The step value is optional; without it, uses the final checkpoint.",
+              "type": "string"
+            },
+            "from_hf_model": {
+              "description": "The Hugging Face Hub repo to start training from. Should be as close as possible to the base model (specified by the `model` argument) in terms of architecture and size.",
+              "type": "string"
+            },
+            "gradient_accumulation_steps": {
+              "description": "Number of steps to accumulate gradients before performing a weight update. If omitted or set to 0, the model default is used.",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "hf_api_token": {
+              "description": "The API token for the Hugging Face Hub.",
+              "type": "string"
+            },
+            "hf_model_revision": {
+              "description": "The revision of the Hugging Face Hub model to continue training from. E.g., hf_model_revision=main (default, used if the argument is not provided) or hf_model_revision='607a30d783dfa663caf39e06633721c8d4cfcd7e' (specific commit).",
+              "type": "string"
+            },
+            "hf_output_repo_name": {
+              "description": "The name of the Hugging Face repository to upload the fine-tuned model to.",
+              "type": "string"
+            },
+            "learning_rate": {
+              "default": 0.00001,
+              "description": "Controls how quickly the model adapts to new information (too high may cause instability, too low may slow convergence)",
+              "type": "number"
+            },
+            "lr_scheduler": {
+              "$ref": "#/components/schemas/LRScheduler",
+              "default": "none",
+              "description": "The learning rate scheduler to use. It specifies how the learning rate is adjusted during training.",
+              "type": "object"
+            },
+            "max_grad_norm": {
+              "default": 1,
+              "description": "Max gradient norm to be used for gradient clipping. Set to 0 to disable.",
+              "type": "number"
+            },
+            "max_seq_length": {
+              "description": "Maximum sequence length to use for training. If not specified, the maximum allowed for the model and training method will be used.",
+              "type": "integer"
+            },
+            "model": {
+              "description": "Name of the base model to run fine-tune job on",
+              "type": "string"
+            },
+            "multimodal_params": {
+              "$ref": "#/components/schemas/MultimodalParams"
+            },
+            "n_checkpoints": {
+              "default": 1,
+              "description": "Number of intermediate model versions saved during training for evaluation",
+              "maximum": 10,
+              "type": "integer"
+            },
+            "n_epochs": {
+              "default": 1,
+              "description": "Number of complete passes through the training dataset (higher values may improve results but increase cost and risk of overfitting)",
+              "type": "integer"
+            },
+            "n_evals": {
+              "default": 0,
+              "description": "Number of evaluations to be run on a given validation set during training",
+              "type": "integer"
+            },
+            "packing": {
+              "default": true,
+              "description": "Whether to use sequence packing for training. This flag has no effect if the training data is in Parquet format.",
+              "type": "boolean"
+            },
+            "random_seed": {
+              "description": "Random seed for reproducible training. When set, the same seed produces the same run (e.g. data shuffle, init). If omitted or null, the server applies its default seed (e.g. 42).\n",
+              "nullable": true,
+              "type": "integer"
+            },
+            "suffix": {
+              "description": "Suffix to add to your fine-tuned model name. Must be at most 64 characters long.",
+              "maxLength": 64,
+              "type": "string"
+            },
+            "training_file": {
+              "description": "File-ID of a training file uploaded to the Together API",
+              "type": "string"
+            },
+            "training_method": {
+              "description": "The training method to use. 'sft' for Supervised Fine-Tuning or 'dpo' for Direct Preference Optimization.",
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/TrainingMethodSFT"
+                },
+                {
+                  "$ref": "#/components/schemas/TrainingMethodDPO"
+                }
+              ],
+              "type": "object"
+            },
+            "training_type": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/FullTrainingType"
+                },
+                {
+                  "$ref": "#/components/schemas/LoRATrainingType"
+                }
+              ],
+              "default": null,
+              "description": "The training type to use. Defaults to LoRA if not provided.",
+              "nullable": true,
+              "type": "object"
+            },
+            "validation_file": {
+              "description": "File-ID of a validation file uploaded to the Together API",
+              "type": "string"
+            },
+            "wandb_api_key": {
+              "description": "Integration key for tracking experiments and model metrics on W&B platform",
+              "type": "string"
+            },
+            "wandb_base_url": {
+              "description": "The base URL of a dedicated Weights & Biases instance.",
+              "type": "string"
+            },
+            "wandb_entity": {
+              "description": "The Weights & Biases entity for your run.",
+              "type": "string"
+            },
+            "wandb_name": {
+              "description": "The Weights & Biases name for your run.",
+              "type": "string"
+            },
+            "wandb_project_name": {
+              "description": "The Weights & Biases project for your run. If not specified, uses `together` as the project name.",
+              "type": "string"
+            },
+            "warmup_ratio": {
+              "default": 0,
+              "description": "The percent of steps at the start of training to linearly increase the learning rate.",
+              "type": "number"
+            },
+            "weight_decay": {
+              "default": 0,
+              "description": "Weight decay. Regularization parameter for the optimizer.",
+              "type": "number"
+            }
+          },
+          "required": [
+            "training_file",
+            "model"
+          ],
+          "type": "object"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/FinetuneResponseTruncated"
+          }
+        }
+      },
+      "description": "Fine-tuning job initiated successfully"
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "The fine-tuning service is shutting down and cannot accept new jobs."
+    }
+  },
+  "summary": "Create job",
+  "tags": [
+    "Fine-tuning"
+  ],
+  "components": {
+    "schemas": {
+      "LRScheduler": {
+        "properties": {
+          "lr_scheduler_args": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LinearLRSchedulerArgs"
+              },
+              {
+                "$ref": "#/components/schemas/CosineLRSchedulerArgs"
+              }
+            ]
+          },
+          "lr_scheduler_type": {
+            "enum": [
+              "linear",
+              "cosine"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "lr_scheduler_type"
+        ],
+        "type": "object"
+      },
+      "MultimodalParams": {
+        "properties": {
+          "train_vision": {
+            "description": "Whether to train the vision encoder of the model. Only available for multimodal models.",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "TrainingMethodSFT": {
+        "properties": {
+          "method": {
+            "enum": [
+              "sft"
+            ],
+            "type": "string"
+          },
+          "train_on_inputs": {
+            "default": "auto",
+            "description": "Whether to mask user messages in conversational data or prompts in instruction data.",
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "enum": [
+                  "auto"
+                ],
+                "type": "string"
+              }
+            ],
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "method",
+          "train_on_inputs"
+        ],
+        "type": "object"
+      },
+      "TrainingMethodDPO": {
+        "properties": {
+          "dpo_beta": {
+            "default": 0.1,
+            "type": "number"
+          },
+          "dpo_normalize_logratios_by_length": {
+            "default": false,
+            "type": "boolean"
+          },
+          "dpo_reference_free": {
+            "default": false,
+            "type": "boolean"
+          },
+          "method": {
+            "enum": [
+              "dpo"
+            ],
+            "type": "string"
+          },
+          "rpo_alpha": {
+            "default": 0,
+            "type": "number"
+          },
+          "simpo_gamma": {
+            "default": 0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "method"
+        ],
+        "type": "object"
+      },
+      "FullTrainingType": {
+        "properties": {
+          "type": {
+            "enum": [
+              "Full"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LoRATrainingType": {
+        "description": "LoRA training configuration for a fine-tuning job.",
+        "properties": {
+          "lora_alpha": {
+            "description": "Scaling factor applied to the LoRA adapter weights.",
+            "type": "integer"
+          },
+          "lora_dropout": {
+            "default": 0,
+            "description": "Dropout probability applied to LoRA adapter inputs.",
+            "type": "number"
+          },
+          "lora_r": {
+            "description": "Rank of the LoRA adapter matrices.",
+            "type": "integer"
+          },
+          "lora_trainable_modules": {
+            "default": "all-linear",
+            "description": "Comma-separated LoRA target modules. Use `all-linear` for model defaults; MoE expert modules (`w_up`, `w_gate`, `w_down`) can be combined with attention modules on compatible models. Fine-tuning jobs that target expert modules produce adapter-only output unless the selected model supports merged expert LoRA output.",
+            "type": "string"
+          },
+          "type": {
+            "description": "Identifies this request as a LoRA fine-tune.",
+            "enum": [
+              "Lora"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "lora_r",
+          "lora_alpha"
+        ],
+        "type": "object"
+      },
+      "FinetuneResponseTruncated": {
+        "description": "A truncated version of the fine-tune response, used for POST /fine-tunes, GET /fine-tunes and POST /fine-tunes/{id}/cancel endpoints",
+        "example": {
+          "created_at": "2023-05-17T17:35:45.123Z",
+          "events": [],
+          "id": "ft-01234567890123456789",
+          "model": "meta-llama/Llama-2-7b-hf",
+          "model_output_name": "mynamespace/meta-llama/Llama-2-7b-hf-32162631",
+          "n_epochs": 3,
+          "owner_address": "user@example.com",
+          "status": "completed",
+          "token_count": 850000,
+          "total_price": 1500,
+          "training_file": "file-01234567890123456789",
+          "updated_at": "2023-05-17T18:46:23.456Z",
+          "user_id": "user_789xyz012",
+          "wandb_project_name": "my-finetune-project"
+        },
+        "properties": {
+          "batch_size": {
+            "description": "Batch size used for training",
+            "type": "integer"
+          },
+          "created_at": {
+            "description": "Creation timestamp of the fine-tune job",
+            "format": "date-time",
+            "type": "string"
+          },
+          "early_stopped": {
+            "description": "Whether the early-stopping criterion triggered.",
+            "type": "boolean"
+          },
+          "early_stopping_best_metric": {
+            "description": "Best validation loss observed, corresponding to early_stopping_best_step. Null if no improving evaluation was recorded.",
+            "nullable": true,
+            "type": "number"
+          },
+          "early_stopping_best_step": {
+            "description": "Step associated with the selected early-stopping artifact. When early_stopping_best_metric is null, no finite best metric was recorded; this is the halt step, not a best-checkpoint step.\n",
+            "type": "integer"
+          },
+          "events": {
+            "description": "Events related to this fine-tune job",
+            "items": {
+              "$ref": "#/components/schemas/FineTuneEvent"
+            },
+            "type": "array"
+          },
+          "from_checkpoint": {
+            "description": "Checkpoint used to continue training",
+            "type": "string"
+          },
+          "from_hf_model": {
+            "description": "Hugging Face Hub repo to start training from",
+            "type": "string"
+          },
+          "hf_model_revision": {
+            "description": "The revision of the Hugging Face Hub model to continue training from",
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique identifier for the fine-tune job",
+            "type": "string"
+          },
+          "learning_rate": {
+            "description": "Learning rate used for training",
+            "type": "number"
+          },
+          "lr_scheduler": {
+            "$ref": "#/components/schemas/LRScheduler",
+            "description": "Learning rate scheduler configuration"
+          },
+          "max_grad_norm": {
+            "description": "Maximum gradient norm for clipping",
+            "type": "number"
+          },
+          "max_seq_length": {
+            "description": "Maximum sequence length to use for training. If not specified, uses the maximum allowed for the model and training method.",
+            "type": "integer"
+          },
+          "model": {
+            "description": "Base model used for fine-tuning",
+            "type": "string"
+          },
+          "model_output_name": {
+            "type": "string"
+          },
+          "n_checkpoints": {
+            "description": "Number of checkpoints saved during training",
+            "type": "integer"
+          },
+          "n_epochs": {
+            "description": "Number of training epochs",
+            "type": "integer"
+          },
+          "n_evals": {
+            "description": "Number of evaluations during training",
+            "type": "integer"
+          },
+          "owner_address": {
+            "description": "Owner address information",
+            "type": "string"
+          },
+          "packing": {
+            "description": "Whether sequence packing is being used for training.",
+            "type": "boolean"
+          },
+          "progress": {
+            "$ref": "#/components/schemas/FineTuneProgress",
+            "description": "Progress information for the fine-tuning job"
+          },
+          "random_seed": {
+            "description": "Random seed used for training. Integer when set; null if not stored (e.g. legacy jobs) or no explicit seed was recorded.\n",
+            "nullable": true,
+            "type": "integer"
+          },
+          "started_at": {
+            "description": "Start timestamp of the current stage of the fine-tune job",
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/FinetuneJobStatus"
+          },
+          "suffix": {
+            "description": "Suffix added to the fine-tuned model name",
+            "type": "string"
+          },
+          "token_count": {
+            "description": "Count of tokens processed",
+            "type": "integer"
+          },
+          "total_price": {
+            "description": "Total price for the fine-tuning job",
+            "type": "integer"
+          },
+          "training_file": {
+            "description": "File-ID of the training file",
+            "type": "string"
+          },
+          "training_method": {
+            "description": "Method of training used",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TrainingMethodSFT"
+              },
+              {
+                "$ref": "#/components/schemas/TrainingMethodDPO"
+              }
+            ]
+          },
+          "training_type": {
+            "description": "Type of training used (full or LoRA)",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FullTrainingType"
+              },
+              {
+                "$ref": "#/components/schemas/LoRATrainingType"
+              }
+            ]
+          },
+          "updated_at": {
+            "description": "Last update timestamp of the fine-tune job",
+            "format": "date-time",
+            "type": "string"
+          },
+          "user_id": {
+            "description": "ID of the user who created the fine-tune job.",
+            "type": "string"
+          },
+          "validation_file": {
+            "description": "File-ID of the validation file",
+            "type": "string"
+          },
+          "wandb_name": {
+            "description": "Weights & Biases run name",
+            "type": "string"
+          },
+          "wandb_project_name": {
+            "description": "Weights & Biases project name",
+            "type": "string"
+          },
+          "warmup_ratio": {
+            "description": "Ratio of warmup steps",
+            "type": "number"
+          },
+          "weight_decay": {
+            "description": "Weight decay value used",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "created_at",
+          "updated_at",
+          "user_id"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "LinearLRSchedulerArgs": {
+        "properties": {
+          "min_lr_ratio": {
+            "default": 0,
+            "description": "The ratio of the final learning rate to the peak learning rate",
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "CosineLRSchedulerArgs": {
+        "properties": {
+          "min_lr_ratio": {
+            "default": 0,
+            "description": "The ratio of the final learning rate to the peak learning rate",
+            "type": "number"
+          },
+          "num_cycles": {
+            "default": 0.5,
+            "description": "Number or fraction of cycles for the cosine learning rate scheduler",
+            "type": "number"
+          }
+        },
+        "required": [
+          "min_lr_ratio",
+          "num_cycles"
+        ],
+        "type": "object"
+      },
+      "FineTuneEvent": {
+        "properties": {
+          "checkpoint_path": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "early_stopping_best_metric_value": {
+            "description": "For early_stopped events, the best validation loss observed. Null if no improving evaluation was recorded.",
+            "nullable": true,
+            "type": "number"
+          },
+          "early_stopping_best_step": {
+            "description": "For early_stopped events, the selected best-checkpoint step when a finite best metric exists. If early_stopping_best_metric_value is null, this is the halt step.\n",
+            "nullable": true,
+            "type": "integer"
+          },
+          "level": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FinetuneEventLevels"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "model_path": {
+            "type": "string"
+          },
+          "object": {
+            "const": "fine-tune-event",
+            "description": "The object type, which is always `fine-tune-event`."
+          },
+          "param_count": {
+            "type": "integer"
+          },
+          "step": {
+            "type": "integer"
+          },
+          "token_count": {
+            "type": "integer"
+          },
+          "tokenized_dataset_path": {
+            "description": "Storage path for the tokenized dataset archive associated with this event.",
+            "type": "string"
+          },
+          "total_steps": {
+            "type": "integer"
+          },
+          "type": {
+            "$ref": "#/components/schemas/FinetuneEventType"
+          },
+          "wandb_url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "created_at",
+          "message",
+          "type"
+        ],
+        "type": "object"
+      },
+      "FineTuneProgress": {
+        "description": "Progress information for a fine-tuning job",
+        "properties": {
+          "estimate_available": {
+            "description": "Whether time estimate is available",
+            "type": "boolean"
+          },
+          "seconds_remaining": {
+            "description": "Estimated time remaining in seconds for the fine-tuning job to next state",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "estimate_available",
+          "seconds_remaining"
+        ],
+        "type": "object"
+      },
+      "FinetuneJobStatus": {
+        "enum": [
+          "pending",
+          "queued",
+          "running",
+          "compressing",
+          "uploading",
+          "cancel_requested",
+          "cancelled",
+          "error",
+          "completed"
+        ],
+        "type": "string"
+      },
+      "FinetuneEventLevels": {
+        "enum": [
+          null,
+          "info",
+          "warning",
+          "error",
+          "legacy_info",
+          "legacy_iwarning",
+          "legacy_ierror"
+        ],
+        "type": "string"
+      },
+      "FinetuneEventType": {
+        "enum": [
+          "job_pending",
+          "job_start",
+          "job_stopped",
+          "model_downloading",
+          "model_download_complete",
+          "training_data_downloading",
+          "training_data_download_complete",
+          "validation_data_downloading",
+          "validation_data_download_complete",
+          "wandb_init",
+          "training_start",
+          "checkpoint_save",
+          "billing_limit",
+          "epoch_complete",
+          "training_complete",
+          "model_compressing",
+          "model_compression_complete",
+          "model_uploading",
+          "model_upload_complete",
+          "job_complete",
+          "job_error",
+          "cancel_requested",
+          "job_restarted",
+          "refund",
+          "warning",
+          "early_stopped",
+          "tokenized_dataset_upload_complete"
+        ],
+        "type": "string"
+      }
+    }
+  }
+}

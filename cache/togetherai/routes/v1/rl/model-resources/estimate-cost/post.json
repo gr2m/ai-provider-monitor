@@ -1,0 +1,196 @@
+{
+  "description": "Estimates a model resource's on-demand hourly price without creating it.",
+  "operationId": "estimateModelResourcesCost",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/RL.CreateModelResourcesRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/RL.ModelResourcesEstimateCostResponse"
+          }
+        }
+      },
+      "description": "Estimated on-demand cost"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "An unexpected error response."
+    }
+  },
+  "summary": "Estimate on-demand model resource cost",
+  "tags": [
+    "RL"
+  ],
+  "components": {
+    "schemas": {
+      "RL.CreateModelResourcesRequest": {
+        "description": "Request to provision a standalone model resource",
+        "properties": {
+          "base_model": {
+            "description": "Base model to provision the resource for, selected from /rl/supported-models",
+            "example": "Qwen/Qwen3.5-4B",
+            "type": "string"
+          },
+          "base_weights_ref": {
+            "description": "Model in this project's model registry whose weights the resource trains in place of the base model's own. It must be a full-weight model.",
+            "example": "together://ml_A1b2C3d4E5f6G7h8I9j0K",
+            "maxLength": 256,
+            "pattern": "^together://ml_[A-Za-z0-9]+(@rv_[A-Za-z0-9]+)?$",
+            "type": "string"
+          },
+          "compute_config": {
+            "$ref": "#/components/schemas/RL.ComputeConfigCreateRequest",
+            "description": "Compute layout to provision."
+          },
+          "lora_enabled": {
+            "default": true,
+            "description": "Whether the resource hosts LoRA sessions or a single full-weight session",
+            "example": true,
+            "type": "boolean"
+          },
+          "optimizer_config": {
+            "$ref": "#/components/schemas/RL.OptimizerConfig",
+            "description": "Optimizer configuration for this resource."
+          }
+        },
+        "required": [
+          "base_model"
+        ],
+        "type": "object"
+      },
+      "RL.ModelResourcesEstimateCostResponse": {
+        "properties": {
+          "currency": {
+            "description": "ISO 4217 currency code.",
+            "example": "USD",
+            "type": "string"
+          },
+          "price_per_hour": {
+            "description": "Estimated on-demand price per hour in the currency's major unit.",
+            "example": 56,
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "price_per_hour",
+          "currency"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "RL.ComputeConfigCreateRequest": {
+        "description": "Compute layout to provision for a model resource",
+        "properties": {
+          "gpu_type": {
+            "description": "GPU type to provision. Omit to use the model's default GPU type.",
+            "enum": [
+              "B200-SXM"
+            ],
+            "example": "B200-SXM",
+            "type": "string"
+          },
+          "num_generator_replicas": {
+            "default": 1,
+            "description": "Number of generator replicas. 0 runs the trainer only, with no generator.",
+            "example": 2,
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "RL.OptimizerConfig": {
+        "description": "Optimizer configuration",
+        "properties": {
+          "adam": {
+            "$ref": "#/components/schemas/RL.AdamConfig",
+            "description": "Use the Adam optimizer."
+          },
+          "muon": {
+            "$ref": "#/components/schemas/RL.MuonConfig",
+            "description": "Use the Muon optimizer."
+          }
+        },
+        "type": "object"
+      },
+      "RL.AdamConfig": {
+        "additionalProperties": false,
+        "description": "Adam optimizer configuration",
+        "properties": {},
+        "type": "object"
+      },
+      "RL.MuonConfig": {
+        "description": "Advanced configuration for the Muon optimizer.",
+        "properties": {
+          "scaling_strategy": {
+            "$ref": "#/components/schemas/RL.MuonScalingStrategy",
+            "default": "MUON_SCALING_STRATEGY_MATCH_ADAM",
+            "description": "Scaling strategy for the Muon optimizer.",
+            "example": "MUON_SCALING_STRATEGY_ORIGINAL"
+          }
+        },
+        "type": "object"
+      },
+      "RL.MuonScalingStrategy": {
+        "default": "MUON_SCALING_STRATEGY_UNSPECIFIED",
+        "enum": [
+          "MUON_SCALING_STRATEGY_UNSPECIFIED",
+          "MUON_SCALING_STRATEGY_MATCH_ADAM",
+          "MUON_SCALING_STRATEGY_ORIGINAL"
+        ],
+        "type": "string"
+      }
+    }
+  }
+}
