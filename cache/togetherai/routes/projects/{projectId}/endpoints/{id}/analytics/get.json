@@ -1,0 +1,484 @@
+{
+  "description": "Returns aggregated request, token, latency, throughput, error, and resource-utilization metrics for an endpoint over a time range. Optionally includes time-series buckets and a per-deployment breakdown.",
+  "operationId": "EndpointService_GetEndpointAnalytics",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "projectId",
+      "required": true,
+      "schema": {
+        "description": "Project identifier.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "path",
+      "name": "id",
+      "required": true,
+      "schema": {
+        "description": "Endpoint identifier.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "deploymentId",
+      "schema": {
+        "description": "Restrict to a single deployment under this endpoint.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "startTime",
+      "schema": {
+        "description": "Inclusive start of the time range. Defaults to 24 hours ago if unset.",
+        "format": "date-time",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "endTime",
+      "schema": {
+        "description": "Exclusive end of the time range. Defaults to now if unset.",
+        "format": "date-time",
+        "type": "string"
+      }
+    },
+    {
+      "in": "query",
+      "name": "includeTimeSeries",
+      "schema": {
+        "description": "When true, include per-bucket time series in the response.",
+        "type": "boolean"
+      }
+    },
+    {
+      "in": "query",
+      "name": "granularity",
+      "schema": {
+        "description": "Time-series bucket duration, such as `1m`, `1h`, or `1d`. Defaults to `1d`.",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/DE.AnalyticsData"
+          }
+        }
+      },
+      "description": "OK"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Default error response"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.together.ai/v2"
+    }
+  ],
+  "summary": "Get endpoint analytics",
+  "tags": [
+    "EndpointService"
+  ],
+  "components": {
+    "schemas": {
+      "DE.AnalyticsData": {
+        "description": "Endpoint-wide usage and performance analytics with optional time-series and per-deployment breakdowns.",
+        "properties": {
+          "deploymentAnalytics": {
+            "description": "Per-deployment analytics.",
+            "items": {
+              "$ref": "#/components/schemas/DE.DeploymentAnalyticsData"
+            },
+            "type": "array"
+          },
+          "endpointId": {
+            "description": "ID of the endpoint summarized by these analytics.",
+            "type": "string"
+          },
+          "metrics": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.EndpointMetrics"
+              }
+            ],
+            "description": "Aggregated metrics over the time range."
+          },
+          "timeRange": {
+            "$ref": "#/components/schemas/DE.MetricsTimeRange",
+            "description": "Closed-open time range covered by the analytics."
+          },
+          "timeSeries": {
+            "description": "Per-bucket metric samples, included only when `includeTimeSeries` is true.",
+            "items": {
+              "$ref": "#/components/schemas/DE.TimeSeriesDataPoint"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "DE.DeploymentAnalyticsData": {
+        "description": "Usage and performance analytics for one deployment under an endpoint.",
+        "properties": {
+          "deploymentId": {
+            "description": "ID of the deployment summarized by these analytics.",
+            "type": "string"
+          },
+          "endpointId": {
+            "description": "ID of the deployment's parent endpoint.",
+            "type": "string"
+          },
+          "metrics": {
+            "$ref": "#/components/schemas/DE.DeploymentMetrics",
+            "description": "Aggregate operational metrics for the deployment."
+          },
+          "timeRange": {
+            "$ref": "#/components/schemas/DE.MetricsTimeRange",
+            "description": "Closed-open time range covered by the analytics."
+          },
+          "timeSeries": {
+            "description": "Per-bucket metric samples for the deployment.",
+            "items": {
+              "$ref": "#/components/schemas/DE.TimeSeriesDataPoint"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      },
+      "DE.EndpointMetrics": {
+        "description": "Operational metrics aggregated across all deployments receiving traffic for an endpoint.",
+        "properties": {
+          "deploymentMetrics": {
+            "description": "Per-deployment breakdown, if the endpoint has multiple deployments.",
+            "items": {
+              "$ref": "#/components/schemas/DE.DeploymentMetrics"
+            },
+            "type": "array"
+          },
+          "endpointId": {
+            "description": "The endpoint these metrics describe.",
+            "type": "string"
+          },
+          "errorMetrics": {
+            "$ref": "#/components/schemas/DE.ErrorMetrics",
+            "description": "Error rate and counts by error type."
+          },
+          "latencyMetrics": {
+            "$ref": "#/components/schemas/DE.LatencyMetrics",
+            "description": "Time-to-first-token, end-to-end, and inter-token latency percentiles."
+          },
+          "requestMetrics": {
+            "$ref": "#/components/schemas/DE.RequestMetrics",
+            "description": "Request counts and rates."
+          },
+          "resourceUtilization": {
+            "$ref": "#/components/schemas/DE.ResourceUtilization",
+            "description": "Average CPU, GPU, memory, and network utilization."
+          },
+          "throughputMetrics": {
+            "$ref": "#/components/schemas/DE.ThroughputMetrics",
+            "description": "Token, request, and batching throughput."
+          },
+          "timeRange": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.MetricsTimeRange"
+              }
+            ],
+            "description": "Time range covered by the metrics."
+          },
+          "tokenMetrics": {
+            "$ref": "#/components/schemas/DE.TokenMetrics",
+            "description": "Input and output token totals and averages."
+          }
+        },
+        "type": "object"
+      },
+      "DE.MetricsTimeRange": {
+        "description": "Closed-open time range used by metrics and analytics responses.",
+        "properties": {
+          "endTime": {
+            "description": "Exclusive end of the time range.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "startTime": {
+            "description": "Inclusive start of the time range.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DE.TimeSeriesDataPoint": {
+        "description": "Timestamped bucket containing one or more named metric values.",
+        "properties": {
+          "timestamp": {
+            "description": "Start time of the metric bucket.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "values": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "Metric names mapped to their numeric values for this bucket.",
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "DE.DeploymentMetrics": {
+        "description": "Operational metrics for one deployment under an endpoint.",
+        "properties": {
+          "deploymentId": {
+            "description": "ID of the deployment summarized by these metrics.",
+            "type": "string"
+          },
+          "endpointId": {
+            "description": "ID of the deployment's parent endpoint.",
+            "type": "string"
+          },
+          "errorMetrics": {
+            "$ref": "#/components/schemas/DE.ErrorMetrics",
+            "description": "Error rate and counts by error type."
+          },
+          "latencyMetrics": {
+            "$ref": "#/components/schemas/DE.LatencyMetrics",
+            "description": "Time-to-first-token, end-to-end, and inter-token latency percentiles."
+          },
+          "requestMetrics": {
+            "$ref": "#/components/schemas/DE.RequestMetrics",
+            "description": "Request counts and rates."
+          },
+          "resourceUtilization": {
+            "$ref": "#/components/schemas/DE.ResourceUtilization",
+            "description": "Average CPU, GPU, memory, and network utilization."
+          },
+          "throughputMetrics": {
+            "$ref": "#/components/schemas/DE.ThroughputMetrics",
+            "description": "Token, request, and batching throughput."
+          },
+          "timeRange": {
+            "$ref": "#/components/schemas/DE.MetricsTimeRange",
+            "description": "Closed-open time range covered by the metrics."
+          },
+          "tokenMetrics": {
+            "$ref": "#/components/schemas/DE.TokenMetrics",
+            "description": "Input and output token totals and averages."
+          }
+        },
+        "type": "object"
+      },
+      "DE.ErrorMetrics": {
+        "description": "Error rate and aggregate counts by error type. Individual error samples are not included.",
+        "properties": {
+          "errorRate": {
+            "description": "Percentage in [0, 100].",
+            "type": "number"
+          },
+          "errorsByType": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Counts of errors keyed by error type (e.g. HTTP status code or error kind).",
+            "type": "object"
+          }
+        },
+        "type": "object"
+      },
+      "DE.LatencyMetrics": {
+        "description": "Time-to-first-token, end-to-end, and inter-token latency percentiles in milliseconds.",
+        "properties": {
+          "itlP50Ms": {
+            "description": "50th-percentile inter-token latency, in milliseconds.",
+            "type": "number"
+          },
+          "itlP90Ms": {
+            "description": "90th-percentile inter-token latency, in milliseconds.",
+            "type": "number"
+          },
+          "itlP99Ms": {
+            "description": "99th-percentile inter-token latency, in milliseconds.",
+            "type": "number"
+          },
+          "latencyP50Ms": {
+            "description": "50th-percentile end-to-end request latency, in milliseconds.",
+            "type": "number"
+          },
+          "latencyP90Ms": {
+            "description": "90th-percentile end-to-end request latency, in milliseconds.",
+            "type": "number"
+          },
+          "latencyP99Ms": {
+            "description": "99th-percentile end-to-end request latency, in milliseconds.",
+            "type": "number"
+          },
+          "ttftP50Ms": {
+            "description": "50th-percentile time to first token, in milliseconds.",
+            "type": "number"
+          },
+          "ttftP90Ms": {
+            "description": "90th-percentile time to first token, in milliseconds.",
+            "type": "number"
+          },
+          "ttftP99Ms": {
+            "description": "99th-percentile time to first token, in milliseconds.",
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "DE.RequestMetrics": {
+        "description": "Request counts, rate, and status-code distribution over a time range.",
+        "properties": {
+          "failedRequests": {
+            "description": "Requests that failed during the time range.",
+            "type": "string"
+          },
+          "requestsByStatusCode": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Request counts keyed by HTTP status code.",
+            "type": "object"
+          },
+          "requestsPerSecond": {
+            "description": "Average requests per second over the time range.",
+            "type": "number"
+          },
+          "successfulRequests": {
+            "description": "Requests completed successfully during the time range.",
+            "type": "string"
+          },
+          "totalRequests": {
+            "description": "Total requests received during the time range.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "DE.ResourceUtilization": {
+        "description": "Average compute, memory, and network utilization for replicas over a time range.",
+        "properties": {
+          "cpuUtilization": {
+            "description": "Average CPU utilization across replicas, as a percentage.",
+            "type": "number"
+          },
+          "gpuMemoryUtilization": {
+            "description": "Average GPU memory utilization across replicas, as a percentage.",
+            "type": "number"
+          },
+          "gpuUtilization": {
+            "description": "Average GPU compute utilization across replicas, as a percentage.",
+            "type": "number"
+          },
+          "memoryUtilization": {
+            "description": "Average system memory utilization across replicas, as a percentage.",
+            "type": "number"
+          },
+          "networkBandwidthMbps": {
+            "description": "Average network throughput across replicas, in megabits per second.",
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "DE.ThroughputMetrics": {
+        "description": "Token, request, and batching throughput over a time range.",
+        "properties": {
+          "avgBatchDepth": {
+            "description": "Average number of batches queued or in flight in the serving engine.",
+            "type": "number"
+          },
+          "avgBatchSize": {
+            "description": "Average number of requests processed in each runtime batch.",
+            "type": "number"
+          },
+          "requestsPerSecond": {
+            "description": "Average completed requests per second.",
+            "type": "number"
+          },
+          "tokensPerSecond": {
+            "description": "Average generated tokens per second.",
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "DE.TokenMetrics": {
+        "description": "Aggregate and per-request token usage over a time range.",
+        "properties": {
+          "avgInputTokens": {
+            "description": "Average input tokens per request.",
+            "type": "number"
+          },
+          "avgOutputTokens": {
+            "description": "Average output tokens per request.",
+            "type": "number"
+          },
+          "totalInputTokens": {
+            "description": "Total input tokens processed during the time range.",
+            "type": "string"
+          },
+          "totalOutputTokens": {
+            "description": "Total output tokens generated during the time range.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    }
+  }
+}

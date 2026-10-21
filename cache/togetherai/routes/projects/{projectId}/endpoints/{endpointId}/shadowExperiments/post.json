@@ -1,0 +1,651 @@
+{
+  "description": "Creates an experiment that mirrors a sampled portion of endpoint traffic to one or more target deployments without returning their responses to clients. Add a description with the update operation after creation.",
+  "operationId": "ShadowExperimentService_CreateShadowExperiment",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "projectId",
+      "required": true,
+      "schema": {
+        "description": "Project identifier.",
+        "type": "string"
+      }
+    },
+    {
+      "in": "path",
+      "name": "endpointId",
+      "required": true,
+      "schema": {
+        "description": "Endpoint identifier.",
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/DE.CreateShadowExperimentRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/DE.ShadowExperiment"
+          }
+        }
+      },
+      "description": "OK"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Invalid request"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "Default error response"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.together.ai/v2"
+    }
+  ],
+  "summary": "Create a shadow experiment",
+  "tags": [
+    "ShadowExperimentService"
+  ],
+  "components": {
+    "schemas": {
+      "DE.CreateShadowExperimentRequest": {
+        "description": "Sampling strategy and optional initial targets for mirroring endpoint requests without affecting client responses.",
+        "properties": {
+          "name": {
+            "description": "Human-readable shadow experiment name, unique within the endpoint. At most 256 characters.",
+            "type": "string"
+          },
+          "source": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.ShadowExperimentSource"
+              }
+            ],
+            "description": "Endpoint source and sampling configuration for the experiment."
+          },
+          "targets": {
+            "description": "Optional initial target deployments. At most 100 targets; manage later changes through the target APIs.",
+            "items": {
+              "$ref": "#/components/schemas/DE.CreateShadowExperimentTargetRequest"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "source"
+        ],
+        "type": "object"
+      },
+      "DE.ShadowExperiment": {
+        "description": "Experiment that mirrors sampled endpoint requests to target deployments without changing client responses.",
+        "properties": {
+          "createdAt": {
+            "description": "Timestamp when the experiment was created.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "createdBy": {
+            "description": "Identifier of the principal that created the experiment.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "description": {
+            "description": "User defined description.",
+            "type": "string"
+          },
+          "endpointId": {
+            "description": "Output only. Endpoint whose traffic this experiment samples.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "etag": {
+            "description": "Opaque version tag for optimistic concurrency control. Returned on read; set it on update or delete requests for consistent read-modify-write.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Output only. Unique shadow experiment identifier.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "name": {
+            "description": "Human-readable shadow experiment name, unique within the endpoint. At most 256 characters.",
+            "type": "string"
+          },
+          "projectId": {
+            "description": "Output only. Project that owns the parent endpoint.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "source": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.ShadowExperimentSourceResponse"
+              }
+            ],
+            "description": "Endpoint source and sampling configuration for mirrored requests."
+          },
+          "state": {
+            "description": "Derived serving state, active when the experiment has at least one target.",
+            "enum": [
+              "SHADOW_EXPERIMENT_STATE_ACTIVE",
+              "SHADOW_EXPERIMENT_STATE_INACTIVE"
+            ],
+            "readOnly": true,
+            "type": "string"
+          },
+          "targets": {
+            "description": "Target deployments that receive mirrored traffic.",
+            "items": {
+              "$ref": "#/components/schemas/DE.ShadowExperimentTarget"
+            },
+            "type": "array"
+          },
+          "updatedAt": {
+            "description": "Timestamp when the experiment was last updated.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "endpointId",
+          "name",
+          "source",
+          "targets",
+          "createdAt",
+          "createdBy",
+          "updatedAt",
+          "etag",
+          "state"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "DE.ShadowExperimentSource": {
+        "description": "Traffic source for a shadow experiment. The public API supports endpoint sources only.",
+        "properties": {
+          "endpoint": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.ShadowExperimentEndpointSource"
+              }
+            ],
+            "description": "Endpoint-level source that samples traffic at the API gateway."
+          }
+        },
+        "required": [
+          "endpoint"
+        ],
+        "type": "object"
+      },
+      "DE.CreateShadowExperimentTargetRequest": {
+        "description": "Deployment under the parent endpoint that should receive mirrored requests from a shadow experiment.",
+        "properties": {
+          "description": {
+            "description": "Optional free-form target description.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Human-readable target name, unique within the shadow experiment. At most 256 characters.",
+            "type": "string"
+          },
+          "targetDeploymentId": {
+            "description": "Deployment under the parent endpoint that receives mirrored traffic. It must not be a live traffic-split member or the source or target of an active rollout; traffic-split weight 0 warm-up targets are allowed.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "targetDeploymentId"
+        ],
+        "type": "object"
+      },
+      "DE.ShadowExperimentSourceResponse": {
+        "description": "Endpoint traffic source returned for a shadow experiment.",
+        "properties": {
+          "endpoint": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.ShadowExperimentEndpointSourceResponse"
+              }
+            ],
+            "description": "Endpoint-level source that samples traffic at the API gateway."
+          }
+        },
+        "required": [
+          "endpoint"
+        ],
+        "type": "object"
+      },
+      "DE.ShadowExperimentTarget": {
+        "description": "Deployment that receives mirrored traffic for a shadow experiment.",
+        "properties": {
+          "createdAt": {
+            "description": "Output only. Timestamp when the target was created.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          },
+          "description": {
+            "description": "Optional free-form target description.",
+            "type": "string"
+          },
+          "etag": {
+            "description": "Opaque version tag for optimistic concurrency control. Returned on read; set it on update or delete requests for consistent read-modify-write.",
+            "type": "string"
+          },
+          "experimentId": {
+            "description": "Output only. Shadow experiment this target belongs to.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "id": {
+            "description": "Output only. Unique shadow experiment target identifier.",
+            "readOnly": true,
+            "type": "string"
+          },
+          "name": {
+            "description": "Human-readable target name, unique within the shadow experiment. At most 256 characters.",
+            "type": "string"
+          },
+          "targetDeploymentId": {
+            "description": "Deployment under the parent endpoint that receives mirrored traffic. It must not be a live traffic-split member or the source or target of an active rollout; traffic-split weight 0 warm-up targets are allowed.",
+            "type": "string"
+          },
+          "updatedAt": {
+            "description": "Output only. Timestamp when the target was last updated.",
+            "format": "date-time",
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "experimentId",
+          "name",
+          "targetDeploymentId",
+          "createdAt",
+          "updatedAt",
+          "etag"
+        ],
+        "type": "object"
+      },
+      "DE.ShadowExperimentEndpointSource": {
+        "description": "Endpoint-level source that samples endpoint traffic at the API gateway.",
+        "properties": {
+          "sampling": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.ShadowExperimentSampling"
+              }
+            ],
+            "description": "Sampling strategy applied to endpoint traffic."
+          }
+        },
+        "required": [
+          "sampling"
+        ],
+        "type": "object"
+      },
+      "DE.ShadowExperimentEndpointSourceResponse": {
+        "description": "Endpoint-level source returned for a shadow experiment.",
+        "properties": {
+          "sampling": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DE.ShadowExperimentSamplingResponse"
+              }
+            ],
+            "description": "Resolved sampling strategy applied to endpoint traffic."
+          }
+        },
+        "required": [
+          "sampling"
+        ],
+        "type": "object"
+      },
+      "DE.ShadowExperimentSampling": {
+        "description": "Sampling strategy for endpoint-level shadow traffic. Exactly one strategy must be set.",
+        "oneOf": [
+          {
+            "properties": {
+              "uniform": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DE.ShadowExperimentUniformSampling"
+                  }
+                ],
+                "description": "Fixed random request sampling."
+              }
+            },
+            "required": [
+              "uniform"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "keyBased": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DE.ShadowExperimentKeyBasedSampling"
+                  }
+                ],
+                "description": "Fixed sampling by a sticky request key."
+              }
+            },
+            "required": [
+              "keyBased"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "adaptiveUniform": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DE.ShadowExperimentAdaptiveUniformSampling"
+                  }
+                ],
+                "description": "Adaptive random sampling toward a target QPS."
+              }
+            },
+            "required": [
+              "adaptiveUniform"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "adaptiveKeyBased": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DE.ShadowExperimentAdaptiveKeyBasedSampling"
+                  }
+                ],
+                "description": "Adaptive sticky-key sampling toward a target QPS."
+              }
+            },
+            "required": [
+              "adaptiveKeyBased"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "DE.ShadowExperimentSamplingResponse": {
+        "description": "Sampling strategy returned for endpoint-level shadow traffic.",
+        "oneOf": [
+          {
+            "properties": {
+              "uniform": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DE.ShadowExperimentUniformSamplingResponse"
+                  }
+                ],
+                "description": "Fixed random request sampling."
+              }
+            },
+            "required": [
+              "uniform"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "keyBased": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DE.ShadowExperimentKeyBasedSamplingResponse"
+                  }
+                ],
+                "description": "Fixed sampling by a sticky request key."
+              }
+            },
+            "required": [
+              "keyBased"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "adaptiveUniform": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DE.ShadowExperimentAdaptiveUniformSamplingResponse"
+                  }
+                ],
+                "description": "Adaptive random sampling toward a target QPS."
+              }
+            },
+            "required": [
+              "adaptiveUniform"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "adaptiveKeyBased": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/DE.ShadowExperimentAdaptiveKeyBasedSamplingResponse"
+                  }
+                ],
+                "description": "Adaptive sticky-key sampling toward a target QPS."
+              }
+            },
+            "required": [
+              "adaptiveKeyBased"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "DE.ShadowExperimentUniformSampling": {
+        "description": "Fixed-rate random sampling of endpoint requests.",
+        "properties": {
+          "rate": {
+            "description": "Required fraction of requests to sample, from 0.0 to 1.0.",
+            "type": "number"
+          }
+        },
+        "required": [
+          "rate"
+        ],
+        "type": "object"
+      },
+      "DE.ShadowExperimentKeyBasedSampling": {
+        "description": "Fixed-rate sampling of distinct key values with sticky decisions.",
+        "properties": {
+          "key": {
+            "description": "Required request-body field used as the sticky sampling key.",
+            "type": "string"
+          },
+          "rate": {
+            "description": "Required fraction of distinct key values to sample, from 0.0 to 1.0.",
+            "type": "number"
+          }
+        },
+        "required": [
+          "rate",
+          "key"
+        ],
+        "type": "object"
+      },
+      "DE.ShadowExperimentAdaptiveUniformSampling": {
+        "description": "Adaptive random sampling that throttles toward a target QPS.",
+        "properties": {
+          "targetQps": {
+            "description": "Required per-gateway-replica target QPS for adaptive sampling.",
+            "type": "number"
+          },
+          "window": {
+            "description": "Optional sliding window for QPS observation. Defaults to 60s and must not be negative.",
+            "pattern": "^-?(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,9})?s$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "targetQps"
+        ],
+        "type": "object"
+      },
+      "DE.ShadowExperimentAdaptiveKeyBasedSampling": {
+        "description": "Adaptive sticky-key sampling that throttles toward a target QPS.",
+        "properties": {
+          "key": {
+            "description": "Required request-body field used as the sticky sampling key.",
+            "type": "string"
+          },
+          "targetQps": {
+            "description": "Required per-gateway-replica target QPS for adaptive sampling.",
+            "type": "number"
+          },
+          "window": {
+            "description": "Optional sliding window for QPS observation. Defaults to 60s and must not be negative.",
+            "pattern": "^-?(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,9})?s$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "targetQps",
+          "key"
+        ],
+        "type": "object"
+      },
+      "DE.ShadowExperimentUniformSamplingResponse": {
+        "description": "Fixed-rate random sampling returned by the API. A zero rate may be omitted by JSON serialization.",
+        "properties": {
+          "rate": {
+            "description": "Fraction of requests sampled, from 0.0 to 1.0.",
+            "type": "number"
+          }
+        },
+        "type": "object"
+      },
+      "DE.ShadowExperimentKeyBasedSamplingResponse": {
+        "description": "Fixed-rate sticky-key sampling returned by the API. A zero rate may be omitted by JSON serialization.",
+        "properties": {
+          "key": {
+            "description": "Request-body field used as the sticky sampling key.",
+            "type": "string"
+          },
+          "rate": {
+            "description": "Fraction of distinct key values sampled, from 0.0 to 1.0.",
+            "type": "number"
+          }
+        },
+        "required": [
+          "key"
+        ],
+        "type": "object"
+      },
+      "DE.ShadowExperimentAdaptiveUniformSamplingResponse": {
+        "description": "Adaptive random sampling returned by the API.",
+        "properties": {
+          "targetQps": {
+            "description": "Per-gateway-replica target QPS.",
+            "type": "number"
+          },
+          "window": {
+            "description": "Sliding window for QPS observation when explicitly configured.",
+            "pattern": "^-?(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,9})?s$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "targetQps"
+        ],
+        "type": "object"
+      },
+      "DE.ShadowExperimentAdaptiveKeyBasedSamplingResponse": {
+        "description": "Adaptive sticky-key sampling returned by the API.",
+        "properties": {
+          "key": {
+            "description": "Request-body field used as the sticky sampling key.",
+            "type": "string"
+          },
+          "targetQps": {
+            "description": "Per-gateway-replica target QPS.",
+            "type": "number"
+          },
+          "window": {
+            "description": "Sliding window for QPS observation when explicitly configured.",
+            "pattern": "^-?(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,9})?s$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "targetQps",
+          "key"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}
