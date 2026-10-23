@@ -1334,6 +1334,16 @@ components:
           items:
             $ref: "#/components/schemas/ListenV1ResponseResultsChannelsItemsAlternativesItemsEntitiesItems"
           type: array
+        languages:
+          description: "[BCP-47](https://tools.ietf.org/html/bcp47) language tags of the languages detected in the transcript, sorted by word count in descending order. Only present when `language=multi`. Can be absent on audio that switches languages."
+          items:
+            type: string
+          type: array
+        languages_hinted:
+          description: "The `language_hint` values for the request, normalized: codes are returned in canonical form (`ES` → `es`, `zh-hk` → `zh-HK`), and a regional code the model has no tag for is returned as its base language (`en-GB` → `en`). Returned on every Nova-3 multilingual response (`model=nova-3&language=multi`); an empty array when no `language_hint` was sent."
+          items:
+            type: string
+          type: array
         paragraphs:
           $ref: "#/components/schemas/ListenV1ResponseResultsChannelsItemsAlternativesItemsParagraphs"
         summaries:
@@ -1447,6 +1457,9 @@ components:
         end:
           title: float
           type: string
+        language:
+          description: "[BCP-47](https://tools.ietf.org/html/bcp47) language tag of the word's detected language. Only present when `language=multi`. Can be absent on audio that switches languages."
+          type: string
         speaker:
           description: The speaker of the word, present when diarization is enabled
           type: integer
@@ -1512,6 +1525,11 @@ components:
         id:
           format: uuid
           type: string
+        languages:
+          description: "[BCP-47](https://tools.ietf.org/html/bcp47) language tags of the languages detected in the utterance, sorted by word count in descending order. Only present when `language=multi`."
+          items:
+            type: string
+          type: array
         speaker:
           type: integer
         start:
@@ -1532,6 +1550,9 @@ components:
           type: string
         end:
           title: float
+          type: string
+        language:
+          description: "[BCP-47](https://tools.ietf.org/html/bcp47) language tag of the word's detected language. Only present when `language=multi`. Can be absent on audio that switches languages."
           type: string
         punctuated_word:
           type: string
@@ -1853,7 +1874,7 @@ components:
       description: Request body for Flux TTS batch (REST) text-to-speech conversion. The full block of text is synthesized in a single request and returned as one audio response.
       properties:
         text:
-          description: 'The text content to be converted to speech. The server normalizes and preprocesses the text before synthesis. May contain inline pause controls (`\{pause:500ms\}`, 500-3000 ms in 100 ms steps, at most 8 per request) and inline pronunciation controls (`\{"word": "...", "pronounce": "<IPA>"\}`, Early Access). Pronunciation cannot be combined with pause or with a `speed` other than `1.0`, and `speed` is capped at `1.15` when a pause is present. See [Speed, Pause, Pronunciation](/docs/tts-voice-controls).'
+          description: 'The text content to be converted to speech. For English, German, Dutch, French, Hindi, Italian, Japanese, Portuguese, Russian and Spanish, the server normalizes the text (numbers, dates, abbreviations) before synthesis; the other languages are in Early Access without text normalization, so write numbers and dates out in words. May contain inline pause controls (`\{pause:500ms\}`, 500-3000 ms in 100 ms steps, at most 8 per request) and inline pronunciation controls (`\{"word": "...", "pronounce": "<IPA>"\}`, Early Access). Pronunciation cannot be combined with pause or with a `speed` other than `1.0`, and `speed` is capped at `1.15` when a pause is present. See [Speed, Pause, Pronunciation](/docs/tts-voice-controls).'
           type: string
       required:
         - text
@@ -2175,6 +2196,13 @@ components:
             type: string
           type: array
       title: V1ListenPostParametersKeywords
+    V1ListenPostParametersLanguageHint:
+      oneOf:
+        - type: string
+        - items:
+            type: string
+          type: array
+      title: V1ListenPostParametersLanguageHint
     V1ListenPostParametersModel:
       oneOf:
         - $ref: "#/components/schemas/V1ListenPostParametersModel0"
@@ -3144,6 +3172,13 @@ paths:
           schema:
             default: en
             type: string
+        - description: |
+            Biases language detection toward one or more languages on Nova-3 multilingual (`model=nova-3&language=multi`); ignored with any other `language`. Repeat the parameter to pass several codes, for example `language_hint=en&language_hint=es`. A code that is not in the [Nova-3 multilingual list](/docs/models-languages-overview#nova-3) fails the request with HTTP 400. See [Nova-3 Language Prompting](/docs/nova-3-language-prompting).
+          in: query
+          name: language_hint
+          required: false
+          schema:
+            $ref: "#/components/schemas/V1ListenPostParametersLanguageHint"
         - description: Spoken measurements will be converted to their corresponding abbreviations
           in: query
           name: measurements
@@ -5686,7 +5721,7 @@ paths:
           schema:
             $ref: "#/components/schemas/V2SpeakPostParametersExpressivity"
             default: 0
-        - description: Flux TTS model used to synthesize the submitted text, in the form `flux-{voice}-{language}` (for example, `flux-alexis-en`). Required; unlike the v1 (Aura) endpoint there is no default and only flux models are accepted. English-only at launch.
+        - description: Flux TTS model used to synthesize the submitted text, in the form `flux-{voice}-{language}` (for example, `flux-alexis-en`). Required; unlike the v1 (Aura) endpoint there is no default and only flux models are accepted.
           in: query
           name: model
           required: true
