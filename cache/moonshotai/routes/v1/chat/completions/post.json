@@ -22,11 +22,16 @@
               "kimi-k2.6": "#/components/schemas/KimiK26ChatRequest",
               "kimi-k2.7-code": "#/components/schemas/KimiK27CodeChatRequest",
               "kimi-k2.7-code-highspeed": "#/components/schemas/KimiK27CodeChatRequest",
-              "kimi-k3": "#/components/schemas/KimiK3ChatRequest"
+              "kimi-k3": "#/components/schemas/KimiK3ChatRequest",
+              "kimi-k3.1-pro": "#/components/schemas/KimiK31ProChatRequest",
+              "kimi-k3.1-pro-highspeed": "#/components/schemas/KimiK31ProChatRequest"
             },
             "propertyName": "model"
           },
           "oneOf": [
+            {
+              "$ref": "#/components/schemas/KimiK31ProChatRequest"
+            },
             {
               "$ref": "#/components/schemas/KimiK3ChatRequest"
             },
@@ -117,20 +122,38 @@
   ],
   "components": {
     "schemas": {
-      "KimiK3ChatRequest": {
+      "KimiK31ProChatRequest": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/ChatRequestCommon"
+            "$ref": "#/components/schemas/KimiK3ChatRequestBase"
           },
           {
             "properties": {
-              "messages": {
-                "description": "A list of Kimi K3 conversation messages. In addition to standard messages, you can insert a {\"role\": \"system\", \"tools\": [...]} message at any conversation position to dynamically load tools. A dynamic tool message omits content and only affects subsequent conversation turns.",
-                "items": {
-                  "$ref": "#/components/schemas/KimiK3Message"
-                },
-                "type": "array"
-              },
+              "model": {
+                "default": "kimi-k3.1-pro",
+                "description": "Model ID",
+                "enum": [
+                  "kimi-k3.1-pro",
+                  "kimi-k3.1-pro-highspeed"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "model"
+            ],
+            "type": "object"
+          }
+        ],
+        "title": "kimi-k3.1-pro series"
+      },
+      "KimiK3ChatRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/KimiK3ChatRequestBase"
+          },
+          {
+            "properties": {
               "model": {
                 "default": "kimi-k3",
                 "description": "Model ID",
@@ -138,21 +161,10 @@
                   "kimi-k3"
                 ],
                 "type": "string"
-              },
-              "reasoning_effort": {
-                "default": "max",
-                "description": "Kimi K3 always enables thinking with Preserved Thinking. Reasoning effort supports low, high, and max, with max as the default.",
-                "enum": [
-                  "low",
-                  "high",
-                  "max"
-                ],
-                "type": "string"
               }
             },
             "required": [
-              "model",
-              "messages"
+              "model"
             ],
             "type": "object"
           }
@@ -501,220 +513,35 @@
         ],
         "type": "object"
       },
-      "ChatRequestCommon": {
-        "properties": {
-          "logprobs": {
-            "default": false,
-            "description": "Whether to return log probabilities of the output tokens. If true, the log probability of each output token is returned in the logprobs field of the response message.",
-            "type": "boolean"
+      "KimiK3ChatRequestBase": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ChatRequestCommon"
           },
-          "max_completion_tokens": {
-            "description": "The maximum number of tokens to generate for the chat completion. The default varies by model: for Kimi K3 it defaults to 131072 and can be set up to 1048576. If the result reaches the maximum number of tokens without ending, the finish reason will be \"length\"; otherwise, it will be \"stop\". This refers to the length of tokens you expect us to return, not the total length of input plus output. If the sum of the input token count (`prompt_tokens`) and `max_completion_tokens` exceeds the model context window, the API automatically lowers the generation limit for the current request to fit the remaining context space and continues processing the request. The input token count itself must be less than the model context window size.",
-            "type": "integer"
-          },
-          "max_tokens": {
-            "deprecated": true,
-            "description": "Deprecated, please refer to max_completion_tokens",
-            "type": "integer"
-          },
-          "prediction": {
-            "description": "Configuration for a Predicted Output, which can greatly improve response times when large parts of the model response are known ahead of time (for example, regenerating a file with only minor changes).",
+          {
             "properties": {
-              "content": {
-                "description": "The static predicted output content that should be matched when generating the model response, such as the content of a text file being regenerated. Accepts a string or an array of content parts (text parts only).",
-                "oneOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "items": {
-                      "type": "object"
-                    },
-                    "type": "array"
-                  }
-                ]
-              },
-              "type": {
-                "description": "The type of the predicted content. Currently only content is supported.",
-                "enum": [
-                  "content"
-                ],
-                "type": "string"
-              }
-            },
-            "type": "object"
-          },
-          "prompt_cache_key": {
-            "default": null,
-            "description": "Used to cache responses for similar requests to optimize cache hit rates. For Coding Agents, this is typically a session id or task id representing a single session; if the session is exited and later resumed, this value should remain the same. For Kimi Code Plan, this field is required to improve cache hit rates. For other agents involving multi-turn conversations, it is also recommended to implement this field",
-            "type": "string"
-          },
-          "prompt_cache_options": {
-            "description": "Context cache write options. When omitted, cache write is enabled by default (5m tier): the system automatically writes the request prefix to the 5m cache tier",
-            "properties": {
-              "mode": {
-                "default": "implicit",
-                "description": "Cache write mode. Only implicit is supported: automatically writes the request prefix to the cache",
-                "enum": [
-                  "implicit"
-                ],
-                "type": "string"
-              },
-              "ttl": {
-                "default": "5m",
-                "description": "Lifetime of the written cache. The 5m and 1h tiers are independent of each other. When a request with the same prefix hits the cache within its lifetime, the cache entry is refreshed with its original TTL",
-                "enum": [
-                  "5m",
-                  "1h"
-                ],
-                "type": "string"
-              }
-            },
-            "type": "object"
-          },
-          "response_format": {
-            "description": "Controls the model output format. Default is {\"type\": \"text\"} for plain text output. Set to {\"type\": \"json_object\"} to enable JSON mode, ensuring output is a valid JSON object (you must guide the model to output JSON in the prompt). Set to {\"type\": \"json_schema\"} to enable Structured Output, constraining output to match a specified JSON Schema (recommended, requires the json_schema field). If you encounter schema validation issues, please submit feedback at walle GitHub Issues (https://github.com/MoonshotAI/walle/issues).",
-            "properties": {
-              "json_schema": {
-                "description": "Used when type is json_schema. Defines the JSON Schema that the output should conform to.",
-                "properties": {
-                  "name": {
-                    "description": "Schema name for identification",
-                    "type": "string"
-                  },
-                  "schema": {
-                    "additionalProperties": true,
-                    "description": "The JSON Schema object defining the structure the output should conform to. Must conform to MFJS (Moonshot Flavored JSON Schema) specification. You can use the walle CLI tool to validate: go install github.com/moonshotai/walle/cmd/walle@latest && walle -schema 'your_schema' -level strict",
-                    "type": "object"
-                  },
-                  "strict": {
-                    "default": true,
-                    "description": "Whether to strictly constrain output according to the schema. Defaults to true. When true, the schema must conform to the MFJS specification; non-conforming schemas will return errors or warnings. When false, only guarantees the output is a valid JSON object without enforcing internal structure.",
-                    "type": "boolean"
-                  }
-                },
-                "required": [
-                  "name",
-                  "schema"
-                ],
-                "type": "object"
-              },
-              "type": {
-                "description": "Output format type. text: default, plain text output; json_object: ensures output is a valid JSON object; json_schema: constrains output to match a specified JSON Schema (recommended, requires the json_schema field)",
-                "enum": [
-                  "text",
-                  "json_object",
-                  "json_schema"
-                ],
-                "type": "string"
-              }
-            },
-            "type": "object"
-          },
-          "safety_identifier": {
-            "description": "A stable identifier used to help detect users of your application that may be violating usage policies. The ID should be a string that uniquely identifies each user. It is recommended to hash the username or email address to avoid sending any identifying information",
-            "type": "string"
-          },
-          "stop": {
-            "default": null,
-            "description": "Stop words, which will halt the output when a full match is found. The matched words themselves will not be output. A maximum of 5 strings is allowed, and each string must not exceed 32 bytes",
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
+              "messages": {
+                "description": "A list of conversation messages.",
                 "items": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/KimiK3Message"
                 },
-                "maxItems": 5,
                 "type": "array"
-              }
-            ]
-          },
-          "stream": {
-            "default": false,
-            "description": "Whether to return the response in a streaming fashion. Default is false.",
-            "type": "boolean"
-          },
-          "stream_options": {
-            "description": "Options for streaming responses",
-            "properties": {
-              "include_usage": {
-                "default": false,
-                "description": "If set, an additional chunk will be streamed before the data: [DONE] message. The usage field on this chunk shows the token usage statistics for the entire request, and the choices field will always be an empty array. All other chunks will also include a usage field, but with a null value. NOTE: If the stream is interrupted, you may not receive the final usage chunk which contains the total token usage for the request",
-                "type": "boolean"
-              }
-            },
-            "type": "object"
-          },
-          "tool_choice": {
-            "description": "Controls whether the model calls tools. `auto` (default): the model decides whether to call tools; `none`: no tool calls; `required`: force a tool call; or pass an object specifying a particular function to force that tool call.",
-            "oneOf": [
-              {
-                "description": "auto: the model decides whether to call tools; none: no tool calls; required: force a tool call",
+              },
+              "reasoning_effort": {
+                "default": "max",
+                "description": "Kimi K3-series models always enable thinking with Preserved Thinking. Reasoning effort supports low, high, and max, with max as the default.",
                 "enum": [
-                  "auto",
-                  "none",
-                  "required"
+                  "low",
+                  "high",
+                  "max"
                 ],
                 "type": "string"
-              },
-              {
-                "description": "Force a specific tool call",
-                "properties": {
-                  "function": {
-                    "properties": {
-                      "name": {
-                        "description": "The name of the function to call",
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "name"
-                    ],
-                    "type": "object"
-                  },
-                  "type": {
-                    "enum": [
-                      "function"
-                    ],
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "type",
-                  "function"
-                ],
-                "type": "object"
               }
-            ]
-          },
-          "tools": {
-            "description": "A list of tools the model may call",
-            "items": {
-              "$ref": "#/components/schemas/ToolDefinition"
             },
-            "type": "array"
-          },
-          "top_logprobs": {
-            "description": "An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. logprobs must be set to true when this parameter is used.",
-            "maximum": 20,
-            "minimum": 0,
-            "type": "integer"
-          }
-        },
-        "type": "object"
-      },
-      "KimiK3Message": {
-        "description": "A Kimi K3 conversation message. Supports both standard messages and system messages that omit content and declare dynamically loaded tools through tools.",
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/Message",
-            "title": "Standard message"
-          },
-          {
-            "$ref": "#/components/schemas/KimiK3DynamicToolMessage",
-            "title": "Dynamic tool message"
+            "required": [
+              "messages"
+            ],
+            "type": "object"
           }
         ]
       },
@@ -726,7 +553,7 @@
             "type": "boolean"
           },
           "max_completion_tokens": {
-            "description": "The maximum number of tokens to generate for the chat completion. The default varies by model: for Kimi K3 it defaults to 131072 and can be set up to 1048576. If the result reaches the maximum number of tokens without ending, the finish reason will be \"length\"; otherwise, it will be \"stop\". This refers to the length of tokens you expect us to return, not the total length of input plus output. If the sum of the input token count (`prompt_tokens`) and `max_completion_tokens` exceeds the model context window, the API automatically lowers the generation limit for the current request to fit the remaining context space and continues processing the request. The input token count itself must be less than the model context window size.",
+            "description": "The maximum number of tokens to generate for the chat completion. The default varies by model: for Kimi K3-series models (kimi-k3.1-pro, kimi-k3.1-pro-highspeed, kimi-k3) it defaults to 131072 and can be set up to 1048576. If the result reaches the maximum number of tokens without ending, the finish reason will be \"length\"; otherwise, it will be \"stop\". This refers to the length of tokens you expect us to return, not the total length of input plus output. If the sum of the input token count (`prompt_tokens`) and `max_completion_tokens` exceeds the model context window, the API automatically lowers the generation limit for the current request to fit the remaining context space and continues processing the request. The input token count itself must be less than the model context window size.",
             "type": "integer"
           },
           "max_tokens": {
@@ -1016,48 +843,222 @@
         },
         "type": "object"
       },
-      "ToolDefinition": {
+      "ChatRequestCommon": {
         "properties": {
-          "function": {
+          "logprobs": {
+            "default": false,
+            "description": "Whether to return log probabilities of the output tokens. If true, the log probability of each output token is returned in the logprobs field of the response message.",
+            "type": "boolean"
+          },
+          "max_completion_tokens": {
+            "description": "The maximum number of tokens to generate for the chat completion. The default varies by model: for Kimi K3-series models (kimi-k3.1-pro, kimi-k3.1-pro-highspeed, kimi-k3) it defaults to 131072 and can be set up to 1048576. If the result reaches the maximum number of tokens without ending, the finish reason will be \"length\"; otherwise, it will be \"stop\". This refers to the length of tokens you expect us to return, not the total length of input plus output. If the sum of the input token count (`prompt_tokens`) and `max_completion_tokens` exceeds the model context window, the API automatically lowers the generation limit for the current request to fit the remaining context space and continues processing the request. The input token count itself must be less than the model context window size.",
+            "type": "integer"
+          },
+          "max_tokens": {
+            "deprecated": true,
+            "description": "Deprecated, please refer to max_completion_tokens",
+            "type": "integer"
+          },
+          "prediction": {
+            "description": "Configuration for a Predicted Output, which can greatly improve response times when large parts of the model response are known ahead of time (for example, regenerating a file with only minor changes).",
             "properties": {
-              "description": {
-                "description": "Description of what the function does",
+              "content": {
+                "description": "The static predicted output content that should be matched when generating the model response, such as the content of a text file being regenerated. Accepts a string or an array of content parts (text parts only).",
+                "oneOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "items": {
+                      "type": "object"
+                    },
+                    "type": "array"
+                  }
+                ]
+              },
+              "type": {
+                "description": "The type of the predicted content. Currently only content is supported.",
+                "enum": [
+                  "content"
+                ],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "prompt_cache_key": {
+            "default": null,
+            "description": "Used to cache responses for similar requests to optimize cache hit rates. For Coding Agents, this is typically a session id or task id representing a single session; if the session is exited and later resumed, this value should remain the same. For Kimi Code Plan, this field is required to improve cache hit rates. For other agents involving multi-turn conversations, it is also recommended to implement this field",
+            "type": "string"
+          },
+          "prompt_cache_options": {
+            "description": "Context cache write options. When omitted, cache write is enabled by default (5m tier): the system automatically writes the request prefix to the 5m cache tier",
+            "properties": {
+              "mode": {
+                "default": "implicit",
+                "description": "Cache write mode. Only implicit is supported: automatically writes the request prefix to the cache",
+                "enum": [
+                  "implicit"
+                ],
                 "type": "string"
               },
-              "name": {
-                "description": "Function name. Must follow the regex: ^[a-zA-Z_][a-zA-Z0-9-_]{0,127}$",
-                "pattern": "^[a-zA-Z_][a-zA-Z0-9-_]{0,127}$",
+              "ttl": {
+                "default": "5m",
+                "description": "Lifetime of the written cache. The 5m and 1h tiers are independent of each other. When a request with the same prefix hits the cache within its lifetime, the cache entry is refreshed with its original TTL",
+                "enum": [
+                  "5m",
+                  "1h"
+                ],
                 "type": "string"
-              },
-              "parameters": {
-                "additionalProperties": true,
-                "description": "Function parameters as JSON Schema. Must conform to the [MFJS (Moonshot Flavored JSON Schema) specification](https://github.com/MoonshotAI/walle/blob/main/docs/mfjs-spec.md).",
+              }
+            },
+            "type": "object"
+          },
+          "response_format": {
+            "description": "Controls the model output format. Default is {\"type\": \"text\"} for plain text output. Set to {\"type\": \"json_object\"} to enable JSON mode, ensuring output is a valid JSON object (you must guide the model to output JSON in the prompt). Set to {\"type\": \"json_schema\"} to enable Structured Output, constraining output to match a specified JSON Schema (recommended, requires the json_schema field). If you encounter schema validation issues, please submit feedback at walle GitHub Issues (https://github.com/MoonshotAI/walle/issues).",
+            "properties": {
+              "json_schema": {
+                "description": "Used when type is json_schema. Defines the JSON Schema that the output should conform to.",
+                "properties": {
+                  "name": {
+                    "description": "Schema name for identification",
+                    "type": "string"
+                  },
+                  "schema": {
+                    "additionalProperties": true,
+                    "description": "The JSON Schema object defining the structure the output should conform to. Must conform to MFJS (Moonshot Flavored JSON Schema) specification. You can use the walle CLI tool to validate: go install github.com/moonshotai/walle/cmd/walle@latest && walle -schema 'your_schema' -level strict",
+                    "type": "object"
+                  },
+                  "strict": {
+                    "default": true,
+                    "description": "Whether to strictly constrain output according to the schema. Defaults to true. When true, the schema must conform to the MFJS specification; non-conforming schemas will return errors or warnings. When false, only guarantees the output is a valid JSON object without enforcing internal structure.",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "schema"
+                ],
                 "type": "object"
               },
-              "strict": {
-                "default": true,
-                "description": "Whether to strictly constrain tool call arguments according to the parameters schema. Defaults to true. When false, only guarantees the output is a valid JSON object without enforcing internal structure.",
+              "type": {
+                "description": "Output format type. text: default, plain text output; json_object: ensures output is a valid JSON object; json_schema: constrains output to match a specified JSON Schema (recommended, requires the json_schema field)",
+                "enum": [
+                  "text",
+                  "json_object",
+                  "json_schema"
+                ],
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "safety_identifier": {
+            "description": "A stable identifier used to help detect users of your application that may be violating usage policies. The ID should be a string that uniquely identifies each user. It is recommended to hash the username or email address to avoid sending any identifying information",
+            "type": "string"
+          },
+          "stop": {
+            "default": null,
+            "description": "Stop words, which will halt the output when a full match is found. The matched words themselves will not be output. A maximum of 5 strings is allowed, and each string must not exceed 32 bytes",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 5,
+                "type": "array"
+              }
+            ]
+          },
+          "stream": {
+            "default": false,
+            "description": "Whether to return the response in a streaming fashion. Default is false.",
+            "type": "boolean"
+          },
+          "stream_options": {
+            "description": "Options for streaming responses",
+            "properties": {
+              "include_usage": {
+                "default": false,
+                "description": "If set, an additional chunk will be streamed before the data: [DONE] message. The usage field on this chunk shows the token usage statistics for the entire request, and the choices field will always be an empty array. All other chunks will also include a usage field, but with a null value. NOTE: If the stream is interrupted, you may not receive the final usage chunk which contains the total token usage for the request",
                 "type": "boolean"
               }
             },
-            "required": [
-              "name",
-              "parameters"
-            ],
             "type": "object"
           },
-          "type": {
-            "enum": [
-              "function"
-            ],
-            "type": "string"
+          "tool_choice": {
+            "description": "Controls whether the model calls tools. `auto` (default): the model decides whether to call tools; `none`: no tool calls; `required`: force a tool call; or pass an object specifying a particular function to force that tool call.",
+            "oneOf": [
+              {
+                "description": "auto: the model decides whether to call tools; none: no tool calls; required: force a tool call",
+                "enum": [
+                  "auto",
+                  "none",
+                  "required"
+                ],
+                "type": "string"
+              },
+              {
+                "description": "Force a specific tool call",
+                "properties": {
+                  "function": {
+                    "properties": {
+                      "name": {
+                        "description": "The name of the function to call",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "name"
+                    ],
+                    "type": "object"
+                  },
+                  "type": {
+                    "enum": [
+                      "function"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "function"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "tools": {
+            "description": "A list of tools the model may call",
+            "items": {
+              "$ref": "#/components/schemas/ToolDefinition"
+            },
+            "type": "array"
+          },
+          "top_logprobs": {
+            "description": "An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. logprobs must be set to true when this parameter is used.",
+            "maximum": 20,
+            "minimum": 0,
+            "type": "integer"
           }
         },
-        "required": [
-          "type",
-          "function"
-        ],
         "type": "object"
+      },
+      "KimiK3Message": {
+        "description": "Supports standard conversation messages and system messages for dynamically loading tools.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Message",
+            "title": "Standard message"
+          },
+          {
+            "$ref": "#/components/schemas/KimiK3DynamicToolMessage",
+            "title": "Dynamic tool message"
+          }
+        ]
       },
       "Message": {
         "properties": {
@@ -1192,9 +1193,52 @@
         ],
         "type": "object"
       },
+      "ToolDefinition": {
+        "properties": {
+          "function": {
+            "properties": {
+              "description": {
+                "description": "Description of what the function does",
+                "type": "string"
+              },
+              "name": {
+                "description": "Function name. Must follow the regex: ^[a-zA-Z_][a-zA-Z0-9-_]{0,127}$",
+                "pattern": "^[a-zA-Z_][a-zA-Z0-9-_]{0,127}$",
+                "type": "string"
+              },
+              "parameters": {
+                "additionalProperties": true,
+                "description": "Function parameters as JSON Schema. Must conform to the [MFJS (Moonshot Flavored JSON Schema) specification](https://github.com/MoonshotAI/walle/blob/main/docs/mfjs-spec.md).",
+                "type": "object"
+              },
+              "strict": {
+                "default": true,
+                "description": "Whether to strictly constrain tool call arguments according to the parameters schema. Defaults to true. When false, only guarantees the output is a valid JSON object without enforcing internal structure.",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "parameters"
+            ],
+            "type": "object"
+          },
+          "type": {
+            "enum": [
+              "function"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "function"
+        ],
+        "type": "object"
+      },
       "KimiK3DynamicToolMessage": {
         "additionalProperties": false,
-        "description": "A Kimi K3 dynamic tool loading message. This message must use the system role, declares tools available to subsequent conversation turns from its position, and does not include a content field.",
+        "description": "Declares tools available to subsequent conversation turns through the tools field. role must be system, and content must be omitted.",
         "properties": {
           "role": {
             "description": "The role of a dynamic tool loading message. Always system.",
