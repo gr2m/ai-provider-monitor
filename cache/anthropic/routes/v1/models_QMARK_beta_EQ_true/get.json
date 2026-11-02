@@ -39,6 +39,26 @@
       }
     },
     {
+      "description": "Filter the list to models in any of the given lifecycle stages (`active`, `deprecated`, or `retired`). Up to 3 values. When omitted, the list contains the `active` and `deprecated` models; `retired` models appear only when `retired` is requested explicitly.",
+      "in": "query",
+      "name": "lifecycle[]",
+      "required": false,
+      "schema": {
+        "description": "Filter the list to models in any of the given lifecycle stages (`active`, `deprecated`, or `retired`). Up to 3 values. When omitted, the list contains the `active` and `deprecated` models; `retired` models appear only when `retired` is requested explicitly.",
+        "items": {
+          "enum": [
+            "active",
+            "deprecated",
+            "retired"
+          ],
+          "type": "string"
+        },
+        "maxItems": 3,
+        "title": "Lifecycle[]",
+        "type": "array"
+      }
+    },
+    {
       "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
       "in": "header",
       "name": "anthropic-version",
@@ -50,27 +70,26 @@
       }
     },
     {
-      "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+      "description": "Optional header to specify the beta version(s) you want to use.",
       "in": "header",
       "name": "anthropic-beta",
       "required": false,
       "schema": {
-        "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+        "description": "Optional header to specify the beta version(s) you want to use.",
         "items": {
-          "type": "string"
+          "$ref": "#/components/schemas/AnthropicBeta"
         },
         "title": "Anthropic-Beta",
-        "type": "string"
+        "type": "array"
       }
     },
     {
-      "description": "Your unique API key for authentication.\n\nThis key is required in the header of all API requests, to authenticate your account and access Anthropic's services. Get your API key through the [Console](https://console.anthropic.com/settings/keys). Each key is scoped to a Workspace.",
+      "description": "Optional header to select the Workspace for this request. The value is a Workspace ID (for example, `wrkspc_011CZkZaBF1tNoB5wlCeusgy`).\n\nOnly needed for credentials that can act on more than one Workspace. A credential that belongs to a specific Workspace may omit it; if sent, it must match that Workspace.",
+      "example": "wrkspc_011CZkZaBF1tNoB5wlCeusgy",
       "in": "header",
-      "name": "x-api-key",
+      "name": "anthropic-workspace-id",
       "required": false,
       "schema": {
-        "description": "Your unique API key for authentication.\n\nThis key is required in the header of all API requests, to authenticate your account and access Anthropic's services. Get your API key through the [Console](https://console.anthropic.com/settings/keys). Each key is scoped to a Workspace.",
-        "title": "X-Api-Key",
         "type": "string"
       }
     }
@@ -86,7 +105,78 @@
       },
       "description": "Successful Response"
     },
-    "4XX": {
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "details": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/BetaClaudeCodeKeyCreatorNotMemberErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaOrganizationOnHoldErrorDetails"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Machine-readable detail about the cause of the error. `error_code` names the cause; branch on it rather than on `message`. Absent when the error has no code. Treat an unrecognized `error_code` as the bare `type`.",
+                    "title": "Details"
+                  },
+                  "message": {
+                    "default": "Invalid request",
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "invalid_request_error",
+                    "default": "invalid_request_error",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "type"
+                ],
+                "title": "InvalidRequestError",
+                "type": "object"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "type": {
+                "const": "error",
+                "default": "error",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "error",
+              "request_id",
+              "type"
+            ],
+            "title": "ErrorResponse",
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid argument - The client specified an invalid argument"
+    },
+    "401": {
       "content": {
         "application/json": {
           "schema": {
@@ -94,12 +184,219 @@
           }
         }
       },
-      "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
+      "description": "Unauthenticated - The request does not have valid authentication credentials"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Permission denied - The caller does not have permission to execute the specified operation"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Not found - Some requested entity was not found"
+    },
+    "408": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - The deadline expired before the operation could complete"
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Aborted - The operation was aborted due to concurrency issue"
+    },
+    "412": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Failed precondition - Operation was rejected because the system is not in required state"
+    },
+    "413": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Out of range - Operation was attempted past the valid range"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Resource exhausted - Some resource has been exhausted (rate limiting)"
+    },
+    "431": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Request header fields too large - Request metadata was too large"
+    },
+    "499": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Cancelled - The operation was cancelled by the client"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Internal - Internal server error"
+    },
+    "501": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unimplemented - The operation is not implemented or supported"
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unavailable - The service is currently unavailable"
+    },
+    "504": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - Upstream service did not respond in time"
+    },
+    "529": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Overloaded - The service is temporarily overloaded"
     }
   },
   "summary": "List Models",
   "components": {
     "schemas": {
+      "AnthropicBeta": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "message-batches-2024-09-24",
+              "prompt-caching-2024-07-31",
+              "computer-use-2024-10-22",
+              "computer-use-2025-01-24",
+              "pdfs-2024-09-25",
+              "token-counting-2024-11-01",
+              "token-efficient-tools-2025-02-19",
+              "output-128k-2025-02-19",
+              "files-api-2025-04-14",
+              "mcp-client-2025-04-04",
+              "mcp-client-2025-11-20",
+              "dev-full-thinking-2025-05-14",
+              "interleaved-thinking-2025-05-14",
+              "code-execution-2025-05-22",
+              "extended-cache-ttl-2025-04-11",
+              "context-1m-2025-08-07",
+              "context-management-2025-06-27",
+              "model-context-window-exceeded-2025-08-26",
+              "skills-2025-10-02",
+              "fast-mode-2026-02-01",
+              "output-300k-2026-03-24",
+              "user-profiles-2026-03-24",
+              "user-profiles-2026-08-18",
+              "user-profiles-2026-09-04",
+              "advisor-tool-2026-03-01",
+              "managed-agents-2026-04-01",
+              "cache-diagnosis-2026-04-07",
+              "dreaming-2026-04-21",
+              "thinking-token-count-2026-05-13",
+              "server-side-fallback-2026-06-01",
+              "server-side-fallback-2026-07-01",
+              "fallback-credit-2026-06-01",
+              "fallback-credit-2026-07-01",
+              "agent-memory-2026-07-22",
+              "mid-conversation-tool-changes-2026-07-01",
+              "compact-2026-01-12",
+              "computer-use-2025-11-24",
+              "mcp-tunnels-2026-06-22",
+              "structured-outputs-2025-11-13",
+              "task-budgets-2026-03-13",
+              "thinking-display-updates-2026-08-18",
+              "ce-user-management-2026-07-13",
+              "mid-conversation-output-config-2026-07-01",
+              "thinking-binding-controls-2026-08-01",
+              "mid-conversation-system-clear-at-2026-08-21",
+              "compact-2026-09-04",
+              "inline-tools-2026-09-15",
+              "mcp-client-2026-09-15",
+              "ce-plugins-2026-09-01",
+              "spend-limit-reads-2026-09-26",
+              "telemetry-destinations-2026-08-11",
+              "webhooks-2026-10-07",
+              "message-threads-2026-08-12",
+              "analytics-usage-cost-2026-08-24",
+              "experimental-claude-tag-2026-10-21"
+            ],
+            "type": "string"
+          }
+        ]
+      },
       "BetaListResponse_ModelInfo_": {
         "properties": {
           "data": {
@@ -146,6 +443,47 @@
           "last_id"
         ],
         "title": "ListResponse[ModelInfo]",
+        "type": "object"
+      },
+      "BetaClaudeCodeKeyCreatorNotMemberErrorDetails": {
+        "description": "The API key belongs to the Claude Code workspace, and the user who created it is no longer a member of the organization or of that workspace.",
+        "properties": {
+          "error_code": {
+            "const": "claude_code_key_creator_not_member",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "ClaudeCodeKeyCreatorNotMemberErrorDetails",
+        "type": "object"
+      },
+      "BetaOrganizationOnHoldErrorDetails": {
+        "description": "Anthropic has disabled the organization for trust and safety reasons. An organization disabled for any other reason, such as billing, does not get this code. `appeal_url`, when present, is where the organization can appeal.",
+        "properties": {
+          "appeal_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Appeal Url"
+          },
+          "error_code": {
+            "const": "organization_on_hold",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "OrganizationOnHoldErrorDetails",
         "type": "object"
       },
       "BetaErrorResponse": {
@@ -254,16 +592,29 @@
           "created_at": {
             "description": "RFC 3339 datetime string representing the time at which the model was released. May be set to an epoch value if the release date is unknown.",
             "examples": [
-              "2026-07-24T00:00:00Z"
+              "2026-09-21T00:00:00Z"
             ],
             "format": "date-time",
             "title": "Created At",
             "type": "string"
           },
+          "deprecated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "RFC 3339 datetime string representing the time of the model's most recent deprecation. Populated for `deprecated` and `retired` models; `null` while the model is `active`.",
+            "title": "Deprecated At"
+          },
           "display_name": {
             "description": "A human-readable name for the model.",
             "examples": [
-              "Claude Opus 5"
+              "Claude Opus 5.5"
             ],
             "title": "Display Name",
             "type": "string"
@@ -271,10 +622,35 @@
           "id": {
             "description": "Unique model identifier.",
             "examples": [
-              "claude-opus-5"
+              "claude-opus-5-5"
             ],
             "title": "Id",
             "type": "string"
+          },
+          "lifecycle": {
+            "default": "active",
+            "description": "The model's current lifecycle stage.\n\n- `active`: The model is available for use, open to new adopters, and not scheduled for retirement.\n- `deprecated`: The model remains callable for organizations with existing access, but is headed for retirement and closed to new adopters.\n- `retired`: The model is no longer available for use; inference requests naming it fail. It remains in the catalogue as the historical record of its retirement.",
+            "enum": [
+              "active",
+              "deprecated",
+              "retired"
+            ],
+            "title": "Lifecycle",
+            "type": "string"
+          },
+          "line": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaModelLine"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The model line this model belongs to, such as `opus` for both Claude Opus 4.5 and Claude Opus 4.6. More lines may be added. `null` when the model belongs to no line; do not infer a line from the `id`.",
+            "examples": [
+              "opus"
+            ]
           },
           "max_input_tokens": {
             "anyOf": [
@@ -300,6 +676,19 @@
             "description": "Maximum value for the `max_tokens` parameter when using this model.",
             "title": "Max Tokens"
           },
+          "retires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "RFC 3339 datetime string representing the model's currently scheduled retirement date. The schedule can be revised until retirement occurs; `null` while the model is `active` or while no retirement is scheduled. A past date on a `deprecated` model means retirement is overdue, not that it has occurred: `lifecycle` is the retirement signal.",
+            "title": "Retires At"
+          },
           "type": {
             "const": "model",
             "default": "model",
@@ -312,10 +701,14 @@
           "allowed_fallback_models",
           "capabilities",
           "created_at",
+          "deprecated_at",
           "display_name",
           "id",
+          "lifecycle",
+          "line",
           "max_input_tokens",
           "max_tokens",
+          "retires_at",
           "type"
         ],
         "title": "ModelInfo",
@@ -523,7 +916,18 @@
           },
           "code_execution": {
             "$ref": "#/components/schemas/BetaCapabilitySupport",
-            "description": "Whether the model supports code execution tools."
+            "description": "Whether code that the model runs in the code execution tool can call the request's other tools, as in programmatic tool calling and dynamic filtering for web search and web fetch. Support for the code execution tool itself is in `server_tools.code_execution`."
+          },
+          "compaction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaCompactionCapability"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Server-side compaction support (the top-level `compaction` parameter) and the accepted `compaction.type` values."
           },
           "context_management": {
             "$ref": "#/components/schemas/BetaContextManagementCapability",
@@ -541,6 +945,10 @@
             "$ref": "#/components/schemas/BetaCapabilitySupport",
             "description": "Whether the model accepts PDF content blocks."
           },
+          "server_tools": {
+            "$ref": "#/components/schemas/BetaServerToolsCapability",
+            "description": "Whether this model supports the web search and code execution server tools. `supported` is true when the model supports at least one of the tools. A supported tool can still be rejected for your organization, for example when an admin has turned web search off."
+          },
           "structured_outputs": {
             "$ref": "#/components/schemas/BetaCapabilitySupport",
             "description": "Whether the model supports structured output / JSON mode / strict tool schemas."
@@ -554,15 +962,32 @@
           "batch",
           "citations",
           "code_execution",
+          "compaction",
           "context_management",
           "effort",
           "image_input",
           "pdf_input",
+          "server_tools",
           "structured_outputs",
           "thinking"
         ],
         "title": "ModelCapabilities",
         "type": "object"
+      },
+      "BetaModelLine": {
+        "description": "A Claude model line, such as `opus` or `sonnet`. More lines may be added as new values.",
+        "enum": [
+          "haiku",
+          "sonnet",
+          "opus",
+          "fable",
+          "mythos"
+        ],
+        "examples": [
+          "opus"
+        ],
+        "title": "ModelLine",
+        "type": "string"
       },
       "BetaCapabilitySupport": {
         "description": "Indicates whether a capability is supported.",
@@ -577,6 +1002,26 @@
           "supported"
         ],
         "title": "CapabilitySupport",
+        "type": "object"
+      },
+      "BetaCompactionCapability": {
+        "description": "Compaction capability details: whether the model accepts the top-level\n`compaction` request parameter, with one entry per supported\n`compaction.type` value.",
+        "properties": {
+          "summarize": {
+            "$ref": "#/components/schemas/BetaCapabilitySupport",
+            "description": "Whether the summarize compaction type is supported."
+          },
+          "supported": {
+            "description": "Whether this capability is supported by the model.",
+            "title": "Supported",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "summarize",
+          "supported"
+        ],
+        "title": "CompactionCapability",
         "type": "object"
       },
       "BetaContextManagementCapability": {
@@ -677,6 +1122,31 @@
         "title": "EffortCapability",
         "type": "object"
       },
+      "BetaServerToolsCapability": {
+        "description": "Web search and code execution tool support, with one entry per tool.",
+        "properties": {
+          "code_execution": {
+            "$ref": "#/components/schemas/BetaCapabilitySupport",
+            "description": "Whether the model supports the code execution tool: true when the model supports at least one version of the tool, not necessarily every version."
+          },
+          "supported": {
+            "description": "Whether this capability is supported by the model.",
+            "title": "Supported",
+            "type": "boolean"
+          },
+          "web_search": {
+            "$ref": "#/components/schemas/BetaCapabilitySupport",
+            "description": "Whether the model supports the web search tool: true when the model supports at least one version of the tool, not necessarily every version."
+          }
+        },
+        "required": [
+          "code_execution",
+          "supported",
+          "web_search"
+        ],
+        "title": "ServerToolsCapability",
+        "type": "object"
+      },
       "BetaThinkingCapability": {
         "description": "Thinking capability details.",
         "properties": {
@@ -686,7 +1156,8 @@
             "type": "boolean"
           },
           "types": {
-            "$ref": "#/components/schemas/BetaThinkingTypes"
+            "$ref": "#/components/schemas/BetaThinkingTypes",
+            "description": "Supported thinking type configurations."
           }
         },
         "required": [
@@ -697,19 +1168,29 @@
         "type": "object"
       },
       "BetaThinkingTypes": {
-        "description": "Supported thinking type configurations.",
+        "description": "Which `thinking.type` values the model accepts on requests. Read each key on its own: for example, `enabled` can be false while `disabled` is true.",
         "properties": {
           "adaptive": {
             "$ref": "#/components/schemas/BetaCapabilitySupport",
-            "description": "Whether the model supports thinking with type 'adaptive' (auto)."
+            "description": "Whether the model accepts thinking with type 'adaptive' (the model decides whether and how much to think)."
+          },
+          "between_tools": {
+            "$ref": "#/components/schemas/BetaCapabilitySupport",
+            "description": "Whether the model accepts thinking with type 'between_tools' (thinking turned off, and any short progress updates the model writes between tool calls come back as thinking blocks). False exactly when a request that sends it gets a 400 from this model. A request that sends 'between_tools' can still be rejected for another reason, such as an effort level the model does not allow with thinking off."
+          },
+          "disabled": {
+            "$ref": "#/components/schemas/BetaCapabilitySupport",
+            "description": "Whether the model accepts thinking with type 'disabled' (thinking turned off). False exactly when a request that sends it gets a 400 from this model. True on a model that does not support thinking. A request that sends 'disabled' can still be rejected for another reason, such as an effort level the model does not allow with thinking off."
           },
           "enabled": {
             "$ref": "#/components/schemas/BetaCapabilitySupport",
-            "description": "Whether the model supports thinking with type 'enabled'."
+            "description": "Whether the model accepts thinking with type 'enabled' (extended thinking with a caller-set `budget_tokens`)."
           }
         },
         "required": [
           "adaptive",
+          "between_tools",
+          "disabled",
           "enabled"
         ],
         "title": "ThinkingTypes",
