@@ -1,0 +1,1493 @@
+{
+  "description": "Query the organization's detailed usage for a required time range.\n\nOptional filters, caller-selected grouping and time buckets, pagination, aggregates, and distinct API-call counts\nare supported. The response contains usage quantities only; it does not include prices, currency, or calculated\ncosts. For a fixed monthly report with pricing, use `GET /v1/admin/usage`.",
+  "operationId": "users_api_admin_usage_query_usage",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/UsageQueryIN"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/UsageQueryOUT"
+          }
+        }
+      },
+      "description": "Successful Response"
+    },
+    "422": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/HTTPValidationError"
+          }
+        }
+      },
+      "description": "Validation Error"
+    }
+  },
+  "security": [
+    {
+      "AdminApiKey": []
+    }
+  ],
+  "summary": "Detailed Usage Query",
+  "tags": [
+    "beta.admin.billing"
+  ],
+  "components": {
+    "schemas": {
+      "UsageQueryIN": {
+        "properties": {
+          "api_key_id": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "API key IDs to include.",
+            "examples": [
+              [
+                "b40f2e87-24f1-42ed-b196-f5e79203f989"
+              ]
+            ],
+            "title": "Api Key Id"
+          },
+          "api_zone": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Inference regions to include.",
+            "examples": [
+              [
+                "us",
+                "eu"
+              ]
+            ],
+            "title": "Api Zone"
+          },
+          "billing_display_name": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Customer-facing billing metric names to include.",
+            "examples": [
+              [
+                "mistral-large-latest"
+              ]
+            ],
+            "title": "Billing Display Name"
+          },
+          "billing_group": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Billing metric components to include.",
+            "examples": [
+              [
+                "input",
+                "output"
+              ]
+            ],
+            "title": "Billing Group"
+          },
+          "billing_metric": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Billing metric identifiers to include.",
+            "examples": [
+              [
+                "mistral-large"
+              ]
+            ],
+            "title": "Billing Metric"
+          },
+          "end": {
+            "description": "Exclusive end of the usage interval.",
+            "examples": [
+              "2026-09-01T00:00:00Z"
+            ],
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "filters": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AdminUsageQueryFilter"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Additional inclusion or exclusion filters applied alongside the dimension fields.",
+            "examples": [
+              [
+                {
+                  "field": "billing_display_name",
+                  "operator": "is_not",
+                  "values": [
+                    "mistral-small-latest"
+                  ]
+                }
+              ]
+            ],
+            "title": "Filters"
+          },
+          "group_by": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "api_zone",
+                    "service_tier",
+                    "customer_id",
+                    "usage_type",
+                    "billing_metric",
+                    "billing_group",
+                    "billing_display_name",
+                    "workspace_id",
+                    "organization_id",
+                    "user_id",
+                    "service_account_id",
+                    "api_key_id",
+                    "untracked",
+                    "call_source",
+                    "call_type",
+                    "customer_tier"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Dimensions used to group the returned usage rows.",
+            "examples": [
+              [
+                "usage_type",
+                "billing_metric",
+                "billing_group"
+              ]
+            ],
+            "title": "Group By"
+          },
+          "include_aggregates": {
+            "default": false,
+            "description": "Return aggregates computed over the complete filtered result set.",
+            "examples": [
+              true
+            ],
+            "title": "Include Aggregates",
+            "type": "boolean"
+          },
+          "include_nb_api_calls": {
+            "default": false,
+            "description": "Include the number of distinct API calls in grouped rows and aggregates.",
+            "examples": [
+              true
+            ],
+            "title": "Include Nb Api Calls",
+            "type": "boolean"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "maximum": 50000,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Maximum number of grouped rows to return.",
+            "examples": [
+              1000
+            ],
+            "title": "Limit"
+          },
+          "offset": {
+            "anyOf": [
+              {
+                "maximum": 100000,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of grouped rows to skip.",
+            "examples": [
+              0
+            ],
+            "title": "Offset"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Organization IDs to include within the authenticated customer.",
+            "examples": [
+              [
+                "82e9b991-90ed-4c5f-b8b4-b69141d41c84"
+              ]
+            ],
+            "title": "Organization Id"
+          },
+          "service_account_id": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Service account IDs to include.",
+            "examples": [
+              [
+                "3d77300f-67db-498b-98d2-e751635b4fcb"
+              ]
+            ],
+            "title": "Service Account Id"
+          },
+          "service_tier": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Service tiers to include.",
+            "examples": [
+              [
+                "standard",
+                "priority"
+              ]
+            ],
+            "title": "Service Tier"
+          },
+          "start": {
+            "description": "Inclusive start of the usage interval.",
+            "examples": [
+              "2026-08-01T00:00:00Z"
+            ],
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          },
+          "time_bucket": {
+            "anyOf": [
+              {
+                "enum": [
+                  "second",
+                  "1min",
+                  "5min",
+                  "15min",
+                  "30min",
+                  "hour",
+                  "4hours",
+                  "day",
+                  "week",
+                  "month"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Time interval used to bucket grouped rows.",
+            "examples": [
+              "day"
+            ],
+            "title": "Time Bucket"
+          },
+          "untracked": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Filter by attribution status. Omit or use null to include both tracked and untracked usage.",
+            "examples": [
+              false
+            ],
+            "title": "Untracked"
+          },
+          "usage_type": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/UsageType"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Usage event types to include.",
+            "examples": [
+              [
+                "usage",
+                "ocr"
+              ]
+            ],
+            "title": "Usage Type"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "User IDs to include.",
+            "examples": [
+              [
+                "7f8c8b54-bf28-470e-97ef-18d40d37e537"
+              ]
+            ],
+            "title": "User Id"
+          },
+          "workspace_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Workspace IDs to include. Use null to include usage without a workspace.",
+            "examples": [
+              [
+                "8b1f9229-42c0-4511-9d54-5f860f04d17a",
+                null
+              ]
+            ],
+            "title": "Workspace Ids"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "UsageQueryIN",
+        "type": "object"
+      },
+      "UsageQueryOUT": {
+        "properties": {
+          "aggregates": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UsageQueryAggregatesOUT"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Aggregates over the complete filtered result set when requested.",
+            "examples": [
+              {
+                "customer_count": 1,
+                "total_api_calls": 10,
+                "total_count": 12,
+                "total_value": 1500,
+                "usage_type_count": 2
+              }
+            ]
+          },
+          "groups": {
+            "description": "Grouped usage rows.",
+            "examples": [
+              []
+            ],
+            "items": {
+              "$ref": "#/components/schemas/UsageQueryRowOUT"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/UsageQueryMetadataOUT",
+            "description": "Query parameters and pagination metadata.",
+            "examples": [
+              {
+                "has_more": false,
+                "query_params": {
+                  "end": "2026-09-01T00:00:00Z",
+                  "start": "2026-08-01T00:00:00Z"
+                }
+              }
+            ]
+          }
+        },
+        "required": [
+          "groups",
+          "metadata"
+        ],
+        "title": "UsageQueryOUT",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "AdminUsageQueryFilter": {
+        "properties": {
+          "field": {
+            "description": "Usage dimension to filter.",
+            "enum": [
+              "usage_type",
+              "billing_metric",
+              "billing_display_name",
+              "billing_group",
+              "workspace_id",
+              "organization_id",
+              "user_id",
+              "service_account_id",
+              "api_key_id",
+              "api_zone",
+              "service_tier"
+            ],
+            "examples": [
+              "billing_metric"
+            ],
+            "title": "Field",
+            "type": "string"
+          },
+          "operator": {
+            "description": "Whether rows must match or must not match the supplied values.",
+            "enum": [
+              "is",
+              "is_not"
+            ],
+            "examples": [
+              "is"
+            ],
+            "title": "Operator",
+            "type": "string"
+          },
+          "values": {
+            "description": "Accepted or excluded values. Use null to filter missing dimension values.",
+            "examples": [
+              [
+                "mistral-large-latest"
+              ]
+            ],
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "minItems": 1,
+            "title": "Values",
+            "type": "array"
+          }
+        },
+        "required": [
+          "field",
+          "operator",
+          "values"
+        ],
+        "title": "AdminUsageQueryFilter",
+        "type": "object"
+      },
+      "UsageType": {
+        "description": "The UsageType maps a recorded usage to a billable metric in Lago.\n\nFor example `UsageType.COMPLETION` maps to `api_tokens` in Lago. A new UsageType is billed only once it is added to\n`USAGE_TYPE_TO_LAGO_EVENT_TYPE_MAP` in kazekit.usage, which the job reporting the usage relies on. Types left out of\nit, such as `WORKFLOW_EXECUTIONS`, are recorded but not reported to Lago.",
+        "enum": [
+          "usage",
+          "codestral",
+          "document_library",
+          "document_library_api",
+          "libraries_pages",
+          "libraries_tokens",
+          "libraries_audio",
+          "chat",
+          "rlhf",
+          "ocr",
+          "audio_seconds",
+          "audio_characters",
+          "audio_agents",
+          "connectors",
+          "workflow_executions",
+          "vibe",
+          "vibe_connectors",
+          "vibe_ocr",
+          "vibe_audio_seconds",
+          "vibe_audio_characters"
+        ],
+        "title": "UsageType",
+        "type": "string"
+      },
+      "UsageQueryAggregatesOUT": {
+        "properties": {
+          "customer_count": {
+            "description": "Number of matching customers.",
+            "examples": [
+              1
+            ],
+            "title": "Customer Count",
+            "type": "integer"
+          },
+          "total_api_calls": {
+            "description": "Total number of distinct API calls.",
+            "examples": [
+              10
+            ],
+            "title": "Total Api Calls",
+            "type": "integer"
+          },
+          "total_count": {
+            "description": "Total number of matching usage records.",
+            "examples": [
+              12
+            ],
+            "title": "Total Count",
+            "type": "integer"
+          },
+          "total_value": {
+            "description": "Total usage value across all matching rows.",
+            "examples": [
+              1500
+            ],
+            "title": "Total Value",
+            "type": "number"
+          },
+          "usage_type_count": {
+            "description": "Number of matching usage types.",
+            "examples": [
+              2
+            ],
+            "title": "Usage Type Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_value",
+          "total_count",
+          "total_api_calls",
+          "customer_count",
+          "usage_type_count"
+        ],
+        "title": "UsageQueryAggregatesOUT",
+        "type": "object"
+      },
+      "UsageQueryRowOUT": {
+        "properties": {
+          "api_key_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "API key ID.",
+            "examples": [
+              "api-key-id"
+            ],
+            "title": "Api Key Id"
+          },
+          "api_zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Inference region.",
+            "examples": [
+              "us"
+            ],
+            "title": "Api Zone"
+          },
+          "billing_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Customer-facing billing metric name.",
+            "examples": [
+              "mistral-large-latest"
+            ],
+            "title": "Billing Display Name"
+          },
+          "billing_group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Billing metric component.",
+            "examples": [
+              "input"
+            ],
+            "title": "Billing Group"
+          },
+          "billing_metric": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Billing metric identifier.",
+            "examples": [
+              "mistral-large"
+            ],
+            "title": "Billing Metric"
+          },
+          "call_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Product source of the call.",
+            "examples": [
+              "api"
+            ],
+            "title": "Call Source"
+          },
+          "call_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Type of call within its source.",
+            "examples": [
+              "completion"
+            ],
+            "title": "Call Type"
+          },
+          "count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of usage records in this row.",
+            "examples": [
+              12
+            ],
+            "title": "Count"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Customer ID for this row.",
+            "examples": [
+              "customer-id"
+            ],
+            "title": "Customer Id"
+          },
+          "customer_tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Customer tier.",
+            "examples": [
+              "enterprise"
+            ],
+            "title": "Customer Tier"
+          },
+          "nb_api_calls": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct API calls.",
+            "examples": [
+              10
+            ],
+            "title": "Nb Api Calls"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Organization ID.",
+            "examples": [
+              "organization-id"
+            ],
+            "title": "Organization Id"
+          },
+          "service_account_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Service account ID.",
+            "examples": [
+              "service-account-id"
+            ],
+            "title": "Service Account Id"
+          },
+          "service_tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Service tier.",
+            "examples": [
+              "standard"
+            ],
+            "title": "Service Tier"
+          },
+          "time_bucket": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Start of the UTC time bucket, expressed using the request start timestamp's UTC offset.",
+            "examples": [
+              "2026-08-01T00:00:00Z"
+            ],
+            "title": "Time Bucket"
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Timestamp of an unbucketed usage row, expressed using the request start timestamp's UTC offset.",
+            "examples": [
+              "2026-08-01T12:00:00Z"
+            ],
+            "title": "Timestamp"
+          },
+          "untracked": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Whether attribution was unavailable.",
+            "examples": [
+              false
+            ],
+            "title": "Untracked"
+          },
+          "usage_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Usage event type.",
+            "examples": [
+              "usage"
+            ],
+            "title": "Usage Type"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "User ID.",
+            "examples": [
+              "user-id"
+            ],
+            "title": "User Id"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Total usage value for this row.",
+            "examples": [
+              1500
+            ],
+            "title": "Value"
+          },
+          "workspace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Workspace ID.",
+            "examples": [
+              "workspace-id"
+            ],
+            "title": "Workspace Id"
+          }
+        },
+        "title": "UsageQueryRowOUT",
+        "type": "object"
+      },
+      "UsageQueryMetadataOUT": {
+        "properties": {
+          "has_more": {
+            "description": "Whether another page of grouped rows is available.",
+            "examples": [
+              false
+            ],
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "query_params": {
+            "$ref": "#/components/schemas/UsageQueryParamsOUT",
+            "description": "Normalized parameters used by the usage service.",
+            "examples": [
+              {
+                "end": "2026-09-01T00:00:00Z",
+                "start": "2026-08-01T00:00:00Z"
+              }
+            ]
+          }
+        },
+        "required": [
+          "query_params",
+          "has_more"
+        ],
+        "title": "UsageQueryMetadataOUT",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "UsageQueryParamsOUT": {
+        "properties": {
+          "api_key_id": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "API key IDs to include.",
+            "examples": [
+              [
+                "b40f2e87-24f1-42ed-b196-f5e79203f989"
+              ]
+            ],
+            "title": "Api Key Id"
+          },
+          "api_zone": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Inference regions to include.",
+            "examples": [
+              [
+                "us",
+                "eu"
+              ]
+            ],
+            "title": "Api Zone"
+          },
+          "billing_display_name": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Customer-facing billing metric names to include.",
+            "examples": [
+              [
+                "mistral-large-latest"
+              ]
+            ],
+            "title": "Billing Display Name"
+          },
+          "billing_group": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Billing metric components to include.",
+            "examples": [
+              [
+                "input",
+                "output"
+              ]
+            ],
+            "title": "Billing Group"
+          },
+          "billing_metric": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Billing metric identifiers to include.",
+            "examples": [
+              [
+                "mistral-large"
+              ]
+            ],
+            "title": "Billing Metric"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Customer scope derived from the authenticated Admin API key.",
+            "examples": [
+              "69bc23d6-4db3-47ad-9cce-bda1b24509f2"
+            ],
+            "title": "Customer Id"
+          },
+          "end": {
+            "description": "Exclusive end of the queried interval.",
+            "examples": [
+              "2026-09-01T00:00:00Z"
+            ],
+            "format": "date-time",
+            "title": "End",
+            "type": "string"
+          },
+          "filters": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AdminUsageQueryFilter"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Additional inclusion or exclusion filters applied to the query.",
+            "examples": [
+              [
+                {
+                  "field": "billing_metric",
+                  "operator": "is",
+                  "values": [
+                    "mistral-large"
+                  ]
+                }
+              ]
+            ],
+            "title": "Filters"
+          },
+          "group_by": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "api_zone",
+                    "service_tier",
+                    "customer_id",
+                    "usage_type",
+                    "billing_metric",
+                    "billing_group",
+                    "billing_display_name",
+                    "workspace_id",
+                    "organization_id",
+                    "user_id",
+                    "service_account_id",
+                    "api_key_id",
+                    "untracked",
+                    "call_source",
+                    "call_type",
+                    "customer_tier"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Dimensions used to group the returned usage rows.",
+            "examples": [
+              [
+                "usage_type",
+                "billing_metric"
+              ]
+            ],
+            "title": "Group By"
+          },
+          "include_nb_api_calls": {
+            "default": false,
+            "description": "Whether distinct API-call counts were requested.",
+            "examples": [
+              true
+            ],
+            "title": "Include Nb Api Calls",
+            "type": "boolean"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Applied row limit.",
+            "examples": [
+              1000
+            ],
+            "title": "Limit"
+          },
+          "offset": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Applied row offset.",
+            "examples": [
+              0
+            ],
+            "title": "Offset"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Organization IDs to include within the authenticated customer.",
+            "examples": [
+              [
+                "82e9b991-90ed-4c5f-b8b4-b69141d41c84"
+              ]
+            ],
+            "title": "Organization Id"
+          },
+          "service_account_id": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Service account IDs to include.",
+            "examples": [
+              [
+                "3d77300f-67db-498b-98d2-e751635b4fcb"
+              ]
+            ],
+            "title": "Service Account Id"
+          },
+          "service_tier": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Service tiers to include.",
+            "examples": [
+              [
+                "standard",
+                "priority"
+              ]
+            ],
+            "title": "Service Tier"
+          },
+          "start": {
+            "description": "Inclusive start of the queried interval.",
+            "examples": [
+              "2026-08-01T00:00:00Z"
+            ],
+            "format": "date-time",
+            "title": "Start",
+            "type": "string"
+          },
+          "time_bucket": {
+            "anyOf": [
+              {
+                "enum": [
+                  "second",
+                  "1min",
+                  "5min",
+                  "15min",
+                  "30min",
+                  "hour",
+                  "4hours",
+                  "day",
+                  "week",
+                  "month"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Time interval used to bucket grouped rows.",
+            "examples": [
+              "day"
+            ],
+            "title": "Time Bucket"
+          },
+          "untracked": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Applied attribution filter.",
+            "examples": [
+              false
+            ],
+            "title": "Untracked"
+          },
+          "usage_type": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/UsageType"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Usage event types to include.",
+            "examples": [
+              [
+                "usage",
+                "ocr"
+              ]
+            ],
+            "title": "Usage Type"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "User IDs to include.",
+            "examples": [
+              [
+                "7f8c8b54-bf28-470e-97ef-18d40d37e537"
+              ]
+            ],
+            "title": "User Id"
+          },
+          "workspace_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Workspace IDs to include. Use null to include usage without a workspace.",
+            "examples": [
+              [
+                "8b1f9229-42c0-4511-9d54-5f860f04d17a",
+                null
+              ]
+            ],
+            "title": "Workspace Ids"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ],
+        "title": "UsageQueryParamsOUT",
+        "type": "object"
+      }
+    }
+  }
+}

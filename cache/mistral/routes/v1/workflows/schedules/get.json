@@ -1,5 +1,122 @@
 {
+  "description": "Get Schedules",
   "operationId": "get_schedules_v1_workflows_schedules_get",
+  "parameters": [
+    {
+      "description": "Filter by exact workflow name",
+      "in": "query",
+      "name": "workflow_name",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter by exact workflow name",
+        "title": "Workflow Name"
+      }
+    },
+    {
+      "description": "Filter by user ID. Pass 'current' to resolve to the authenticated user's ID.",
+      "in": "query",
+      "name": "user_id",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter by user ID. Pass 'current' to resolve to the authenticated user's ID.",
+        "title": "User Id"
+      }
+    },
+    {
+      "description": "Filter by schedule status: 'active' or 'paused'",
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "enum": [
+              "active",
+              "paused"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter by schedule status: 'active' or 'paused'",
+        "title": "Status"
+      }
+    },
+    {
+      "description": "Prefix search query for workflow name",
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Prefix search query for workflow name",
+        "title": "Search"
+      }
+    },
+    {
+      "description": "Number of items per page. Omitting this parameter fetches all results at once (deprecated — pass page_size to use pagination).",
+      "in": "query",
+      "name": "page_size",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Number of items per page. Omitting this parameter fetches all results at once (deprecated — pass page_size to use pagination).",
+        "title": "Page Size"
+      }
+    },
+    {
+      "description": "Token for the next page of results",
+      "in": "query",
+      "name": "next_page_token",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Token for the next page of results",
+        "title": "Next Page Token"
+      }
+    }
+  ],
   "responses": {
     "200": {
       "content": {
@@ -10,16 +127,38 @@
         }
       },
       "description": "Successful Response"
+    },
+    "422": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/HTTPValidationError"
+          }
+        }
+      },
+      "description": "Validation Error"
     }
   },
   "summary": "Get Schedules",
   "tags": [
-    "beta.workflows.schedules"
+    "workflows.schedules"
   ],
   "components": {
     "schemas": {
       "WorkflowScheduleListResponse": {
         "properties": {
+          "next_page_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Token for the next page of results",
+            "title": "Next Page Token"
+          },
           "schedules": {
             "description": "A list of workflow schedules",
             "items": {
@@ -33,6 +172,19 @@
           "schedules"
         ],
         "title": "WorkflowScheduleListResponse",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
         "type": "object"
       },
       "ScheduleDefinitionOutput": {
@@ -54,6 +206,18 @@
             "title": "Cron Expressions",
             "type": "array"
           },
+          "deployment_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Name of the deployment this schedule targets.",
+            "title": "Deployment Name"
+          },
           "end_at": {
             "anyOf": [
               {
@@ -66,6 +230,14 @@
             ],
             "description": "Time after which no more actions will be run.",
             "title": "End At"
+          },
+          "future_executions": {
+            "description": "Upcoming scheduled executions (10 next executions, earliest first).",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleFutureExecution"
+            },
+            "title": "Future Executions",
+            "type": "array"
           },
           "input": {
             "description": "Input to provide to the workflow when starting it.",
@@ -92,9 +264,46 @@
             "description": "Jitter to apply each action.\n\nAn action's scheduled time will be incremented by a random value between 0\nand this value if present (but not past the next schedule).\n",
             "title": "Jitter"
           },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Human-readable note associated with the current pause or resume state.",
+            "title": "Note"
+          },
+          "paused": {
+            "description": "Whether the schedule is currently paused.",
+            "title": "Paused",
+            "type": "boolean"
+          },
           "policy": {
             "$ref": "#/components/schemas/SchedulePolicy",
             "description": "Policy for the schedule."
+          },
+          "recent_executions": {
+            "description": "Most recent scheduled executions (10 most recent, newest last).",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleRecentExecution"
+            },
+            "title": "Recent Executions",
+            "type": "array"
+          },
+          "remaining_executions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Remaining workflow executions before this schedule stops triggering automatically. null means unlimited; 0 means the limit has been reached and the schedule is exhausted.",
+            "title": "Remaining Executions"
           },
           "schedule_id": {
             "description": "Unique identifier for the schedule.",
@@ -133,13 +342,60 @@
             ],
             "description": "IANA time zone name, for example ``US/Central``.",
             "title": "Time Zone Name"
+          },
+          "workflow_name": {
+            "description": "Name of the workflow this schedule triggers.",
+            "title": "Workflow Name",
+            "type": "string"
           }
         },
         "required": [
           "input",
-          "schedule_id"
+          "schedule_id",
+          "workflow_name",
+          "paused"
         ],
         "title": "ScheduleDefinitionOutput",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
         "type": "object"
       },
       "ScheduleCalendar": {
@@ -251,6 +507,21 @@
         "title": "ScheduleCalendar",
         "type": "object"
       },
+      "ScheduleFutureExecution": {
+        "properties": {
+          "scheduled_at": {
+            "description": "Time the execution is scheduled to run.",
+            "format": "date-time",
+            "title": "Scheduled At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scheduled_at"
+        ],
+        "title": "ScheduleFutureExecution",
+        "type": "object"
+      },
       "ScheduleInterval": {
         "properties": {
           "every": {
@@ -298,6 +569,34 @@
           }
         },
         "title": "SchedulePolicy",
+        "type": "object"
+      },
+      "ScheduleRecentExecution": {
+        "properties": {
+          "execution_id": {
+            "description": "ID of the workflow execution that was started.",
+            "title": "Execution Id",
+            "type": "string"
+          },
+          "scheduled_at": {
+            "description": "Time the execution was scheduled to run.",
+            "format": "date-time",
+            "title": "Scheduled At",
+            "type": "string"
+          },
+          "started_at": {
+            "description": "Actual time the execution started.",
+            "format": "date-time",
+            "title": "Started At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scheduled_at",
+          "started_at",
+          "execution_id"
+        ],
+        "title": "ScheduleRecentExecution",
         "type": "object"
       },
       "ScheduleRange": {

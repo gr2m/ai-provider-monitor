@@ -1,4 +1,5 @@
 {
+  "deprecated": true,
   "description": "Call a tool on an MCP connector.",
   "operationId": "connector_call_tool_v1",
   "parameters": [
@@ -9,6 +10,23 @@
       "schema": {
         "title": "Tool Name",
         "type": "string"
+      }
+    },
+    {
+      "in": "path",
+      "name": "connector_id_or_name",
+      "required": true,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "title": "Connector Id Or Name"
       }
     },
     {
@@ -27,22 +45,13 @@
         ],
         "title": "Credentials Name"
       }
-    },
-    {
-      "in": "path",
-      "name": "connector_id_or_name",
-      "required": true,
-      "schema": {
-        "title": "Connector Id Or Name",
-        "type": "string"
-      }
     }
   ],
   "requestBody": {
     "content": {
       "application/json": {
         "schema": {
-          "$ref": "#/components/schemas/MCPToolCallRequest"
+          "$ref": "#/components/schemas/ConnectorCallToolRequest"
         }
       }
     },
@@ -53,7 +62,7 @@
       "content": {
         "application/json": {
           "schema": {
-            "$ref": "#/components/schemas/MCPToolCallResponse"
+            "$ref": "#/components/schemas/ConnectorToolCallResponse"
           }
         }
       },
@@ -76,7 +85,7 @@
   ],
   "components": {
     "schemas": {
-      "MCPToolCallRequest": {
+      "ConnectorCallToolRequest": {
         "description": "Request body for calling an MCP tool.",
         "properties": {
           "arguments": {
@@ -85,16 +94,26 @@
             "type": "object"
           }
         },
-        "title": "MCPToolCallRequest",
+        "title": "ConnectorCallToolRequest",
         "type": "object"
       },
-      "MCPToolCallResponse": {
+      "ConnectorToolCallResponse": {
         "additionalProperties": true,
         "description": "Response from calling an MCP tool.\n\nWe override mcp_types.CallToolResult because:\n- Models only support `content`, not `structuredContent` at top level\n- Downstream consumers (le-chat, etc.) need structuredContent/isError/_meta via metadata\n\nSYNC: Keep in sync with Harmattan (orchestrator) for harmonized tool result processing.",
         "properties": {
           "content": {
             "items": {
-              "anyOf": [
+              "discriminator": {
+                "mapping": {
+                  "audio": "#/components/schemas/AudioContent",
+                  "image": "#/components/schemas/ImageContent",
+                  "resource": "#/components/schemas/EmbeddedResource",
+                  "resource_link": "#/components/schemas/ResourceLink",
+                  "text": "#/components/schemas/TextContent"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
                 {
                   "$ref": "#/components/schemas/TextContent"
                 },
@@ -118,7 +137,7 @@
           "metadata": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/MCPToolCallMetadata"
+                "$ref": "#/components/schemas/ConnectorToolCallMetadata"
               },
               {
                 "type": "null"
@@ -129,7 +148,7 @@
         "required": [
           "content"
         ],
-        "title": "MCPToolCallResponse",
+        "title": "ConnectorToolCallResponse",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -146,8 +165,7 @@
         "type": "object"
       },
       "TextContent": {
-        "additionalProperties": true,
-        "description": "Text content for a message.",
+        "description": "Text provided to or from an LLM.",
         "properties": {
           "_meta": {
             "anyOf": [
@@ -177,20 +195,19 @@
           },
           "type": {
             "const": "text",
+            "default": "text",
             "title": "Type",
             "type": "string"
           }
         },
         "required": [
-          "type",
           "text"
         ],
         "title": "TextContent",
         "type": "object"
       },
       "ImageContent": {
-        "additionalProperties": true,
-        "description": "Image content for a message.",
+        "description": "An image provided to or from an LLM.",
         "properties": {
           "_meta": {
             "anyOf": [
@@ -224,12 +241,12 @@
           },
           "type": {
             "const": "image",
+            "default": "image",
             "title": "Type",
             "type": "string"
           }
         },
         "required": [
-          "type",
           "data",
           "mimeType"
         ],
@@ -237,8 +254,7 @@
         "type": "object"
       },
       "AudioContent": {
-        "additionalProperties": true,
-        "description": "Audio content for a message.",
+        "description": "Audio provided to or from an LLM.",
         "properties": {
           "_meta": {
             "anyOf": [
@@ -272,12 +288,12 @@
           },
           "type": {
             "const": "audio",
+            "default": "audio",
             "title": "Type",
             "type": "string"
           }
         },
         "required": [
-          "type",
           "data",
           "mimeType"
         ],
@@ -285,7 +301,6 @@
         "type": "object"
       },
       "ResourceLink": {
-        "additionalProperties": true,
         "description": "A resource that the server is capable of reading, included in a prompt or tool call result.\n\nNote: resource links returned by tools are not guaranteed to appear in the results of `resources/list` requests.",
         "properties": {
           "_meta": {
@@ -374,26 +389,23 @@
           },
           "type": {
             "const": "resource_link",
+            "default": "resource_link",
             "title": "Type",
             "type": "string"
           },
           "uri": {
-            "format": "uri",
-            "minLength": 1,
             "title": "Uri",
             "type": "string"
           }
         },
         "required": [
           "name",
-          "uri",
-          "type"
+          "uri"
         ],
         "title": "ResourceLink",
         "type": "object"
       },
       "EmbeddedResource": {
-        "additionalProperties": true,
         "description": "The contents of a resource, embedded into a prompt or tool call result.\n\nIt is up to the client how best to render embedded resources for the benefit\nof the LLM and/or the user.",
         "properties": {
           "_meta": {
@@ -431,25 +443,25 @@
           },
           "type": {
             "const": "resource",
+            "default": "resource",
             "title": "Type",
             "type": "string"
           }
         },
         "required": [
-          "type",
           "resource"
         ],
         "title": "EmbeddedResource",
         "type": "object"
       },
-      "MCPToolCallMetadata": {
+      "ConnectorToolCallMetadata": {
         "additionalProperties": true,
         "description": "Metadata wrapper for MCP tool call responses.\n\nNests MCP-specific fields under `mcp_meta` to avoid collisions with other\nmetadata keys (e.g. `tool_call_result`) in Harmattan's streaming deltas.",
         "properties": {
           "mcp_meta": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/MCPResultMetadata"
+                "$ref": "#/components/schemas/ConnectorToolResultMetadata"
               },
               {
                 "type": "null"
@@ -457,7 +469,7 @@
             ]
           }
         },
-        "title": "MCPToolCallMetadata",
+        "title": "ConnectorToolCallMetadata",
         "type": "object"
       },
       "ValidationError": {
@@ -501,7 +513,7 @@
         "type": "object"
       },
       "Annotations": {
-        "additionalProperties": true,
+        "description": "Optional annotations the client can use to inform how objects are used or displayed.",
         "properties": {
           "audience": {
             "anyOf": [
@@ -521,6 +533,17 @@
             ],
             "title": "Audience"
           },
+          "lastModified": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastmodified"
+          },
           "priority": {
             "anyOf": [
               {
@@ -539,8 +562,7 @@
         "type": "object"
       },
       "MCPServerIcon": {
-        "additionalProperties": true,
-        "description": "An icon for display in user interfaces.",
+        "description": "An optionally-sized icon for display in a user interface (2025-11-25+).",
         "properties": {
           "mimeType": {
             "anyOf": [
@@ -570,6 +592,21 @@
           "src": {
             "title": "Src",
             "type": "string"
+          },
+          "theme": {
+            "anyOf": [
+              {
+                "enum": [
+                  "light",
+                  "dark"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Theme"
           }
         },
         "required": [
@@ -579,7 +616,6 @@
         "type": "object"
       },
       "TextResourceContents": {
-        "additionalProperties": true,
         "description": "Text contents of a resource.",
         "properties": {
           "_meta": {
@@ -610,8 +646,6 @@
             "type": "string"
           },
           "uri": {
-            "format": "uri",
-            "minLength": 1,
             "title": "Uri",
             "type": "string"
           }
@@ -624,7 +658,6 @@
         "type": "object"
       },
       "BlobResourceContents": {
-        "additionalProperties": true,
         "description": "Binary contents of a resource.",
         "properties": {
           "_meta": {
@@ -655,8 +688,6 @@
             "title": "Mimetype"
           },
           "uri": {
-            "format": "uri",
-            "minLength": 1,
             "title": "Uri",
             "type": "string"
           }
@@ -668,7 +699,7 @@
         "title": "BlobResourceContents",
         "type": "object"
       },
-      "MCPResultMetadata": {
+      "ConnectorToolResultMetadata": {
         "additionalProperties": true,
         "description": "MCP-specific result metadata (isError, structuredContent, _meta).",
         "properties": {
@@ -702,7 +733,7 @@
             "title": "Structuredcontent"
           }
         },
-        "title": "MCPResultMetadata",
+        "title": "ConnectorToolResultMetadata",
         "type": "object"
       }
     }

@@ -138,7 +138,6 @@
                 "type": "null"
               }
             ],
-            "description": "A cache key to enable prompt caching. When provided, the API will attempt to reuse previously computed tokens for requests sharing the same prefix (e.g. multi-turn conversations or requests with a similar system prompt). Cached tokens are billed at 10% of the standard input token price.",
             "title": "Prompt Cache Key"
           },
           "random_seed": {
@@ -164,6 +163,9 @@
                   "type": "string"
                 },
                 "type": "array"
+              },
+              {
+                "type": "null"
               }
             ],
             "description": "Stop generation if this token is detected. Or if one of these tokens is detected when providing an array",
@@ -206,12 +208,18 @@
             "title": "Temperature"
           },
           "top_p": {
-            "default": 1,
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "maximum": 1,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "Nucleus sampling, where the model considers the results of the tokens with `top_p` probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or `temperature` but not both.",
-            "maximum": 1,
-            "minimum": 0,
-            "title": "Top P",
-            "type": "number"
+            "title": "Top P"
           }
         },
         "required": [
@@ -396,14 +404,39 @@
             "example": 0,
             "type": "integer"
           },
+          "logprobs": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompletionResponseChoiceLogprobs"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "message": {
             "$ref": "#/components/schemas/AssistantMessage"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/DeltaMessage"
+            },
+            "type": "array"
+          },
+          "prompt_logprobs": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompletionResponseChoiceLogprobs"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "index",
-          "finish_reason",
-          "message"
+          "finish_reason"
         ],
         "title": "ChatCompletionChoice",
         "type": "object"
@@ -428,6 +461,26 @@
           },
           "index": {
             "type": "integer"
+          },
+          "logprobs": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompletionResponseChoiceLogprobs"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prompt_logprobs": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompletionResponseChoiceLogprobs"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -446,17 +499,6 @@
             "title": "Completion Tokens",
             "type": "integer"
           },
-          "num_cached_tokens": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Num Cached Tokens"
-          },
           "prompt_audio_seconds": {
             "anyOf": [
               {
@@ -468,30 +510,22 @@
             ],
             "title": "Prompt Audio Seconds"
           },
-          "prompt_token_details": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PromptTokensDetails"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "prompt_tokens": {
             "default": 0,
             "title": "Prompt Tokens",
             "type": "integer"
           },
-          "prompt_tokens_details": {
+          "service_tier": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/PromptTokensDetails"
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The service tier at which the request was processed: standard or priority.",
+            "title": "Service Tier"
           },
           "total_tokens": {
             "default": 0,
@@ -526,6 +560,21 @@
           }
         },
         "title": "ResponseBase",
+        "type": "object"
+      },
+      "ChatCompletionResponseChoiceLogprobs": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionResponseTokenLogprobsTopK"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "title": "ChatCompletionResponseChoiceLogprobs",
         "type": "object"
       },
       "AssistantMessage": {
@@ -596,7 +645,40 @@
               }
             ]
           },
+          "index": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "If the completion returns multiple messages, this is to specify which message this delta is for."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tool_call_id": {
             "anyOf": [
               {
                 "type": "string"
@@ -623,17 +705,44 @@
         "title": "DeltaMessage",
         "type": "object"
       },
-      "PromptTokensDetails": {
-        "additionalProperties": false,
-        "description": "Token usage details for the prompt.",
+      "ChatCompletionResponseTokenLogprobsTopK": {
         "properties": {
-          "cached_tokens": {
-            "default": 0,
-            "title": "Cached Tokens",
+          "bytes": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "logprob": {
+            "type": "number"
+          },
+          "token": {
+            "type": "string"
+          },
+          "token_id": {
             "type": "integer"
+          },
+          "top_logprobs": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChatCompletionResponseTokenLogprobs"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
-        "title": "PromptTokensDetails",
+        "required": [
+          "token",
+          "logprob",
+          "bytes",
+          "token_id"
+        ],
+        "title": "ChatCompletionResponseTokenLogprobsTopK",
         "type": "object"
       },
       "ContentChunk": {
@@ -644,6 +753,8 @@
             "image_url": "#/components/schemas/ImageURLChunk",
             "input_audio": "#/components/schemas/AudioChunk",
             "reference": "#/components/schemas/ReferenceChunk",
+            "resource": "#/components/schemas/ResourceChunk",
+            "resource_link": "#/components/schemas/ResourceLinkChunk",
             "text": "#/components/schemas/TextChunk",
             "thinking": "#/components/schemas/ThinkChunk"
           },
@@ -670,6 +781,12 @@
           },
           {
             "$ref": "#/components/schemas/AudioChunk"
+          },
+          {
+            "$ref": "#/components/schemas/ResourceChunk"
+          },
+          {
+            "$ref": "#/components/schemas/ResourceLinkChunk"
           }
         ],
         "title": "ContentChunk"
@@ -701,6 +818,33 @@
         "title": "ToolCall",
         "type": "object"
       },
+      "ChatCompletionResponseTokenLogprobs": {
+        "properties": {
+          "bytes": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "logprob": {
+            "type": "number"
+          },
+          "token": {
+            "type": "string"
+          },
+          "token_id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "token",
+          "logprob",
+          "bytes",
+          "token_id"
+        ],
+        "title": "ChatCompletionResponseTokenLogprobs",
+        "type": "object"
+      },
       "TextChunk": {
         "additionalProperties": false,
         "properties": {
@@ -723,7 +867,7 @@
       },
       "ImageURLChunk": {
         "additionalProperties": false,
-        "description": "{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/png;base64,iVBORw0",
+        "description": "{\"type\":\"image_url\",\"image_url\":\"data:image/png;base64,iVBORw0\"}",
         "properties": {
           "image_url": {
             "anyOf": [
@@ -786,7 +930,14 @@
         "properties": {
           "reference_ids": {
             "items": {
-              "type": "integer"
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
             },
             "title": "Reference Ids",
             "type": "array"
@@ -833,6 +984,18 @@
             "description": "Whether the thinking chunk is closed or not. Currently only used for prefixing.",
             "title": "Closed",
             "type": "boolean"
+          },
+          "signature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Signature to replay some reasoning blocks across turns.",
+            "title": "Signature"
           },
           "thinking": {
             "items": {
@@ -890,6 +1053,92 @@
           "input_audio"
         ],
         "title": "AudioChunk",
+        "type": "object"
+      },
+      "ResourceChunk": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "discriminator": {
+              "mapping": {
+                "image_url": "#/components/schemas/ImageURLChunk",
+                "text": "#/components/schemas/TextChunk"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TextChunk"
+              },
+              {
+                "$ref": "#/components/schemas/ImageURLChunk"
+              }
+            ],
+            "title": "Content"
+          },
+          "type": {
+            "const": "resource",
+            "default": "resource",
+            "title": "Type",
+            "type": "string"
+          },
+          "uri": {
+            "title": "Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uri",
+          "content"
+        ],
+        "title": "ResourceChunk",
+        "type": "object"
+      },
+      "ResourceLinkChunk": {
+        "additionalProperties": false,
+        "properties": {
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "type": {
+            "const": "resource_link",
+            "default": "resource_link",
+            "title": "Type",
+            "type": "string"
+          },
+          "uri": {
+            "title": "Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uri"
+        ],
+        "title": "ResourceLinkChunk",
         "type": "object"
       },
       "FunctionCall": {
@@ -1030,7 +1279,8 @@
           "web_search_premium",
           "code_interpreter",
           "image_generation",
-          "document_library"
+          "document_library",
+          "mistral_mcp"
         ],
         "title": "BuiltInConnectors",
         "type": "string"
