@@ -1,0 +1,442 @@
+{
+  "description": "Starts an asynchronous import of the requested telemetry spans. References not returned by the tenant-scoped telemetry query are skipped without distinguishing absence from access restrictions.",
+  "operationId": "post_dataset_records_from_spans_v1_observability_datasets__dataset_id__imports_from_spans_post",
+  "parameters": [
+    {
+      "description": "Dataset UUID or workspace-scoped slug. UUID-shaped values are always interpreted as dataset IDs.",
+      "in": "path",
+      "name": "dataset_id",
+      "required": true,
+      "schema": {
+        "description": "Dataset UUID or workspace-scoped slug. UUID-shaped values are always interpreted as dataset IDs.",
+        "title": "Dataset Id",
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/ImportDatasetFromSpansRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "202": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/DatasetImportTask"
+          }
+        }
+      },
+      "description": "Successful Response"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ObservabilityError"
+          }
+        }
+      },
+      "description": "Bad Request - Invalid request parameters or data"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ObservabilityError"
+          }
+        }
+      },
+      "description": "Not Found - Resource does not exist"
+    },
+    "408": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ObservabilityError"
+          }
+        }
+      },
+      "description": "Request Timeout - Operation timed out"
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ObservabilityError"
+          }
+        }
+      },
+      "description": "Conflict - Resource conflict"
+    },
+    "422": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ObservabilityError"
+          }
+        }
+      },
+      "description": "Unprocessable Entity - Validation error"
+    }
+  },
+  "summary": "Populate the dataset with records mapped from telemetry spans",
+  "tags": [
+    "beta.observability.datasets"
+  ],
+  "components": {
+    "schemas": {
+      "ImportDatasetFromSpansRequest": {
+        "properties": {
+          "mapping_contract": {
+            "$ref": "#/components/schemas/SpanDatasetMappingContract",
+            "description": "Versioned rules for mapping span or resource attributes into top-level payload keys."
+          },
+          "span_references": {
+            "description": "Spans to attempt to import; unavailable references are skipped, and trace and span IDs are attached as record properties automatically.",
+            "items": {
+              "$ref": "#/components/schemas/TelemetrySpanReference"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Span References",
+            "type": "array"
+          }
+        },
+        "required": [
+          "span_references",
+          "mapping_contract"
+        ],
+        "title": "ImportDatasetFromSpansRequest",
+        "type": "object"
+      },
+      "DatasetImportTask": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "creator_id": {
+            "format": "uuid",
+            "title": "Creator Id",
+            "type": "string"
+          },
+          "dataset_id": {
+            "format": "uuid",
+            "title": "Dataset Id",
+            "type": "string"
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "maximum": 100,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Progress"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DatasetImportResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BaseTaskStatus"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "workspace_id": {
+            "format": "uuid",
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "updated_at",
+          "deleted_at",
+          "creator_id",
+          "dataset_id",
+          "workspace_id",
+          "status"
+        ],
+        "title": "DatasetImportTask",
+        "type": "object"
+      },
+      "ObservabilityError": {
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/ObservabilityErrorDetail"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ObservabilityError",
+        "type": "object"
+      },
+      "SpanDatasetMappingContract": {
+        "description": "Mapping rules applied independently to every requested telemetry span.\n\nVersion 1 mappings are optional per span: a missing, null, blank-string, or empty-array\nsource omits the target key. JSON object and array strings become structured values;\nscalar-looking and malformed JSON strings remain strings.",
+        "properties": {
+          "mappings": {
+            "items": {
+              "$ref": "#/components/schemas/SpanDatasetMapping"
+            },
+            "title": "Mappings",
+            "type": "array"
+          },
+          "version": {
+            "const": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "mappings"
+        ],
+        "title": "SpanDatasetMappingContract",
+        "type": "object"
+      },
+      "TelemetrySpanReference": {
+        "description": "Immutable provenance used to identify a telemetry span.",
+        "properties": {
+          "span_id": {
+            "pattern": "^[0-9a-f]{16}$",
+            "title": "Span Id",
+            "type": "string"
+          },
+          "trace_id": {
+            "pattern": "^[0-9a-f]{32}$",
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "trace_id",
+          "span_id"
+        ],
+        "title": "TelemetrySpanReference",
+        "type": "object"
+      },
+      "DatasetImportResult": {
+        "description": "Source-agnostic counts for a completed dataset import.",
+        "properties": {
+          "imported_record_count": {
+            "minimum": 0,
+            "title": "Imported Record Count",
+            "type": "integer"
+          },
+          "requested_record_count": {
+            "minimum": 0,
+            "title": "Requested Record Count",
+            "type": "integer"
+          },
+          "skipped_record_count": {
+            "minimum": 0,
+            "title": "Skipped Record Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "requested_record_count",
+          "imported_record_count",
+          "skipped_record_count"
+        ],
+        "title": "DatasetImportResult",
+        "type": "object"
+      },
+      "BaseTaskStatus": {
+        "enum": [
+          "RUNNING",
+          "COMPLETED",
+          "FAILED",
+          "CANCELED",
+          "TERMINATED",
+          "CONTINUED_AS_NEW",
+          "TIMED_OUT",
+          "UNKNOWN"
+        ],
+        "title": "BaseTaskStatus",
+        "type": "string"
+      },
+      "ObservabilityErrorDetail": {
+        "properties": {
+          "error_code": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ObservabilityErrorCode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "error_code"
+        ],
+        "title": "ObservabilityErrorDetail",
+        "type": "object"
+      },
+      "SpanDatasetMapping": {
+        "properties": {
+          "source_field": {
+            "$ref": "#/components/schemas/SpanDatasetSourceReference"
+          },
+          "target_field": {
+            "description": "Literal top-level key to create in the dataset record payload.",
+            "minLength": 1,
+            "title": "Target Field",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_field",
+          "source_field"
+        ],
+        "title": "SpanDatasetMapping",
+        "type": "object"
+      },
+      "ObservabilityErrorCode": {
+        "enum": [
+          "UNKNOWN_ERROR",
+          "VALIDATION_ERROR",
+          "AUTH_FORBIDDEN",
+          "AUTH_FORBIDDEN_NOT_WORKSPACE_ADMIN",
+          "AUTH_FORBIDDEN_WORKSPACE_NOT_FOUND",
+          "AUTH_FORBIDDEN_ROLE_NOT_FOUND",
+          "AUTH_UNAUTHORIZED",
+          "FEATURE_NOT_SUPPORTED",
+          "FIELDS_BAD_REQUEST",
+          "SEARCH_BAD_REQUEST",
+          "DATABASE_ERROR",
+          "DATABASE_TIMEOUT",
+          "DATABASE_UNAVAILABLE",
+          "DATABASE_QUERY_ERROR",
+          "SEARCH_FILTER_TO_SQL_CONVERSION_ERROR",
+          "JUDGE_CONVERSATION_FORMAT_ERROR",
+          "JUDGE_MISTRAL_API_ERROR",
+          "JUDGE_MISTRAL_API_TIMEOUT",
+          "JUDGE_NAME_ALREADY_EXISTS",
+          "JUDGE_NOT_FOUND",
+          "JUDGE_DID_NOT_CHANGE",
+          "DATASET_NOT_FOUND",
+          "DATASET_TASK_NOT_FOUND",
+          "DATASET_RECORD_NOT_FOUND",
+          "DATASET_RECORD_FORMAT_ERROR",
+          "AGENT_NOT_FOUND",
+          "AGENT_MISTRAL_API_ERROR",
+          "EVALUATION_NOT_FOUND",
+          "EVALUATION_CURRENTLY_RUNNING",
+          "EVALUATION_RECORD_NOT_FOUND",
+          "EVALUATION_RUN_NOT_FOUND",
+          "EVALUATION_RUN_TRANSITION_IS_INVALID",
+          "EVALUATION_RUN_TRANSITION_IS_RUNNING_ALREADY",
+          "EVALUATION_RUN_TRANSITION_ERROR",
+          "EVALUATION_RUN_OUTPUT_RECORD_CONFLICT",
+          "TEMPLATE_ERROR",
+          "TEMPLATE_SYNTAX_ERROR",
+          "PROJECT_NOT_FOUND",
+          "PROJECT_NAME_ALREADY_EXISTS",
+          "PIPELINE_CONFIG_NOT_FOUND",
+          "PIPELINE_CONFIG_ALREADY_EXISTS",
+          "PIPELINE_NOT_FOUND",
+          "PIPELINE_ALREADY_EXISTS",
+          "SCORER_NOT_FOUND",
+          "SCORER_ALREADY_EXISTS",
+          "SCORER_CONFIG_KIND_MISMATCH",
+          "EVALUATION_NAME_ALREADY_EXISTS",
+          "OPTIMIZATION_NOT_FOUND",
+          "OPTIMIZATION_TRIAL_KEY_ALREADY_EXISTS",
+          "TRACES_FILTER_QUERY_PARSE_ERROR",
+          "TRACE_NOT_FOUND",
+          "SPAN_NOT_FOUND"
+        ],
+        "title": "ObservabilityErrorCode",
+        "type": "string"
+      },
+      "SpanDatasetSourceReference": {
+        "properties": {
+          "key": {
+            "description": "Literal attribute dictionary key; dots do not denote a nested path.",
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          },
+          "namespace": {
+            "$ref": "#/components/schemas/SpanDatasetSourceNamespace"
+          }
+        },
+        "required": [
+          "namespace",
+          "key"
+        ],
+        "title": "SpanDatasetSourceReference",
+        "type": "object"
+      },
+      "SpanDatasetSourceNamespace": {
+        "description": "Attribute maps that may supply dataset payload values.",
+        "enum": [
+          "span_attributes",
+          "resource_attributes"
+        ],
+        "title": "SpanDatasetSourceNamespace",
+        "type": "string"
+      }
+    }
+  }
+}

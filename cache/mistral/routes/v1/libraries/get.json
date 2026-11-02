@@ -1,16 +1,110 @@
 {
   "description": "List all libraries that you have created or have been shared with you.",
   "operationId": "libraries_list_v1",
+  "parameters": [
+    {
+      "in": "query",
+      "name": "page_size",
+      "required": false,
+      "schema": {
+        "default": 100,
+        "maximum": 100,
+        "minimum": 1,
+        "title": "Page Size",
+        "type": "integer"
+      }
+    },
+    {
+      "description": "Continuation token from a previous response's next_page_token. Preferred over `page`.",
+      "in": "query",
+      "name": "page_token",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Continuation token from a previous response's next_page_token. Preferred over `page`.",
+        "title": "Page Token"
+      }
+    },
+    {
+      "deprecated": true,
+      "description": "Deprecated: use page_token. Offset paging re-scans earlier pages and is being phased out.",
+      "in": "query",
+      "name": "page",
+      "required": false,
+      "schema": {
+        "default": 0,
+        "deprecated": true,
+        "description": "Deprecated: use page_token. Offset paging re-scans earlier pages and is being phased out.",
+        "title": "Page",
+        "type": "integer"
+      }
+    },
+    {
+      "description": "Case-insensitive search on the library name.",
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Case-insensitive search on the library name.",
+        "title": "Search"
+      }
+    },
+    {
+      "deprecated": true,
+      "description": "Deprecated: this parameter will be removed in a future version.",
+      "in": "query",
+      "name": "filter_owned_by_me",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "deprecated": true,
+        "description": "Deprecated: this parameter will be removed in a future version.",
+        "title": "Filter Owned By Me"
+      }
+    }
+  ],
   "responses": {
     "200": {
       "content": {
         "application/json": {
           "schema": {
-            "$ref": "#/components/schemas/ListLibraryOut"
+            "$ref": "#/components/schemas/ListLibrariesResponse"
           }
         }
       },
       "description": "Successful Response"
+    },
+    "422": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/HTTPValidationError"
+          }
+        }
+      },
+      "description": "Validation Error"
     }
   },
   "summary": "List all libraries you have access to.",
@@ -19,23 +113,60 @@
   ],
   "components": {
     "schemas": {
-      "ListLibraryOut": {
+      "ListLibrariesResponse": {
         "properties": {
           "data": {
             "items": {
-              "$ref": "#/components/schemas/LibraryOut"
+              "$ref": "#/components/schemas/Library"
             },
             "title": "Data",
             "type": "array"
+          },
+          "next_page_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque continuation token for the next page. Pass it back as `page_token` to fetch the next page. Null when there are no more results. Prefer this over the deprecated offset `page` parameter.",
+            "title": "Next Page Token"
+          },
+          "pagination": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PaginationInfo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "deprecated": true,
+            "description": "Deprecated: offset pagination metadata. Only returned for requests using the deprecated `page` parameter; omitted when `page_token` is used. Use `next_page_token` instead — this field will be removed once offset paging is retired."
           }
         },
         "required": [
           "data"
         ],
-        "title": "ListLibraryOut",
+        "title": "ListLibrariesResponse",
         "type": "object"
       },
-      "LibraryOut": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Library": {
         "properties": {
           "chunk_size": {
             "anyOf": [
@@ -46,6 +177,7 @@
                 "type": "null"
               }
             ],
+            "deprecated": true,
             "title": "Chunk Size"
           },
           "created_at": {
@@ -73,6 +205,7 @@
                 "type": "null"
               }
             ],
+            "deprecated": true,
             "title": "Emoji"
           },
           "explicit_user_members_count": {
@@ -84,6 +217,7 @@
                 "type": "null"
               }
             ],
+            "deprecated": true,
             "title": "Explicit User Members Count"
           },
           "explicit_workspace_members_count": {
@@ -95,6 +229,7 @@
                 "type": "null"
               }
             ],
+            "deprecated": true,
             "title": "Explicit Workspace Members Count"
           },
           "generated_description": {
@@ -106,6 +241,7 @@
                 "type": "null"
               }
             ],
+            "deprecated": true,
             "title": "Generated Description"
           },
           "generated_name": {
@@ -117,6 +253,7 @@
                 "type": "null"
               }
             ],
+            "deprecated": true,
             "description": "Generated Name"
           },
           "id": {
@@ -140,7 +277,8 @@
               {
                 "type": "null"
               }
-            ]
+            ],
+            "deprecated": true
           },
           "owner_id": {
             "anyOf": [
@@ -178,7 +316,80 @@
           "nb_documents",
           "chunk_size"
         ],
-        "title": "LibraryOut",
+        "title": "Library",
+        "type": "object"
+      },
+      "PaginationInfo": {
+        "properties": {
+          "current_page": {
+            "title": "Current Page",
+            "type": "integer"
+          },
+          "has_more": {
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total_items": {
+            "title": "Total Items",
+            "type": "integer"
+          },
+          "total_pages": {
+            "title": "Total Pages",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_items",
+          "total_pages",
+          "current_page",
+          "page_size",
+          "has_more"
+        ],
+        "title": "PaginationInfo",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
         "type": "object"
       }
     }

@@ -1,4 +1,5 @@
 {
+  "description": "Execute Workflow",
   "operationId": "execute_workflow_v1_workflows__workflow_identifier__execute_post",
   "parameters": [
     {
@@ -53,7 +54,7 @@
   },
   "summary": "Execute Workflow",
   "tags": [
-    "beta.workflows"
+    "workflows"
   ],
   "components": {
     "schemas": {
@@ -85,17 +86,6 @@
             "description": "Name of the deployment to route this execution to",
             "title": "Deployment Name"
           },
-          "encoded_input": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/NetworkEncodedInput"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Encoded input to the workflow, used when payload encoding is enabled."
-          },
           "execution_id": {
             "anyOf": [
               {
@@ -109,8 +99,7 @@
             "description": "Allows you to specify a custom execution ID. If not provided, a random ID will be generated.",
             "title": "Execution Id"
           },
-          "input": {
-            "additionalProperties": true,
+          "extensions": {
             "anyOf": [
               {
                 "additionalProperties": true,
@@ -120,7 +109,31 @@
                 "type": "null"
               }
             ],
-            "description": "The input to the workflow. This should be a dictionary that matches the workflow's input schema.",
+            "description": "Plugin-specific data to propagate into WorkflowContext.extensions at execution time.",
+            "title": "Extensions"
+          },
+          "force_new_trace": {
+            "default": false,
+            "description": "If true, ignore the caller's trace context and start a new, independent trace for this execution instead of joining the caller's trace.",
+            "title": "Force New Trace",
+            "type": "boolean"
+          },
+          "input": {
+            "additionalProperties": true,
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "properties": {},
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The input to the workflow. This should be a dictionary or a BaseModel that matches the workflow's input schema.",
             "title": "Input"
           },
           "task_queue": {
@@ -148,6 +161,18 @@
             "description": "Maximum time to wait for completion when wait_for_result is true.",
             "title": "Timeout Seconds"
           },
+          "traceparent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "W3C trace context to join this execution to the caller's trace. Ignored when force_new_trace is set.",
+            "title": "Traceparent"
+          },
           "wait_for_result": {
             "default": false,
             "description": "If true, wait for the workflow to complete and return the result directly.",
@@ -160,6 +185,18 @@
       },
       "WorkflowExecutionResponse": {
         "properties": {
+          "deployment_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The name of the deployment that ran this execution",
+            "title": "Deployment Name"
+          },
           "end_time": {
             "anyOf": [
               {
@@ -205,6 +242,40 @@
             "title": "Root Execution Id",
             "type": "string"
           },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The unique run identifier (database UUID)",
+            "title": "Run Id"
+          },
+          "search_keys": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The execution's search keys (metadata), if requested via include_search_keys.",
+            "title": "Search Keys"
+          },
           "start_time": {
             "description": "The start time of the workflow execution",
             "format": "date-time",
@@ -233,6 +304,31 @@
             ],
             "description": "The total duration of the trace in milliseconds",
             "title": "Total Duration Ms"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The ID of the user who triggered the execution",
+            "title": "User Id"
+          },
+          "workflow_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The ID of the workflow",
+            "title": "Workflow Id"
           },
           "workflow_name": {
             "description": "The name of the workflow",
@@ -291,35 +387,6 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
-      "NetworkEncodedInput": {
-        "properties": {
-          "b64payload": {
-            "description": "The encoded payload",
-            "title": "B64Payload",
-            "type": "string"
-          },
-          "empty": {
-            "default": false,
-            "description": "Whether the payload is empty",
-            "title": "Empty",
-            "type": "boolean"
-          },
-          "encoding_options": {
-            "default": [],
-            "description": "The encoding of the payload",
-            "items": {
-              "$ref": "#/components/schemas/EncodedPayloadOptions"
-            },
-            "title": "Encoding Options",
-            "type": "array"
-          }
-        },
-        "required": [
-          "b64payload"
-        ],
-        "title": "NetworkEncodedInput",
-        "type": "object"
-      },
       "WorkflowExecutionStatus": {
         "enum": [
           "RUNNING",
@@ -373,15 +440,6 @@
         ],
         "title": "ValidationError",
         "type": "object"
-      },
-      "EncodedPayloadOptions": {
-        "enum": [
-          "offloaded",
-          "encrypted",
-          "encrypted-partial"
-        ],
-        "title": "EncodedPayloadOptions",
-        "type": "string"
       }
     }
   }

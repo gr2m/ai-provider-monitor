@@ -7,8 +7,16 @@
       "name": "connector_id_or_name",
       "required": true,
       "schema": {
-        "title": "Connector Id Or Name",
-        "type": "string"
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "string"
+          }
+        ],
+        "title": "Connector Id Or Name"
       }
     }
   ],
@@ -26,6 +34,16 @@
         }
       },
       "description": "Successful Response"
+    },
+    "422": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/HTTPValidationError"
+          }
+        }
+      },
+      "description": "Validation Error"
     }
   },
   "summary": "Get authentication methods for a connector.",
@@ -37,6 +55,28 @@
       "PublicAuthenticationMethod": {
         "description": "Public view of an authentication method, without secrets.",
         "properties": {
+          "global_headers": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/GlobalHeaderValue"
+            },
+            "default": {},
+            "title": "Global Headers",
+            "type": "object"
+          },
+          "grant_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OAuth2GrantType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "has_default_credentials": {
+            "title": "Has Default Credentials",
+            "type": "boolean"
+          },
           "headers": {
             "anyOf": [
               {
@@ -52,14 +92,75 @@
             "title": "Headers"
           },
           "method_type": {
-            "$ref": "#/components/schemas/OutboundAuthenticationType"
+            "$ref": "#/components/schemas/AuthenticationType"
+          },
+          "oauth2_server_metadata": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ExtendedOAuthServerMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "token_endpoint_auth_method": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OAuth2TokenEndpointAuthMethod"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
-          "method_type"
+          "method_type",
+          "has_default_credentials"
         ],
         "title": "PublicAuthenticationMethod",
         "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "GlobalHeaderValue": {
+        "description": "Value of a connector-wide header. ``value`` is plaintext in memory so create\nround-trips and encryption-at-rest keep the real value; secrets are redacted only\non JSON serialization (API responses).",
+        "properties": {
+          "is_secret": {
+            "default": true,
+            "title": "Is Secret",
+            "type": "boolean"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "title": "GlobalHeaderValue",
+        "type": "object"
+      },
+      "OAuth2GrantType": {
+        "enum": [
+          "authorization_code",
+          "client_credentials"
+        ],
+        "title": "OAuth2GrantType",
+        "type": "string"
       },
       "ConnectorAuthenticationHeader": {
         "properties": {
@@ -84,13 +185,419 @@
         "title": "ConnectorAuthenticationHeader",
         "type": "object"
       },
-      "OutboundAuthenticationType": {
+      "AuthenticationType": {
         "enum": [
           "oauth2",
           "bearer",
-          "none"
+          "none",
+          "github_app",
+          "slack_app"
         ],
-        "title": "OutboundAuthenticationType",
+        "title": "AuthenticationType",
+        "type": "string"
+      },
+      "ExtendedOAuthServerMetadata": {
+        "description": "Custom superset of RFC 8414 OAuth 2.0 Authorization Server Metadata.\n\nStored at connector creation time (provided for HTTP connectors, discovered via .well-known for MCP).\nMirrors the shape of .well-known/oauth-authorization-server responses.",
+        "properties": {
+          "authorization_endpoint": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authorization Endpoint"
+          },
+          "authorization_grant_profiles_supported": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authorization Grant Profiles Supported"
+          },
+          "authorization_response_iss_parameter_supported": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authorization Response Iss Parameter Supported"
+          },
+          "client_id_metadata_document_supported": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Client Id Metadata Document Supported"
+          },
+          "code_challenge_methods_supported": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code Challenge Methods Supported"
+          },
+          "grant_types_supported": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grant Types Supported"
+          },
+          "introspection_endpoint": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Introspection Endpoint"
+          },
+          "introspection_endpoint_auth_methods_supported": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Introspection Endpoint Auth Methods Supported"
+          },
+          "introspection_endpoint_auth_signing_alg_values_supported": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Introspection Endpoint Auth Signing Alg Values Supported"
+          },
+          "issuer": {
+            "format": "uri",
+            "minLength": 1,
+            "title": "Issuer",
+            "type": "string"
+          },
+          "op_policy_uri": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Op Policy Uri"
+          },
+          "op_tos_uri": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Op Tos Uri"
+          },
+          "registration_endpoint": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registration Endpoint"
+          },
+          "response_modes_supported": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Response Modes Supported"
+          },
+          "response_types_supported": {
+            "default": [
+              "code"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "title": "Response Types Supported",
+            "type": "array"
+          },
+          "revocation_endpoint": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revocation Endpoint"
+          },
+          "revocation_endpoint_auth_methods_supported": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revocation Endpoint Auth Methods Supported"
+          },
+          "revocation_endpoint_auth_signing_alg_values_supported": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revocation Endpoint Auth Signing Alg Values Supported"
+          },
+          "scopes_supported": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scopes Supported"
+          },
+          "service_documentation": {
+            "anyOf": [
+              {
+                "format": "uri",
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Documentation"
+          },
+          "token_endpoint": {
+            "format": "uri",
+            "minLength": 1,
+            "title": "Token Endpoint",
+            "type": "string"
+          },
+          "token_endpoint_auth_methods_supported": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Endpoint Auth Methods Supported"
+          },
+          "token_endpoint_auth_signing_alg_values_supported": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Endpoint Auth Signing Alg Values Supported"
+          },
+          "ui_locales_supported": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ui Locales Supported"
+          },
+          "x_resource_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "X Resource Url"
+          },
+          "x_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "X Scope"
+          },
+          "x_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OAuthMetadataSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "issuer",
+          "token_endpoint"
+        ],
+        "title": "ExtendedOAuthServerMetadata",
+        "type": "object"
+      },
+      "OAuth2TokenEndpointAuthMethod": {
+        "enum": [
+          "client_secret_post",
+          "client_secret_basic",
+          "private_key_jwt"
+        ],
+        "title": "OAuth2TokenEndpointAuthMethod",
+        "type": "string"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "OAuthMetadataSource": {
+        "description": "How a connector's OAuth server metadata was obtained.",
+        "enum": [
+          "autodiscovery",
+          "provided"
+        ],
+        "title": "OAuthMetadataSource",
         "type": "string"
       }
     }
