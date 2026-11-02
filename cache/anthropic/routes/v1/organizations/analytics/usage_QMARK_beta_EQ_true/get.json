@@ -1,0 +1,2133 @@
+{
+  "description": "Get token usage across a date range, broken out by dimension.\n\nReturns one row per combination of the requested `group_by[]`\ndimensions (and time bucket, when `time_bucket_width` is set) that has\nusage in the range, ranked by the `order_by` metric or ordered by time\nbucket; every combination is returned across pages. With no `group_by[]`\nand no `time_bucket_width`, a single row aggregates the whole range.\nIncludes all usage, whether or not it is attributable to a seat user.\nRequires an API key with the `read:analytics` scope, or an Admin API key.",
+  "operationId": "beta_get_usage_v1_organizations_analytics_usage_get",
+  "parameters": [
+    {
+      "description": "Start of range, inclusive. RFC 3339 tz-aware. Must be within the last 365 days and no earlier than 2026-01-01T00:00:00Z.",
+      "in": "query",
+      "name": "starting_at",
+      "required": true,
+      "schema": {
+        "description": "Start of range, inclusive. RFC 3339 tz-aware. Must be within the last 365 days and no earlier than 2026-01-01T00:00:00Z.",
+        "examples": [
+          "2026-09-01T00:00:00Z"
+        ],
+        "format": "date-time",
+        "title": "Starting At",
+        "type": "string"
+      }
+    },
+    {
+      "description": "End of range, exclusive. Required when `time_bucket_width` is set. Without `time_bucket_width`, defaults to the earlier of now and `starting_at` + 31 days. The range may span at most 31 days.",
+      "in": "query",
+      "name": "ending_at",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "End of range, exclusive. Required when `time_bucket_width` is set. Without `time_bucket_width`, defaults to the earlier of now and `starting_at` + 31 days. The range may span at most 31 days.",
+        "examples": [
+          "2026-10-01T00:00:00Z"
+        ],
+        "title": "Ending At"
+      }
+    },
+    {
+      "description": "Product surfaces to include. Defaults to all products.",
+      "in": "query",
+      "name": "products[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/BetaAnalyticsUsageCostProductFilter"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Product surfaces to include. Defaults to all products.",
+        "title": "Products[]"
+      }
+    },
+    {
+      "description": "Models to include. Defaults to all models. Use `group_by[]=model` to break out per-model values.",
+      "in": "query",
+      "name": "models[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Models to include. Defaults to all models. Use `group_by[]=model` to break out per-model values.",
+        "title": "Models[]"
+      }
+    },
+    {
+      "description": "Filter to specific context-window pricing tiers. Use `group_by[]=context_window` to break out per-tier values.",
+      "in": "query",
+      "name": "context_windows[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/BetaMessagesUsageReportContextWindow"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to specific context-window pricing tiers. Use `group_by[]=context_window` to break out per-tier values.",
+        "title": "Context Windows[]"
+      }
+    },
+    {
+      "description": "Filter to specific inference regions. `not_available` matches rows where the region is unset. Use `group_by[]=inference_geo` to break out per-region values.",
+      "in": "query",
+      "name": "inference_geos[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/BetaInferenceGeoFilter"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to specific inference regions. `not_available` matches rows where the region is unset. Use `group_by[]=inference_geo` to break out per-region values.",
+        "title": "Inference Geos[]"
+      }
+    },
+    {
+      "description": "Filter to fast or standard inference mode. Use `group_by[]=speed` to break out per-mode values.",
+      "in": "query",
+      "name": "speeds[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/BetaAnalyticsSpeed"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to fast or standard inference mode. Use `group_by[]=speed` to break out per-mode values.",
+        "title": "Speeds[]"
+      }
+    },
+    {
+      "description": "Filter to usage originating from specific Slack channels. Use `group_by[]=slack_channel_id` to break out per-channel values.",
+      "in": "query",
+      "name": "slack_channel_ids[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "maxLength": 32,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9]+$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to usage originating from specific Slack channels. Use `group_by[]=slack_channel_id` to break out per-channel values.",
+        "examples": [
+          [
+            "C0123ABCDEF"
+          ]
+        ],
+        "title": "Slack Channel Ids[]"
+      }
+    },
+    {
+      "description": "Filter to Claude Tag (Claude in Slack) usage in specific spend categories. Usage with no category never matches. `dm` usage is reported under the user's product rather than `claude_tag`, so combining this filter with `products[]=claude_tag` excludes it. Use `group_by[]=claude_tag_category` to break out per-category values.",
+      "in": "query",
+      "name": "claude_tag_categories[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/BetaAnalyticsClaudeTagCategory"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to Claude Tag (Claude in Slack) usage in specific spend categories. Usage with no category never matches. `dm` usage is reported under the user's product rather than `claude_tag`, so combining this filter with `products[]=claude_tag` excludes it. Use `group_by[]=claude_tag_category` to break out per-category values.",
+        "examples": [
+          [
+            "engaged"
+          ]
+        ],
+        "title": "Claude Tag Categories[]"
+      }
+    },
+    {
+      "description": "Filter to Claude Tag (Claude in Slack) usage attributed to specific Slack users, by Slack user ID (for example `U0123ABCDEF`), not claude.ai user ID. Usage that is not Claude Tag, and Claude Tag usage not attributed to a single user, never matches. Use `group_by[]=claude_tag_user_id` to break out per-user values.",
+      "in": "query",
+      "name": "claude_tag_user_ids[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "maxLength": 32,
+              "minLength": 1,
+              "pattern": "^[UW][A-Z0-9]{2,}$",
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to Claude Tag (Claude in Slack) usage attributed to specific Slack users, by Slack user ID (for example `U0123ABCDEF`), not claude.ai user ID. Usage that is not Claude Tag, and Claude Tag usage not attributed to a single user, never matches. Use `group_by[]=claude_tag_user_id` to break out per-user values.",
+        "examples": [
+          [
+            "U0123ABCDEF"
+          ]
+        ],
+        "title": "Claude Tag User Ids[]"
+      }
+    },
+    {
+      "description": "Filter to usage in specific workspaces, by tagged workspace ID (`wrkspc_...`). Use `group_by[]=workspace_id` to break out per-workspace values. Claude Developer Platform organizations only; matches nothing for a Claude Enterprise organization.",
+      "in": "query",
+      "name": "workspace_ids[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to usage in specific workspaces, by tagged workspace ID (`wrkspc_...`). Use `group_by[]=workspace_id` to break out per-workspace values. Claude Developer Platform organizations only; matches nothing for a Claude Enterprise organization.",
+        "examples": [
+          [
+            "wrkspc_01JwQvzr7rXLA5AGx3HKfFUJ"
+          ]
+        ],
+        "title": "Workspace Ids[]"
+      }
+    },
+    {
+      "description": "Filter to specific service tiers. Use `group_by[]=service_tier` to break out per-tier values. Claude Developer Platform organizations only; matches nothing for a Claude Enterprise organization.",
+      "in": "query",
+      "name": "service_tiers[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/BetaUsageReportServiceTier"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to specific service tiers. Use `group_by[]=service_tier` to break out per-tier values. Claude Developer Platform organizations only; matches nothing for a Claude Enterprise organization.",
+        "examples": [
+          [
+            "batch"
+          ]
+        ],
+        "title": "Service Tiers[]"
+      }
+    },
+    {
+      "description": "Filter to usage attributed to specific RBAC groups. Accepts tagged RBAC group IDs (`rbac_group_...`) or bare group UUIDs. A row matches when the user belonged to any of the listed groups on the (UTC) day the usage occurred; usage with no group attribution never matches.",
+      "in": "query",
+      "name": "rbac_group_ids[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to usage attributed to specific RBAC groups. Accepts tagged RBAC group IDs (`rbac_group_...`) or bare group UUIDs. A row matches when the user belonged to any of the listed groups on the (UTC) day the usage occurred; usage with no group attribution never matches.",
+        "examples": [
+          [
+            "rbac_group_012rppKaSVsmTo6NqRDXQXNF"
+          ]
+        ],
+        "title": "Rbac Group Ids[]"
+      }
+    },
+    {
+      "description": "Filter to usage attributed to specific user profiles, by tagged user profile ID (`uprof_...`). Use `group_by[]=user_profile_id` to break out per-profile values. Claude Developer Platform organizations only.",
+      "in": "query",
+      "name": "user_profile_ids[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to usage attributed to specific user profiles, by tagged user profile ID (`uprof_...`). Use `group_by[]=user_profile_id` to break out per-profile values. Claude Developer Platform organizations only.",
+        "examples": [
+          [
+            "uprof_01M33NeYUQK2WV9PpYcsPHLi"
+          ]
+        ],
+        "title": "User Profile Ids[]"
+      }
+    },
+    {
+      "description": "Filter to usage incurred by sessions of specific Claude Managed Agents agents. Use `group_by[]=agent_id` to break out per-agent values. Claude Developer Platform organizations only.",
+      "in": "query",
+      "name": "agent_ids[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to usage incurred by sessions of specific Claude Managed Agents agents. Use `group_by[]=agent_id` to break out per-agent values. Claude Developer Platform organizations only.",
+        "examples": [
+          [
+            "agent_01VHd3EAGJ6PLkP9LM7DDu3f"
+          ]
+        ],
+        "title": "Agent Ids[]"
+      }
+    },
+    {
+      "description": "Filter to usage incurred by Claude Managed Agents sessions that ran in specific environments. Use `group_by[]=environment_id` to break out per-environment values. Claude Developer Platform organizations only.",
+      "in": "query",
+      "name": "environment_ids[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to usage incurred by Claude Managed Agents sessions that ran in specific environments. Use `group_by[]=environment_id` to break out per-environment values. Claude Developer Platform organizations only.",
+        "examples": [
+          [
+            "env_017oTjuGedHtjhJauVC5xGJD"
+          ]
+        ],
+        "title": "Environment Ids[]"
+      }
+    },
+    {
+      "description": "Filter to usage incurred by Claude Managed Agents sessions that specific deployments started. Use `group_by[]=deployment_id` to break out per-deployment values. Claude Developer Platform organizations only.",
+      "in": "query",
+      "name": "deployment_ids[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to usage incurred by Claude Managed Agents sessions that specific deployments started. Use `group_by[]=deployment_id` to break out per-deployment values. Claude Developer Platform organizations only.",
+        "examples": [
+          [
+            "depl_01JFC6ihzZHtAuyHsaENdJhY"
+          ]
+        ],
+        "title": "Deployment Ids[]"
+      }
+    },
+    {
+      "description": "Filter to usage incurred by specific Claude Managed Agents sessions, by tagged session ID (`sesn_...`). Use `group_by[]=session_id` to break out per-session values. Claude Developer Platform organizations only.",
+      "in": "query",
+      "name": "session_ids[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to usage incurred by specific Claude Managed Agents sessions, by tagged session ID (`sesn_...`). Use `group_by[]=session_id` to break out per-session values. Claude Developer Platform organizations only.",
+        "examples": [
+          [
+            "sesn_0187kPDyNCwibNNvfaPEApCJ"
+          ]
+        ],
+        "title": "Session Ids[]"
+      }
+    },
+    {
+      "description": "Filter to usage attributed to specific identities, by tagged ID: a `user_...`, `svac_...` (service account), or `apikey_...` ID. An `apikey_` entry matches only usage attributed to the key itself, not usage on that key attributed to a user or service account (use `api_key_ids[]` for every request a key authenticated). Federated identities have no tagged ID; select them with `actor_types[]`. Use `group_by[]=actor` to break out per-identity values.",
+      "in": "query",
+      "name": "actor_ids[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to usage attributed to specific identities, by tagged ID: a `user_...`, `svac_...` (service account), or `apikey_...` ID. An `apikey_` entry matches only usage attributed to the key itself, not usage on that key attributed to a user or service account (use `api_key_ids[]` for every request a key authenticated). Federated identities have no tagged ID; select them with `actor_types[]`. Use `group_by[]=actor` to break out per-identity values.",
+        "examples": [
+          [
+            "user_01WCz1FkmYMm4gnmykNKUu3Q"
+          ]
+        ],
+        "title": "Actor Ids[]"
+      }
+    },
+    {
+      "description": "Filter to usage attributed to specific kinds of identity. Use `group_by[]=actor_type` to break out per-kind values.",
+      "in": "query",
+      "name": "actor_types[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/BetaAnalyticsActorType"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to usage attributed to specific kinds of identity. Use `group_by[]=actor_type` to break out per-kind values.",
+        "examples": [
+          [
+            "service_account_actor"
+          ]
+        ],
+        "title": "Actor Types[]"
+      }
+    },
+    {
+      "description": "Filter to usage authenticated by specific API keys, by tagged API key ID (`apikey_...`), whichever identity the usage is attributed to. Include an empty entry (`api_key_ids[]=`) to also match usage that no API key authenticated. Use `group_by[]=api_key_id` to break out per-key values; usage without a key has a null `api_key_id`. Claude Developer Platform organizations only.",
+      "in": "query",
+      "name": "api_key_ids[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter to usage authenticated by specific API keys, by tagged API key ID (`apikey_...`), whichever identity the usage is attributed to. Include an empty entry (`api_key_ids[]=`) to also match usage that no API key authenticated. Use `group_by[]=api_key_id` to break out per-key values; usage without a key has a null `api_key_id`. Claude Developer Platform organizations only.",
+        "examples": [
+          [
+            "apikey_01Rj2N8SVvo6BePZj99NhmiT"
+          ]
+        ],
+        "title": "Api Key Ids[]"
+      }
+    },
+    {
+      "description": "Time-bucket granularity. When set, rows are returned per time bucket (one per bucket and dimension combination with usage) and each row's `starting_at` and `ending_at` are that bucket's bounds; the time bucket counts toward `limit`. `ending_at` is required when `time_bucket_width` is set, and with `time_bucket_width=\"1m\"` the range may span at most 24 hours. When omitted, each row aggregates the requested range with `starting_at` and `ending_at` each rounded down to the hour.",
+      "in": "query",
+      "name": "time_bucket_width",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/BetaAnalyticsTimeBucketWidth"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Time-bucket granularity. When set, rows are returned per time bucket (one per bucket and dimension combination with usage) and each row's `starting_at` and `ending_at` are that bucket's bounds; the time bucket counts toward `limit`. `ending_at` is required when `time_bucket_width` is set, and with `time_bucket_width=\"1m\"` the range may span at most 24 hours. When omitted, each row aggregates the requested range with `starting_at` and `ending_at` each rounded down to the hour.",
+        "title": "Time Bucket Width"
+      }
+    },
+    {
+      "description": "Sort direction of the `order_by` metric, or of the time buckets when `order_by` is `time` and `time_bucket_width` is set. Defaults to `desc`.",
+      "in": "query",
+      "name": "order",
+      "required": false,
+      "schema": {
+        "$ref": "#/components/schemas/BetaAnalyticsUsageCostSortOrder",
+        "default": "desc",
+        "description": "Sort direction of the `order_by` metric, or of the time buckets when `order_by` is `time` and `time_bucket_width` is set. Defaults to `desc`."
+      }
+    },
+    {
+      "description": "If true, omit rows whose `actor` is a `user_actor` with `deleted: true`. Requires `group_by[]=actor`. Rows for other actor types, and rows whose `actor` is null, are always kept. A page may contain fewer than `limit` rows; use `has_more` and `next_page` to paginate as usual.",
+      "in": "query",
+      "name": "exclude_deleted_users",
+      "required": false,
+      "schema": {
+        "default": false,
+        "description": "If true, omit rows whose `actor` is a `user_actor` with `deleted: true`. Requires `group_by[]=actor`. Rows for other actor types, and rows whose `actor` is null, are always kept. A page may contain fewer than `limit` rows; use `has_more` and `next_page` to paginate as usual.",
+        "title": "Exclude Deleted Users",
+        "type": "boolean"
+      }
+    },
+    {
+      "description": "Number of rows per page (1-1000, default 20). `cost_type`/`token_type` fan-out rows (cost endpoint only) do not count toward this limit, so `data` can exceed it.",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "default": 20,
+        "description": "Number of rows per page (1-1000, default 20). `cost_type`/`token_type` fan-out rows (cost endpoint only) do not count toward this limit, so `data` can exceed it.",
+        "maximum": 1000,
+        "minimum": 1,
+        "title": "Limit",
+        "type": "integer"
+      }
+    },
+    {
+      "description": "Opaque cursor from a previous response's `next_page` field.",
+      "in": "query",
+      "name": "page",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Opaque cursor from a previous response's `next_page` field.",
+        "title": "Page"
+      }
+    },
+    {
+      "description": "Row order. A metric ranks rows by that metric in the `order` direction. `time` orders rows by time bucket in the `order` direction (newest first by default) and, within a bucket, by `total_tokens`, highest first. `time` takes effect only with `time_bucket_width`; without it, `time` is the same as `total_tokens`. Defaults to `total_tokens`.",
+      "in": "query",
+      "name": "order_by",
+      "required": false,
+      "schema": {
+        "$ref": "#/components/schemas/BetaAnalyticsFlatUsageOrderBy",
+        "default": "total_tokens",
+        "description": "Row order. A metric ranks rows by that metric in the `order` direction. `time` orders rows by time bucket in the `order` direction (newest first by default) and, within a bucket, by `total_tokens`, highest first. `time` takes effect only with `time_bucket_width`; without it, `time` is the same as `total_tokens`. Defaults to `total_tokens`."
+      }
+    },
+    {
+      "description": "Dimensions to break usage out by (at most 5): one row per combination of their values with usage in the range (and per time bucket, when `time_bucket_width` is set), every combination returned across pages rather than a capped top set. When omitted, a single row aggregates the whole range.",
+      "in": "query",
+      "name": "group_by[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/BetaAnalyticsUsageGroupBy"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Dimensions to break usage out by (at most 5): one row per combination of their values with usage in the range (and per time bucket, when `time_bucket_width` is set), every combination returned across pages rather than a capped top set. When omitted, a single row aggregates the whole range.",
+        "title": "Group By[]"
+      }
+    },
+    {
+      "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+      "in": "header",
+      "name": "anthropic-version",
+      "required": false,
+      "schema": {
+        "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+        "title": "Anthropic-Version",
+        "type": "string"
+      }
+    },
+    {
+      "description": "This endpoint is in beta: requests must send `analytics-usage-cost-2026-08-24` in this header.",
+      "in": "header",
+      "name": "anthropic-beta",
+      "required": false,
+      "schema": {
+        "description": "This endpoint is in beta: requests must send `analytics-usage-cost-2026-08-24` in this header.",
+        "items": {
+          "$ref": "#/components/schemas/AnthropicBeta"
+        },
+        "title": "Anthropic-Beta",
+        "type": "array"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaAnalyticsFlatUsageResponse"
+          }
+        }
+      },
+      "description": "Successful Response"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Invalid argument - The client specified an invalid argument"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unauthenticated - The request does not have valid authentication credentials"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Permission denied - The caller does not have permission to execute the specified operation"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Not found - Some requested entity was not found"
+    },
+    "408": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - The deadline expired before the operation could complete"
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Aborted - The operation was aborted due to concurrency issue"
+    },
+    "412": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Failed precondition - Operation was rejected because the system is not in required state"
+    },
+    "413": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Out of range - Operation was attempted past the valid range"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Resource exhausted - Some resource has been exhausted (rate limiting)"
+    },
+    "431": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Request header fields too large - Request metadata was too large"
+    },
+    "499": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Cancelled - The operation was cancelled by the client"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Internal - Internal server error"
+    },
+    "501": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unimplemented - The operation is not implemented or supported"
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unavailable - The service is currently unavailable"
+    },
+    "504": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - Upstream service did not respond in time"
+    },
+    "529": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Overloaded - The service is temporarily overloaded"
+    }
+  },
+  "summary": "Get Token Usage By Dimension",
+  "components": {
+    "schemas": {
+      "BetaAnalyticsUsageCostProductFilter": {
+        "description": "Publicly documented product surfaces. `claude_tag` is Claude Tag, the Claude product in Slack. `chat_cowork_unified` is Chat and Cowork unified, Cowork's features inside claude.ai chat: chat and Cowork usage by a member who has it turned on is reported under this value instead of `chat` or `cowork`. It is accepted as a filter only on deployments that offer Chat and Cowork unified.",
+        "enum": [
+          "chat",
+          "chat_cowork_unified",
+          "claude_code",
+          "claude_console",
+          "claude_design",
+          "claude_in_chrome",
+          "claude_tag",
+          "cowork",
+          "managed_agents_api",
+          "message_batches_api",
+          "messages_api",
+          "office_agent"
+        ],
+        "type": "string"
+      },
+      "BetaMessagesUsageReportContextWindow": {
+        "enum": [
+          "0-200k",
+          "200k-1M"
+        ],
+        "title": "MessagesUsageReportContextWindow",
+        "type": "string"
+      },
+      "BetaInferenceGeoFilter": {
+        "enum": [
+          "global",
+          "not_available",
+          "us"
+        ],
+        "title": "InferenceGeoFilter",
+        "type": "string"
+      },
+      "BetaAnalyticsSpeed": {
+        "enum": [
+          "fast",
+          "standard"
+        ],
+        "type": "string"
+      },
+      "BetaAnalyticsClaudeTagCategory": {
+        "enum": [
+          "dm",
+          "engaged",
+          "monitoring",
+          "proactive",
+          "scheduled"
+        ],
+        "title": "AnalyticsClaudeTagCategory",
+        "type": "string"
+      },
+      "BetaUsageReportServiceTier": {
+        "enum": [
+          "batch",
+          "flex",
+          "flex_discount",
+          "priority",
+          "priority_on_demand",
+          "standard"
+        ],
+        "examples": [
+          "standard"
+        ],
+        "title": "UsageReportServiceTier",
+        "type": "string"
+      },
+      "BetaAnalyticsActorType": {
+        "description": "Kind of identity a row's usage is attributed to.",
+        "enum": [
+          "api_actor",
+          "federated_actor",
+          "service_account_actor",
+          "user_actor"
+        ],
+        "examples": [
+          "user_actor"
+        ],
+        "title": "AnalyticsActorType",
+        "type": "string"
+      },
+      "BetaAnalyticsTimeBucketWidth": {
+        "enum": [
+          "1d",
+          "1h",
+          "1m"
+        ],
+        "type": "string"
+      },
+      "BetaAnalyticsUsageCostSortOrder": {
+        "enum": [
+          "asc",
+          "desc"
+        ],
+        "title": "AnalyticsUsageCostSortOrder",
+        "type": "string"
+      },
+      "BetaAnalyticsFlatUsageOrderBy": {
+        "enum": [
+          "output_tokens",
+          "requests",
+          "time",
+          "total_tokens",
+          "uncached_input_tokens"
+        ],
+        "title": "AnalyticsFlatUsageOrderBy",
+        "type": "string"
+      },
+      "BetaAnalyticsUsageGroupBy": {
+        "enum": [
+          "actor",
+          "actor_type",
+          "agent_id",
+          "api_key_id",
+          "claude_tag_category",
+          "claude_tag_user_id",
+          "context_window",
+          "deployment_id",
+          "environment_id",
+          "inference_geo",
+          "model",
+          "product",
+          "rbac_group_id",
+          "service_tier",
+          "session_id",
+          "slack_channel_id",
+          "speed",
+          "user_profile_id",
+          "workspace_id"
+        ],
+        "type": "string"
+      },
+      "AnthropicBeta": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "message-batches-2024-09-24",
+              "prompt-caching-2024-07-31",
+              "computer-use-2024-10-22",
+              "computer-use-2025-01-24",
+              "pdfs-2024-09-25",
+              "token-counting-2024-11-01",
+              "token-efficient-tools-2025-02-19",
+              "output-128k-2025-02-19",
+              "files-api-2025-04-14",
+              "mcp-client-2025-04-04",
+              "mcp-client-2025-11-20",
+              "dev-full-thinking-2025-05-14",
+              "interleaved-thinking-2025-05-14",
+              "code-execution-2025-05-22",
+              "extended-cache-ttl-2025-04-11",
+              "context-1m-2025-08-07",
+              "context-management-2025-06-27",
+              "model-context-window-exceeded-2025-08-26",
+              "skills-2025-10-02",
+              "fast-mode-2026-02-01",
+              "output-300k-2026-03-24",
+              "user-profiles-2026-03-24",
+              "user-profiles-2026-08-18",
+              "user-profiles-2026-09-04",
+              "advisor-tool-2026-03-01",
+              "managed-agents-2026-04-01",
+              "cache-diagnosis-2026-04-07",
+              "dreaming-2026-04-21",
+              "thinking-token-count-2026-05-13",
+              "server-side-fallback-2026-06-01",
+              "server-side-fallback-2026-07-01",
+              "fallback-credit-2026-06-01",
+              "fallback-credit-2026-07-01",
+              "agent-memory-2026-07-22",
+              "mid-conversation-tool-changes-2026-07-01",
+              "compact-2026-01-12",
+              "computer-use-2025-11-24",
+              "mcp-tunnels-2026-06-22",
+              "structured-outputs-2025-11-13",
+              "task-budgets-2026-03-13",
+              "thinking-display-updates-2026-08-18",
+              "ce-user-management-2026-07-13",
+              "mid-conversation-output-config-2026-07-01",
+              "thinking-binding-controls-2026-08-01",
+              "mid-conversation-system-clear-at-2026-08-21",
+              "compact-2026-09-04",
+              "inline-tools-2026-09-15",
+              "mcp-client-2026-09-15",
+              "ce-plugins-2026-09-01",
+              "spend-limit-reads-2026-09-26",
+              "telemetry-destinations-2026-08-11",
+              "webhooks-2026-10-07",
+              "message-threads-2026-08-12",
+              "analytics-usage-cost-2026-08-24",
+              "experimental-claude-tag-2026-10-21"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "BetaAnalyticsFlatUsageResponse": {
+        "properties": {
+          "data": {
+            "description": "Rows for this page, in the order set by `order_by` and `order`: one per combination of the `group_by[]` dimensions (and per time bucket, when `time_bucket_width` is set) with usage or cost in the range, or a single row when neither is set. Rows split out by `cost_type` or `token_type` (cost endpoint only) stay adjacent and are ranked as one unit.",
+            "items": {
+              "$ref": "#/components/schemas/BetaAnalyticsFlatUsageItem"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "data_refreshed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "RFC 3339 timestamp of the export this response was served from. Null when no export yet covers any part of the requested range, in which case `data` is empty. Data beyond this watermark is incomplete; for stable results, set `ending_at` to this value or earlier. Data is typically refreshed every 4 hours. Values can be revised as late events arrive and reconciliation runs, until about 7 days after the end of the calendar month the usage falls in; for example, values for October 1 can change until about November 7.",
+            "examples": [
+              "2026-10-01T04:02:11Z"
+            ],
+            "title": "Data Refreshed At"
+          },
+          "has_more": {
+            "description": "Whether another page is available. When true, pass `next_page` as the `page` parameter to fetch it.",
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "next_page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null when `has_more` is false. Pass it as the `page` parameter, keeping the other parameters unchanged. A cursor can expire after the underlying data refreshes; the request then returns HTTP 410 and pagination must restart from the first page.",
+            "title": "Next Page"
+          }
+        },
+        "required": [
+          "data",
+          "data_refreshed_at",
+          "has_more",
+          "next_page"
+        ],
+        "title": "AnalyticsFlatUsageResponse",
+        "type": "object"
+      },
+      "BetaErrorResponse": {
+        "properties": {
+          "error": {
+            "discriminator": {
+              "mapping": {
+                "api_error": "#/components/schemas/BetaAPIError",
+                "authentication_error": "#/components/schemas/BetaAuthenticationError",
+                "billing_error": "#/components/schemas/BetaBillingError",
+                "invalid_request_error": "#/components/schemas/BetaInvalidRequestError",
+                "not_found_error": "#/components/schemas/BetaNotFoundError",
+                "overloaded_error": "#/components/schemas/BetaOverloadedError",
+                "permission_error": "#/components/schemas/BetaPermissionError",
+                "rate_limit_error": "#/components/schemas/BetaRateLimitError",
+                "timeout_error": "#/components/schemas/BetaGatewayTimeoutError"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaInvalidRequestError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaAuthenticationError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaBillingError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaPermissionError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaNotFoundError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRateLimitError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaGatewayTimeoutError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaAPIError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaOverloadedError"
+              }
+            ],
+            "title": "Error"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Id"
+          },
+          "type": {
+            "const": "error",
+            "default": "error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "request_id",
+          "type"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "BetaAnalyticsFlatUsageItem": {
+        "properties": {
+          "ending_at": {
+            "description": "End of the period this row covers (exclusive), as an RFC 3339 UTC timestamp: the end of the row's time bucket when a time-bucket width is set; otherwise the requested `ending_at` (or, when omitted, the earlier of now and `starting_at` plus 31 days) rounded down to the hour, because without a time bucket the report covers whole hours.",
+            "examples": [
+              "2026-10-01T00:00:00Z"
+            ],
+            "format": "date-time",
+            "title": "Ending At",
+            "type": "string"
+          },
+          "group": {
+            "$ref": "#/components/schemas/BetaAnalyticsFlatGroup",
+            "description": "The dimension values this row's usage is broken out by."
+          },
+          "starting_at": {
+            "description": "Start of the period this row covers (inclusive), as an RFC 3339 UTC timestamp: the start of the row's time bucket when a time-bucket width is set, otherwise the requested `starting_at` rounded down to the hour.",
+            "examples": [
+              "2026-09-01T00:00:00Z"
+            ],
+            "format": "date-time",
+            "title": "Starting At",
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/BetaAnalyticsFlatUsageMetrics",
+            "description": "Token usage for this row."
+          }
+        },
+        "required": [
+          "ending_at",
+          "group",
+          "starting_at",
+          "usage"
+        ],
+        "title": "AnalyticsFlatUsageItem",
+        "type": "object"
+      },
+      "BetaInvalidRequestError": {
+        "properties": {
+          "message": {
+            "default": "Invalid request",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "invalid_request_error",
+            "default": "invalid_request_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "InvalidRequestError",
+        "type": "object"
+      },
+      "BetaAuthenticationError": {
+        "properties": {
+          "message": {
+            "default": "Authentication error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "authentication_error",
+            "default": "authentication_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "AuthenticationError",
+        "type": "object"
+      },
+      "BetaBillingError": {
+        "properties": {
+          "message": {
+            "default": "Billing error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "billing_error",
+            "default": "billing_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "BillingError",
+        "type": "object"
+      },
+      "BetaPermissionError": {
+        "properties": {
+          "message": {
+            "default": "Permission denied",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "permission_error",
+            "default": "permission_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "PermissionError",
+        "type": "object"
+      },
+      "BetaNotFoundError": {
+        "properties": {
+          "message": {
+            "default": "Not found",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "not_found_error",
+            "default": "not_found_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "NotFoundError",
+        "type": "object"
+      },
+      "BetaRateLimitError": {
+        "properties": {
+          "message": {
+            "default": "Rate limited",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "rate_limit_error",
+            "default": "rate_limit_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "RateLimitError",
+        "type": "object"
+      },
+      "BetaGatewayTimeoutError": {
+        "properties": {
+          "message": {
+            "default": "Request timeout",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "timeout_error",
+            "default": "timeout_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "GatewayTimeoutError",
+        "type": "object"
+      },
+      "BetaAPIError": {
+        "properties": {
+          "message": {
+            "default": "Internal server error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "api_error",
+            "default": "api_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "APIError",
+        "type": "object"
+      },
+      "BetaOverloadedError": {
+        "properties": {
+          "message": {
+            "default": "Overloaded",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "overloaded_error",
+            "default": "overloaded_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "OverloadedError",
+        "type": "object"
+      },
+      "BetaAnalyticsFlatGroup": {
+        "description": "The dimension values one usage row is broken out by; each is null\nunless its dimension is in `group_by[]`.",
+        "properties": {
+          "actor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaAnalyticsReportActor"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The identity the usage is attributed to: the user if one is attributed, else the service account, else the federated (cloud-platform) identity, else the API key. Populated only when `actor` is in `group_by[]`; null for usage with no attributable identity, and for users' and federated identities' usage when the reader is a member who can see only some workspaces. Distinct identities the server cannot render also read null, each as its own row."
+          },
+          "actor_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaAnalyticsActorType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Kind of identity the usage is attributed to; matches `actor.type` when `actor` is set. Populated only when `actor_type` is in `group_by[]`.",
+            "examples": [
+              "user_actor",
+              "service_account_actor",
+              "federated_actor",
+              "api_actor"
+            ]
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Claude Managed Agents agent whose session incurred the usage. Populated only when `agent_id` is in `group_by[]`; null for usage outside a managed session.",
+            "examples": [
+              "agent_01VHd3EAGJ6PLkP9LM7DDu3f"
+            ],
+            "title": "Agent Id"
+          },
+          "api_key_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "API key that authenticated the requests, as a tagged API key ID, whichever identity `actor` resolves to. Populated only when `api_key_id` is in `group_by[]`; null for usage not authenticated by an API key.",
+            "examples": [
+              "apikey_01Rj2N8SVvo6BePZj99NhmiT"
+            ],
+            "title": "Api Key Id"
+          },
+          "claude_tag_category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaAnalyticsClaudeTagCategory"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Claude Tag (Claude in Slack) spend category: `engaged` (a person addressed Claude in a channel or thread), `proactive` (Claude responded without being addressed), `scheduled` (a scheduled routine ran), `monitoring` (Claude watching a channel it was asked to monitor), or `dm` (direct messages with Claude). Populated only when `claude_tag_category` is in `group_by[]`; null for usage that is not Claude Tag. Direct-message usage is billed to the individual user and is reported under that user's product, not under `claude_tag`. New categories may be added over time.",
+            "examples": [
+              "dm",
+              "monitoring",
+              "scheduled",
+              "engaged",
+              "proactive"
+            ]
+          },
+          "claude_tag_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Slack user ID (for example `U0123ABCDEF`) of the member the Claude Tag (Claude in Slack) usage is attributed to, not a claude.ai user ID. Populated only when `claude_tag_user_id` is in `group_by[]`; null for usage that is not Claude Tag and for Claude Tag usage that is not attributed to a single user (for example `monitoring`, and `proactive` usage Claude initiated), so per-user rows can sum to less than the Claude Tag total. Cannot be combined with `group_by[]=rbac_group_id` or the `rbac_group_ids[]` filter.",
+            "examples": [
+              "U0123ABCDEF"
+            ],
+            "title": "Claude Tag User Id"
+          },
+          "context_window": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaMessagesUsageReportContextWindow"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Context-window pricing tier of the usage or cost. Null unless `context_window` is in `group_by[]`; it can also be null on grouped rows with no context-window tier, such as code execution.",
+            "examples": [
+              "0-200k",
+              "200k-1M"
+            ]
+          },
+          "deployment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Deployment that started the Claude Managed Agents session. Populated only when `deployment_id` is in `group_by[]`; null for usage outside a managed session and for sessions no deployment started.",
+            "examples": [
+              "depl_01JFC6ihzZHtAuyHsaENdJhY"
+            ],
+            "title": "Deployment Id"
+          },
+          "environment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Claude Managed Agents environment the session ran in. Populated only when `environment_id` is in `group_by[]`; null for usage outside a managed session.",
+            "examples": [
+              "env_017oTjuGedHtjhJauVC5xGJD"
+            ],
+            "title": "Environment Id"
+          },
+          "inference_geo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaAnalyticsUsageCostInferenceGeo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Inference region of the usage or cost. Null unless `inference_geo` is in `group_by[]`; it can also be null on grouped rows where the region is not set (the rows that `inference_geos[]=not_available` matches).",
+            "examples": [
+              "global",
+              "us"
+            ]
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Model that produced the usage or cost, as a model name in the form the `models[]` filter accepts (for example, `claude-opus-5-5`). Null unless `model` is in `group_by[]`; it can also be null on grouped rows whose usage or cost is not attributed to a specific model, such as code execution.",
+            "examples": [
+              "claude-opus-5-5",
+              "claude-sonnet-5-5"
+            ],
+            "title": "Model"
+          },
+          "product": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Product surface that produced the usage or cost. Null unless product is in `group_by[]`; it can also be null on grouped rows whose usage cannot be attributed to a known surface. Values include `chat`, `claude_code`, `cowork`, `office_agent`, `claude_in_chrome`, `claude_design`, `claude_tag`, and `chat_cowork_unified`. `claude_tag` is Claude Tag, the Claude product in Slack. `chat_cowork_unified` is Chat and Cowork unified, Cowork's features inside claude.ai chat: chat and Cowork usage by a member who has it turned on is reported under this value instead of `chat` or `cowork`. It is accepted as a filter only on deployments that offer Chat and Cowork unified. Some unattributed usage is reported as \"other\".",
+            "examples": [
+              "chat",
+              "claude_code",
+              "cowork",
+              "office_agent",
+              "claude_in_chrome",
+              "claude_design",
+              "claude_tag",
+              "chat_cowork_unified"
+            ]
+          },
+          "rbac_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "RBAC group (team) the usage is attributed to, in the public tagged `rbac_group_...` spelling — the same spelling the activity resources use for this key, so the same team has one id across resources and it round-trips as an `rbac_group_ids[]` filter value. Populated only when `rbac_group_id` is in `group_by[]`. Any-membership semantics: a user in several groups contributes their full usage to each of those groups' rows, so the named-group rows overlap and their sum can exceed the org total. A null value is the single unassigned row: users in no group on that (UTC) day. For the true org total, run the same query without `group_by[]`.",
+            "examples": [
+              "rbac_group_012rppKaSVsmTo6NqRDXQXNF"
+            ],
+            "title": "Rbac Group Id"
+          },
+          "service_tier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaUsageReportServiceTier"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Service tier the usage was served at. Populated only when `service_tier` is in `group_by[]`; null for usage with no service tier (for example, code execution) and for Claude Enterprise usage.",
+            "examples": [
+              "standard",
+              "batch",
+              "priority",
+              "priority_on_demand",
+              "flex",
+              "flex_discount"
+            ]
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Claude Managed Agents session that incurred the usage. Populated only when `session_id` is in `group_by[]`; null for usage outside a managed session.",
+            "examples": [
+              "sesn_0187kPDyNCwibNNvfaPEApCJ"
+            ],
+            "title": "Session Id"
+          },
+          "slack_channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Slack channel the usage originated from. Populated only when `slack_channel_id` is in `group_by[]`; null for usage outside Slack (and for rows recorded before channel attribution was enabled).",
+            "examples": [
+              "C0123ABCDEF"
+            ],
+            "title": "Slack Channel Id"
+          },
+          "speed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaAnalyticsSpeed"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Inference speed mode of the usage or cost: `fast` or `standard`. Null unless `speed` is in `group_by[]`.",
+            "examples": [
+              "fast",
+              "standard"
+            ]
+          },
+          "user_profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "User profile the usage was attributed to, as a tagged `uprof_` ID. Populated only when `user_profile_id` is in `group_by[]`; null for usage that named no profile and for Claude Enterprise usage.",
+            "examples": [
+              "uprof_01M33NeYUQK2WV9PpYcsPHLi"
+            ],
+            "title": "User Profile Id"
+          },
+          "workspace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Workspace the usage occurred in, as a tagged workspace ID, including the organization's default workspace. Populated only when `workspace_id` is in `group_by[]`; null for Claude Enterprise usage.",
+            "examples": [
+              "wrkspc_01JwQvzr7rXLA5AGx3HKfFUJ"
+            ],
+            "title": "Workspace Id"
+          }
+        },
+        "required": [
+          "actor",
+          "actor_type",
+          "agent_id",
+          "api_key_id",
+          "claude_tag_category",
+          "claude_tag_user_id",
+          "context_window",
+          "deployment_id",
+          "environment_id",
+          "inference_geo",
+          "model",
+          "product",
+          "rbac_group_id",
+          "service_tier",
+          "session_id",
+          "slack_channel_id",
+          "speed",
+          "user_profile_id",
+          "workspace_id"
+        ],
+        "title": "AnalyticsFlatGroup",
+        "type": "object"
+      },
+      "BetaAnalyticsFlatUsageMetrics": {
+        "description": "The token usage of one row.",
+        "properties": {
+          "cache_creation": {
+            "$ref": "#/components/schemas/BetaCacheCreation",
+            "description": "The number of input tokens for cache creation."
+          },
+          "cache_read_input_tokens": {
+            "description": "The number of input tokens read from the cache.",
+            "examples": [
+              3200000
+            ],
+            "title": "Cache Read Input Tokens",
+            "type": "integer"
+          },
+          "output_tokens": {
+            "description": "The number of output tokens generated.",
+            "examples": [
+              891000
+            ],
+            "title": "Output Tokens",
+            "type": "integer"
+          },
+          "requests": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of API requests in this row's scope. For sandbox / code-execution events, this counts execution spans rather than HTTP requests (these rows surface with `product: null`).",
+            "examples": [
+              128
+            ],
+            "title": "Requests"
+          },
+          "server_tool_use": {
+            "$ref": "#/components/schemas/BetaServerToolUse",
+            "description": "Server-side tool usage metrics."
+          },
+          "total_tokens": {
+            "description": "Total token count across all token types. This is the value the default `order_by` (`total_tokens`) sorts on.",
+            "examples": [
+              5375500
+            ],
+            "title": "Total Tokens",
+            "type": "integer"
+          },
+          "uncached_input_tokens": {
+            "description": "The number of uncached input tokens processed.",
+            "examples": [
+              1284500
+            ],
+            "title": "Uncached Input Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cache_creation",
+          "cache_read_input_tokens",
+          "output_tokens",
+          "requests",
+          "server_tool_use",
+          "total_tokens",
+          "uncached_input_tokens"
+        ],
+        "title": "AnalyticsFlatUsageMetrics",
+        "type": "object"
+      },
+      "BetaAnalyticsReportActor": {
+        "discriminator": {
+          "mapping": {
+            "api_actor": "#/components/schemas/BetaAnalyticsApiActor",
+            "federated_actor": "#/components/schemas/BetaAnalyticsFederatedActor",
+            "service_account_actor": "#/components/schemas/BetaAnalyticsServiceAccountActor",
+            "user_actor": "#/components/schemas/BetaAnalyticsReportUserActor"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaAnalyticsReportUserActor"
+          },
+          {
+            "$ref": "#/components/schemas/BetaAnalyticsServiceAccountActor"
+          },
+          {
+            "$ref": "#/components/schemas/BetaAnalyticsFederatedActor"
+          },
+          {
+            "$ref": "#/components/schemas/BetaAnalyticsApiActor"
+          }
+        ],
+        "title": "AnalyticsReportActor"
+      },
+      "BetaAnalyticsUsageCostInferenceGeo": {
+        "enum": [
+          "global",
+          "us"
+        ],
+        "title": "AnalyticsUsageCostInferenceGeo",
+        "type": "string"
+      },
+      "BetaCacheCreation": {
+        "properties": {
+          "ephemeral_1h_input_tokens": {
+            "default": 0,
+            "description": "The number of input tokens used to create the 1 hour cache entry.",
+            "minimum": 0,
+            "title": "Ephemeral 1H Input Tokens",
+            "type": "integer"
+          },
+          "ephemeral_5m_input_tokens": {
+            "default": 0,
+            "description": "The number of input tokens used to create the 5 minute cache entry.",
+            "minimum": 0,
+            "title": "Ephemeral 5M Input Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ephemeral_1h_input_tokens",
+          "ephemeral_5m_input_tokens"
+        ],
+        "title": "CacheCreation",
+        "type": "object"
+      },
+      "BetaServerToolUse": {
+        "properties": {
+          "web_search_requests": {
+            "description": "The number of web search requests made.",
+            "examples": [
+              10
+            ],
+            "title": "Web Search Requests",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "web_search_requests"
+        ],
+        "title": "ServerToolUse",
+        "type": "object"
+      },
+      "BetaAnalyticsReportUserActor": {
+        "properties": {
+          "deleted": {
+            "description": "True when the account has been deleted, or when the user is no longer a member of the organization or its associated organizations (for example, their membership was removed or they were deprovisioned via your identity provider). `email_address` stays populated for removed users and is null when the account has been deleted. `name` follows the rules described on that field. The `user_id` is still populated for reconciliation.",
+            "examples": [
+              false
+            ],
+            "title": "Deleted",
+            "type": "boolean"
+          },
+          "email_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The user's current email address, including for users who are no longer members of the organization. Null when the account has been deleted and for system-minted service accounts.",
+            "examples": [
+              "user@emaildomain.com"
+            ],
+            "title": "Email Address"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The user's current full name. Null when the user has not set one. `\"Deleted User\"` when the account has been deleted, or when the user is no longer a member and the organization hides removed users' names.",
+            "examples": [
+              "Jane Doe"
+            ],
+            "title": "Name"
+          },
+          "type": {
+            "const": "user_actor",
+            "description": "Actor type. Always `\"user_actor\"`.",
+            "title": "Type",
+            "type": "string"
+          },
+          "user_id": {
+            "description": "Tagged user ID.",
+            "examples": [
+              "user_01WCz1FkmYMm4gnmykNKUu3Q"
+            ],
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "deleted",
+          "email_address",
+          "name",
+          "type",
+          "user_id"
+        ],
+        "title": "AnalyticsReportUserActor",
+        "type": "object"
+      },
+      "BetaAnalyticsServiceAccountActor": {
+        "properties": {
+          "service_account_id": {
+            "description": "Tagged service account ID.",
+            "examples": [
+              "svac_01Hk3R9TWxq7CfQak00OiVw4"
+            ],
+            "title": "Service Account Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "service_account_actor",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "service_account_id",
+          "type"
+        ],
+        "title": "AnalyticsServiceAccountActor",
+        "type": "object"
+      },
+      "BetaAnalyticsFederatedActor": {
+        "properties": {
+          "provider": {
+            "$ref": "#/components/schemas/BetaAnalyticsFederatedActorProvider",
+            "description": "The trusted provider that asserted the caller's identity."
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The provider's identifier for the caller: on `aws`, the IAM principal ARN (one role is one actor across its sessions); on `gcp`, the caller's IAM principal identifier as Google Cloud reports it, such as `serviceAccount:<email>`, `user:<email>`, or a `principal://...` URI.",
+            "title": "Subject"
+          },
+          "type": {
+            "const": "federated_actor",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "subject",
+          "type"
+        ],
+        "title": "AnalyticsFederatedActor",
+        "type": "object"
+      },
+      "BetaAnalyticsApiActor": {
+        "properties": {
+          "api_key_id": {
+            "description": "Tagged API key ID.",
+            "examples": [
+              "apikey_01Rj2N8SVvo6BePZj99NhmiT"
+            ],
+            "title": "Api Key Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "api_actor",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "api_key_id",
+          "type"
+        ],
+        "title": "AnalyticsApiActor",
+        "type": "object"
+      },
+      "BetaAnalyticsFederatedActorProvider": {
+        "discriminator": {
+          "mapping": {
+            "aws": "#/components/schemas/BetaAnalyticsFederatedActorAwsProvider",
+            "azure": "#/components/schemas/BetaAnalyticsFederatedActorAzureProvider",
+            "gcp": "#/components/schemas/BetaAnalyticsFederatedActorGcpProvider",
+            "oidc": "#/components/schemas/BetaAnalyticsFederatedActorOidcProvider"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaAnalyticsFederatedActorAwsProvider"
+          },
+          {
+            "$ref": "#/components/schemas/BetaAnalyticsFederatedActorAzureProvider"
+          },
+          {
+            "$ref": "#/components/schemas/BetaAnalyticsFederatedActorGcpProvider"
+          },
+          {
+            "$ref": "#/components/schemas/BetaAnalyticsFederatedActorOidcProvider"
+          }
+        ],
+        "title": "AnalyticsFederatedActorProvider"
+      },
+      "BetaAnalyticsFederatedActorAwsProvider": {
+        "properties": {
+          "account_id": {
+            "description": "The AWS account the organization is bound to.",
+            "title": "Account Id",
+            "type": "string"
+          },
+          "signed_principal": {
+            "description": "The AWS-signed ARN of the IAM principal that made the requests.",
+            "title": "Signed Principal",
+            "type": "string"
+          },
+          "type": {
+            "const": "aws",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account_id",
+          "signed_principal",
+          "type"
+        ],
+        "title": "AnalyticsFederatedActorAwsProvider",
+        "type": "object"
+      },
+      "BetaAnalyticsFederatedActorAzureProvider": {
+        "properties": {
+          "subscription_id": {
+            "description": "The Azure subscription the organization is bound to.",
+            "title": "Subscription Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "azure",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subscription_id",
+          "type"
+        ],
+        "title": "AnalyticsFederatedActorAzureProvider",
+        "type": "object"
+      },
+      "BetaAnalyticsFederatedActorGcpProvider": {
+        "properties": {
+          "project_number": {
+            "description": "The Google Cloud project the organization is bound to.",
+            "title": "Project Number",
+            "type": "string"
+          },
+          "type": {
+            "const": "gcp",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_number",
+          "type"
+        ],
+        "title": "AnalyticsFederatedActorGcpProvider",
+        "type": "object"
+      },
+      "BetaAnalyticsFederatedActorOidcProvider": {
+        "properties": {
+          "issuer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The federation issuer's URL.",
+            "title": "Issuer"
+          },
+          "type": {
+            "const": "oidc",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "issuer",
+          "type"
+        ],
+        "title": "AnalyticsFederatedActorOidcProvider",
+        "type": "object"
+      }
+    }
+  }
+}

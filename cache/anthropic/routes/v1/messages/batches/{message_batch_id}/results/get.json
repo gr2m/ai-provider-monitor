@@ -25,13 +25,12 @@
       }
     },
     {
-      "description": "Your unique API key for authentication.\n\nThis key is required in the header of all API requests, to authenticate your account and access Anthropic's services. Get your API key through the [Console](https://console.anthropic.com/settings/keys). Each key is scoped to a Workspace.",
+      "description": "Optional header to select the Workspace for this request. The value is a Workspace ID (for example, `wrkspc_011CZkZaBF1tNoB5wlCeusgy`).\n\nOnly needed for credentials that can act on more than one Workspace. A credential that belongs to a specific Workspace may omit it; if sent, it must match that Workspace.",
+      "example": "wrkspc_011CZkZaBF1tNoB5wlCeusgy",
       "in": "header",
-      "name": "x-api-key",
+      "name": "anthropic-workspace-id",
       "required": false,
       "schema": {
-        "description": "Your unique API key for authentication.\n\nThis key is required in the header of all API requests, to authenticate your account and access Anthropic's services. Get your API key through the [Console](https://console.anthropic.com/settings/keys). Each key is scoped to a Workspace.",
-        "title": "X-Api-Key",
         "type": "string"
       }
     }
@@ -47,7 +46,81 @@
       },
       "description": "Successful Response"
     },
-    "4XX": {
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "details": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/ClaudeCodeKeyCreatorNotMemberErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/CmekKeyDisabledErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/OrganizationOnHoldErrorDetails"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Machine-readable detail about the cause of the error. `error_code` names the cause; branch on it rather than on `message`. Absent when the error has no code. Treat an unrecognized `error_code` as the bare `type`.",
+                    "title": "Details"
+                  },
+                  "message": {
+                    "default": "Invalid request",
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "invalid_request_error",
+                    "default": "invalid_request_error",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "type"
+                ],
+                "title": "InvalidRequestError",
+                "type": "object"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "type": {
+                "const": "error",
+                "default": "error",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "error",
+              "request_id",
+              "type"
+            ],
+            "title": "ErrorResponse",
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid argument - The client specified an invalid argument"
+    },
+    "401": {
       "content": {
         "application/json": {
           "schema": {
@@ -55,7 +128,147 @@
           }
         }
       },
-      "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
+      "description": "Unauthenticated - The request does not have valid authentication credentials"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Permission denied - The caller does not have permission to execute the specified operation"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Not found - Some requested entity was not found"
+    },
+    "408": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - The deadline expired before the operation could complete"
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Aborted - The operation was aborted due to concurrency issue"
+    },
+    "412": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Failed precondition - Operation was rejected because the system is not in required state"
+    },
+    "413": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Out of range - Operation was attempted past the valid range"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Resource exhausted - Some resource has been exhausted (rate limiting)"
+    },
+    "431": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Request header fields too large - Request metadata was too large"
+    },
+    "499": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Cancelled - The operation was cancelled by the client"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Internal - Internal server error"
+    },
+    "501": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Unimplemented - The operation is not implemented or supported"
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Unavailable - The service is currently unavailable"
+    },
+    "504": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - Upstream service did not respond in time"
+    },
+    "529": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Overloaded - The service is temporarily overloaded"
     }
   },
   "summary": "Retrieve Message Batch results",
@@ -105,6 +318,62 @@
           "result"
         ],
         "title": "MessageBatchIndividualResponse",
+        "type": "object"
+      },
+      "ClaudeCodeKeyCreatorNotMemberErrorDetails": {
+        "description": "The API key belongs to the Claude Code workspace, and the user who created it is no longer a member of the organization or of that workspace.",
+        "properties": {
+          "error_code": {
+            "const": "claude_code_key_creator_not_member",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "ClaudeCodeKeyCreatorNotMemberErrorDetails",
+        "type": "object"
+      },
+      "CmekKeyDisabledErrorDetails": {
+        "description": "The workspace's customer-managed encryption key is disabled or revoked. Re-enable the key, then retry.",
+        "properties": {
+          "error_code": {
+            "const": "cmek_key_disabled",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "CmekKeyDisabledErrorDetails",
+        "type": "object"
+      },
+      "OrganizationOnHoldErrorDetails": {
+        "description": "Anthropic has disabled the organization for trust and safety reasons. An organization disabled for any other reason, such as billing, does not get this code. `appeal_url`, when present, is where the organization can appeal.",
+        "properties": {
+          "appeal_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Appeal Url"
+          },
+          "error_code": {
+            "const": "organization_on_hold",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "OrganizationOnHoldErrorDetails",
         "type": "object"
       },
       "ErrorResponse": {
@@ -449,8 +718,9 @@
                 "type": "text"
               }
             ],
+            "diagnostics": null,
             "id": "msg_013Zva2CMHLNnXjNJJKqJ2EF",
-            "model": "claude-opus-5",
+            "model": "claude-opus-5-5",
             "role": "assistant",
             "stop_details": null,
             "stop_reason": "end_turn",
@@ -458,7 +728,8 @@
             "type": "message",
             "usage": {
               "input_tokens": 2095,
-              "output_tokens": 503
+              "output_tokens": 503,
+              "speed": "standard"
             }
           }
         ],
@@ -491,6 +762,18 @@
             },
             "title": "Content",
             "type": "array"
+          },
+          "diagnostics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Diagnostics"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Request-level diagnostics. `null` when the request did not supply `diagnostics`, or when it did and no prompt-cache divergence was detected."
           },
           "id": {
             "description": "Unique object identifier.\n\nThe format and length of IDs may change over time.",
@@ -560,7 +843,8 @@
             "examples": [
               {
                 "input_tokens": 2095,
-                "output_tokens": 503
+                "output_tokens": 503,
+                "speed": "standard"
               }
             ]
           }
@@ -575,6 +859,7 @@
           "stop_sequence",
           "stop_details",
           "usage",
+          "diagnostics",
           "container"
         ],
         "title": "Message",
@@ -679,14 +964,45 @@
           }
         ]
       },
+      "Diagnostics": {
+        "description": "Request-level diagnostics: why the prompt cache could not fully reuse\nthe prefix of the request named by `diagnostics.previous_message_id`.",
+        "properties": {
+          "cache_miss_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CacheMissReason"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Explains why the prompt cache could not fully reuse the prefix from the request identified by `diagnostics.previous_message_id`. `null` means diagnosis is still pending — the response was serialized before the background comparison completed."
+          }
+        },
+        "required": [
+          "cache_miss_reason"
+        ],
+        "title": "Diagnostics",
+        "type": "object"
+      },
       "Model": {
         "anyOf": [
           {
-            "type": "string"
+            "const": "claude-haiku-5-5",
+            "description": "Fastest model for high-volume, real-time tasks"
+          },
+          {
+            "const": "claude-sonnet-5-5",
+            "description": "Efficient model for coding and agents"
           },
           {
             "const": "claude-fable-5-1",
             "description": "Frontier intelligence for ambitious tasks across coding, scientific discovery, and enterprise workflows"
+          },
+          {
+            "const": "claude-opus-5-5",
+            "description": "Powerful intelligence for coding, knowledge work, and long-running agents"
           },
           {
             "const": "claude-mythos-5-1",
@@ -694,7 +1010,7 @@
           },
           {
             "const": "claude-sonnet-5",
-            "description": "High-performance model for coding and agents"
+            "description": "Efficient model for coding and agents"
           },
           {
             "const": "claude-fable-5",
@@ -730,12 +1046,10 @@
             "description": "Best combination of speed and intelligence"
           },
           {
-            "const": "claude-haiku-4-5",
-            "description": "Fastest model with near-frontier intelligence"
+            "const": "claude-haiku-4-5"
           },
           {
-            "const": "claude-haiku-4-5-20251001",
-            "description": "Fastest model with near-frontier intelligence"
+            "const": "claude-haiku-4-5-20251001"
           },
           {
             "const": "claude-opus-4-5",
@@ -747,11 +1061,16 @@
           },
           {
             "const": "claude-sonnet-4-5",
+            "deprecated": true,
             "description": "High-performance model for agents and coding"
           },
           {
             "const": "claude-sonnet-4-5-20250929",
+            "deprecated": true,
             "description": "High-performance model for agents and coding"
+          },
+          {
+            "type": "string"
           }
         ],
         "description": "The model that will complete your prompt.\n\nSee [models](https://docs.anthropic.com/en/docs/models-overview) for additional details and options.",
@@ -938,6 +1257,18 @@
             "default": null,
             "description": "If the request used the priority, standard, or batch tier.",
             "title": "Service Tier"
+          },
+          "speed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Speed"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The inference speed mode used for this request."
           }
         },
         "required": [
@@ -949,7 +1280,8 @@
           "output_tokens",
           "output_tokens_details",
           "server_tool_use",
-          "service_tier"
+          "service_tier",
+          "speed"
         ],
         "title": "Usage",
         "type": "object"
@@ -1043,7 +1375,6 @@
             "title": "Citations"
           },
           "text": {
-            "maxLength": 5000000,
             "minLength": 0,
             "title": "Text",
             "type": "string"
@@ -1536,17 +1867,70 @@
         "title": "ResponseContainerUploadBlock",
         "type": "object"
       },
-      "RefusalCategory": {
-        "description": "The policy category that triggered a refusal.",
-        "enum": [
-          "cyber",
-          "bio",
-          "frontier_llm",
-          "reasoning_extraction",
-          "general_harms"
+      "CacheMissReason": {
+        "discriminator": {
+          "mapping": {
+            "messages_changed": "#/components/schemas/CacheMissMessagesChanged",
+            "model_changed": "#/components/schemas/CacheMissModelChanged",
+            "previous_message_not_found": "#/components/schemas/CacheMissPreviousMessageNotFound",
+            "system_changed": "#/components/schemas/CacheMissSystemChanged",
+            "tools_changed": "#/components/schemas/CacheMissToolsChanged",
+            "unavailable": "#/components/schemas/CacheMissUnavailable"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CacheMissModelChanged"
+          },
+          {
+            "$ref": "#/components/schemas/CacheMissSystemChanged"
+          },
+          {
+            "$ref": "#/components/schemas/CacheMissToolsChanged"
+          },
+          {
+            "$ref": "#/components/schemas/CacheMissMessagesChanged"
+          },
+          {
+            "$ref": "#/components/schemas/CacheMissPreviousMessageNotFound"
+          },
+          {
+            "$ref": "#/components/schemas/CacheMissUnavailable"
+          }
         ],
-        "title": "RefusalCategory",
-        "type": "string"
+        "title": "CacheMissReason"
+      },
+      "RefusalCategory": {
+        "anyOf": [
+          {
+            "const": "cyber",
+            "description": "The request could enable cyber harm, such as malware or exploit development. Benign cybersecurity work can also trigger this category.",
+            "type": "string"
+          },
+          {
+            "const": "bio",
+            "description": "The request could enable biological harm, such as dangerous lab methods. Beneficial life sciences work can also trigger this category.",
+            "type": "string"
+          },
+          {
+            "const": "frontier_llm",
+            "description": "The request could assist the development of competing AI models, which is restricted under [Anthropic's commercial terms](https://www.anthropic.com/legal/commercial-terms). Benign machine learning work can also trigger this category.",
+            "type": "string"
+          },
+          {
+            "const": "reasoning_extraction",
+            "description": "The request asks the model to reproduce its internal reasoning in the response text. To get reasoning in a structured form instead, use [adaptive thinking](https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking).",
+            "type": "string"
+          },
+          {
+            "const": "general_harms",
+            "description": "The request could be related to an area that was determined as harmful. Benign work might sometimes trigger this category.",
+            "type": "string"
+          }
+        ],
+        "description": "The policy category that triggered a refusal.",
+        "title": "RefusalCategory"
       },
       "CacheCreation": {
         "properties": {
@@ -1617,6 +2001,14 @@
         ],
         "title": "ServerToolUsage",
         "type": "object"
+      },
+      "Speed": {
+        "enum": [
+          "standard",
+          "fast"
+        ],
+        "title": "Speed",
+        "type": "string"
       },
       "ResponseCharLocationCitation": {
         "properties": {
@@ -2178,7 +2570,7 @@
         "type": "object"
       },
       "ResponseEncryptedCodeExecutionResultBlock": {
-        "description": "Code execution result with encrypted stdout for PFC + web_search results.",
+        "description": "The output and exit code of Python code that Claude ran with the code execution tool, with standard output in encrypted form.\n\nThe API returns this block in place of `code_execution_result` when the code called the web search tool.\n\nSee the [programmatic tool calling guide](https://platform.claude.com/docs/en/agents-and-tools/tool-use/programmatic-tool-calling) to learn more about programmatic tool calling.",
         "properties": {
           "content": {
             "items": {
@@ -2532,6 +2924,126 @@
         "title": "ResponseToolSearchToolSearchResultBlock",
         "type": "object"
       },
+      "CacheMissModelChanged": {
+        "description": "A `cache_miss_reason` for a request whose `model` or `speed` differs from the previous request's.\n\nSee the [cache diagnostics guide](https://platform.claude.com/docs/en/build-with-claude/cache-diagnostics#cache-miss-reason-types) to learn what to change for each reason.",
+        "properties": {
+          "cache_missed_input_tokens": {
+            "description": "Approximate number of input tokens that would have been read from cache had the prefix matched the previous request.",
+            "title": "Cache Missed Input Tokens",
+            "type": "integer"
+          },
+          "type": {
+            "const": "model_changed",
+            "default": "model_changed",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cache_missed_input_tokens",
+          "type"
+        ],
+        "title": "CacheMissModelChanged",
+        "type": "object"
+      },
+      "CacheMissSystemChanged": {
+        "description": "A `cache_miss_reason` for a request whose `system` differs from the previous request's.\n\nSee the [cache diagnostics guide](https://platform.claude.com/docs/en/build-with-claude/cache-diagnostics#cache-miss-reason-types) to learn what to change for each reason.",
+        "properties": {
+          "cache_missed_input_tokens": {
+            "description": "Approximate number of input tokens that would have been read from cache had the prefix matched the previous request.",
+            "title": "Cache Missed Input Tokens",
+            "type": "integer"
+          },
+          "type": {
+            "const": "system_changed",
+            "default": "system_changed",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cache_missed_input_tokens",
+          "type"
+        ],
+        "title": "CacheMissSystemChanged",
+        "type": "object"
+      },
+      "CacheMissToolsChanged": {
+        "description": "A `cache_miss_reason` for a request whose `tools` differ from the previous request's, for example because tools were added, removed, or reordered.\n\nSee the [cache diagnostics guide](https://platform.claude.com/docs/en/build-with-claude/cache-diagnostics#cache-miss-reason-types) to learn what to change for each reason.",
+        "properties": {
+          "cache_missed_input_tokens": {
+            "description": "Approximate number of input tokens that would have been read from cache had the prefix matched the previous request.",
+            "title": "Cache Missed Input Tokens",
+            "type": "integer"
+          },
+          "type": {
+            "const": "tools_changed",
+            "default": "tools_changed",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cache_missed_input_tokens",
+          "type"
+        ],
+        "title": "CacheMissToolsChanged",
+        "type": "object"
+      },
+      "CacheMissMessagesChanged": {
+        "description": "A `cache_miss_reason` for a request whose `messages` differ from the previous request's in an earlier entry, instead of only having entries appended. The `model`, `system`, and `tools` match.\n\nSee the [cache diagnostics guide](https://platform.claude.com/docs/en/build-with-claude/cache-diagnostics#cache-miss-reason-types) to learn what to change for each reason.",
+        "properties": {
+          "cache_missed_input_tokens": {
+            "description": "Approximate number of input tokens that would have been read from cache had the prefix matched the previous request.",
+            "title": "Cache Missed Input Tokens",
+            "type": "integer"
+          },
+          "type": {
+            "const": "messages_changed",
+            "default": "messages_changed",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cache_missed_input_tokens",
+          "type"
+        ],
+        "title": "CacheMissMessagesChanged",
+        "type": "object"
+      },
+      "CacheMissPreviousMessageNotFound": {
+        "description": "A `cache_miss_reason` for when the API doesn't have a stored record of the request that `diagnostics.previous_message_id` references.\n\nThis doesn't mean that this request changed.\n\nSee the [cache diagnostics guide](https://platform.claude.com/docs/en/build-with-claude/cache-diagnostics#cache-miss-reason-types) to learn what to change for each reason.",
+        "properties": {
+          "type": {
+            "const": "previous_message_not_found",
+            "default": "previous_message_not_found",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "CacheMissPreviousMessageNotFound",
+        "type": "object"
+      },
+      "CacheMissUnavailable": {
+        "description": "A `cache_miss_reason` for when the API can't give a diagnosis. The request itself was processed normally.\n\nThis includes a request whose `model`, `system`, and `tools` match the previous request's but whose other prompt-affecting parameters, such as `thinking` or `tool_choice`, differ.\n\nSee the [cache diagnostics guide](https://platform.claude.com/docs/en/build-with-claude/cache-diagnostics#cache-miss-reason-types) to learn what to change for each reason.",
+        "properties": {
+          "type": {
+            "const": "unavailable",
+            "default": "unavailable",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "CacheMissUnavailable",
+        "type": "object"
+      },
       "WebSearchToolResultErrorCode": {
         "enum": [
           "invalid_tool_input",
@@ -2554,7 +3066,8 @@
           "unsupported_content_type",
           "too_many_requests",
           "max_uses_exceeded",
-          "unavailable"
+          "unavailable",
+          "content_too_large"
         ],
         "title": "WebFetchToolResultErrorCode",
         "type": "string"

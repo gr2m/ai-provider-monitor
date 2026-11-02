@@ -1,0 +1,932 @@
+{
+  "description": "Get organization-wide activity summaries for a date range.\n\nReturns one entry per day from `starting_date` (inclusive) to `ending_date`\n(exclusive) in `data`, the same `data` / `next_page` envelope as the other\nanalytics list endpoints; the series is currently returned in full, so\n`next_page` is always null.\nData is typically available with a 1-day lag and may be revised by a few\npercent over the following days: when `ending_date` is omitted it\ndefaults to the most recent available day + 1, so the last entry covers\nthe most recent available day. The series can be scoped to an RBAC group\nvia `filter[]=rbac_group_id:{id}`. Available to organizations on a Claude\nEnterprise plan. Requires an API key with the `read:analytics` scope.",
+  "operationId": "beta_get_summaries_v1_organizations_analytics_summaries_get",
+  "parameters": [
+    {
+      "description": "UTC date in YYYY-MM-DD format. Start of the date range (inclusive). Data is typically available with a 1-day lag (varies by query; the error for a too-recent date names the latest available day) and may be revised by a few percent over the following days. No earlier than 2026-01-01.",
+      "in": "query",
+      "name": "starting_date",
+      "required": true,
+      "schema": {
+        "description": "UTC date in YYYY-MM-DD format. Start of the date range (inclusive). Data is typically available with a 1-day lag (varies by query; the error for a too-recent date names the latest available day) and may be revised by a few percent over the following days. No earlier than 2026-01-01.",
+        "format": "date",
+        "title": "Starting Date",
+        "type": "string"
+      }
+    },
+    {
+      "description": "UTC date in YYYY-MM-DD format. End of the date range (exclusive). Data is typically available with a 1-day lag, so this can be at most today — which is also the default when omitted, making the last entry cover the most recent available day. Data may be revised by a few percent over the following days. The range may span at most 366 days.",
+      "in": "query",
+      "name": "ending_date",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "UTC date in YYYY-MM-DD format. End of the date range (exclusive). Data is typically available with a 1-day lag, so this can be at most today — which is also the default when omitted, making the last entry cover the most recent available day. Data may be revised by a few percent over the following days. The range may span at most 366 days.",
+        "title": "Ending Date"
+      }
+    },
+    {
+      "description": "Number of results per page (1-1000, default 100). The day series (at most 366 entries) is currently returned in full in a single page, so `limit` does not yet shorten it.",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Number of results per page (1-1000, default 100). The day series (at most 366 entries) is currently returned in full in a single page, so `limit` does not yet shorten it.",
+        "title": "Limit"
+      }
+    },
+    {
+      "description": "Opaque cursor from a previous response's `next_page` field. `next_page` is currently always null, so there is never a cursor to send.",
+      "in": "query",
+      "name": "page",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Opaque cursor from a previous response's `next_page` field. `next_page` is currently always null, so there is never a cursor to send.",
+        "title": "Page"
+      }
+    },
+    {
+      "description": "Filters as `dimension:value`. Only `rbac_group_id` is supported (e.g. `filter[]=rbac_group_id:{id}`); repeat the param to OR across groups. Scopes the whole day series to members of the matching group(s), re-aggregated from member-level activity — org-wide seat/invite fields and the adoption rates derived from them are null on scoped rows. `rbac_group_id` accepts the tagged id (`rbac_group_...`, as emitted in responses and by the spend-limits API) or a bare group UUID, and matches users who held the group at any point during each UTC day (time-of-usage attribution). At most 100 entries.",
+      "in": "query",
+      "name": "filter[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filters as `dimension:value`. Only `rbac_group_id` is supported (e.g. `filter[]=rbac_group_id:{id}`); repeat the param to OR across groups. Scopes the whole day series to members of the matching group(s), re-aggregated from member-level activity — org-wide seat/invite fields and the adoption rates derived from them are null on scoped rows. `rbac_group_id` accepts the tagged id (`rbac_group_...`, as emitted in responses and by the spend-limits API) or a bare group UUID, and matches users who held the group at any point during each UTC day (time-of-usage attribution). At most 100 entries.",
+        "maxItems": 100,
+        "title": "Filter[]"
+      }
+    },
+    {
+      "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+      "in": "header",
+      "name": "anthropic-version",
+      "required": false,
+      "schema": {
+        "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+        "title": "Anthropic-Version",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaAnalyticsActivitySummaryResponse"
+          }
+        }
+      },
+      "description": "Successful Response"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Invalid argument - The client specified an invalid argument"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unauthenticated - The request does not have valid authentication credentials"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Permission denied - The caller does not have permission to execute the specified operation"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Not found - Some requested entity was not found"
+    },
+    "408": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - The deadline expired before the operation could complete"
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Aborted - The operation was aborted due to concurrency issue"
+    },
+    "412": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Failed precondition - Operation was rejected because the system is not in required state"
+    },
+    "413": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Out of range - Operation was attempted past the valid range"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Resource exhausted - Some resource has been exhausted (rate limiting)"
+    },
+    "431": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Request header fields too large - Request metadata was too large"
+    },
+    "499": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Cancelled - The operation was cancelled by the client"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Internal - Internal server error"
+    },
+    "501": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unimplemented - The operation is not implemented or supported"
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unavailable - The service is currently unavailable"
+    },
+    "504": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - Upstream service did not respond in time"
+    },
+    "529": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Overloaded - The service is temporarily overloaded"
+    }
+  },
+  "summary": "Get Activity Summaries",
+  "components": {
+    "schemas": {
+      "BetaAnalyticsActivitySummaryResponse": {
+        "description": "Response for GET /v1/organizations/analytics/summaries.",
+        "properties": {
+          "data": {
+            "description": "One entry per day in the requested range, ascending by date.",
+            "items": {
+              "$ref": "#/components/schemas/BetaAnalyticsSingleDayActivitySummary"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more results. Currently always null: the day series is returned in full.",
+            "title": "Next Page"
+          }
+        },
+        "required": [
+          "data",
+          "next_page"
+        ],
+        "title": "AnalyticsActivitySummaryResponse",
+        "type": "object"
+      },
+      "BetaErrorResponse": {
+        "properties": {
+          "error": {
+            "discriminator": {
+              "mapping": {
+                "api_error": "#/components/schemas/BetaAPIError",
+                "authentication_error": "#/components/schemas/BetaAuthenticationError",
+                "billing_error": "#/components/schemas/BetaBillingError",
+                "invalid_request_error": "#/components/schemas/BetaInvalidRequestError",
+                "not_found_error": "#/components/schemas/BetaNotFoundError",
+                "overloaded_error": "#/components/schemas/BetaOverloadedError",
+                "permission_error": "#/components/schemas/BetaPermissionError",
+                "rate_limit_error": "#/components/schemas/BetaRateLimitError",
+                "timeout_error": "#/components/schemas/BetaGatewayTimeoutError"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaInvalidRequestError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaAuthenticationError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaBillingError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaPermissionError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaNotFoundError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRateLimitError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaGatewayTimeoutError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaAPIError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaOverloadedError"
+              }
+            ],
+            "title": "Error"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Id"
+          },
+          "type": {
+            "const": "error",
+            "default": "error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "request_id",
+          "type"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "BetaAnalyticsSingleDayActivitySummary": {
+        "description": "Per-day entry in the /summaries response.",
+        "properties": {
+          "assigned_seat_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of seats currently assigned to members. Null when the response is scoped to an RBAC group — seat assignment is org-wide and has no per-group analogue.",
+            "title": "Assigned Seat Count"
+          },
+          "chat_cowork_unified_daily_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with activity in Chat and Cowork unified on the requested day. Omitted from the response on deployments that do not offer Chat and Cowork unified.",
+            "title": "Chat Cowork Unified Daily Active User Count"
+          },
+          "chat_cowork_unified_monthly_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with activity in Chat and Cowork unified in the 28-day rolling window (30 days when the request filters by `rbac_group_id`). Omitted from the response on deployments that do not offer Chat and Cowork unified.",
+            "title": "Chat Cowork Unified Monthly Active User Count"
+          },
+          "chat_cowork_unified_weekly_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with activity in Chat and Cowork unified in the 7-day rolling window. Omitted from the response on deployments that do not offer Chat and Cowork unified.",
+            "title": "Chat Cowork Unified Weekly Active User Count"
+          },
+          "chat_daily_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with claude.ai (chat) activity on the requested day. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Chat Daily Active User Count"
+          },
+          "chat_monthly_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with claude.ai (chat) activity in the 30-day rolling window. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Chat Monthly Active User Count"
+          },
+          "chat_weekly_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with claude.ai (chat) activity in the 7-day rolling window. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Chat Weekly Active User Count"
+          },
+          "claude_code_daily_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with Claude Code activity on the requested day. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Claude Code Daily Active User Count"
+          },
+          "claude_code_monthly_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with Claude Code activity in the 30-day rolling window. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Claude Code Monthly Active User Count"
+          },
+          "claude_code_weekly_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with Claude Code activity in the 7-day rolling window. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Claude Code Weekly Active User Count"
+          },
+          "claude_design_daily_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with Claude Design activity on the requested day. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Claude Design Daily Active User Count"
+          },
+          "claude_design_monthly_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with Claude Design activity in the 30-day rolling window. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Claude Design Monthly Active User Count"
+          },
+          "claude_design_weekly_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with Claude Design activity in the 7-day rolling window. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Claude Design Weekly Active User Count"
+          },
+          "cowork_daily_active_user_count": {
+            "description": "Number of users with Cowork activity on the requested day",
+            "title": "Cowork Daily Active User Count",
+            "type": "integer"
+          },
+          "cowork_monthly_active_user_count": {
+            "description": "Number of users with Cowork activity in the 30-day rolling window",
+            "title": "Cowork Monthly Active User Count",
+            "type": "integer"
+          },
+          "cowork_weekly_active_user_count": {
+            "description": "Number of users with Cowork activity in the 7-day rolling window",
+            "title": "Cowork Weekly Active User Count",
+            "type": "integer"
+          },
+          "daily_active_user_count": {
+            "description": "Number of users with token consumption on the requested day",
+            "title": "Daily Active User Count",
+            "type": "integer"
+          },
+          "daily_adoption_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Percentage of assigned seats with activity on the requested day (`DAU / assigned_seat_count * 100`). Null when the response is scoped to an RBAC group.",
+            "title": "Daily Adoption Rate"
+          },
+          "ending_at": {
+            "description": "End of the aggregation period (exclusive), UTC midnight in RFC 3339 format (e.g. `2026-01-16T00:00:00Z`).",
+            "format": "date-time",
+            "title": "Ending At",
+            "type": "string"
+          },
+          "monthly_active_user_count": {
+            "description": "Number of users with token consumption in the 30-day rolling window",
+            "title": "Monthly Active User Count",
+            "type": "integer"
+          },
+          "monthly_adoption_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Percentage of assigned seats with activity in the 30-day rolling window (`MAU / assigned_seat_count * 100`). Null when the response is scoped to an RBAC group.",
+            "title": "Monthly Adoption Rate"
+          },
+          "office_agent_daily_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with Claude in Office activity on the requested day. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Office Agent Daily Active User Count"
+          },
+          "office_agent_monthly_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with Claude in Office activity in the 30-day rolling window. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Office Agent Monthly Active User Count"
+          },
+          "office_agent_weekly_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with Claude in Office activity in the 7-day rolling window. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Office Agent Weekly Active User Count"
+          },
+          "pending_invite_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of pending invitations to join the organization. Null when the response is scoped to an RBAC group.",
+            "title": "Pending Invite Count"
+          },
+          "science_daily_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with Claude Science activity on the requested day. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Science Daily Active User Count"
+          },
+          "science_entitled_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with a Claude Science seat entitlement (per-seat RBAC) at the time of the daily snapshot. The funnel top; independent of the org-level Claude Science toggle. Null when the response is scoped to an RBAC group — entitlement is org-wide and has no per-group analogue. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Science Entitled User Count"
+          },
+          "science_monthly_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with Claude Science activity in the 30-day rolling window. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Science Monthly Active User Count"
+          },
+          "science_weekly_active_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of users with Claude Science activity in the 7-day rolling window. Omitted from the response while the per-product breakdown is not enabled for this organization.",
+            "title": "Science Weekly Active User Count"
+          },
+          "starting_at": {
+            "description": "Start of the aggregation period (inclusive), UTC midnight in RFC 3339 format (e.g. `2026-01-15T00:00:00Z`).",
+            "format": "date-time",
+            "title": "Starting At",
+            "type": "string"
+          },
+          "weekly_active_user_count": {
+            "description": "Number of users with token consumption in the 7-day rolling window",
+            "title": "Weekly Active User Count",
+            "type": "integer"
+          },
+          "weekly_adoption_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Percentage of assigned seats with activity in the 7-day rolling window (`WAU / assigned_seat_count * 100`). Null when the response is scoped to an RBAC group.",
+            "title": "Weekly Adoption Rate"
+          }
+        },
+        "required": [
+          "assigned_seat_count",
+          "cowork_daily_active_user_count",
+          "cowork_monthly_active_user_count",
+          "cowork_weekly_active_user_count",
+          "daily_active_user_count",
+          "daily_adoption_rate",
+          "ending_at",
+          "monthly_active_user_count",
+          "monthly_adoption_rate",
+          "pending_invite_count",
+          "starting_at",
+          "weekly_active_user_count",
+          "weekly_adoption_rate"
+        ],
+        "title": "AnalyticsSingleDayActivitySummary",
+        "type": "object"
+      },
+      "BetaInvalidRequestError": {
+        "properties": {
+          "message": {
+            "default": "Invalid request",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "invalid_request_error",
+            "default": "invalid_request_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "InvalidRequestError",
+        "type": "object"
+      },
+      "BetaAuthenticationError": {
+        "properties": {
+          "message": {
+            "default": "Authentication error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "authentication_error",
+            "default": "authentication_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "AuthenticationError",
+        "type": "object"
+      },
+      "BetaBillingError": {
+        "properties": {
+          "message": {
+            "default": "Billing error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "billing_error",
+            "default": "billing_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "BillingError",
+        "type": "object"
+      },
+      "BetaPermissionError": {
+        "properties": {
+          "message": {
+            "default": "Permission denied",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "permission_error",
+            "default": "permission_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "PermissionError",
+        "type": "object"
+      },
+      "BetaNotFoundError": {
+        "properties": {
+          "message": {
+            "default": "Not found",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "not_found_error",
+            "default": "not_found_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "NotFoundError",
+        "type": "object"
+      },
+      "BetaRateLimitError": {
+        "properties": {
+          "message": {
+            "default": "Rate limited",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "rate_limit_error",
+            "default": "rate_limit_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "RateLimitError",
+        "type": "object"
+      },
+      "BetaGatewayTimeoutError": {
+        "properties": {
+          "message": {
+            "default": "Request timeout",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "timeout_error",
+            "default": "timeout_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "GatewayTimeoutError",
+        "type": "object"
+      },
+      "BetaAPIError": {
+        "properties": {
+          "message": {
+            "default": "Internal server error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "api_error",
+            "default": "api_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "APIError",
+        "type": "object"
+      },
+      "BetaOverloadedError": {
+        "properties": {
+          "message": {
+            "default": "Overloaded",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "overloaded_error",
+            "default": "overloaded_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "OverloadedError",
+        "type": "object"
+      }
+    }
+  }
+}

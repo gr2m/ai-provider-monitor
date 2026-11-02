@@ -3,17 +3,17 @@
   "operationId": "beta_messages_count_tokens_post",
   "parameters": [
     {
-      "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+      "description": "Optional header to specify the beta version(s) you want to use.",
       "in": "header",
       "name": "anthropic-beta",
       "required": false,
       "schema": {
-        "description": "Optional header to specify the beta version(s) you want to use.\n\nTo use multiple betas, use a comma separated list like `beta1,beta2` or specify the header multiple times for each beta.",
+        "description": "Optional header to specify the beta version(s) you want to use.",
         "items": {
-          "type": "string"
+          "$ref": "#/components/schemas/AnthropicBeta"
         },
         "title": "Anthropic-Beta",
-        "type": "string"
+        "type": "array"
       }
     },
     {
@@ -28,13 +28,23 @@
       }
     },
     {
-      "description": "The user profile ID to attribute this request to. Use when acting on behalf of a party other than your organization. Requires the `user-profiles` beta header.",
+      "description": "The user profile ID to attribute this request to. Use when acting on behalf of a party other than your organization.",
       "in": "header",
       "name": "anthropic-user-profile-id",
       "required": false,
       "schema": {
-        "description": "The user profile ID to attribute this request to. Use when acting on behalf of a party other than your organization. Requires the `user-profiles` beta header.",
+        "description": "The user profile ID to attribute this request to. Use when acting on behalf of a party other than your organization.",
         "title": "Anthropic-User-Profile-Id",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Optional header to select the Workspace for this request. The value is a Workspace ID (for example, `wrkspc_011CZkZaBF1tNoB5wlCeusgy`).\n\nOnly needed for credentials that can act on more than one Workspace. A credential that belongs to a specific Workspace may omit it; if sent, it must match that Workspace.",
+      "example": "wrkspc_011CZkZaBF1tNoB5wlCeusgy",
+      "in": "header",
+      "name": "anthropic-workspace-id",
+      "required": false,
+      "schema": {
         "type": "string"
       }
     }
@@ -60,7 +70,111 @@
       },
       "description": "Successful Response"
     },
-    "4XX": {
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "details": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/BetaAvailableToolsLimitExceededErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaClaudeCodeKeyCreatorNotMemberErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaCompactionBlockAmbiguousErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaCompactionBlockMisplacedErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaCompactionContentMismatchErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaCompactionNothingToSummarizeErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaCompactionSignatureInvalidErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaCompactionToolChangesMismatchErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaOrganizationOnHoldErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaRequestBodyEncodingInvalidErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaRequestBodyEncodingUnsupportedErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaToolNameConflictErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaToolReferenceUnresolvedErrorDetails"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Machine-readable detail about the cause of the error. `error_code` names the cause; branch on it rather than on `message`. Absent when the error has no code. Treat an unrecognized `error_code` as the bare `type`.",
+                    "title": "Details"
+                  },
+                  "message": {
+                    "default": "Invalid request",
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "invalid_request_error",
+                    "default": "invalid_request_error",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "type"
+                ],
+                "title": "InvalidRequestError",
+                "type": "object"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "type": {
+                "const": "error",
+                "default": "error",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "error",
+              "request_id",
+              "type"
+            ],
+            "title": "ErrorResponse",
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid argument - The client specified an invalid argument"
+    },
+    "401": {
       "content": {
         "application/json": {
           "schema": {
@@ -68,12 +182,390 @@
           }
         }
       },
-      "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
+      "description": "Unauthenticated - The request does not have valid authentication credentials"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Permission denied - The caller does not have permission to execute the specified operation"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Not found - Some requested entity was not found"
+    },
+    "408": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - The deadline expired before the operation could complete"
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Aborted - The operation was aborted due to concurrency issue"
+    },
+    "412": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Failed precondition - Operation was rejected because the system is not in required state"
+    },
+    "413": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "details": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/BetaRequestBodyTooLargeAfterDecodingErrorDetails"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Machine-readable detail about the cause of the error. `error_code` names the cause; branch on it rather than on `message`. Absent when the error has no code. Treat an unrecognized `error_code` as the bare `type`."
+                  },
+                  "message": {
+                    "default": "Invalid request",
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "invalid_request_error",
+                    "default": "invalid_request_error",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "type"
+                ],
+                "title": "InvalidRequestError",
+                "type": "object"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "type": {
+                "const": "error",
+                "default": "error",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "error",
+              "request_id",
+              "type"
+            ],
+            "title": "ErrorResponse",
+            "type": "object"
+          }
+        }
+      },
+      "description": "Out of range - Operation was attempted past the valid range"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "details": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/BetaEnforcedSpendLimitReachedErrorDetails"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Machine-readable detail about the cause of the error. `error_code` names the cause; branch on it rather than on `message`. Absent when the error has no code. Treat an unrecognized `error_code` as the bare `type`."
+                  },
+                  "message": {
+                    "default": "Rate limited",
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "rate_limit_error",
+                    "default": "rate_limit_error",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "type"
+                ],
+                "title": "RateLimitError",
+                "type": "object"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "type": {
+                "const": "error",
+                "default": "error",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "error",
+              "request_id",
+              "type"
+            ],
+            "title": "ErrorResponse",
+            "type": "object"
+          }
+        }
+      },
+      "description": "Resource exhausted - Some resource has been exhausted (rate limiting)"
+    },
+    "431": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Request header fields too large - Request metadata was too large"
+    },
+    "499": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Cancelled - The operation was cancelled by the client"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Internal - Internal server error"
+    },
+    "501": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unimplemented - The operation is not implemented or supported"
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unavailable - The service is currently unavailable"
+    },
+    "504": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - Upstream service did not respond in time"
+    },
+    "529": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "details": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/BetaCompactionUnavailableErrorDetails"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Machine-readable detail about the cause of the error. `error_code` names the cause; branch on it rather than on `message`. Absent when the error has no code. Treat an unrecognized `error_code` as the bare `type`."
+                  },
+                  "message": {
+                    "default": "Overloaded",
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "overloaded_error",
+                    "default": "overloaded_error",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "type"
+                ],
+                "title": "OverloadedError",
+                "type": "object"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "type": {
+                "const": "error",
+                "default": "error",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "error",
+              "request_id",
+              "type"
+            ],
+            "title": "ErrorResponse",
+            "type": "object"
+          }
+        }
+      },
+      "description": "Overloaded - The service is temporarily overloaded"
     }
   },
   "summary": "Count tokens in a Message",
   "components": {
     "schemas": {
+      "AnthropicBeta": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "message-batches-2024-09-24",
+              "prompt-caching-2024-07-31",
+              "computer-use-2024-10-22",
+              "computer-use-2025-01-24",
+              "pdfs-2024-09-25",
+              "token-counting-2024-11-01",
+              "token-efficient-tools-2025-02-19",
+              "output-128k-2025-02-19",
+              "files-api-2025-04-14",
+              "mcp-client-2025-04-04",
+              "mcp-client-2025-11-20",
+              "dev-full-thinking-2025-05-14",
+              "interleaved-thinking-2025-05-14",
+              "code-execution-2025-05-22",
+              "extended-cache-ttl-2025-04-11",
+              "context-1m-2025-08-07",
+              "context-management-2025-06-27",
+              "model-context-window-exceeded-2025-08-26",
+              "skills-2025-10-02",
+              "fast-mode-2026-02-01",
+              "output-300k-2026-03-24",
+              "user-profiles-2026-03-24",
+              "user-profiles-2026-08-18",
+              "user-profiles-2026-09-04",
+              "advisor-tool-2026-03-01",
+              "managed-agents-2026-04-01",
+              "cache-diagnosis-2026-04-07",
+              "dreaming-2026-04-21",
+              "thinking-token-count-2026-05-13",
+              "server-side-fallback-2026-06-01",
+              "server-side-fallback-2026-07-01",
+              "fallback-credit-2026-06-01",
+              "fallback-credit-2026-07-01",
+              "agent-memory-2026-07-22",
+              "mid-conversation-tool-changes-2026-07-01",
+              "compact-2026-01-12",
+              "computer-use-2025-11-24",
+              "mcp-tunnels-2026-06-22",
+              "structured-outputs-2025-11-13",
+              "task-budgets-2026-03-13",
+              "thinking-display-updates-2026-08-18",
+              "ce-user-management-2026-07-13",
+              "mid-conversation-output-config-2026-07-01",
+              "thinking-binding-controls-2026-08-01",
+              "mid-conversation-system-clear-at-2026-08-21",
+              "compact-2026-09-04",
+              "inline-tools-2026-09-15",
+              "mcp-client-2026-09-15",
+              "ce-plugins-2026-09-01",
+              "spend-limit-reads-2026-09-26",
+              "telemetry-destinations-2026-08-11",
+              "webhooks-2026-10-07",
+              "message-threads-2026-08-12",
+              "analytics-usage-cost-2026-08-24",
+              "experimental-claude-tag-2026-10-21"
+            ],
+            "type": "string"
+          }
+        ]
+      },
       "BetaCountMessageTokensParams": {
         "additionalProperties": false,
         "examples": [
@@ -84,7 +576,7 @@
                 "role": "user"
               }
             ],
-            "model": "claude-opus-5"
+            "model": "claude-opus-5-5"
           }
         ],
         "properties": {
@@ -110,6 +602,17 @@
             "description": "Top-level cache control automatically applies a cache_control marker to the last cacheable block in the request.",
             "title": "Cache Control"
           },
+          "compaction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaCompactionConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Compaction configuration.\n\nWhen set on `POST /v1/messages`, the request is a compaction request: the conversation in `messages` is summarized and the response holds only the resulting `compaction` block (`stop_reason` `\"compaction\"`), which later requests send first in `messages` in place of the messages it summarizes. `POST /v1/messages/count_tokens` accepts this parameter and ignores it: the count it returns is for the conversation in `messages` as sent. Cannot be combined with `context_management`."
+          },
           "context_management": {
             "anyOf": [
               {
@@ -131,9 +634,9 @@
             "type": "array"
           },
           "messages": {
-            "description": "Input messages.\n\nOur models are trained to operate on alternating `user` and `assistant` conversational turns. When creating a new `Message`, you specify the prior conversational turns with the `messages` parameter, and the model then generates the next `Message` in the conversation. Consecutive `user` or `assistant` turns in your request will be combined into a single turn.\n\nEach input message must be an object with a `role` and `content`. You can specify a single `user`-role message, or you can include multiple `user` and `assistant` messages.\n\nIf the final message uses the `assistant` role, the response content will continue immediately from the content in that message. This can be used to constrain part of the model's response.\n\nExample with a single `user` message:\n\n```json\n[{\"role\": \"user\", \"content\": \"Hello, Claude\"}]\n```\n\nExample with multiple conversational turns:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"Hello there.\"},\n  {\"role\": \"assistant\", \"content\": \"Hi, I'm Claude. How can I help you?\"},\n  {\"role\": \"user\", \"content\": \"Can you explain LLMs in plain English?\"},\n]\n```\n\nExample with a partially-filled response from Claude:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun\"},\n  {\"role\": \"assistant\", \"content\": \"The best answer is (\"},\n]\n```\n\nEach input message `content` may be either a single `string` or an array of content blocks, where each block has a specific `type`. Using a `string` for `content` is shorthand for an array of one content block of type `\"text\"`. The following input messages are equivalent:\n\n```json\n{\"role\": \"user\", \"content\": \"Hello, Claude\"}\n```\n\n```json\n{\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"Hello, Claude\"}]}\n```\n\nSee [input examples](https://platform.claude.com/docs/en/build-with-claude/working-with-messages).\n\nNote that if you want to include a [system prompt](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices#give-claude-a-role), you can use the top-level `system` parameter — there is no `\"system\"` role for input messages in the Messages API.\n\nThere is a limit of 100,000 messages in a single request.",
+            "description": "Input messages.\n\nOur models are trained to operate on alternating `user` and `assistant` conversational turns. When creating a new `Message`, you specify the prior conversational turns with the `messages` parameter, and the model then generates the next `Message` in the conversation. Consecutive `user` or `assistant` turns in your request will be combined into a single turn.\n\nEach input message must be an object with a `role` and `content`. You can specify a single `user`-role message, or you can include multiple `user` and `assistant` messages.\n\nIf the final message uses the `assistant` role, the response content will continue immediately from the content in that message. This can be used to constrain part of the model's response. This is called prefill. On models that don't support prefill, creating a message that ends with a partial `assistant` response returns a 400 error. See [Prefill not supported](https://platform.claude.com/docs/en/api/errors#prefill-not-supported).\n\nExample with a single `user` message:\n\n```json\n[{\"role\": \"user\", \"content\": \"Hello, Claude\"}]\n```\n\nExample with multiple conversational turns:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"Hello there.\"},\n  {\"role\": \"assistant\", \"content\": \"Hi, I'm Claude. How can I help you?\"},\n  {\"role\": \"user\", \"content\": \"Can you explain LLMs in plain English?\"},\n]\n```\n\nExample with a partially-filled response from Claude, for models that support prefill:\n\n```json\n[\n  {\"role\": \"user\", \"content\": \"What's the Greek name for Sun? (A) Sol (B) Helios (C) Sun\"},\n  {\"role\": \"assistant\", \"content\": \"The best answer is (\"},\n]\n```\n\nEach input message `content` may be either a single `string` or an array of content blocks, where each block has a specific `type`. Using a `string` for `content` is shorthand for an array of one content block of type `\"text\"`. The following input messages are equivalent:\n\n```json\n{\"role\": \"user\", \"content\": \"Hello, Claude\"}\n```\n\n```json\n{\"role\": \"user\", \"content\": [{\"type\": \"text\", \"text\": \"Hello, Claude\"}]}\n```\n\nSee [input examples](https://platform.claude.com/docs/en/build-with-claude/working-with-messages).\n\nNote that if you want to include a [system prompt](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices#give-claude-a-role), you can use the top-level `system` parameter.\n\nThere is a limit of 100,000 messages in a single request.",
             "items": {
-              "$ref": "#/components/schemas/BetaInputMessage"
+              "$ref": "#/components/schemas/BetaInputMessageUnion"
             },
             "title": "Messages",
             "type": "array"
@@ -166,7 +669,7 @@
                 "type": "null"
               }
             ],
-            "description": "The inference speed mode for this request. `\"fast\"` enables high output-tokens-per-second inference."
+            "description": "The inference speed mode for this request. `\"fast\"` enables high output-tokens-per-second inference.\n\nSome models require the `fast-mode-2026-02-01` beta header for any `speed` value. See [fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode) for which models."
           },
           "system": {
             "anyOf": [
@@ -355,6 +858,212 @@
         "title": "CountMessageTokensResponse",
         "type": "object"
       },
+      "BetaAvailableToolsLimitExceededErrorDetails": {
+        "description": "The tools available after a message exceed a limit on their number or their size.",
+        "properties": {
+          "error_code": {
+            "const": "available_tools_limit_exceeded",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "AvailableToolsLimitExceededErrorDetails",
+        "type": "object"
+      },
+      "BetaClaudeCodeKeyCreatorNotMemberErrorDetails": {
+        "description": "The API key belongs to the Claude Code workspace, and the user who created it is no longer a member of the organization or of that workspace.",
+        "properties": {
+          "error_code": {
+            "const": "claude_code_key_creator_not_member",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "ClaudeCodeKeyCreatorNotMemberErrorDetails",
+        "type": "object"
+      },
+      "BetaCompactionBlockAmbiguousErrorDetails": {
+        "description": "`messages` holds more than one `compaction` block with content. Send only the block the conversation returned last.",
+        "properties": {
+          "error_code": {
+            "const": "compaction_block_ambiguous",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "CompactionBlockAmbiguousErrorDetails",
+        "type": "object"
+      },
+      "BetaCompactionBlockMisplacedErrorDetails": {
+        "description": "The `compaction` block is not the first block of the conversation, or is in a `system` message.",
+        "properties": {
+          "error_code": {
+            "const": "compaction_block_misplaced",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "CompactionBlockMisplacedErrorDetails",
+        "type": "object"
+      },
+      "BetaCompactionContentMismatchErrorDetails": {
+        "description": "The `compaction` block's `content` differs from the text its `signature` recorded.",
+        "properties": {
+          "error_code": {
+            "const": "compaction_content_mismatch",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "CompactionContentMismatchErrorDetails",
+        "type": "object"
+      },
+      "BetaCompactionNothingToSummarizeErrorDetails": {
+        "description": "`messages` holds no `user` or `assistant` content to summarize or adopt.",
+        "properties": {
+          "error_code": {
+            "const": "compaction_nothing_to_summarize",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "CompactionNothingToSummarizeErrorDetails",
+        "type": "object"
+      },
+      "BetaCompactionSignatureInvalidErrorDetails": {
+        "description": "The `compaction` block's `signature` does not verify.",
+        "properties": {
+          "error_code": {
+            "const": "compaction_signature_invalid",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "CompactionSignatureInvalidErrorDetails",
+        "type": "object"
+      },
+      "BetaCompactionToolChangesMismatchErrorDetails": {
+        "description": "The `compaction` block's `tool_changes` differs from what was returned with the block.",
+        "properties": {
+          "error_code": {
+            "const": "compaction_tool_changes_mismatch",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "CompactionToolChangesMismatchErrorDetails",
+        "type": "object"
+      },
+      "BetaOrganizationOnHoldErrorDetails": {
+        "description": "Anthropic has disabled the organization for trust and safety reasons. An organization disabled for any other reason, such as billing, does not get this code. `appeal_url`, when present, is where the organization can appeal.",
+        "properties": {
+          "appeal_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Appeal Url"
+          },
+          "error_code": {
+            "const": "organization_on_hold",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "OrganizationOnHoldErrorDetails",
+        "type": "object"
+      },
+      "BetaRequestBodyEncodingInvalidErrorDetails": {
+        "description": "The request body is not valid for its `Content-Encoding`.",
+        "properties": {
+          "error_code": {
+            "const": "request_body_encoding_invalid",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "RequestBodyEncodingInvalidErrorDetails",
+        "type": "object"
+      },
+      "BetaRequestBodyEncodingUnsupportedErrorDetails": {
+        "description": "The request's `Content-Encoding` is not supported.",
+        "properties": {
+          "error_code": {
+            "const": "request_body_encoding_unsupported",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "RequestBodyEncodingUnsupportedErrorDetails",
+        "type": "object"
+      },
+      "BetaToolNameConflictErrorDetails": {
+        "description": "A tool made available in `messages` takes a name that an available tool of another kind, or of another MCP server, already holds.",
+        "properties": {
+          "error_code": {
+            "const": "tool_name_conflict",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "ToolNameConflictErrorDetails",
+        "type": "object"
+      },
+      "BetaToolReferenceUnresolvedErrorDetails": {
+        "description": "A tool change or MCP tool listing references a tool or MCP server that is not defined at that position in the conversation.",
+        "properties": {
+          "error_code": {
+            "const": "tool_reference_unresolved",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "ToolReferenceUnresolvedErrorDetails",
+        "type": "object"
+      },
       "BetaErrorResponse": {
         "properties": {
           "error": {
@@ -430,6 +1139,51 @@
         "title": "ErrorResponse",
         "type": "object"
       },
+      "BetaRequestBodyTooLargeAfterDecodingErrorDetails": {
+        "description": "The compressed request body exceeds the request size limit once decoded.",
+        "properties": {
+          "error_code": {
+            "const": "request_body_too_large_after_decoding",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "RequestBodyTooLargeAfterDecodingErrorDetails",
+        "type": "object"
+      },
+      "BetaEnforcedSpendLimitReachedErrorDetails": {
+        "description": "The organization has crossed the monthly API usage threshold of its API tier.",
+        "properties": {
+          "error_code": {
+            "const": "enforced_spend_limit_reached",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "EnforcedSpendLimitReachedErrorDetails",
+        "type": "object"
+      },
+      "BetaCompactionUnavailableErrorDetails": {
+        "description": "The compaction could not be completed for a transient server reason. Retry the request.",
+        "properties": {
+          "error_code": {
+            "const": "compaction_unavailable",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "CompactionUnavailableErrorDetails",
+        "type": "object"
+      },
       "BetaCacheControlEphemeral": {
         "additionalProperties": false,
         "properties": {
@@ -453,6 +1207,19 @@
         ],
         "title": "CacheControlEphemeral",
         "type": "object"
+      },
+      "BetaCompactionConfig": {
+        "discriminator": {
+          "mapping": {
+            "summarize": "#/components/schemas/BetaSummarizeCompaction"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaSummarizeCompaction"
+          }
+        ]
       },
       "BetaContextManagementConfig": {
         "additionalProperties": false,
@@ -534,83 +1301,45 @@
         "title": "RequestMCPServerURLDefinition",
         "type": "object"
       },
-      "BetaInputMessage": {
-        "additionalProperties": false,
+      "BetaInputMessageUnion": {
         "discriminator": {
+          "mapping": {
+            "assistant": "#/components/schemas/BetaAssistantInputMessage",
+            "system": "#/components/schemas/BetaSystemInputMessage",
+            "user": "#/components/schemas/BetaUserInputMessage"
+          },
           "propertyName": "role"
         },
-        "properties": {
-          "clear_at": {
-            "anyOf": [
-              {
-                "enum": [
-                  "next_user_message",
-                  "never"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "How long this system message's text stays in front of the model. `\"never\"` (the default) renders it on every request that includes it. `\"next_user_message\"` renders it only for the user turn it follows: once a later `role: \"user\"` message exists in `messages` the message stays in the array (send it unchanged) but is no longer shown to the model. Only permitted on `role: \"system\"` messages.",
-            "title": "Clear At"
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaUserInputMessage"
           },
-          "content": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "example": [
-                  {
-                    "text": "What is a quaternion?",
-                    "type": "text"
-                  }
-                ],
-                "items": {
-                  "$ref": "#/components/schemas/BetaInputContentBlock"
-                },
-                "type": "array"
-              }
-            ],
-            "title": "Content"
+          {
+            "$ref": "#/components/schemas/BetaAssistantInputMessage"
           },
-          "output_config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BetaSystemMessageOutputConfig"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "role": {
-            "enum": [
-              "user",
-              "assistant",
-              "system"
-            ],
-            "title": "Role",
-            "type": "string"
+          {
+            "$ref": "#/components/schemas/BetaSystemInputMessage"
           }
-        },
-        "required": [
-          "content",
-          "role"
         ],
-        "title": "InputMessage",
-        "type": "object"
+        "title": "InputMessage"
       },
       "Model": {
         "anyOf": [
           {
-            "type": "string"
+            "const": "claude-haiku-5-5",
+            "description": "Fastest model for high-volume, real-time tasks"
+          },
+          {
+            "const": "claude-sonnet-5-5",
+            "description": "Efficient model for coding and agents"
           },
           {
             "const": "claude-fable-5-1",
             "description": "Frontier intelligence for ambitious tasks across coding, scientific discovery, and enterprise workflows"
+          },
+          {
+            "const": "claude-opus-5-5",
+            "description": "Powerful intelligence for coding, knowledge work, and long-running agents"
           },
           {
             "const": "claude-mythos-5-1",
@@ -618,7 +1347,7 @@
           },
           {
             "const": "claude-sonnet-5",
-            "description": "High-performance model for coding and agents"
+            "description": "Efficient model for coding and agents"
           },
           {
             "const": "claude-fable-5",
@@ -654,12 +1383,10 @@
             "description": "Best combination of speed and intelligence"
           },
           {
-            "const": "claude-haiku-4-5",
-            "description": "Fastest model with near-frontier intelligence"
+            "const": "claude-haiku-4-5"
           },
           {
-            "const": "claude-haiku-4-5-20251001",
-            "description": "Fastest model with near-frontier intelligence"
+            "const": "claude-haiku-4-5-20251001"
           },
           {
             "const": "claude-opus-4-5",
@@ -671,11 +1398,16 @@
           },
           {
             "const": "claude-sonnet-4-5",
+            "deprecated": true,
             "description": "High-performance model for agents and coding"
           },
           {
             "const": "claude-sonnet-4-5-20250929",
+            "deprecated": true,
             "description": "High-performance model for agents and coding"
+          },
+          {
+            "type": "string"
           }
         ],
         "description": "The model that will complete your prompt.\n\nSee [models](https://docs.anthropic.com/en/docs/models-overview) for additional details and options.",
@@ -836,10 +1568,11 @@
         "type": "object"
       },
       "BetaThinkingConfigParam": {
-        "description": "Configuration for enabling Claude's extended thinking.\n\nWhen enabled, responses include `thinking` content blocks showing Claude's thinking process before the final answer. Requires a minimum budget of 1,024 tokens and counts towards your `max_tokens` limit.\n\nSee [extended thinking](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) for details.",
+        "description": "Configuration for Claude's thinking.\n\nWith `{\"type\": \"adaptive\"}`, Claude decides when and how much to think. With `{\"type\": \"enabled\"}` (manual extended thinking), you set a `budget_tokens` of at least 1,024. Thinking tokens count toward your `max_tokens` limit.\n\nWhich `type` values are accepted, and what happens when you omit `thinking`, depend on the model. See [thinking](https://platform.claude.com/docs/en/build-with-claude/thinking#configuring-thinking) for each model's behavior.",
         "discriminator": {
           "mapping": {
             "adaptive": "#/components/schemas/BetaThinkingConfigAdaptive",
+            "between_tools": "#/components/schemas/BetaThinkingConfigBetweenTools",
             "disabled": "#/components/schemas/BetaThinkingConfigDisabled",
             "enabled": "#/components/schemas/BetaThinkingConfigEnabled"
           },
@@ -856,6 +1589,9 @@
           },
           {
             "$ref": "#/components/schemas/BetaThinkingConfigDisabled"
+          },
+          {
+            "$ref": "#/components/schemas/BetaThinkingConfigBetweenTools"
           },
           {
             "$ref": "#/components/schemas/BetaThinkingConfigAdaptive"
@@ -1278,7 +2014,7 @@
       },
       "BetaCodeExecutionTool_20260120": {
         "additionalProperties": false,
-        "description": "Code execution tool with REPL state persistence (daemon mode + gVisor checkpoint).",
+        "description": "A `tools` entry for the code execution tool, version `code_execution_20260120`. It adds REPL state persistence to version `code_execution_20250825`.\n\nREPL state persistence applies with programmatic tool calling. With it, the Python interpreter state, such as variable bindings, persists across requests that reuse the container.\n\nSee the [code execution tool guide](https://platform.claude.com/docs/en/agents-and-tools/tool-use/code-execution-tool#tool-versions) to learn what each tool version adds.",
         "properties": {
           "allowed_callers": {
             "items": {
@@ -2399,6 +3135,17 @@
             "const": "web_fetch_20250910",
             "title": "Type",
             "type": "string"
+          },
+          "url_sources": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaWebFetchUrlSources"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Which sources contribute to the set of URLs the tool may fetch. Omitted means every source."
           }
         },
         "required": [
@@ -2642,6 +3389,17 @@
             "const": "web_fetch_20260209",
             "title": "Type",
             "type": "string"
+          },
+          "url_sources": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaWebFetchUrlSources"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Which sources contribute to the set of URLs the tool may fetch. Omitted means every source."
           }
         },
         "required": [
@@ -2771,6 +3529,17 @@
             "const": "web_fetch_20260309",
             "title": "Type",
             "type": "string"
+          },
+          "url_sources": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaWebFetchUrlSources"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Which sources contribute to the set of URLs the tool may fetch. Omitted means every source."
           },
           "use_cache": {
             "description": "Whether to use cached content. Set to false to bypass the cache and fetch fresh content. Only set to false when the user explicitly requests fresh content or when fetching rapidly-changing sources.",
@@ -3037,6 +3806,17 @@
             "const": "web_fetch_20260318",
             "title": "Type",
             "type": "string"
+          },
+          "url_sources": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaWebFetchUrlSources"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Which sources contribute to the set of URLs the tool may fetch. Omitted means every source."
           },
           "use_cache": {
             "description": "Whether to use cached content. Set to false to bypass the cache and fetch fresh content. Only set to false when the user explicitly requests fresh content or when fetching rapidly-changing sources.",
@@ -3344,6 +4124,21 @@
             "title": "Mcp Server Name",
             "type": "string"
           },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BetaMCPTool"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The server's tool listing, pinned: when present, the server is not asked for its tools before sampling and exactly these entries, with `default_config` and `configs` applied, are the toolset's tools. Copy it from the `mcp_tool_listing` block of an earlier response.",
+            "title": "Tools"
+          },
           "type": {
             "const": "mcp_toolset",
             "title": "Type",
@@ -3560,6 +4355,35 @@
         "title": "OverloadedError",
         "type": "object"
       },
+      "BetaSummarizeCompaction": {
+        "additionalProperties": false,
+        "description": "Compact the whole conversation and return a signed `compaction` block,\nalone, that a later request sends back first in `messages`, in place of\nthe messages it summarizes. There is no trigger and no pause flag: sending\nthe parameter compacts, and nothing is sampled after the block.\n\nThe summarization prompt is the server's own unless `instructions` are\ngiven, which then replace it for this request; a value that is empty or\nonly whitespace counts as absent.",
+        "properties": {
+          "instructions": {
+            "anyOf": [
+              {
+                "maxLength": 16384,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Replaces the server's default summarization prompt for this request. An empty or whitespace-only value counts as absent.",
+            "title": "Instructions"
+          },
+          "type": {
+            "const": "summarize",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "SummarizeCompaction",
+        "type": "object"
+      },
       "BetaClearToolUses20250919": {
         "additionalProperties": false,
         "properties": {
@@ -3659,13 +4483,6 @@
           "keep": {
             "anyOf": [
               {
-                "discriminator": {
-                  "mapping": {
-                    "all": "#/components/schemas/BetaAllThinkingTurns",
-                    "thinking_turns": "#/components/schemas/BetaThinkingTurns"
-                  },
-                  "propertyName": "type"
-                },
                 "oneOf": [
                   {
                     "$ref": "#/components/schemas/BetaThinkingTurns"
@@ -3771,132 +4588,116 @@
         "title": "RequestMCPServerToolConfiguration",
         "type": "object"
       },
-      "BetaInputContentBlock": {
-        "discriminator": {
-          "mapping": {
-            "advisor_tool_result": "#/components/schemas/BetaRequestAdvisorToolResultBlock",
-            "bash_code_execution_tool_result": "#/components/schemas/BetaRequestBashCodeExecutionToolResultBlock",
-            "code_execution_tool_result": "#/components/schemas/BetaRequestCodeExecutionToolResultBlock",
-            "compaction": "#/components/schemas/BetaRequestCompactionBlock",
-            "container_upload": "#/components/schemas/BetaRequestContainerUploadBlock",
-            "document": "#/components/schemas/BetaRequestDocumentBlock",
-            "fallback": "#/components/schemas/BetaRequestFallbackBlock",
-            "image": "#/components/schemas/BetaRequestImageBlock",
-            "mcp_tool_result": "#/components/schemas/BetaRequestMCPToolResultBlock",
-            "mcp_tool_use": "#/components/schemas/BetaRequestMCPToolUseBlock",
-            "redacted_thinking": "#/components/schemas/BetaRequestRedactedThinkingBlock",
-            "search_result": "#/components/schemas/BetaRequestSearchResultBlock",
-            "server_tool_use": "#/components/schemas/BetaRequestServerToolUseBlock",
-            "text": "#/components/schemas/BetaRequestTextBlock",
-            "text_editor_code_execution_tool_result": "#/components/schemas/BetaRequestTextEditorCodeExecutionToolResultBlock",
-            "thinking": "#/components/schemas/BetaRequestThinkingBlock",
-            "tool_addition": "#/components/schemas/BetaRequestToolAdditionBlock",
-            "tool_removal": "#/components/schemas/BetaRequestToolRemovalBlock",
-            "tool_result": "#/components/schemas/BetaRequestToolResultBlock",
-            "tool_search_tool_result": "#/components/schemas/BetaRequestToolSearchToolResultBlock",
-            "tool_use": "#/components/schemas/BetaRequestToolUseBlock",
-            "web_fetch_tool_result": "#/components/schemas/BetaRequestWebFetchToolResultBlock",
-            "web_search_tool_result": "#/components/schemas/BetaRequestWebSearchToolResultBlock"
-          },
-          "propertyName": "type"
-        },
-        "oneOf": [
-          {
-            "$ref": "#/components/schemas/BetaRequestTextBlock",
-            "description": "Regular text content."
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestImageBlock",
-            "description": "Image content specified directly as base64 data or as a reference via a URL."
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestDocumentBlock",
-            "description": "Document content, either specified directly as base64 data, as text, or as a reference via a URL."
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestSearchResultBlock",
-            "description": "A search result block containing source, title, and content from search operations."
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestThinkingBlock",
-            "description": "A block specifying internal thinking by the model."
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestRedactedThinkingBlock",
-            "description": "A block specifying internal, redacted thinking by the model."
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestToolUseBlock",
-            "description": "A block indicating a tool use by the model."
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestToolResultBlock",
-            "description": "A block specifying the results of a tool use by the model."
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestServerToolUseBlock"
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestWebSearchToolResultBlock"
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestWebFetchToolResultBlock"
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestAdvisorToolResultBlock"
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestCodeExecutionToolResultBlock"
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestBashCodeExecutionToolResultBlock"
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestTextEditorCodeExecutionToolResultBlock"
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestToolSearchToolResultBlock"
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestMCPToolUseBlock"
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestMCPToolResultBlock"
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestContainerUploadBlock"
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestCompactionBlock"
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestToolAdditionBlock"
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestToolRemovalBlock"
-          },
-          {
-            "$ref": "#/components/schemas/BetaRequestFallbackBlock"
-          }
-        ]
-      },
-      "BetaSystemMessageOutputConfig": {
+      "BetaUserInputMessage": {
         "additionalProperties": false,
-        "description": "Per-message output configuration on a role:\"system\" input message.\n\nFields here apply per-turn; ``format`` remains top-level only. An\nempty ``{}`` is accepted on a message that carries content; a message\nwith neither content nor output_config fields is rejected.",
         "properties": {
-          "effort": {
+          "content": {
+            "$ref": "#/components/schemas/BetaInputMessageContent"
+          },
+          "role": {
+            "const": "user",
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "role"
+        ],
+        "title": "UserInputMessage",
+        "type": "object"
+      },
+      "BetaAssistantInputMessage": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "$ref": "#/components/schemas/BetaInputMessageContent"
+          },
+          "role": {
+            "const": "assistant",
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "role"
+        ],
+        "title": "AssistantInputMessage",
+        "type": "object"
+      },
+      "BetaSystemInputMessage": {
+        "additionalProperties": false,
+        "properties": {
+          "clear_at": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/BetaEffortLevel"
+                "enum": [
+                  "next_user_message",
+                  "never"
+                ],
+                "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "description": "How much effort the model should put into its response. Higher effort levels may result in more thorough analysis but take longer.\n\nValid values are `low`, `medium`, `high`, `xhigh`, or `max`."
+            "description": "How long this system message's text stays in front of the model. `\"never\"` (the default) renders it on every request that includes it. `\"next_user_message\"` renders it only for the user turn it follows: once a later `role: \"user\"` message exists in `messages` the message stays in the array (send it unchanged) but is no longer shown to the model. Only permitted on `role: \"system\"` messages.",
+            "title": "Clear At"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "discriminator": {
+                    "mapping": {
+                      "text": "#/components/schemas/BetaRequestTextBlock",
+                      "tool_addition": "#/components/schemas/BetaRequestToolAdditionBlock",
+                      "tool_removal": "#/components/schemas/BetaRequestToolRemovalBlock"
+                    },
+                    "propertyName": "type"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/BetaRequestTextBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BetaRequestToolAdditionBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BetaRequestToolRemovalBlock"
+                    }
+                  ],
+                  "title": "SystemMessageContentBlock"
+                },
+                "title": "Blocks",
+                "type": "array"
+              }
+            ]
+          },
+          "output_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaSystemMessageOutputConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "const": "system",
+            "title": "Role",
+            "type": "string"
           }
         },
-        "title": "SystemMessageOutputConfig",
+        "required": [
+          "role"
+        ],
+        "title": "SystemInputMessage",
         "type": "object"
       },
       "BetaEffortLevel": {
@@ -4252,7 +5053,7 @@
                 "type": "null"
               }
             ],
-            "description": "Controls how thinking content appears in the response. When set to `summarized`, thinking is returned normally. When set to `omitted`, thinking content is redacted but a signature is returned for multi-turn continuity. Defaults to `summarized`."
+            "description": "Controls how thinking content appears in the response. When set to `summarized`, thinking is returned normally. When set to `omitted`, thinking content is redacted but a signature is returned for multi-turn continuity. The default depends on the model; see [Controlling thinking display](https://platform.claude.com/docs/en/build-with-claude/thinking#controlling-thinking-display)."
           },
           "type": {
             "const": "enabled",
@@ -4282,6 +5083,21 @@
         "title": "ThinkingConfigDisabled",
         "type": "object"
       },
+      "BetaThinkingConfigBetweenTools": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "between_tools",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "ThinkingConfigBetweenTools",
+        "type": "object"
+      },
       "BetaThinkingConfigAdaptive": {
         "additionalProperties": false,
         "properties": {
@@ -4305,7 +5121,7 @@
                 "type": "null"
               }
             ],
-            "description": "Controls how thinking content appears in the response. When set to `summarized`, thinking is returned normally. When set to `omitted`, thinking content is redacted but a signature is returned for multi-turn continuity. Defaults to `summarized`."
+            "description": "Controls how thinking content appears in the response. When set to `summarized`, thinking is returned normally. When set to `omitted`, thinking content is redacted but a signature is returned for multi-turn continuity. The default depends on the model; see [Controlling thinking display](https://platform.claude.com/docs/en/build-with-claude/thinking#controlling-thinking-display)."
           },
           "type": {
             "const": "adaptive",
@@ -5055,6 +5871,87 @@
         "title": "RequestCitationsConfig",
         "type": "object"
       },
+      "BetaWebFetchUrlSources": {
+        "additionalProperties": false,
+        "description": "Which sources contribute to the set of URLs web fetch may fetch.\n\nEach key is a tagged variant: ``user_input`` is ``all`` or ``none``; the\ntwo tool filters are ``all``, ``none``, ``only`` (only the named tools'\nresults) or ``except`` (every result but the named tools'). A named tool\nmust be declared in this request's ``tools[]``.",
+        "properties": {
+          "client_tool_results": {
+            "description": "Which client tools' results contribute fetchable URLs: \"all\", \"none\", or an only or except list of client tool names from tools[].",
+            "discriminator": {
+              "mapping": {
+                "all": "#/components/schemas/BetaWebFetchUrlSourceAll",
+                "except": "#/components/schemas/BetaWebFetchUrlSourceExcept",
+                "none": "#/components/schemas/BetaWebFetchUrlSourceNone",
+                "only": "#/components/schemas/BetaWebFetchUrlSourceOnly"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaWebFetchUrlSourceAll"
+              },
+              {
+                "$ref": "#/components/schemas/BetaWebFetchUrlSourceNone"
+              },
+              {
+                "$ref": "#/components/schemas/BetaWebFetchUrlSourceOnly"
+              },
+              {
+                "$ref": "#/components/schemas/BetaWebFetchUrlSourceExcept"
+              }
+            ],
+            "title": "Client Tool Results"
+          },
+          "server_tool_results": {
+            "description": "Which server tools' results contribute fetchable URLs: \"all\", \"none\", or an only or except list of server tool names from tools[]; only web_search and web_fetch results ever contribute.",
+            "discriminator": {
+              "mapping": {
+                "all": "#/components/schemas/BetaWebFetchUrlSourceAll",
+                "except": "#/components/schemas/BetaWebFetchUrlSourceExcept",
+                "none": "#/components/schemas/BetaWebFetchUrlSourceNone",
+                "only": "#/components/schemas/BetaWebFetchUrlSourceOnly"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaWebFetchUrlSourceAll"
+              },
+              {
+                "$ref": "#/components/schemas/BetaWebFetchUrlSourceNone"
+              },
+              {
+                "$ref": "#/components/schemas/BetaWebFetchUrlSourceOnly"
+              },
+              {
+                "$ref": "#/components/schemas/BetaWebFetchUrlSourceExcept"
+              }
+            ],
+            "title": "Server Tool Results"
+          },
+          "user_input": {
+            "description": "Whether URLs in user messages are fetchable: \"all\" or \"none\".",
+            "discriminator": {
+              "mapping": {
+                "all": "#/components/schemas/BetaWebFetchUrlSourceAll",
+                "none": "#/components/schemas/BetaWebFetchUrlSourceNone"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaWebFetchUrlSourceAll"
+              },
+              {
+                "$ref": "#/components/schemas/BetaWebFetchUrlSourceNone"
+              }
+            ],
+            "title": "User Input"
+          }
+        },
+        "title": "WebFetchUrlSources",
+        "type": "object"
+      },
       "BetaMCPToolConfig": {
         "additionalProperties": false,
         "description": "Configuration for a specific tool in an MCP toolset.",
@@ -5085,6 +5982,44 @@
           }
         },
         "title": "MCPToolDefaultConfig",
+        "type": "object"
+      },
+      "BetaMCPTool": {
+        "additionalProperties": false,
+        "description": "A tool as an MCP server lists it: its name on that server, its\ndescription, and its input schema.",
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tool's description as the MCP server lists it.",
+            "title": "Description"
+          },
+          "input_schema": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/BetaJsonValue"
+            },
+            "description": "The tool's input schema as the MCP server lists it, verbatim.",
+            "title": "Input Schema",
+            "type": "object"
+          },
+          "name": {
+            "description": "The tool's name as the MCP server lists it (not prefixed with the server name).",
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "input_schema",
+          "name"
+        ],
+        "title": "MCPTool",
         "type": "object"
       },
       "BetaInputTokensClearAtLeast": {
@@ -5207,1248 +6142,29 @@
         "title": "AllThinkingTurns",
         "type": "object"
       },
-      "BetaRequestImageBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "source": {
-            "discriminator": {
-              "mapping": {
-                "base64": "#/components/schemas/BetaBase64ImageSource",
-                "file": "#/components/schemas/BetaFileImageSource",
-                "url": "#/components/schemas/BetaURLImageSource"
-              },
-              "propertyName": "type"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/BetaBase64ImageSource"
-              },
-              {
-                "$ref": "#/components/schemas/BetaURLImageSource"
-              },
-              {
-                "$ref": "#/components/schemas/BetaFileImageSource"
-              }
-            ],
-            "title": "Source"
-          },
-          "transformations": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BetaRequestImageTransformations"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Configures the transformations the server applies to this image before the model observes it. Each key names a condition the server transforms images for; its value selects the transformation applied. Omitted keys keep their default behavior, and an empty object is equivalent to omitting the field."
-          },
-          "type": {
-            "const": "image",
-            "title": "Type",
+      "BetaInputMessageContent": {
+        "anyOf": [
+          {
             "type": "string"
-          }
-        },
-        "required": [
-          "source",
-          "type"
-        ],
-        "title": "RequestImageBlock",
-        "type": "object"
-      },
-      "BetaRequestDocumentBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "cache_control": {
-            "anyOf": [
+          },
+          {
+            "example": [
               {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
+                "text": "What is a quaternion?",
+                "type": "text"
               }
             ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "citations": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BetaRequestCitationsConfig"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "context": {
-            "anyOf": [
-              {
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Context"
-          },
-          "source": {
-            "discriminator": {
-              "mapping": {
-                "base64": "#/components/schemas/BetaBase64PDFSource",
-                "content": "#/components/schemas/BetaContentBlockSource",
-                "file": "#/components/schemas/BetaFileDocumentSource",
-                "text": "#/components/schemas/BetaPlainTextSource",
-                "url": "#/components/schemas/BetaURLPDFSource"
-              },
-              "propertyName": "type"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/BetaBase64PDFSource"
-              },
-              {
-                "$ref": "#/components/schemas/BetaPlainTextSource"
-              },
-              {
-                "$ref": "#/components/schemas/BetaContentBlockSource"
-              },
-              {
-                "$ref": "#/components/schemas/BetaURLPDFSource"
-              },
-              {
-                "$ref": "#/components/schemas/BetaFileDocumentSource"
-              }
-            ],
-            "title": "Source"
-          },
-          "title": {
-            "anyOf": [
-              {
-                "maxLength": 500,
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Title"
-          },
-          "type": {
-            "const": "document",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "source",
-          "type"
-        ],
-        "title": "RequestDocumentBlock",
-        "type": "object"
-      },
-      "BetaRequestSearchResultBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "citations": {
-            "$ref": "#/components/schemas/BetaRequestCitationsConfig"
-          },
-          "content": {
             "items": {
-              "$ref": "#/components/schemas/BetaRequestTextBlock"
+              "$ref": "#/components/schemas/BetaInputContentBlock"
             },
-            "title": "Content",
             "type": "array"
-          },
-          "source": {
-            "title": "Source",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "type": {
-            "const": "search_result",
-            "title": "Type",
-            "type": "string"
           }
-        },
-        "required": [
-          "content",
-          "source",
-          "title",
-          "type"
         ],
-        "title": "RequestSearchResultBlock",
-        "type": "object"
-      },
-      "BetaRequestThinkingBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "signature": {
-            "description": "The `signature` value of this thinking block, exactly as returned by the API in a previous response. Used to verify that the block was generated by Claude.\n\nThinking blocks must be passed back unmodified and in their original order; a modified block results in a 400 `invalid_request_error`.",
-            "title": "Signature",
-            "type": "string"
-          },
-          "thinking": {
-            "description": "The `thinking` text of this block as returned by the API.",
-            "title": "Thinking",
-            "type": "string"
-          },
-          "type": {
-            "const": "thinking",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "signature",
-          "thinking",
-          "type"
-        ],
-        "title": "RequestThinkingBlock",
-        "type": "object"
-      },
-      "BetaRequestRedactedThinkingBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "data": {
-            "description": "The `data` value of this redacted thinking block, exactly as returned by the API in a previous response. Opaque and encrypted; pass it back unchanged.",
-            "title": "Data",
-            "type": "string"
-          },
-          "type": {
-            "const": "redacted_thinking",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "data",
-          "type"
-        ],
-        "title": "RequestRedactedThinkingBlock",
-        "type": "object"
-      },
-      "BetaRequestToolUseBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "caller": {
-            "discriminator": {
-              "mapping": {
-                "code_execution_20250825": "#/components/schemas/BetaServerToolCaller",
-                "code_execution_20260120": "#/components/schemas/BetaServerToolCaller_20260120",
-                "direct": "#/components/schemas/BetaDirectCaller"
-              },
-              "propertyName": "type"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/BetaDirectCaller"
-              },
-              {
-                "$ref": "#/components/schemas/BetaServerToolCaller"
-              },
-              {
-                "$ref": "#/components/schemas/BetaServerToolCaller_20260120"
-              }
-            ],
-            "title": "Caller"
-          },
-          "id": {
-            "pattern": "^[a-zA-Z0-9_-]+$",
-            "title": "Id",
-            "type": "string"
-          },
-          "input": {
-            "additionalProperties": true,
-            "title": "Input",
-            "type": "object"
-          },
-          "name": {
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
-          },
-          "toolset_name": {
-            "anyOf": [
-              {
-                "maxLength": 64,
-                "minLength": 1,
-                "pattern": "^[a-zA-Z0-9_-]+$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "For a toolset member tool_use, the toolset family this member belongs to.",
-            "title": "Toolset Name"
-          },
-          "type": {
-            "const": "tool_use",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "input",
-          "name",
-          "type"
-        ],
-        "title": "RequestToolUseBlock",
-        "type": "object"
-      },
-      "BetaRequestToolResultBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "content": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "items": {
-                  "discriminator": {
-                    "mapping": {
-                      "browser_state": "#/components/schemas/BetaRequestBrowserStateBlock",
-                      "document": "#/components/schemas/BetaRequestDocumentBlock",
-                      "image": "#/components/schemas/BetaRequestImageBlock",
-                      "search_result": "#/components/schemas/BetaRequestSearchResultBlock",
-                      "text": "#/components/schemas/BetaRequestTextBlock",
-                      "tool_reference": "#/components/schemas/BetaRequestToolReferenceBlock"
-                    },
-                    "propertyName": "type"
-                  },
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/BetaRequestTextBlock"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BetaRequestImageBlock"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BetaRequestSearchResultBlock"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BetaRequestDocumentBlock"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BetaRequestToolReferenceBlock"
-                    },
-                    {
-                      "$ref": "#/components/schemas/BetaRequestBrowserStateBlock"
-                    }
-                  ],
-                  "title": "Block"
-                },
-                "type": "array"
-              }
-            ],
-            "title": "Content"
-          },
-          "is_error": {
-            "title": "Is Error",
-            "type": "boolean"
-          },
-          "tool_use_id": {
-            "pattern": "^[a-zA-Z0-9_-]+$",
-            "title": "Tool Use Id",
-            "type": "string"
-          },
-          "toolset_name": {
-            "anyOf": [
-              {
-                "maxLength": 64,
-                "minLength": 1,
-                "pattern": "^[a-zA-Z0-9_-]+$",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "For a toolset member tool_result, the toolset family of the paired tool_use.",
-            "title": "Toolset Name"
-          },
-          "type": {
-            "const": "tool_result",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "tool_use_id",
-          "type"
-        ],
-        "title": "RequestToolResultBlock",
-        "type": "object"
-      },
-      "BetaRequestServerToolUseBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "caller": {
-            "discriminator": {
-              "mapping": {
-                "code_execution_20250825": "#/components/schemas/BetaServerToolCaller",
-                "code_execution_20260120": "#/components/schemas/BetaServerToolCaller_20260120",
-                "direct": "#/components/schemas/BetaDirectCaller"
-              },
-              "propertyName": "type"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/BetaDirectCaller"
-              },
-              {
-                "$ref": "#/components/schemas/BetaServerToolCaller"
-              },
-              {
-                "$ref": "#/components/schemas/BetaServerToolCaller_20260120"
-              }
-            ],
-            "title": "Caller"
-          },
-          "id": {
-            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
-            "title": "Id",
-            "type": "string"
-          },
-          "input": {
-            "additionalProperties": true,
-            "title": "Input",
-            "type": "object"
-          },
-          "name": {
-            "enum": [
-              "advisor",
-              "web_search",
-              "web_fetch",
-              "code_execution",
-              "bash_code_execution",
-              "text_editor_code_execution",
-              "tool_search_tool_regex",
-              "tool_search_tool_bm25"
-            ],
-            "title": "Name",
-            "type": "string"
-          },
-          "type": {
-            "const": "server_tool_use",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "input",
-          "name",
-          "type"
-        ],
-        "title": "RequestServerToolUseBlock",
-        "type": "object"
-      },
-      "BetaRequestWebSearchToolResultBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "caller": {
-            "discriminator": {
-              "mapping": {
-                "code_execution_20250825": "#/components/schemas/BetaServerToolCaller",
-                "code_execution_20260120": "#/components/schemas/BetaServerToolCaller_20260120",
-                "direct": "#/components/schemas/BetaDirectCaller"
-              },
-              "propertyName": "type"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/BetaDirectCaller"
-              },
-              {
-                "$ref": "#/components/schemas/BetaServerToolCaller"
-              },
-              {
-                "$ref": "#/components/schemas/BetaServerToolCaller_20260120"
-              }
-            ],
-            "title": "Caller"
-          },
-          "content": {
-            "anyOf": [
-              {
-                "items": {
-                  "$ref": "#/components/schemas/BetaRequestWebSearchResultBlock"
-                },
-                "title": "Result Block",
-                "type": "array"
-              },
-              {
-                "$ref": "#/components/schemas/BetaRequestWebSearchToolResultError"
-              }
-            ],
-            "title": "Content"
-          },
-          "tool_use_id": {
-            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
-            "title": "Tool Use Id",
-            "type": "string"
-          },
-          "type": {
-            "const": "web_search_tool_result",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "content",
-          "tool_use_id",
-          "type"
-        ],
-        "title": "RequestWebSearchToolResultBlock",
-        "type": "object"
-      },
-      "BetaRequestWebFetchToolResultBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "caller": {
-            "discriminator": {
-              "mapping": {
-                "code_execution_20250825": "#/components/schemas/BetaServerToolCaller",
-                "code_execution_20260120": "#/components/schemas/BetaServerToolCaller_20260120",
-                "direct": "#/components/schemas/BetaDirectCaller"
-              },
-              "propertyName": "type"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/BetaDirectCaller"
-              },
-              {
-                "$ref": "#/components/schemas/BetaServerToolCaller"
-              },
-              {
-                "$ref": "#/components/schemas/BetaServerToolCaller_20260120"
-              }
-            ],
-            "title": "Caller"
-          },
-          "content": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BetaRequestWebFetchToolResultError"
-              },
-              {
-                "$ref": "#/components/schemas/BetaRequestWebFetchResultBlock"
-              }
-            ],
-            "title": "Content"
-          },
-          "tool_use_id": {
-            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
-            "title": "Tool Use Id",
-            "type": "string"
-          },
-          "type": {
-            "const": "web_fetch_tool_result",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "content",
-          "tool_use_id",
-          "type"
-        ],
-        "title": "RequestWebFetchToolResultBlock",
-        "type": "object"
-      },
-      "BetaRequestAdvisorToolResultBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "content": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BetaRequestAdvisorToolResultError"
-              },
-              {
-                "$ref": "#/components/schemas/BetaRequestAdvisorResultBlock"
-              },
-              {
-                "$ref": "#/components/schemas/BetaRequestAdvisorRedactedResultBlock"
-              }
-            ],
-            "title": "Content"
-          },
-          "tool_use_id": {
-            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
-            "title": "Tool Use Id",
-            "type": "string"
-          },
-          "type": {
-            "const": "advisor_tool_result",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "content",
-          "tool_use_id",
-          "type"
-        ],
-        "title": "RequestAdvisorToolResultBlock",
-        "type": "object"
-      },
-      "BetaRequestCodeExecutionToolResultBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "content": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BetaRequestCodeExecutionToolResultError"
-              },
-              {
-                "$ref": "#/components/schemas/BetaRequestCodeExecutionResultBlock"
-              },
-              {
-                "$ref": "#/components/schemas/BetaRequestEncryptedCodeExecutionResultBlock"
-              }
-            ],
-            "title": "Content"
-          },
-          "tool_use_id": {
-            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
-            "title": "Tool Use Id",
-            "type": "string"
-          },
-          "type": {
-            "const": "code_execution_tool_result",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "content",
-          "tool_use_id",
-          "type"
-        ],
-        "title": "RequestCodeExecutionToolResultBlock",
-        "type": "object"
-      },
-      "BetaRequestBashCodeExecutionToolResultBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "content": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BetaRequestBashCodeExecutionToolResultError"
-              },
-              {
-                "$ref": "#/components/schemas/BetaRequestBashCodeExecutionResultBlock"
-              }
-            ],
-            "title": "Content"
-          },
-          "tool_use_id": {
-            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
-            "title": "Tool Use Id",
-            "type": "string"
-          },
-          "type": {
-            "const": "bash_code_execution_tool_result",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "content",
-          "tool_use_id",
-          "type"
-        ],
-        "title": "RequestBashCodeExecutionToolResultBlock",
-        "type": "object"
-      },
-      "BetaRequestTextEditorCodeExecutionToolResultBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "content": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BetaRequestTextEditorCodeExecutionToolResultError"
-              },
-              {
-                "$ref": "#/components/schemas/BetaRequestTextEditorCodeExecutionViewResultBlock"
-              },
-              {
-                "$ref": "#/components/schemas/BetaRequestTextEditorCodeExecutionCreateResultBlock"
-              },
-              {
-                "$ref": "#/components/schemas/BetaRequestTextEditorCodeExecutionStrReplaceResultBlock"
-              }
-            ],
-            "title": "Content"
-          },
-          "tool_use_id": {
-            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
-            "title": "Tool Use Id",
-            "type": "string"
-          },
-          "type": {
-            "const": "text_editor_code_execution_tool_result",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "content",
-          "tool_use_id",
-          "type"
-        ],
-        "title": "RequestTextEditorCodeExecutionToolResultBlock",
-        "type": "object"
-      },
-      "BetaRequestToolSearchToolResultBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "content": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BetaRequestToolSearchToolResultError"
-              },
-              {
-                "$ref": "#/components/schemas/BetaRequestToolSearchToolSearchResultBlock"
-              }
-            ],
-            "title": "Content"
-          },
-          "tool_use_id": {
-            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
-            "title": "Tool Use Id",
-            "type": "string"
-          },
-          "type": {
-            "const": "tool_search_tool_result",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "content",
-          "tool_use_id",
-          "type"
-        ],
-        "title": "RequestToolSearchToolResultBlock",
-        "type": "object"
-      },
-      "BetaRequestMCPToolUseBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "id": {
-            "pattern": "^[a-zA-Z0-9_-]+$",
-            "title": "Id",
-            "type": "string"
-          },
-          "input": {
-            "additionalProperties": true,
-            "title": "Input",
-            "type": "object"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "server_name": {
-            "description": "The name of the MCP server",
-            "title": "Server Name",
-            "type": "string"
-          },
-          "type": {
-            "const": "mcp_tool_use",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "input",
-          "name",
-          "server_name",
-          "type"
-        ],
-        "title": "RequestMCPToolUseBlock",
-        "type": "object"
-      },
-      "BetaRequestMCPToolResultBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "content": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "items": {
-                  "$ref": "#/components/schemas/BetaRequestTextBlock",
-                  "title": "beta_mcp_tool_result_block_param_content_item"
-                },
-                "title": "beta_mcp_tool_result_block_param_content",
-                "type": "array"
-              }
-            ],
-            "title": "Content"
-          },
-          "is_error": {
-            "title": "Is Error",
-            "type": "boolean"
-          },
-          "tool_use_id": {
-            "pattern": "^[a-zA-Z0-9_-]+$",
-            "title": "Tool Use Id",
-            "type": "string"
-          },
-          "type": {
-            "const": "mcp_tool_result",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "tool_use_id",
-          "type"
-        ],
-        "title": "RequestMCPToolResultBlock",
-        "type": "object"
-      },
-      "BetaRequestContainerUploadBlock": {
-        "additionalProperties": false,
-        "description": "A content block that represents a file to be uploaded to the container\nFiles uploaded via this block will be available in the container's input directory.",
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "file_id": {
-            "title": "File Id",
-            "type": "string"
-          },
-          "type": {
-            "const": "container_upload",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "file_id",
-          "type"
-        ],
-        "title": "RequestContainerUploadBlock",
-        "type": "object"
-      },
-      "BetaRequestCompactionBlock": {
-        "additionalProperties": false,
-        "description": "A compaction block containing summary of previous context.\n\nUsers should round-trip these blocks from responses to subsequent requests\nto maintain context across compaction boundaries.\n\nWhen content is None, the block represents a failed compaction. The server\ntreats these as no-ops. Empty string content is not allowed.",
-        "properties": {
-          "cache_control": {
-            "anyOf": [
-              {
-                "discriminator": {
-                  "mapping": {
-                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
-                  },
-                  "propertyName": "type"
-                },
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Create a cache control breakpoint at this content block.",
-            "title": "Cache Control"
-          },
-          "content": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Summary of previously compacted content, or null if compaction failed",
-            "title": "Content"
-          },
-          "encrypted_content": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Opaque metadata from prior compaction, to be round-tripped verbatim",
-            "title": "Encrypted Content"
-          },
-          "type": {
-            "const": "compaction",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type"
-        ],
-        "title": "RequestCompactionBlock",
-        "type": "object"
+        "title": "InputMessageContent"
       },
       "BetaRequestToolAdditionBlock": {
         "additionalProperties": false,
-        "description": "Mid-conversation directive to surface a declared tool.\n\n``tool`` references a tool (or MCP toolset) by name from the request's\n``tools``; it is offered to the model from this point in the\nconversation onward.",
+        "description": "Mid-conversation directive to make a tool available.\n\n``tool`` is a reference to a tool (or MCP toolset) declared in the\nrequest's ``tools``. Under the ``inline-tools-2026-09-15`` beta it may\ninstead be a reference to a tool defined earlier in ``messages``, or a\n``tool_definition`` object that carries an inline tool definition in\n``definition`` (the same object a ``tools`` entry holds). An ``mcp_toolset``\ndefinition also requires the ``mcp-client-2026-09-15`` beta. The tool is\noffered to the model from this point in the conversation onward.",
         "properties": {
           "cache_control": {
             "anyOf": [
@@ -6477,6 +6193,7 @@
               "mapping": {
                 "mcp_tool_reference": "#/components/schemas/BetaToolChangeMCPToolReference",
                 "mcp_toolset_reference": "#/components/schemas/BetaToolChangeMCPToolsetReference",
+                "tool_definition": "#/components/schemas/BetaToolChangeToolDefinition",
                 "tool_reference": "#/components/schemas/BetaToolChangeToolReference"
               },
               "propertyName": "type"
@@ -6490,6 +6207,9 @@
               },
               {
                 "$ref": "#/components/schemas/BetaToolChangeMCPToolsetReference"
+              },
+              {
+                "$ref": "#/components/schemas/BetaToolChangeToolDefinition"
               }
             ],
             "title": "Tool"
@@ -6509,7 +6229,7 @@
       },
       "BetaRequestToolRemovalBlock": {
         "additionalProperties": false,
-        "description": "Mid-conversation directive to withdraw a tool.\n\n``tool`` references a tool (or MCP toolset) by name from the request's\n``tools``; it is no longer offered to the model from this point in the\nconversation onward.",
+        "description": "Mid-conversation directive to withdraw a tool.\n\n``tool`` references a tool (or MCP toolset) by name: one declared in the\nrequest's ``tools`` or defined earlier in ``messages``. It is no longer\noffered to the model from this point in the conversation onward.",
         "properties": {
           "cache_control": {
             "anyOf": [
@@ -6568,32 +6288,23 @@
         "title": "RequestToolRemovalBlock",
         "type": "object"
       },
-      "BetaRequestFallbackBlock": {
+      "BetaSystemMessageOutputConfig": {
         "additionalProperties": false,
-        "description": "A `fallback` block echoed back from a prior response.\n\nAccepted in `messages[].content` and not rendered into the prompt; not\nvalidated against the request's `fallbacks` chain or top-level `model`.\n\nEcho the assistant turn back verbatim, including this block in its\noriginal position. The block marks the boundary between content produced\nbefore and after a fallback hop, and the server relies on that boundary\nto validate the turn: when thinking runs flank the boundary, omitting\nthe block merges them into one span the server cannot validate (the\nrequest is rejected), and moving it into the middle of a single run is\nlikewise rejected; between non-thinking blocks the block's placement has\nno validation effect.",
+        "description": "Per-message output configuration on a role:\"system\" input message.\n\nFields here apply per-turn; ``format`` remains top-level only. An\nempty ``{}`` is accepted on a message that carries content; a message\nwith neither content nor output_config fields is rejected.",
         "properties": {
-          "from": {
-            "$ref": "#/components/schemas/BetaRequestFallbackHopInfo"
-          },
-          "to": {
-            "$ref": "#/components/schemas/BetaRequestFallbackHopInfo"
-          },
-          "trigger": {
-            "description": "The response block's `trigger`, echoed verbatim. Accepted and ignored by the server; any object or `null` is allowed.",
-            "title": "Trigger"
-          },
-          "type": {
-            "const": "fallback",
-            "title": "Type",
-            "type": "string"
+          "effort": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaEffortLevel"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How much effort the model should put into its response. Higher effort levels may result in more thorough analysis but take longer.\n\nValid values are `low`, `medium`, `high`, `xhigh`, or `max`."
           }
         },
-        "required": [
-          "from",
-          "to",
-          "type"
-        ],
-        "title": "RequestFallbackBlock",
+        "title": "SystemMessageOutputConfig",
         "type": "object"
       },
       "BetaThinkingBlockBinding": {
@@ -8160,6 +7871,1747 @@
         "title": "ComputerZoomConfig",
         "type": "object"
       },
+      "BetaWebFetchUrlSourceAll": {
+        "additionalProperties": false,
+        "description": "The ``url_sources`` variant under which a source contributes in\nfull: every result of the tool filter's source, or all user input.",
+        "properties": {
+          "type": {
+            "const": "all",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "WebFetchUrlSourceAll",
+        "type": "object"
+      },
+      "BetaWebFetchUrlSourceNone": {
+        "additionalProperties": false,
+        "description": "The ``url_sources`` variant under which a source contributes nothing:\nno result of the tool filter's source, or no user input.",
+        "properties": {
+          "type": {
+            "const": "none",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "WebFetchUrlSourceNone",
+        "type": "object"
+      },
+      "BetaWebFetchUrlSourceOnly": {
+        "additionalProperties": false,
+        "description": "The tool filter variant under which only the named tools' results\ncontribute.",
+        "properties": {
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/BetaWebFetchUrlSourceToolReference"
+            },
+            "title": "Tools",
+            "type": "array"
+          },
+          "type": {
+            "const": "only",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tools",
+          "type"
+        ],
+        "title": "WebFetchUrlSourceOnly",
+        "type": "object"
+      },
+      "BetaWebFetchUrlSourceExcept": {
+        "additionalProperties": false,
+        "description": "The tool filter variant under which every result but the named\ntools' contributes.",
+        "properties": {
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/BetaWebFetchUrlSourceToolReference"
+            },
+            "title": "Tools",
+            "type": "array"
+          },
+          "type": {
+            "const": "except",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tools",
+          "type"
+        ],
+        "title": "WebFetchUrlSourceExcept",
+        "type": "object"
+      },
+      "BetaInputContentBlock": {
+        "discriminator": {
+          "mapping": {
+            "advisor_tool_result": "#/components/schemas/BetaRequestAdvisorToolResultBlock",
+            "bash_code_execution_tool_result": "#/components/schemas/BetaRequestBashCodeExecutionToolResultBlock",
+            "code_execution_tool_result": "#/components/schemas/BetaRequestCodeExecutionToolResultBlock",
+            "compaction": "#/components/schemas/BetaRequestCompactionBlock",
+            "container_upload": "#/components/schemas/BetaRequestContainerUploadBlock",
+            "document": "#/components/schemas/BetaRequestDocumentBlock",
+            "fallback": "#/components/schemas/BetaRequestFallbackBlock",
+            "image": "#/components/schemas/BetaRequestImageBlock",
+            "mcp_tool_listing": "#/components/schemas/BetaRequestMCPToolListingBlock",
+            "mcp_tool_result": "#/components/schemas/BetaRequestMCPToolResultBlock",
+            "mcp_tool_use": "#/components/schemas/BetaRequestMCPToolUseBlock",
+            "redacted_thinking": "#/components/schemas/BetaRequestRedactedThinkingBlock",
+            "search_result": "#/components/schemas/BetaRequestSearchResultBlock",
+            "server_tool_use": "#/components/schemas/BetaRequestServerToolUseBlock",
+            "text": "#/components/schemas/BetaRequestTextBlock",
+            "text_editor_code_execution_tool_result": "#/components/schemas/BetaRequestTextEditorCodeExecutionToolResultBlock",
+            "thinking": "#/components/schemas/BetaRequestThinkingBlock",
+            "tool_addition": "#/components/schemas/BetaRequestToolAdditionBlock",
+            "tool_removal": "#/components/schemas/BetaRequestToolRemovalBlock",
+            "tool_result": "#/components/schemas/BetaRequestToolResultBlock",
+            "tool_search_tool_result": "#/components/schemas/BetaRequestToolSearchToolResultBlock",
+            "tool_use": "#/components/schemas/BetaRequestToolUseBlock",
+            "web_fetch_tool_result": "#/components/schemas/BetaRequestWebFetchToolResultBlock",
+            "web_search_tool_result": "#/components/schemas/BetaRequestWebSearchToolResultBlock"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaRequestTextBlock",
+            "description": "Regular text content."
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestImageBlock",
+            "description": "Image content specified directly as base64 data or as a reference via a URL."
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestDocumentBlock",
+            "description": "Document content, either specified directly as base64 data, as text, or as a reference via a URL."
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestSearchResultBlock",
+            "description": "A search result block containing source, title, and content from search operations."
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestThinkingBlock",
+            "description": "A block specifying internal thinking by the model."
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestRedactedThinkingBlock",
+            "description": "A block specifying internal, redacted thinking by the model."
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestToolUseBlock",
+            "description": "A block indicating a tool use by the model."
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestToolResultBlock",
+            "description": "A block specifying the results of a tool use by the model."
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestServerToolUseBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestWebSearchToolResultBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestWebFetchToolResultBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestAdvisorToolResultBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestCodeExecutionToolResultBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestBashCodeExecutionToolResultBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestTextEditorCodeExecutionToolResultBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestToolSearchToolResultBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestMCPToolUseBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestMCPToolResultBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestContainerUploadBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestCompactionBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestToolAdditionBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestToolRemovalBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestMCPToolListingBlock"
+          },
+          {
+            "$ref": "#/components/schemas/BetaRequestFallbackBlock"
+          }
+        ]
+      },
+      "BetaToolChangeToolReference": {
+        "additionalProperties": false,
+        "description": "Reference to a single tool, by the name the model uses to call it: a\ntool declared in ``tools`` or defined by an earlier ``tool_addition``\nblock. Does not accept the composed ``{server}_{name}`` form the server\nassigns to MCP-resolved tools; use ``mcp_tool_reference`` or\n``mcp_toolset_reference`` for those.",
+        "properties": {
+          "name": {
+            "pattern": "^[a-zA-Z0-9_-]{1,128}$",
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "tool_reference",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ],
+        "title": "ToolChangeToolReference",
+        "type": "object"
+      },
+      "BetaToolChangeMCPToolReference": {
+        "additionalProperties": false,
+        "description": "Reference to a single MCP tool by its server and remote name; the\nsame ``server_name``/``name`` pair ``mcp_tool_use`` carries.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "server_name": {
+            "title": "Server Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "mcp_tool_reference",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "server_name",
+          "type"
+        ],
+        "title": "ToolChangeMCPToolReference",
+        "type": "object"
+      },
+      "BetaToolChangeMCPToolsetReference": {
+        "additionalProperties": false,
+        "description": "Reference to every tool in the named MCP server's toolset.",
+        "properties": {
+          "server_name": {
+            "title": "Server Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "mcp_toolset_reference",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "server_name",
+          "type"
+        ],
+        "title": "ToolChangeMCPToolsetReference",
+        "type": "object"
+      },
+      "BetaToolChangeToolDefinition": {
+        "additionalProperties": false,
+        "description": "A tool defined by value: `definition` is a `tools` entry (any kind\n`tools` accepts, an MCP toolset included). An `mcp_toolset` given here\nalso requires the `mcp-client-2026-09-15` beta.",
+        "properties": {
+          "definition": {
+            "$ref": "#/components/schemas/BetaToolUnion"
+          },
+          "type": {
+            "const": "tool_definition",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "definition",
+          "type"
+        ],
+        "title": "ToolChangeToolDefinition",
+        "type": "object"
+      },
+      "BetaThinkingPrefixMismatchBehavior": {
+        "description": "What happens when a thinking block in `messages` fails the conversation\ncheck: it was created in a different conversation, or the messages before\nit have changed since. `\"error\"` (the default) fails the request with a\n400 error. `\"drop_block\"` removes the failing blocks and the request\nproceeds; the model no longer sees the dropped reasoning.",
+        "enum": [
+          "error",
+          "drop_block"
+        ],
+        "title": "ThinkingPrefixMismatchBehavior",
+        "type": "string"
+      },
+      "BetaWebFetchUrlSourceToolReference": {
+        "additionalProperties": false,
+        "description": "One entry of a tool filter's ``tools``: it must name a tool declared\nin this request's ``tools[]``.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "tool_reference",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ],
+        "title": "WebFetchUrlSourceToolReference",
+        "type": "object"
+      },
+      "BetaRequestImageBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "source": {
+            "discriminator": {
+              "mapping": {
+                "base64": "#/components/schemas/BetaBase64ImageSource",
+                "file": "#/components/schemas/BetaFileImageSource",
+                "url": "#/components/schemas/BetaURLImageSource"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaBase64ImageSource"
+              },
+              {
+                "$ref": "#/components/schemas/BetaURLImageSource"
+              },
+              {
+                "$ref": "#/components/schemas/BetaFileImageSource"
+              }
+            ],
+            "title": "Source"
+          },
+          "transformations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaRequestImageTransformations"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Configures the transformations the server applies to this image before the model observes it. Each key names a condition the server transforms images for; its value selects the transformation applied. Omitted keys keep their default behavior, and an empty object is equivalent to omitting the field."
+          },
+          "type": {
+            "const": "image",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "type"
+        ],
+        "title": "RequestImageBlock",
+        "type": "object"
+      },
+      "BetaRequestDocumentBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "citations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaRequestCitationsConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "context": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context"
+          },
+          "source": {
+            "discriminator": {
+              "mapping": {
+                "base64": "#/components/schemas/BetaBase64PDFSource",
+                "content": "#/components/schemas/BetaContentBlockSource",
+                "file": "#/components/schemas/BetaFileDocumentSource",
+                "text": "#/components/schemas/BetaPlainTextSource",
+                "url": "#/components/schemas/BetaURLPDFSource"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaBase64PDFSource"
+              },
+              {
+                "$ref": "#/components/schemas/BetaPlainTextSource"
+              },
+              {
+                "$ref": "#/components/schemas/BetaContentBlockSource"
+              },
+              {
+                "$ref": "#/components/schemas/BetaURLPDFSource"
+              },
+              {
+                "$ref": "#/components/schemas/BetaFileDocumentSource"
+              }
+            ],
+            "title": "Source"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "type": {
+            "const": "document",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source",
+          "type"
+        ],
+        "title": "RequestDocumentBlock",
+        "type": "object"
+      },
+      "BetaRequestSearchResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "citations": {
+            "$ref": "#/components/schemas/BetaRequestCitationsConfig"
+          },
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/BetaRequestTextBlock"
+            },
+            "title": "Content",
+            "type": "array"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "search_result",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "source",
+          "title",
+          "type"
+        ],
+        "title": "RequestSearchResultBlock",
+        "type": "object"
+      },
+      "BetaRequestThinkingBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "signature": {
+            "description": "The `signature` value of this thinking block, exactly as returned by the API in a previous response. Used to verify that the block was generated by Claude.\n\nThinking blocks must be passed back unmodified and in their original order; a modified block results in a 400 `invalid_request_error`.",
+            "title": "Signature",
+            "type": "string"
+          },
+          "thinking": {
+            "description": "The `thinking` text of this block as returned by the API.",
+            "title": "Thinking",
+            "type": "string"
+          },
+          "type": {
+            "const": "thinking",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "signature",
+          "thinking",
+          "type"
+        ],
+        "title": "RequestThinkingBlock",
+        "type": "object"
+      },
+      "BetaRequestRedactedThinkingBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "description": "The `data` value of this redacted thinking block, exactly as returned by the API in a previous response. Opaque and encrypted; pass it back unchanged.",
+            "title": "Data",
+            "type": "string"
+          },
+          "type": {
+            "const": "redacted_thinking",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "data",
+          "type"
+        ],
+        "title": "RequestRedactedThinkingBlock",
+        "type": "object"
+      },
+      "BetaRequestToolUseBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "caller": {
+            "discriminator": {
+              "mapping": {
+                "code_execution_20250825": "#/components/schemas/BetaServerToolCaller",
+                "code_execution_20260120": "#/components/schemas/BetaServerToolCaller_20260120",
+                "direct": "#/components/schemas/BetaDirectCaller"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaDirectCaller"
+              },
+              {
+                "$ref": "#/components/schemas/BetaServerToolCaller"
+              },
+              {
+                "$ref": "#/components/schemas/BetaServerToolCaller_20260120"
+              }
+            ],
+            "title": "Caller"
+          },
+          "id": {
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "input": {
+            "additionalProperties": true,
+            "title": "Input",
+            "type": "object"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "toolset_name": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[a-zA-Z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a toolset member tool_use, the toolset family this member belongs to.",
+            "title": "Toolset Name"
+          },
+          "type": {
+            "const": "tool_use",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "input",
+          "name",
+          "type"
+        ],
+        "title": "RequestToolUseBlock",
+        "type": "object"
+      },
+      "BetaRequestToolResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "discriminator": {
+                    "mapping": {
+                      "browser_state": "#/components/schemas/BetaRequestBrowserStateBlock",
+                      "document": "#/components/schemas/BetaRequestDocumentBlock",
+                      "image": "#/components/schemas/BetaRequestImageBlock",
+                      "search_result": "#/components/schemas/BetaRequestSearchResultBlock",
+                      "text": "#/components/schemas/BetaRequestTextBlock",
+                      "tool_reference": "#/components/schemas/BetaRequestToolReferenceBlock"
+                    },
+                    "propertyName": "type"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/BetaRequestTextBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BetaRequestImageBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BetaRequestSearchResultBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BetaRequestDocumentBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BetaRequestToolReferenceBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BetaRequestBrowserStateBlock"
+                    }
+                  ],
+                  "title": "Block"
+                },
+                "type": "array"
+              }
+            ],
+            "title": "Content"
+          },
+          "is_error": {
+            "title": "Is Error",
+            "type": "boolean"
+          },
+          "tool_use_id": {
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Tool Use Id",
+            "type": "string"
+          },
+          "toolset_name": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[a-zA-Z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a toolset member tool_result, the toolset family of the paired tool_use.",
+            "title": "Toolset Name"
+          },
+          "type": {
+            "const": "tool_result",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tool_use_id",
+          "type"
+        ],
+        "title": "RequestToolResultBlock",
+        "type": "object"
+      },
+      "BetaRequestServerToolUseBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "caller": {
+            "discriminator": {
+              "mapping": {
+                "code_execution_20250825": "#/components/schemas/BetaServerToolCaller",
+                "code_execution_20260120": "#/components/schemas/BetaServerToolCaller_20260120",
+                "direct": "#/components/schemas/BetaDirectCaller"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaDirectCaller"
+              },
+              {
+                "$ref": "#/components/schemas/BetaServerToolCaller"
+              },
+              {
+                "$ref": "#/components/schemas/BetaServerToolCaller_20260120"
+              }
+            ],
+            "title": "Caller"
+          },
+          "id": {
+            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "input": {
+            "additionalProperties": true,
+            "title": "Input",
+            "type": "object"
+          },
+          "name": {
+            "enum": [
+              "advisor",
+              "web_search",
+              "web_fetch",
+              "code_execution",
+              "bash_code_execution",
+              "text_editor_code_execution",
+              "tool_search_tool_regex",
+              "tool_search_tool_bm25"
+            ],
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "server_tool_use",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "input",
+          "name",
+          "type"
+        ],
+        "title": "RequestServerToolUseBlock",
+        "type": "object"
+      },
+      "BetaRequestWebSearchToolResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "caller": {
+            "discriminator": {
+              "mapping": {
+                "code_execution_20250825": "#/components/schemas/BetaServerToolCaller",
+                "code_execution_20260120": "#/components/schemas/BetaServerToolCaller_20260120",
+                "direct": "#/components/schemas/BetaDirectCaller"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaDirectCaller"
+              },
+              {
+                "$ref": "#/components/schemas/BetaServerToolCaller"
+              },
+              {
+                "$ref": "#/components/schemas/BetaServerToolCaller_20260120"
+              }
+            ],
+            "title": "Caller"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BetaRequestWebSearchResultBlock"
+                },
+                "title": "Result Block",
+                "type": "array"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRequestWebSearchToolResultError"
+              }
+            ],
+            "title": "Content"
+          },
+          "tool_use_id": {
+            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
+            "title": "Tool Use Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "web_search_tool_result",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "tool_use_id",
+          "type"
+        ],
+        "title": "RequestWebSearchToolResultBlock",
+        "type": "object"
+      },
+      "BetaRequestWebFetchToolResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "caller": {
+            "discriminator": {
+              "mapping": {
+                "code_execution_20250825": "#/components/schemas/BetaServerToolCaller",
+                "code_execution_20260120": "#/components/schemas/BetaServerToolCaller_20260120",
+                "direct": "#/components/schemas/BetaDirectCaller"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaDirectCaller"
+              },
+              {
+                "$ref": "#/components/schemas/BetaServerToolCaller"
+              },
+              {
+                "$ref": "#/components/schemas/BetaServerToolCaller_20260120"
+              }
+            ],
+            "title": "Caller"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaRequestWebFetchToolResultError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRequestWebFetchResultBlock"
+              }
+            ],
+            "title": "Content"
+          },
+          "tool_use_id": {
+            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
+            "title": "Tool Use Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "web_fetch_tool_result",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "tool_use_id",
+          "type"
+        ],
+        "title": "RequestWebFetchToolResultBlock",
+        "type": "object"
+      },
+      "BetaRequestAdvisorToolResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaRequestAdvisorToolResultError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRequestAdvisorResultBlock"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRequestAdvisorRedactedResultBlock"
+              }
+            ],
+            "title": "Content"
+          },
+          "tool_use_id": {
+            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
+            "title": "Tool Use Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "advisor_tool_result",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "tool_use_id",
+          "type"
+        ],
+        "title": "RequestAdvisorToolResultBlock",
+        "type": "object"
+      },
+      "BetaRequestCodeExecutionToolResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaRequestCodeExecutionToolResultError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRequestCodeExecutionResultBlock"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRequestEncryptedCodeExecutionResultBlock"
+              }
+            ],
+            "title": "Content"
+          },
+          "tool_use_id": {
+            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
+            "title": "Tool Use Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "code_execution_tool_result",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "tool_use_id",
+          "type"
+        ],
+        "title": "RequestCodeExecutionToolResultBlock",
+        "type": "object"
+      },
+      "BetaRequestBashCodeExecutionToolResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaRequestBashCodeExecutionToolResultError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRequestBashCodeExecutionResultBlock"
+              }
+            ],
+            "title": "Content"
+          },
+          "tool_use_id": {
+            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
+            "title": "Tool Use Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "bash_code_execution_tool_result",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "tool_use_id",
+          "type"
+        ],
+        "title": "RequestBashCodeExecutionToolResultBlock",
+        "type": "object"
+      },
+      "BetaRequestTextEditorCodeExecutionToolResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaRequestTextEditorCodeExecutionToolResultError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRequestTextEditorCodeExecutionViewResultBlock"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRequestTextEditorCodeExecutionCreateResultBlock"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRequestTextEditorCodeExecutionStrReplaceResultBlock"
+              }
+            ],
+            "title": "Content"
+          },
+          "tool_use_id": {
+            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
+            "title": "Tool Use Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "text_editor_code_execution_tool_result",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "tool_use_id",
+          "type"
+        ],
+        "title": "RequestTextEditorCodeExecutionToolResultBlock",
+        "type": "object"
+      },
+      "BetaRequestToolSearchToolResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaRequestToolSearchToolResultError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRequestToolSearchToolSearchResultBlock"
+              }
+            ],
+            "title": "Content"
+          },
+          "tool_use_id": {
+            "pattern": "^srvtoolu_[a-zA-Z0-9_]+$",
+            "title": "Tool Use Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "tool_search_tool_result",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "tool_use_id",
+          "type"
+        ],
+        "title": "RequestToolSearchToolResultBlock",
+        "type": "object"
+      },
+      "BetaRequestMCPToolUseBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "id": {
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "input": {
+            "additionalProperties": true,
+            "title": "Input",
+            "type": "object"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "server_name": {
+            "description": "The name of the MCP server",
+            "title": "Server Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "mcp_tool_use",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "input",
+          "name",
+          "server_name",
+          "type"
+        ],
+        "title": "RequestMCPToolUseBlock",
+        "type": "object"
+      },
+      "BetaRequestMCPToolResultBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BetaRequestTextBlock",
+                  "title": "beta_mcp_tool_result_block_param_content_item"
+                },
+                "title": "beta_mcp_tool_result_block_param_content",
+                "type": "array"
+              }
+            ],
+            "title": "Content"
+          },
+          "is_error": {
+            "title": "Is Error",
+            "type": "boolean"
+          },
+          "tool_use_id": {
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Tool Use Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "mcp_tool_result",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tool_use_id",
+          "type"
+        ],
+        "title": "RequestMCPToolResultBlock",
+        "type": "object"
+      },
+      "BetaRequestContainerUploadBlock": {
+        "additionalProperties": false,
+        "description": "A content block that represents a file to be uploaded to the container\nFiles uploaded via this block will be available in the container's input directory.",
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "file_id": {
+            "title": "File Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "container_upload",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file_id",
+          "type"
+        ],
+        "title": "RequestContainerUploadBlock",
+        "type": "object"
+      },
+      "BetaRequestCompactionBlock": {
+        "additionalProperties": false,
+        "description": "A compaction block containing summary of previous context.\n\nUsers should round-trip these blocks from responses to subsequent requests\nto maintain context across compaction boundaries.\n\nWhen content is None, the block represents a failed compaction. The server\ntreats these as no-ops. Empty string content is not allowed.",
+        "properties": {
+          "cache_control": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "ephemeral": "#/components/schemas/BetaCacheControlEphemeral"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/BetaCacheControlEphemeral"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create a cache control breakpoint at this content block.",
+            "title": "Cache Control"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Summary of previously compacted content, or null if compaction failed",
+            "title": "Content"
+          },
+          "encrypted_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque metadata from prior compaction, to be round-tripped verbatim",
+            "title": "Encrypted Content"
+          },
+          "signature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The block's signature as returned, to be sent back verbatim",
+            "title": "Signature"
+          },
+          "tool_changes": {
+            "anyOf": [
+              {
+                "items": {
+                  "discriminator": {
+                    "mapping": {
+                      "tool_addition": "#/components/schemas/BetaRequestToolAdditionBlock",
+                      "tool_removal": "#/components/schemas/BetaRequestToolRemovalBlock"
+                    },
+                    "propertyName": "type"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/BetaRequestToolAdditionBlock"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BetaRequestToolRemovalBlock"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The tool changes of the compacted range, as the server returned them on this block: the `tool_addition` and `tool_removal` entries that take the request's `tools` to the tool set in effect at the end of the range. Send them back unchanged with the block.",
+            "title": "Tool Changes"
+          },
+          "type": {
+            "const": "compaction",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "RequestCompactionBlock",
+        "type": "object"
+      },
+      "BetaRequestMCPToolListingBlock": {
+        "additionalProperties": false,
+        "description": "The tool listing an MCP server returned while an earlier response was\nproduced, as that response carried it. Send the assistant message back\nunchanged, this block included, and the server uses this listing for the\nmatching `mcp_toolset` instead of asking the MCP server again.",
+        "properties": {
+          "mcp_server_name": {
+            "description": "The name of the MCP server this listing came from, as `mcp_servers` declares it.",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Mcp Server Name",
+            "type": "string"
+          },
+          "tools": {
+            "description": "The server's tools, exactly as the response listed them.",
+            "items": {
+              "$ref": "#/components/schemas/BetaMCPTool"
+            },
+            "title": "Tools",
+            "type": "array"
+          },
+          "type": {
+            "const": "mcp_tool_listing",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mcp_server_name",
+          "tools",
+          "type"
+        ],
+        "title": "RequestMCPToolListingBlock",
+        "type": "object"
+      },
+      "BetaRequestFallbackBlock": {
+        "additionalProperties": false,
+        "description": "A `fallback` block echoed back from a prior response.\n\nAccepted in `messages[].content` and not rendered into the prompt; not\nvalidated against the request's `fallbacks` chain or top-level `model`.\n\nEcho the assistant turn back verbatim, including this block in its\noriginal position. The block marks the boundary between content produced\nbefore and after a fallback hop, and the server relies on that boundary\nto validate the turn: when thinking runs flank the boundary, omitting\nthe block merges them into one span the server cannot validate (the\nrequest is rejected), and moving it into the middle of a single run is\nlikewise rejected; between non-thinking blocks the block's placement has\nno validation effect.",
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/BetaRequestFallbackHopInfo"
+          },
+          "to": {
+            "$ref": "#/components/schemas/BetaRequestFallbackHopInfo"
+          },
+          "trigger": {
+            "description": "The response block's `trigger`, echoed verbatim. Accepted and ignored by the server; any object or `null` is allowed.",
+            "title": "Trigger"
+          },
+          "type": {
+            "const": "fallback",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "type"
+        ],
+        "title": "RequestFallbackBlock",
+        "type": "object"
+      },
+      "BetaToolUnion": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaTool"
+          },
+          {
+            "$ref": "#/components/schemas/BetaBashTool_20241022"
+          },
+          {
+            "$ref": "#/components/schemas/BetaBashTool_20250124"
+          },
+          {
+            "$ref": "#/components/schemas/BetaCodeExecutionTool_20250522"
+          },
+          {
+            "$ref": "#/components/schemas/BetaCodeExecutionTool_20250825"
+          },
+          {
+            "$ref": "#/components/schemas/BetaCodeExecutionTool_20260120"
+          },
+          {
+            "$ref": "#/components/schemas/BetaCodeExecutionTool_20260521"
+          },
+          {
+            "$ref": "#/components/schemas/BetaBrowserToolset_20260801"
+          },
+          {
+            "$ref": "#/components/schemas/BetaComputerUseTool_20241022"
+          },
+          {
+            "$ref": "#/components/schemas/BetaMemoryTool_20250818"
+          },
+          {
+            "$ref": "#/components/schemas/BetaComputerUseTool_20250124"
+          },
+          {
+            "$ref": "#/components/schemas/BetaTextEditor_20241022"
+          },
+          {
+            "$ref": "#/components/schemas/BetaComputerUseTool_20251124"
+          },
+          {
+            "$ref": "#/components/schemas/BetaComputerToolset_20260801"
+          },
+          {
+            "$ref": "#/components/schemas/BetaTextEditor_20250124"
+          },
+          {
+            "$ref": "#/components/schemas/BetaTextEditor_20250429"
+          },
+          {
+            "$ref": "#/components/schemas/BetaTextEditor_20250728"
+          },
+          {
+            "$ref": "#/components/schemas/BetaWebSearchTool_20250305"
+          },
+          {
+            "$ref": "#/components/schemas/BetaWebFetchTool_20250910"
+          },
+          {
+            "$ref": "#/components/schemas/BetaWebSearchTool_20260209"
+          },
+          {
+            "$ref": "#/components/schemas/BetaWebFetchTool_20260209"
+          },
+          {
+            "$ref": "#/components/schemas/BetaWebFetchTool_20260309"
+          },
+          {
+            "$ref": "#/components/schemas/BetaWebSearchTool_20260318"
+          },
+          {
+            "$ref": "#/components/schemas/BetaWebFetchTool_20260318"
+          },
+          {
+            "$ref": "#/components/schemas/BetaAdvisorTool_20260301"
+          },
+          {
+            "$ref": "#/components/schemas/BetaToolSearchToolBM25_20251119"
+          },
+          {
+            "$ref": "#/components/schemas/BetaToolSearchToolRegex_20251119"
+          },
+          {
+            "$ref": "#/components/schemas/BetaMCPToolset"
+          }
+        ]
+      },
       "BetaBase64ImageSource": {
         "additionalProperties": false,
         "properties": {
@@ -8837,7 +10289,7 @@
       },
       "BetaRequestEncryptedCodeExecutionResultBlock": {
         "additionalProperties": false,
-        "description": "Code execution result with encrypted stdout for PFC + web_search results.",
+        "description": "The output and exit code of Python code that Claude ran with the code execution tool, with standard output in encrypted form, sent back in a later request.",
         "properties": {
           "content": {
             "items": {
@@ -9170,75 +10622,6 @@
         "title": "RequestToolSearchToolSearchResultBlock",
         "type": "object"
       },
-      "BetaToolChangeToolReference": {
-        "additionalProperties": false,
-        "description": "Reference to a single tool the caller declared directly in\n``tools[]``. Does not accept the composed ``{server}_{name}`` form the\nserver assigns to MCP-resolved tools — use ``mcp_tool_reference`` or\n``mcp_toolset_reference`` for those.",
-        "properties": {
-          "name": {
-            "pattern": "^[a-zA-Z0-9_-]{1,128}$",
-            "title": "Name",
-            "type": "string"
-          },
-          "type": {
-            "const": "tool_reference",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "name",
-          "type"
-        ],
-        "title": "ToolChangeToolReference",
-        "type": "object"
-      },
-      "BetaToolChangeMCPToolReference": {
-        "additionalProperties": false,
-        "description": "Reference to a single MCP tool by its server and remote name — the\nsame ``server_name``/``name`` pair ``mcp_tool_use`` carries.",
-        "properties": {
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "server_name": {
-            "title": "Server Name",
-            "type": "string"
-          },
-          "type": {
-            "const": "mcp_tool_reference",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "name",
-          "server_name",
-          "type"
-        ],
-        "title": "ToolChangeMCPToolReference",
-        "type": "object"
-      },
-      "BetaToolChangeMCPToolsetReference": {
-        "additionalProperties": false,
-        "description": "Reference to every tool in the named MCP server's toolset.",
-        "properties": {
-          "server_name": {
-            "title": "Server Name",
-            "type": "string"
-          },
-          "type": {
-            "const": "mcp_toolset_reference",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "server_name",
-          "type"
-        ],
-        "title": "ToolChangeMCPToolsetReference",
-        "type": "object"
-      },
       "BetaRequestFallbackHopInfo": {
         "additionalProperties": false,
         "description": "Identifies one hop of a fallback transition.",
@@ -9252,15 +10635,6 @@
         ],
         "title": "RequestFallbackHopInfo",
         "type": "object"
-      },
-      "BetaThinkingPrefixMismatchBehavior": {
-        "description": "What happens when a thinking block in `messages` fails the conversation\ncheck: it was created in a different conversation, or the messages before\nit have changed since. `\"error\"` (the default) fails the request with a\n400 error. `\"drop_block\"` removes the failing blocks and the request\nproceeds; the model no longer sees the dropped reasoning.",
-        "enum": [
-          "error",
-          "drop_block"
-        ],
-        "title": "ThinkingPrefixMismatchBehavior",
-        "type": "string"
       },
       "BetaBrowserStateChangeTabOpened": {
         "additionalProperties": false,
@@ -9489,7 +10863,8 @@
           "unsupported_content_type",
           "too_many_requests",
           "max_uses_exceeded",
-          "unavailable"
+          "unavailable",
+          "content_too_large"
         ],
         "title": "WebFetchToolResultErrorCode",
         "type": "string"

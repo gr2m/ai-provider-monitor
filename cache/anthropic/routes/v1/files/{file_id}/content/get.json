@@ -24,13 +24,12 @@
       }
     },
     {
-      "description": "Your unique API key for authentication.\n\nThis key is required in the header of all API requests, to authenticate your account and access Anthropic's services. Get your API key through the [Console](https://console.anthropic.com/settings/keys). Each key is scoped to a Workspace.",
+      "description": "Optional header to select the Workspace for this request. The value is a Workspace ID (for example, `wrkspc_011CZkZaBF1tNoB5wlCeusgy`).\n\nOnly needed for credentials that can act on more than one Workspace. A credential that belongs to a specific Workspace may omit it; if sent, it must match that Workspace.",
+      "example": "wrkspc_011CZkZaBF1tNoB5wlCeusgy",
       "in": "header",
-      "name": "x-api-key",
+      "name": "anthropic-workspace-id",
       "required": false,
       "schema": {
-        "description": "Your unique API key for authentication.\n\nThis key is required in the header of all API requests, to authenticate your account and access Anthropic's services. Get your API key through the [Console](https://console.anthropic.com/settings/keys). Each key is scoped to a Workspace.",
-        "title": "X-Api-Key",
         "type": "string"
       }
     }
@@ -46,20 +45,383 @@
       },
       "description": "Successful Response"
     },
-    "4XX": {
+    "400": {
       "content": {
-        "application/octet-stream": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "details": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/ClaudeCodeKeyCreatorNotMemberErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/CmekKeyDisabledErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/CmekKeyNetworkBlockedErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/FileNotDownloadableErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/OrganizationOnHoldErrorDetails"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Machine-readable detail about the cause of the error. `error_code` names the cause; branch on it rather than on `message`. Absent when the error has no code. Treat an unrecognized `error_code` as the bare `type`.",
+                    "title": "Details"
+                  },
+                  "message": {
+                    "default": "Invalid request",
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "invalid_request_error",
+                    "default": "invalid_request_error",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "type"
+                ],
+                "title": "InvalidRequestError",
+                "type": "object"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "type": {
+                "const": "error",
+                "default": "error",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "error",
+              "request_id",
+              "type"
+            ],
+            "title": "ErrorResponse",
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid argument - The client specified an invalid argument"
+    },
+    "401": {
+      "content": {
+        "application/json": {
           "schema": {
             "$ref": "#/components/schemas/ErrorResponse"
           }
         }
       },
-      "description": "Error response.\n\nSee our [errors documentation](https://platform.claude.com/docs/en/api/errors) for more details."
+      "description": "Unauthenticated - The request does not have valid authentication credentials"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Permission denied - The caller does not have permission to execute the specified operation"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "details": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/FileExpiredErrorDetails"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Machine-readable detail about the cause of the error. `error_code` names the cause; branch on it rather than on `message`. Absent when the error has no code. Treat an unrecognized `error_code` as the bare `type`."
+                  },
+                  "message": {
+                    "default": "Not found",
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "not_found_error",
+                    "default": "not_found_error",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "type"
+                ],
+                "title": "NotFoundError",
+                "type": "object"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "type": {
+                "const": "error",
+                "default": "error",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "error",
+              "request_id",
+              "type"
+            ],
+            "title": "ErrorResponse",
+            "type": "object"
+          }
+        }
+      },
+      "description": "Not found - Some requested entity was not found"
+    },
+    "408": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - The deadline expired before the operation could complete"
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Aborted - The operation was aborted due to concurrency issue"
+    },
+    "412": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Failed precondition - Operation was rejected because the system is not in required state"
+    },
+    "413": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Out of range - Operation was attempted past the valid range"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Resource exhausted - Some resource has been exhausted (rate limiting)"
+    },
+    "431": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Request header fields too large - Request metadata was too large"
+    },
+    "499": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Cancelled - The operation was cancelled by the client"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Internal - Internal server error"
+    },
+    "501": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Unimplemented - The operation is not implemented or supported"
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Unavailable - The service is currently unavailable"
+    },
+    "504": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - Upstream service did not respond in time"
+    },
+    "529": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Overloaded - The service is temporarily overloaded"
     }
   },
   "summary": "Download File",
   "components": {
     "schemas": {
+      "ClaudeCodeKeyCreatorNotMemberErrorDetails": {
+        "description": "The API key belongs to the Claude Code workspace, and the user who created it is no longer a member of the organization or of that workspace.",
+        "properties": {
+          "error_code": {
+            "const": "claude_code_key_creator_not_member",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "ClaudeCodeKeyCreatorNotMemberErrorDetails",
+        "type": "object"
+      },
+      "CmekKeyDisabledErrorDetails": {
+        "description": "The workspace's customer-managed encryption key is disabled or revoked. Re-enable the key, then retry.",
+        "properties": {
+          "error_code": {
+            "const": "cmek_key_disabled",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "CmekKeyDisabledErrorDetails",
+        "type": "object"
+      },
+      "CmekKeyNetworkBlockedErrorDetails": {
+        "description": "The key management service's network access controls blocked the request to the workspace's customer-managed encryption key. The key itself may be healthy.",
+        "properties": {
+          "error_code": {
+            "const": "cmek_key_network_blocked",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "CmekKeyNetworkBlockedErrorDetails",
+        "type": "object"
+      },
+      "FileNotDownloadableErrorDetails": {
+        "description": "The file has `downloadable: false`. Only files generated by a tool, such as the code execution tool, can be downloaded.",
+        "properties": {
+          "error_code": {
+            "const": "file_not_downloadable",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "FileNotDownloadableErrorDetails",
+        "type": "object"
+      },
+      "OrganizationOnHoldErrorDetails": {
+        "description": "Anthropic has disabled the organization for trust and safety reasons. An organization disabled for any other reason, such as billing, does not get this code. `appeal_url`, when present, is where the organization can appeal.",
+        "properties": {
+          "appeal_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Appeal Url"
+          },
+          "error_code": {
+            "const": "organization_on_hold",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "OrganizationOnHoldErrorDetails",
+        "type": "object"
+      },
       "ErrorResponse": {
         "properties": {
           "error": {
@@ -133,6 +495,21 @@
           "type"
         ],
         "title": "ErrorResponse",
+        "type": "object"
+      },
+      "FileExpiredErrorDetails": {
+        "description": "The file's `expires_at` has passed, so its content is no longer available.",
+        "properties": {
+          "error_code": {
+            "const": "file_expired",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "FileExpiredErrorDetails",
         "type": "object"
       },
       "InvalidRequestError": {

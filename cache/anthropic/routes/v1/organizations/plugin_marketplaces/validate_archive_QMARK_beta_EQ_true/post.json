@@ -1,0 +1,806 @@
+{
+  "description": "Check whether a plugin marketplace, uploaded as a `.zip` of the marketplace\ndirectory, would synchronize into claude.ai, without connecting or storing it.\n\nTo check a public GitHub repository instead, use Validate Plugin Marketplace Repository.\n\nThe report says whether `marketplace.json` is well-formed, which plugins a\nsynchronization would skip and why, and which plugins would synchronize only in\npart, with some files left out. An archive that cannot be read as a marketplace is reported, not refused: the response is a report with `valid: false`. Plugin sources outside the marketplace\nare fetched anonymously from GitHub, so a private one is reported as not found or as\nneeding a GitHub sign-in; a source on any other host is not fetched here, and the\nreport notes that it will be checked when the marketplace actually synchronizes.\n\nNothing is recorded on the Compliance API activity feed.\n\nFor a worked example, see [Validate marketplace content](/docs/en/manage-claude/plugins-api#validate-marketplace-content)\nin the Plugins API guide.\n\n**Accepted credentials:** an Admin API key with the `read:plugins` or `write:plugins` scope; `read:org_audit` and `read:compliance_org_data` do not grant it.\n\nEvery request must include the beta header `anthropic-beta: ce-plugins-2026-09-01`. A request without it returns `404`, exactly as if the endpoint did not exist. The Plugins API is in beta and is available to Claude Enterprise organizations only. It is not available to Claude Platform (Claude Console) organizations, or to organizations with HIPAA readiness enabled.",
+  "operationId": "beta_validate_plugin_marketplace_archive_v1_organizations_plugin_marketplaces_validate_archive_post",
+  "parameters": [
+    {
+      "description": "This endpoint is in beta: requests must send `ce-plugins-2026-09-01` in this header.",
+      "in": "header",
+      "name": "anthropic-beta",
+      "required": false,
+      "schema": {
+        "description": "This endpoint is in beta: requests must send `ce-plugins-2026-09-01` in this header.",
+        "items": {
+          "$ref": "#/components/schemas/AnthropicBeta"
+        },
+        "title": "Anthropic-Beta",
+        "type": "array"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "multipart/form-data": {
+        "schema": {
+          "properties": {
+            "archive": {
+              "description": "A .zip of the marketplace directory (its contents at the root, or wrapped in one folder as a Git host's download produces), sent as a file part with a filename; DEFLATE- or STORE-compressed, at most 32 MB. A part sent without a filename, a second archive part, or any other form field is a 400; a larger archive is a 413.",
+              "format": "binary",
+              "type": "string"
+            }
+          },
+          "required": [
+            "archive"
+          ],
+          "type": "object"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaPluginMarketplaceValidationReport"
+          }
+        }
+      },
+      "description": "Successful Response"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "details": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/BetaUnsupportedCharsetErrorDetails"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Machine-readable detail about the cause of the error. `error_code` names the cause; branch on it rather than on `message`. Absent when the error has no code. Treat an unrecognized `error_code` as the bare `type`."
+                  },
+                  "message": {
+                    "default": "Invalid request",
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "invalid_request_error",
+                    "default": "invalid_request_error",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "type"
+                ],
+                "title": "InvalidRequestError",
+                "type": "object"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "type": {
+                "const": "error",
+                "default": "error",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "error",
+              "request_id",
+              "type"
+            ],
+            "title": "ErrorResponse",
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid argument - The client specified an invalid argument"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unauthenticated - The request does not have valid authentication credentials"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Permission denied - The caller does not have permission to execute the specified operation"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Not found - Some requested entity was not found"
+    },
+    "408": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - The deadline expired before the operation could complete"
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Aborted - The operation was aborted due to concurrency issue"
+    },
+    "412": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Failed precondition - Operation was rejected because the system is not in required state"
+    },
+    "413": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Out of range - Operation was attempted past the valid range"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Resource exhausted - Some resource has been exhausted (rate limiting)"
+    },
+    "431": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Request header fields too large - Request metadata was too large"
+    },
+    "499": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Cancelled - The operation was cancelled by the client"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Internal - Internal server error"
+    },
+    "501": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unimplemented - The operation is not implemented or supported"
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unavailable - The service is currently unavailable"
+    },
+    "504": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - Upstream service did not respond in time"
+    },
+    "529": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Overloaded - The service is temporarily overloaded"
+    }
+  },
+  "summary": "Validate Plugin Marketplace Archive",
+  "components": {
+    "schemas": {
+      "AnthropicBeta": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "message-batches-2024-09-24",
+              "prompt-caching-2024-07-31",
+              "computer-use-2024-10-22",
+              "computer-use-2025-01-24",
+              "pdfs-2024-09-25",
+              "token-counting-2024-11-01",
+              "token-efficient-tools-2025-02-19",
+              "output-128k-2025-02-19",
+              "files-api-2025-04-14",
+              "mcp-client-2025-04-04",
+              "mcp-client-2025-11-20",
+              "dev-full-thinking-2025-05-14",
+              "interleaved-thinking-2025-05-14",
+              "code-execution-2025-05-22",
+              "extended-cache-ttl-2025-04-11",
+              "context-1m-2025-08-07",
+              "context-management-2025-06-27",
+              "model-context-window-exceeded-2025-08-26",
+              "skills-2025-10-02",
+              "fast-mode-2026-02-01",
+              "output-300k-2026-03-24",
+              "user-profiles-2026-03-24",
+              "user-profiles-2026-08-18",
+              "user-profiles-2026-09-04",
+              "advisor-tool-2026-03-01",
+              "managed-agents-2026-04-01",
+              "cache-diagnosis-2026-04-07",
+              "dreaming-2026-04-21",
+              "thinking-token-count-2026-05-13",
+              "server-side-fallback-2026-06-01",
+              "server-side-fallback-2026-07-01",
+              "fallback-credit-2026-06-01",
+              "fallback-credit-2026-07-01",
+              "agent-memory-2026-07-22",
+              "mid-conversation-tool-changes-2026-07-01",
+              "compact-2026-01-12",
+              "computer-use-2025-11-24",
+              "mcp-tunnels-2026-06-22",
+              "structured-outputs-2025-11-13",
+              "task-budgets-2026-03-13",
+              "thinking-display-updates-2026-08-18",
+              "ce-user-management-2026-07-13",
+              "mid-conversation-output-config-2026-07-01",
+              "thinking-binding-controls-2026-08-01",
+              "mid-conversation-system-clear-at-2026-08-21",
+              "compact-2026-09-04",
+              "inline-tools-2026-09-15",
+              "mcp-client-2026-09-15",
+              "ce-plugins-2026-09-01",
+              "spend-limit-reads-2026-09-26",
+              "telemetry-destinations-2026-08-11",
+              "webhooks-2026-10-07",
+              "message-threads-2026-08-12",
+              "analytics-usage-cost-2026-08-24",
+              "experimental-claude-tag-2026-10-21"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "BetaPluginMarketplaceValidationReport": {
+        "description": "The outcome of validating plugin marketplace content: a report, not a\nstored object, so nothing in it can be retrieved afterwards.",
+        "properties": {
+          "commit_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The full SHA of the commit that was validated: for a repository, the commit that was read; for an uploaded archive, the commit recorded in the archive's comment (as a Git host's download writes it; not verified), else null.",
+            "examples": [
+              "9fceb02d0ae598e95dc970b74767f19372d61af8"
+            ],
+            "title": "Commit Sha"
+          },
+          "manifest_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Set when nothing could be validated: the repository or archive could not be read, or marketplace.json is missing, malformed or over a limit. Null otherwise.",
+            "title": "Manifest Error"
+          },
+          "manifest_error_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A stable identifier for `manifest_error`; null when that is.",
+            "examples": [
+              "marketplace_sync_manifest_not_found"
+            ],
+            "title": "Manifest Error Code"
+          },
+          "plugin_errors": {
+            "description": "One entry per plugin a synchronization would skip entirely, keyed by the plugin's name in marketplace.json.",
+            "items": {
+              "$ref": "#/components/schemas/BetaPluginMarketplaceValidationPluginError"
+            },
+            "title": "Plugin Errors",
+            "type": "array"
+          },
+          "plugin_warnings": {
+            "description": "One entry per plugin that would synchronize with some of its contents left out, keyed by the plugin's name in marketplace.json.",
+            "items": {
+              "$ref": "#/components/schemas/BetaPluginMarketplaceValidationPluginWarnings"
+            },
+            "title": "Plugin Warnings",
+            "type": "array"
+          },
+          "ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "For a repository, the branch that was read by name: the one requested, or else the branch a synchronization of this repository is set to read. Null when no branch is named or set and the repository's default branch was read, for a request by commit SHA, and for an uploaded archive.",
+            "examples": [
+              "main"
+            ],
+            "title": "Ref"
+          },
+          "total_plugin_count": {
+            "description": "How many plugins marketplace.json declares; 0 when it could not be read.",
+            "title": "Total Plugin Count",
+            "type": "integer"
+          },
+          "type": {
+            "const": "plugin_marketplace_validation_report",
+            "default": "plugin_marketplace_validation_report",
+            "description": "Always `plugin_marketplace_validation_report`.",
+            "title": "Type",
+            "type": "string"
+          },
+          "valid": {
+            "description": "True when marketplace.json is well-formed and no plugin would be skipped; warnings never make it false.",
+            "examples": [
+              false
+            ],
+            "title": "Valid",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "commit_sha",
+          "manifest_error",
+          "manifest_error_code",
+          "plugin_errors",
+          "plugin_warnings",
+          "ref",
+          "total_plugin_count",
+          "type",
+          "valid"
+        ],
+        "title": "PluginMarketplaceValidationReport",
+        "type": "object"
+      },
+      "BetaUnsupportedCharsetErrorDetails": {
+        "description": "The request's `Content-Type` header names a charset other than UTF-8, ISO-8859-1 or US-ASCII. Send the request with no charset, or with one of these.",
+        "properties": {
+          "error_code": {
+            "const": "unsupported_charset",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "UnsupportedCharsetErrorDetails",
+        "type": "object"
+      },
+      "BetaErrorResponse": {
+        "properties": {
+          "error": {
+            "discriminator": {
+              "mapping": {
+                "api_error": "#/components/schemas/BetaAPIError",
+                "authentication_error": "#/components/schemas/BetaAuthenticationError",
+                "billing_error": "#/components/schemas/BetaBillingError",
+                "invalid_request_error": "#/components/schemas/BetaInvalidRequestError",
+                "not_found_error": "#/components/schemas/BetaNotFoundError",
+                "overloaded_error": "#/components/schemas/BetaOverloadedError",
+                "permission_error": "#/components/schemas/BetaPermissionError",
+                "rate_limit_error": "#/components/schemas/BetaRateLimitError",
+                "timeout_error": "#/components/schemas/BetaGatewayTimeoutError"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaInvalidRequestError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaAuthenticationError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaBillingError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaPermissionError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaNotFoundError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRateLimitError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaGatewayTimeoutError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaAPIError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaOverloadedError"
+              }
+            ],
+            "title": "Error"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Id"
+          },
+          "type": {
+            "const": "error",
+            "default": "error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "request_id",
+          "type"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "BetaPluginMarketplaceValidationPluginError": {
+        "properties": {
+          "error": {
+            "description": "Why the plugin would be skipped by a synchronization.",
+            "title": "Error",
+            "type": "string"
+          },
+          "error_code": {
+            "description": "A stable identifier for the reason — the value to branch on.",
+            "examples": [
+              "marketplace_sync_plugin_missing_manifest"
+            ],
+            "title": "Error Code",
+            "type": "string"
+          },
+          "name": {
+            "description": "The plugin's name, as its entry in marketplace.json declares it.",
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "error_code",
+          "name"
+        ],
+        "title": "PluginMarketplaceValidationPluginError",
+        "type": "object"
+      },
+      "BetaPluginMarketplaceValidationPluginWarnings": {
+        "properties": {
+          "name": {
+            "description": "The plugin's name, as its entry in marketplace.json declares it.",
+            "title": "Name",
+            "type": "string"
+          },
+          "warnings": {
+            "description": "The parts of the plugin a synchronization would leave out.",
+            "items": {
+              "$ref": "#/components/schemas/BetaPluginMarketplaceValidationPluginWarning"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "warnings"
+        ],
+        "title": "PluginMarketplaceValidationPluginWarnings",
+        "type": "object"
+      },
+      "BetaInvalidRequestError": {
+        "properties": {
+          "message": {
+            "default": "Invalid request",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "invalid_request_error",
+            "default": "invalid_request_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "InvalidRequestError",
+        "type": "object"
+      },
+      "BetaAuthenticationError": {
+        "properties": {
+          "message": {
+            "default": "Authentication error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "authentication_error",
+            "default": "authentication_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "AuthenticationError",
+        "type": "object"
+      },
+      "BetaBillingError": {
+        "properties": {
+          "message": {
+            "default": "Billing error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "billing_error",
+            "default": "billing_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "BillingError",
+        "type": "object"
+      },
+      "BetaPermissionError": {
+        "properties": {
+          "message": {
+            "default": "Permission denied",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "permission_error",
+            "default": "permission_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "PermissionError",
+        "type": "object"
+      },
+      "BetaNotFoundError": {
+        "properties": {
+          "message": {
+            "default": "Not found",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "not_found_error",
+            "default": "not_found_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "NotFoundError",
+        "type": "object"
+      },
+      "BetaRateLimitError": {
+        "properties": {
+          "message": {
+            "default": "Rate limited",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "rate_limit_error",
+            "default": "rate_limit_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "RateLimitError",
+        "type": "object"
+      },
+      "BetaGatewayTimeoutError": {
+        "properties": {
+          "message": {
+            "default": "Request timeout",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "timeout_error",
+            "default": "timeout_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "GatewayTimeoutError",
+        "type": "object"
+      },
+      "BetaAPIError": {
+        "properties": {
+          "message": {
+            "default": "Internal server error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "api_error",
+            "default": "api_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "APIError",
+        "type": "object"
+      },
+      "BetaOverloadedError": {
+        "properties": {
+          "message": {
+            "default": "Overloaded",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "overloaded_error",
+            "default": "overloaded_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "OverloadedError",
+        "type": "object"
+      },
+      "BetaPluginMarketplaceValidationPluginWarning": {
+        "properties": {
+          "error_code": {
+            "description": "A stable identifier for the kind of warning.",
+            "examples": [
+              "marketplace_sync_zipball_symlink_dangling"
+            ],
+            "title": "Error Code",
+            "type": "string"
+          },
+          "message": {
+            "description": "What would be left out, and why.",
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code",
+          "message"
+        ],
+        "title": "PluginMarketplaceValidationPluginWarning",
+        "type": "object"
+      }
+    }
+  }
+}
