@@ -1,0 +1,281 @@
+{
+  "description": "Return the authenticated caller's identity.\n\nPrincipal-agnostic: resolves both users and service accounts.",
+  "operationId": "users_api_whoami",
+  "parameters": [],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/WhoamiResponse"
+          }
+        }
+      },
+      "description": "OK"
+    }
+  },
+  "security": [
+    {
+      "DashboardUserOrServiceAccountContextAuth": []
+    },
+    {
+      "BearerUserContextAuth": []
+    }
+  ],
+  "summary": "Whoami",
+  "tags": [
+    "beta.users"
+  ],
+  "components": {
+    "schemas": {
+      "WhoamiResponse": {
+        "description": "Principal-agnostic identity of the authenticated caller.\n\nSupersedes the user-centric ``/v1/users/me`` and ``/api/users/v2/me`` by\nresolving any principal (user or service account) through a single call. The\n``principal`` field is a discriminated union; the remaining fields are the\nshared session context and apply to either principal kind.",
+        "properties": {
+          "organization": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WhoamiOrganization"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The organization the caller's session is scoped to, when set."
+          },
+          "principal": {
+            "description": "The authenticated principal: either a user or a service account.",
+            "discriminator": {
+              "mapping": {
+                "service_account": "#/components/schemas/WhoamiServiceAccountPrincipal",
+                "user": "#/components/schemas/WhoamiUserPrincipal"
+              },
+              "propertyName": "principal_type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/WhoamiUserPrincipal"
+              },
+              {
+                "$ref": "#/components/schemas/WhoamiServiceAccountPrincipal"
+              }
+            ],
+            "title": "Principal"
+          },
+          "workspace": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UserIdentityWorkspace"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The workspace the caller's session is scoped to, when set."
+          }
+        },
+        "required": [
+          "principal"
+        ],
+        "title": "WhoamiResponse",
+        "type": "object"
+      },
+      "WhoamiOrganization": {
+        "description": "Organization identity and context for the authenticated caller.",
+        "properties": {
+          "id": {
+            "description": "The organization's unique identifier.",
+            "examples": [
+              "1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "internal": {
+            "default": false,
+            "description": "Whether this is a Mistral-internal organization.",
+            "examples": [
+              false,
+              true
+            ],
+            "title": "Internal",
+            "type": "boolean"
+          },
+          "kind": {
+            "default": "S",
+            "description": "The organization kind (e.g. 'S' standard, 'C' company internal, 'D' dogfooding).",
+            "examples": [
+              "S",
+              "C"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "description": "The organization's display name.",
+            "examples": [
+              "Acme Corp"
+            ],
+            "title": "Name",
+            "type": "string"
+          },
+          "org_tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The organization's billing tier (e.g. 'E' for Enterprise). Null when not set.",
+            "examples": [
+              "E",
+              null
+            ],
+            "title": "Org Tier"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "WhoamiOrganization",
+        "type": "object"
+      },
+      "WhoamiUserPrincipal": {
+        "description": "Identity of a human user principal.\n\nCarries user-only fields. The ``principal_type`` discriminator makes this\nvariant mutually exclusive with the service-account variant, so a payload can\nnever carry both a user id and a service-account id.",
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The user's email address, when known.",
+            "examples": [
+              "ada@example.com"
+            ],
+            "title": "Email"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The user's first name, when known.",
+            "examples": [
+              "Ada"
+            ],
+            "title": "First Name"
+          },
+          "id": {
+            "description": "The user's unique identifier.",
+            "examples": [
+              "8f14e45f-ceea-4e0a-9b0e-8f7d3c2a1b4e"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The user's last name, when known.",
+            "examples": [
+              "Lovelace"
+            ],
+            "title": "Last Name"
+          },
+          "principal_type": {
+            "const": "user",
+            "default": "user",
+            "description": "Discriminator identifying a human user principal.",
+            "examples": [
+              "user"
+            ],
+            "title": "Principal Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "WhoamiUserPrincipal",
+        "type": "object"
+      },
+      "WhoamiServiceAccountPrincipal": {
+        "description": "Identity of a service-account principal.\n\nCarries service-account-only fields. Service accounts have no user profile\n(no email or name of a person); ``name`` is the service account's own display\nname. Resolved independently of the authentication mechanism.",
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The service account's display name, when known.",
+            "examples": [
+              "ci-deploy-bot"
+            ],
+            "title": "Name"
+          },
+          "principal_type": {
+            "const": "service_account",
+            "default": "service_account",
+            "description": "Discriminator identifying a service-account principal.",
+            "examples": [
+              "service_account"
+            ],
+            "title": "Principal Type",
+            "type": "string"
+          },
+          "service_account_id": {
+            "description": "The service account's unique identifier.",
+            "examples": [
+              "3b241101-e2bb-4255-8caf-4136c566a962"
+            ],
+            "title": "Service Account Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "service_account_id"
+        ],
+        "title": "WhoamiServiceAccountPrincipal",
+        "type": "object"
+      },
+      "UserIdentityWorkspace": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "UserIdentityWorkspace",
+        "type": "object"
+      }
+    }
+  }
+}

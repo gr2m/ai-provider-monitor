@@ -1,5 +1,5 @@
 {
-  "deprecated": true,
+  "description": "Agents Completion",
   "operationId": "agents_completion_v1_agents_completions_post",
   "requestBody": {
     "content": {
@@ -63,7 +63,7 @@
   },
   "summary": "Agents Completion",
   "tags": [
-    "deprecated.agents"
+    "agents"
   ],
   "components": {
     "schemas": {
@@ -75,12 +75,43 @@
             "type": "string"
           },
           "frequency_penalty": {
-            "default": 0,
+            "anyOf": [
+              {
+                "maximum": 2,
+                "minimum": -2,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "The `frequency_penalty` penalizes the repetition of words based on their frequency in the generated text. A higher frequency penalty discourages the model from repeating words that have already appeared frequently in the output, promoting diversity and reducing repetition.",
-            "maximum": 2,
-            "minimum": -2,
-            "title": "Frequency Penalty",
-            "type": "number"
+            "title": "Frequency Penalty"
+          },
+          "guardrails": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/GuardrailConfig"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guardrails"
+          },
+          "logprobs": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logprobs"
           },
           "max_tokens": {
             "anyOf": [
@@ -145,6 +176,18 @@
             ],
             "title": "Metadata"
           },
+          "min_tokens": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Tokens"
+          },
           "n": {
             "anyOf": [
               {
@@ -172,12 +215,18 @@
             "description": "Enable users to specify expected results, optimizing response times by leveraging known or predictable content. This approach is especially effective for updating text documents or code files with minimal changes, reducing latency while maintaining high-quality results."
           },
           "presence_penalty": {
-            "default": 0,
+            "anyOf": [
+              {
+                "maximum": 2,
+                "minimum": -2,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "description": "The `presence_penalty` determines how much the model penalizes the repetition of words or phrases. A higher presence penalty encourages the model to use a wider variety of words and phrases, making the output more diverse and creative.",
-            "maximum": 2,
-            "minimum": -2,
-            "title": "Presence Penalty",
-            "type": "number"
+            "title": "Presence Penalty"
           },
           "prompt_cache_key": {
             "anyOf": [
@@ -188,8 +237,18 @@
                 "type": "null"
               }
             ],
-            "description": "A cache key to enable prompt caching. When provided, the API will attempt to reuse previously computed tokens for requests sharing the same prefix (e.g. multi-turn conversations or requests with a similar system prompt). Cached tokens are billed at 10% of the standard input token price.",
             "title": "Prompt Cache Key"
+          },
+          "prompt_logprobs": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Logprobs"
           },
           "prompt_mode": {
             "anyOf": [
@@ -200,7 +259,7 @@
                 "type": "null"
               }
             ],
-            "description": "Allows toggling between the reasoning mode and no system prompt. When set to `reasoning` the system prompt for reasoning models will be used. **Deprecated for reasoning models - use `reasoning_effort` parameter instead.**"
+            "description": "Allows toggling between the reasoning mode and no system prompt. When set to `reasoning` the system prompt for reasoning models will be used."
           },
           "random_seed": {
             "anyOf": [
@@ -216,15 +275,41 @@
             "title": "Random Seed"
           },
           "reasoning_effort": {
-            "description": "Controls the reasoning effort level for reasoning models. \"high\" enables comprehensive reasoning traces, \"none\" disables reasoning effort.",
-            "enum": [
-              "high",
-              "none"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningEffort"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "repetition_penalty": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0,
+                "maximum": 2,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "type": "string"
+            "title": "Repetition Penalty"
           },
           "response_format": {
             "$ref": "#/components/schemas/ResponseFormat"
+          },
+          "service_tier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RequestedServiceTier"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Determines whether to serve the request using priority or standard capacity."
           },
           "stop": {
             "anyOf": [
@@ -236,6 +321,9 @@
                   "type": "string"
                 },
                 "type": "array"
+              },
+              {
+                "type": "null"
               }
             ],
             "description": "Stop generation if this token is detected. Or if one of these tokens is detected when providing an array",
@@ -263,7 +351,29 @@
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/Tool"
+                  "discriminator": {
+                    "mapping": {
+                      "connector": "#/components/schemas/CustomConnector",
+                      "document_library": "#/components/schemas/DocumentLibraryTool",
+                      "function": "#/components/schemas/Tool",
+                      "image_generation": "#/components/schemas/ImageGenerationTool"
+                    },
+                    "propertyName": "type"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Tool"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ImageGenerationTool"
+                    },
+                    {
+                      "$ref": "#/components/schemas/DocumentLibraryTool"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CustomConnector"
+                    }
+                  ]
                 },
                 "type": "array"
               },
@@ -272,6 +382,40 @@
               }
             ],
             "title": "Tools"
+          },
+          "top_k": {
+            "anyOf": [
+              {
+                "minimum": -1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top K"
+          },
+          "top_logprobs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Logprobs"
+          },
+          "top_prompt_logprobs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Top Prompt Logprobs"
           }
         },
         "required": [
@@ -320,6 +464,38 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "GuardrailConfig": {
+        "properties": {
+          "block_on_error": {
+            "default": false,
+            "description": "If true, return HTTP 403 and block request in the event of a server-side error",
+            "title": "Block On Error",
+            "type": "boolean"
+          },
+          "moderation_llm_v1": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationLLMV1Config"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "moderation_llm_v2": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationLLMV2Config"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "GuardrailConfig",
         "type": "object"
       },
       "SystemMessage": {
@@ -517,6 +693,18 @@
         "title": "MistralPromptMode",
         "type": "string"
       },
+      "ReasoningEffort": {
+        "enum": [
+          "none",
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh"
+        ],
+        "title": "ReasoningEffort",
+        "type": "string"
+      },
       "ResponseFormat": {
         "additionalProperties": false,
         "description": "Specify the format that the model must output. By default it will use `{ \"type\": \"text\" }`. Setting to `{ \"type\": \"json_object\" }` enables JSON mode, which guarantees the message the model generates is in JSON. When using JSON mode you MUST also instruct the model to produce JSON yourself with a system or a user message. Setting to `{ \"type\": \"json_schema\" }` enables JSON schema mode, which guarantees the message the model generates is in JSON and follows the schema you provide.",
@@ -576,6 +764,14 @@
         "title": "ResponseFormat",
         "type": "object"
       },
+      "RequestedServiceTier": {
+        "enum": [
+          "auto",
+          "standard_only"
+        ],
+        "title": "RequestedServiceTier",
+        "type": "string"
+      },
       "ToolChoice": {
         "additionalProperties": false,
         "description": "ToolChoice is either a ToolChoiceEnum or a ToolChoice",
@@ -621,6 +817,125 @@
         "title": "Tool",
         "type": "object"
       },
+      "ImageGenerationTool": {
+        "additionalProperties": false,
+        "properties": {
+          "tool_configuration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolConfiguration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "default": "image_generation",
+            "enum": [
+              "image_generation"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "title": "ImageGenerationTool",
+        "type": "object"
+      },
+      "DocumentLibraryTool": {
+        "additionalProperties": false,
+        "properties": {
+          "library_ids": {
+            "description": "Ids of the library in which to search.",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Library Ids",
+            "type": "array"
+          },
+          "tool_configuration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolConfiguration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "default": "document_library",
+            "enum": [
+              "document_library"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "library_ids"
+        ],
+        "title": "DocumentLibraryTool",
+        "type": "object"
+      },
+      "CustomConnector": {
+        "additionalProperties": false,
+        "properties": {
+          "authorization": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "mapping": {
+                    "api-key": "#/components/schemas/APIKeyAuth",
+                    "oauth2-token": "#/components/schemas/OAuth2TokenAuth"
+                  },
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/OAuth2TokenAuth"
+                  },
+                  {
+                    "$ref": "#/components/schemas/APIKeyAuth"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Authorization"
+          },
+          "connector_id": {
+            "title": "Connector Id",
+            "type": "string"
+          },
+          "tool_configuration": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolConfiguration"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "default": "connector",
+            "enum": [
+              "connector"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "connector_id"
+        ],
+        "title": "CustomConnector",
+        "type": "object"
+      },
       "ChatCompletionResponseBase": {
         "allOf": [
           {
@@ -655,14 +970,39 @@
             "example": 0,
             "type": "integer"
           },
+          "logprobs": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompletionResponseChoiceLogprobs"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "message": {
             "$ref": "#/components/schemas/AssistantMessage"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/DeltaMessage"
+            },
+            "type": "array"
+          },
+          "prompt_logprobs": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ChatCompletionResponseChoiceLogprobs"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "index",
-          "finish_reason",
-          "message"
+          "finish_reason"
         ],
         "title": "ChatCompletionChoice",
         "type": "object"
@@ -707,6 +1047,72 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "ModerationLLMV1Config": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ModerationLLMAction",
+            "default": "none",
+            "description": "Action to take if any score is above the threshold for any category."
+          },
+          "custom_category_thresholds": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationLLMV1CategoryThresholds"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ignore_other_categories": {
+            "default": false,
+            "description": "If true, only evaluate categories in custom_category_thresholds; others are ignored.",
+            "title": "Ignore Other Categories",
+            "type": "boolean"
+          },
+          "model_name": {
+            "default": "mistral-moderation-2411",
+            "description": "Override model name. Should be omitted in general.",
+            "title": "Model Name",
+            "type": "string"
+          }
+        },
+        "title": "ModerationLLMV1Config",
+        "type": "object"
+      },
+      "ModerationLLMV2Config": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ModerationLLMAction",
+            "default": "none",
+            "description": "Action to take if any score is above the threshold for any category."
+          },
+          "custom_category_thresholds": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModerationLLMV2CategoryThresholds"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ignore_other_categories": {
+            "default": false,
+            "description": "If true, only evaluate categories in custom_category_thresholds; others are ignored.",
+            "title": "Ignore Other Categories",
+            "type": "boolean"
+          },
+          "model_name": {
+            "default": "mistral-moderation-2603",
+            "description": "Override model name. Should be omitted in general.",
+            "title": "Model Name",
+            "type": "string"
+          }
+        },
+        "title": "ModerationLLMV2Config",
+        "type": "object"
+      },
       "SystemMessageContentChunks": {
         "discriminator": {
           "mapping": {
@@ -733,6 +1139,8 @@
             "image_url": "#/components/schemas/ImageURLChunk",
             "input_audio": "#/components/schemas/AudioChunk",
             "reference": "#/components/schemas/ReferenceChunk",
+            "resource": "#/components/schemas/ResourceChunk",
+            "resource_link": "#/components/schemas/ResourceLinkChunk",
             "text": "#/components/schemas/TextChunk",
             "thinking": "#/components/schemas/ThinkChunk"
           },
@@ -759,6 +1167,12 @@
           },
           {
             "$ref": "#/components/schemas/AudioChunk"
+          },
+          {
+            "$ref": "#/components/schemas/ResourceChunk"
+          },
+          {
+            "$ref": "#/components/schemas/ResourceLinkChunk"
           }
         ],
         "title": "ContentChunk"
@@ -887,6 +1301,99 @@
         "title": "Function",
         "type": "object"
       },
+      "ToolConfiguration": {
+        "additionalProperties": false,
+        "properties": {
+          "exclude": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exclude"
+          },
+          "include": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Include"
+          },
+          "requires_confirmation": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requires Confirmation"
+          }
+        },
+        "title": "ToolConfiguration",
+        "type": "object"
+      },
+      "OAuth2TokenAuth": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "default": "oauth2-token",
+            "enum": [
+              "oauth2-token"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "title": "OAuth2TokenAuth",
+        "type": "object"
+      },
+      "APIKeyAuth": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "default": "api-key",
+            "enum": [
+              "api-key"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "title": "APIKeyAuth",
+        "type": "object"
+      },
       "ResponseBase": {
         "properties": {
           "id": {
@@ -906,6 +1413,339 @@
           }
         },
         "title": "ResponseBase",
+        "type": "object"
+      },
+      "ChatCompletionResponseChoiceLogprobs": {
+        "properties": {
+          "content": {
+            "items": {
+              "$ref": "#/components/schemas/ChatCompletionResponseTokenLogprobsTopK"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "title": "ChatCompletionResponseChoiceLogprobs",
+        "type": "object"
+      },
+      "DeltaMessage": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ContentChunk"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "index": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "If the completion returns multiple messages, this is to specify which message this delta is for."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tool_call_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tool_calls": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ToolCall"
+                },
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "title": "DeltaMessage",
+        "type": "object"
+      },
+      "ModerationLLMAction": {
+        "enum": [
+          "none",
+          "block"
+        ],
+        "title": "ModerationLLMAction",
+        "type": "string"
+      },
+      "ModerationLLMV1CategoryThresholds": {
+        "properties": {
+          "dangerous_and_criminal_content": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dangerous And Criminal Content"
+          },
+          "financial": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Financial"
+          },
+          "hate_and_discrimination": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hate And Discrimination"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health"
+          },
+          "law": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Law"
+          },
+          "pii": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pii"
+          },
+          "selfharm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selfharm"
+          },
+          "sexual": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sexual"
+          },
+          "violence_and_threats": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Violence And Threats"
+          }
+        },
+        "title": "ModerationLLMV1CategoryThresholds",
+        "type": "object"
+      },
+      "ModerationLLMV2CategoryThresholds": {
+        "properties": {
+          "criminal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criminal"
+          },
+          "dangerous": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dangerous"
+          },
+          "financial": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Financial"
+          },
+          "hate_and_discrimination": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hate And Discrimination"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health"
+          },
+          "jailbreaking": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jailbreaking"
+          },
+          "law": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Law"
+          },
+          "pii": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pii"
+          },
+          "selfharm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selfharm"
+          },
+          "sexual": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sexual"
+          },
+          "violence_and_threats": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Violence And Threats"
+          }
+        },
+        "title": "ModerationLLMV2CategoryThresholds",
         "type": "object"
       },
       "TextChunk": {
@@ -936,6 +1776,18 @@
             "description": "Whether the thinking chunk is closed or not. Currently only used for prefixing.",
             "title": "Closed",
             "type": "boolean"
+          },
+          "signature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Signature to replay some reasoning blocks across turns.",
+            "title": "Signature"
           },
           "thinking": {
             "items": {
@@ -969,7 +1821,7 @@
       },
       "ImageURLChunk": {
         "additionalProperties": false,
-        "description": "{\"type\":\"image_url\",\"image_url\":{\"url\":\"data:image/png;base64,iVBORw0",
+        "description": "{\"type\":\"image_url\",\"image_url\":\"data:image/png;base64,iVBORw0\"}",
         "properties": {
           "image_url": {
             "anyOf": [
@@ -1032,7 +1884,14 @@
         "properties": {
           "reference_ids": {
             "items": {
-              "type": "integer"
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "string"
+                }
+              ]
             },
             "title": "Reference Ids",
             "type": "array"
@@ -1099,6 +1958,92 @@
         "title": "AudioChunk",
         "type": "object"
       },
+      "ResourceChunk": {
+        "additionalProperties": false,
+        "properties": {
+          "content": {
+            "discriminator": {
+              "mapping": {
+                "image_url": "#/components/schemas/ImageURLChunk",
+                "text": "#/components/schemas/TextChunk"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/TextChunk"
+              },
+              {
+                "$ref": "#/components/schemas/ImageURLChunk"
+              }
+            ],
+            "title": "Content"
+          },
+          "type": {
+            "const": "resource",
+            "default": "resource",
+            "title": "Type",
+            "type": "string"
+          },
+          "uri": {
+            "title": "Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uri",
+          "content"
+        ],
+        "title": "ResourceChunk",
+        "type": "object"
+      },
+      "ResourceLinkChunk": {
+        "additionalProperties": false,
+        "properties": {
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "type": {
+            "const": "resource_link",
+            "default": "resource_link",
+            "title": "Type",
+            "type": "string"
+          },
+          "uri": {
+            "title": "Uri",
+            "type": "string"
+          }
+        },
+        "required": [
+          "uri"
+        ],
+        "title": "ResourceLinkChunk",
+        "type": "object"
+      },
       "FunctionCall": {
         "additionalProperties": false,
         "properties": {
@@ -1134,17 +2079,6 @@
             "title": "Completion Tokens",
             "type": "integer"
           },
-          "num_cached_tokens": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Num Cached Tokens"
-          },
           "prompt_audio_seconds": {
             "anyOf": [
               {
@@ -1156,30 +2090,22 @@
             ],
             "title": "Prompt Audio Seconds"
           },
-          "prompt_token_details": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PromptTokensDetails"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "prompt_tokens": {
             "default": 0,
             "title": "Prompt Tokens",
             "type": "integer"
           },
-          "prompt_tokens_details": {
+          "service_tier": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/PromptTokensDetails"
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The service tier at which the request was processed: standard or priority.",
+            "title": "Service Tier"
           },
           "total_tokens": {
             "default": 0,
@@ -1193,6 +2119,46 @@
           "total_tokens"
         ],
         "title": "UsageInfo",
+        "type": "object"
+      },
+      "ChatCompletionResponseTokenLogprobsTopK": {
+        "properties": {
+          "bytes": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "logprob": {
+            "type": "number"
+          },
+          "token": {
+            "type": "string"
+          },
+          "token_id": {
+            "type": "integer"
+          },
+          "top_logprobs": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ChatCompletionResponseTokenLogprobs"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "token",
+          "logprob",
+          "bytes",
+          "token_id"
+        ],
+        "title": "ChatCompletionResponseTokenLogprobsTopK",
         "type": "object"
       },
       "ToolReferenceChunk": {
@@ -1284,17 +2250,31 @@
         "title": "ImageURL",
         "type": "object"
       },
-      "PromptTokensDetails": {
-        "additionalProperties": false,
-        "description": "Token usage details for the prompt.",
+      "ChatCompletionResponseTokenLogprobs": {
         "properties": {
-          "cached_tokens": {
-            "default": 0,
-            "title": "Cached Tokens",
+          "bytes": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "logprob": {
+            "type": "number"
+          },
+          "token": {
+            "type": "string"
+          },
+          "token_id": {
             "type": "integer"
           }
         },
-        "title": "PromptTokensDetails",
+        "required": [
+          "token",
+          "logprob",
+          "bytes",
+          "token_id"
+        ],
+        "title": "ChatCompletionResponseTokenLogprobs",
         "type": "object"
       },
       "BuiltInConnectors": {
@@ -1303,7 +2283,8 @@
           "web_search_premium",
           "code_interpreter",
           "image_generation",
-          "document_library"
+          "document_library",
+          "mistral_mcp"
         ],
         "title": "BuiltInConnectors",
         "type": "string"

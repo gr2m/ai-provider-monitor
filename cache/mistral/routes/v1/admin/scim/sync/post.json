@@ -1,0 +1,193 @@
+{
+  "description": "Trigger an on-demand SCIM synchronization for the Organization.\n\nRequires SAML authentication to be enabled and the Organization to be in SCIM\nuser provisioning mode. A dry run previews every change without applying it;\na real run applies the categories selected in `sync_config`. Only one run may\nbe active at a time — a conflicting request returns the already-active run.",
+  "operationId": "users_api_admin_scim_sync_trigger_scim_sync",
+  "parameters": [],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/AdminScimSyncTriggerIN"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "202": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AdminScimSyncTriggerOUT"
+          }
+        }
+      },
+      "description": "Accepted"
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AdminScimSyncActiveRunOUT"
+          }
+        }
+      },
+      "description": "Conflict"
+    }
+  },
+  "security": [
+    {
+      "AdminApiKey": []
+    }
+  ],
+  "summary": "Trigger Scim Sync",
+  "tags": [
+    "beta.admin.scim"
+  ],
+  "components": {
+    "schemas": {
+      "AdminScimSyncTriggerIN": {
+        "properties": {
+          "dry_run": {
+            "default": true,
+            "description": "Preview all synchronization changes without applying them.",
+            "examples": [
+              true
+            ],
+            "title": "Dry Run",
+            "type": "boolean"
+          },
+          "sync_config": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AdminScimSyncConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Categories to synchronize. Required when dry_run is false; ignored for dry runs.",
+            "examples": [
+              {
+                "delete_missing_groups": false,
+                "deprovision_users": false,
+                "sync_groups": true,
+                "sync_memberships": true,
+                "sync_users": true
+              }
+            ]
+          }
+        },
+        "title": "AdminScimSyncTriggerIN",
+        "type": "object"
+      },
+      "AdminScimSyncTriggerOUT": {
+        "properties": {
+          "run_id": {
+            "description": "Unique identifier of the created SCIM synchronization run.",
+            "examples": [
+              "6f9619ff-8b86-d011-b42d-00cf4fc964ff"
+            ],
+            "format": "uuid",
+            "title": "Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "run_id"
+        ],
+        "title": "AdminScimSyncTriggerOUT",
+        "type": "object"
+      },
+      "AdminScimSyncActiveRunOUT": {
+        "properties": {
+          "run_id": {
+            "description": "Unique identifier of the already active SCIM synchronization run.",
+            "examples": [
+              "6f9619ff-8b86-d011-b42d-00cf4fc964ff"
+            ],
+            "format": "uuid",
+            "title": "Run Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ScimSyncRunStatus",
+            "description": "Current lifecycle status of the active synchronization run.",
+            "examples": [
+              "RUNNING"
+            ]
+          }
+        },
+        "required": [
+          "run_id",
+          "status"
+        ],
+        "title": "AdminScimSyncActiveRunOUT",
+        "type": "object"
+      },
+      "AdminScimSyncConfig": {
+        "properties": {
+          "delete_missing_groups": {
+            "default": false,
+            "description": "Delete Organization groups that are absent from the SCIM provider.",
+            "examples": [
+              false
+            ],
+            "title": "Delete Missing Groups",
+            "type": "boolean"
+          },
+          "deprovision_users": {
+            "default": false,
+            "description": "Remove Organization users that are inactive or absent from the SCIM provider.",
+            "examples": [
+              false
+            ],
+            "title": "Deprovision Users",
+            "type": "boolean"
+          },
+          "sync_groups": {
+            "description": "Synchronize group metadata from the SCIM provider.",
+            "examples": [
+              true
+            ],
+            "title": "Sync Groups",
+            "type": "boolean"
+          },
+          "sync_memberships": {
+            "description": "Synchronize additions and removals of users in SCIM groups.",
+            "examples": [
+              true
+            ],
+            "title": "Sync Memberships",
+            "type": "boolean"
+          },
+          "sync_users": {
+            "description": "Add users found in the SCIM provider to the Organization.",
+            "examples": [
+              true
+            ],
+            "title": "Sync Users",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "sync_users",
+          "sync_groups",
+          "sync_memberships"
+        ],
+        "title": "AdminScimSyncConfig",
+        "type": "object"
+      },
+      "ScimSyncRunStatus": {
+        "enum": [
+          "PENDING",
+          "RUNNING",
+          "SUCCESS",
+          "SKIPPED",
+          "FAILED"
+        ],
+        "title": "ScimSyncRunStatus",
+        "type": "string"
+      }
+    }
+  }
+}

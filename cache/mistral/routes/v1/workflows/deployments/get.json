@@ -1,4 +1,5 @@
 {
+  "description": "List Deployments",
   "operationId": "list_deployments_v1_workflows_deployments_get",
   "parameters": [
     {
@@ -9,6 +10,24 @@
         "default": true,
         "title": "Active Only",
         "type": "boolean"
+      }
+    },
+    {
+      "description": "Filter deployments by hardened status",
+      "in": "query",
+      "name": "is_hardened",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter deployments by hardened status",
+        "title": "Is Hardened"
       }
     },
     {
@@ -25,6 +44,175 @@
           }
         ],
         "title": "Workflow Name"
+      }
+    },
+    {
+      "description": "Filter deployments by creator's user id",
+      "in": "query",
+      "name": "created_by",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter deployments by creator's user id",
+        "title": "Created By"
+      }
+    },
+    {
+      "description": "Filter deployments by owner's user id",
+      "in": "query",
+      "name": "owner",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter deployments by owner's user id",
+        "title": "Owner"
+      }
+    },
+    {
+      "description": "Filter deployments with at least one worker on any of these location types (OR)",
+      "in": "query",
+      "name": "location_types",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/LocationType"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter deployments with at least one worker on any of these location types (OR)",
+        "title": "Location Types"
+      }
+    },
+    {
+      "description": "Filter deployments by name or ID prefix",
+      "in": "query",
+      "name": "search",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter deployments by name or ID prefix",
+        "title": "Search"
+      }
+    },
+    {
+      "description": "Field to sort by. When omitted, active and managed deployments are grouped first, then sorted by created_at. When set, results are sorted purely by the specified field with no grouping.",
+      "in": "query",
+      "name": "order_by",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "enum": [
+              "updated_at",
+              "created_at"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Field to sort by. When omitted, active and managed deployments are grouped first, then sorted by created_at. When set, results are sorted purely by the specified field with no grouping.",
+        "title": "Order By"
+      }
+    },
+    {
+      "description": "Sort direction. Applied to order_by when set, or within each activity group when omitted.",
+      "in": "query",
+      "name": "order",
+      "required": false,
+      "schema": {
+        "default": "desc",
+        "description": "Sort direction. Applied to order_by when set, or within each activity group when omitted.",
+        "enum": [
+          "asc",
+          "desc"
+        ],
+        "title": "Order",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Maximum number of deployments to return",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Maximum number of deployments to return",
+        "title": "Limit"
+      }
+    },
+    {
+      "description": "Cursor from a previous response for pagination",
+      "in": "query",
+      "name": "cursor",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Cursor from a previous response for pagination",
+        "title": "Cursor"
+      }
+    },
+    {
+      "description": "Workspace ID to scope the request to. Defaults to the caller's context.",
+      "in": "query",
+      "name": "workspace_id",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "uuid",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Workspace ID to scope the request to. Defaults to the caller's context.",
+        "title": "Workspace Id"
       }
     }
   ],
@@ -52,10 +240,19 @@
   },
   "summary": "List Deployments",
   "tags": [
-    "beta.workflows.deployments"
+    "workflows.deployments"
   ],
   "components": {
     "schemas": {
+      "LocationType": {
+        "enum": [
+          "local",
+          "k8s",
+          "managed"
+        ],
+        "title": "LocationType",
+        "type": "string"
+      },
       "DeploymentListResponse": {
         "properties": {
           "deployments": {
@@ -65,10 +262,30 @@
             },
             "title": "Deployments",
             "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cursor for the next page of results",
+            "title": "Next Cursor"
+          },
+          "workspace_id": {
+            "description": "Workspace ID the results are scoped to",
+            "format": "uuid",
+            "title": "Workspace Id",
+            "type": "string"
           }
         },
         "required": [
-          "deployments"
+          "deployments",
+          "next_cursor",
+          "workspace_id"
         ],
         "title": "DeploymentListResponse",
         "type": "object"
@@ -88,6 +305,12 @@
       },
       "DeploymentResponse": {
         "properties": {
+          "active_worker_count": {
+            "default": 0,
+            "description": "Number of workers currently live within the liveness cutoff",
+            "title": "Active Worker Count",
+            "type": "integer"
+          },
           "created_at": {
             "description": "When the deployment was first registered",
             "format": "date-time",
@@ -105,16 +328,78 @@
             "title": "Is Active",
             "type": "boolean"
           },
+          "is_hardened": {
+            "default": false,
+            "description": "Whether the deployment only accepts registrations from authorized principals",
+            "title": "Is Hardened",
+            "type": "boolean"
+          },
+          "last_heartbeat": {
+            "description": "When the deployment last saw a worker registration",
+            "format": "date-time",
+            "title": "Last Heartbeat",
+            "type": "string"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeploymentLocation"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "deprecated": true,
+            "description": "Where the deployment is running"
+          },
+          "locations": {
+            "description": "Distinct location types reported by the deployment's workers",
+            "items": {
+              "$ref": "#/components/schemas/LocationType"
+            },
+            "title": "Locations",
+            "type": "array"
+          },
+          "managed": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ManagedDeploymentResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Live managed service state for managed deployments; null for self-hosted deployments or when managed services are unavailable"
+          },
           "name": {
             "description": "Deployment name",
             "title": "Name",
             "type": "string"
           },
+          "owner": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "User id that owns the deployment, or null when it is administrator-managed",
+            "title": "Owner"
+          },
           "updated_at": {
-            "description": "When the deployment was last updated",
+            "deprecated": true,
+            "description": "Deprecated alias of last_heartbeat",
             "format": "date-time",
             "title": "Updated At",
             "type": "string"
+          },
+          "worker_count": {
+            "default": 0,
+            "description": "Number of workers registered to the deployment",
+            "title": "Worker Count",
+            "type": "integer"
           }
         },
         "required": [
@@ -122,6 +407,7 @@
           "name",
           "is_active",
           "created_at",
+          "last_heartbeat",
           "updated_at"
         ],
         "title": "DeploymentResponse",
@@ -165,6 +451,636 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "DeploymentLocation": {
+        "properties": {
+          "k8s_cluster": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "K8s cluster name, if applicable",
+            "title": "K8S Cluster"
+          },
+          "k8s_namespace": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "K8s namespace, if applicable",
+            "title": "K8S Namespace"
+          },
+          "location_type": {
+            "$ref": "#/components/schemas/LocationType",
+            "description": "Where the deployment runs: 'local', 'k8s', or 'managed'"
+          }
+        },
+        "required": [
+          "location_type"
+        ],
+        "title": "DeploymentLocation",
+        "type": "object"
+      },
+      "ManagedDeploymentResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "deployed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deployed At"
+          },
+          "deployed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deployed By"
+          },
+          "is_hardened": {
+            "default": false,
+            "title": "Is Hardened",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "resources": {
+            "$ref": "#/components/schemas/DeploymentResourceConfig"
+          },
+          "rollout_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rollout Status"
+          },
+          "runtime_credential_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runtime Credential Id"
+          },
+          "runtime_principal_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PrincipalType"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "service_id": {
+            "title": "Service Id",
+            "type": "string"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/DeploymentWorkerSpecResponse"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DeploymentObservedState"
+          },
+          "stopped": {
+            "default": false,
+            "title": "Stopped",
+            "type": "boolean"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "updated_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated By"
+          }
+        },
+        "required": [
+          "service_id",
+          "name",
+          "spec",
+          "resources",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ManagedDeploymentResponse",
+        "type": "object"
+      },
+      "DeploymentResourceConfig": {
+        "properties": {
+          "replicas": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replicas"
+          }
+        },
+        "title": "DeploymentResourceConfig",
+        "type": "object"
+      },
+      "PrincipalType": {
+        "enum": [
+          "api_key",
+          "service_account",
+          "user"
+        ],
+        "title": "PrincipalType",
+        "type": "string"
+      },
+      "DeploymentWorkerSpecResponse": {
+        "properties": {
+          "backend_spec": {
+            "description": "Backend-specific configuration. 'mistral_cloud' is Mistral Cloud; 'kubernetes' is a deployment that already runs on Kubernetes.",
+            "discriminator": {
+              "mapping": {
+                "koyeb": "#/components/schemas/DeploymentMistralCloudBackendSpec",
+                "kubernetes": "#/components/schemas/DeploymentK8sBackendSpec",
+                "mistral_cloud": "#/components/schemas/DeploymentMistralCloudBackendSpec"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DeploymentMistralCloudBackendSpec"
+              },
+              {
+                "$ref": "#/components/schemas/DeploymentK8sBackendSpec"
+              }
+            ],
+            "title": "Backend Spec"
+          },
+          "commit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GitCommitMetadata"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "github_url": {
+            "title": "Github Url",
+            "type": "string"
+          },
+          "restarted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restarted At"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "type": {
+            "default": "workflows_worker",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "github_url",
+          "backend_spec"
+        ],
+        "title": "DeploymentWorkerSpecResponse",
+        "type": "object"
+      },
+      "DeploymentObservedState": {
+        "properties": {
+          "available_replicas": {
+            "default": 0,
+            "title": "Available Replicas",
+            "type": "integer"
+          },
+          "build_state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeploymentBuildState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "deployed_revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deployed Revision"
+          },
+          "endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint"
+          },
+          "generation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation"
+          },
+          "last_seen": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "phase": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phase"
+          },
+          "ready_replicas": {
+            "default": 0,
+            "title": "Ready Replicas",
+            "type": "integer"
+          }
+        },
+        "title": "DeploymentObservedState",
+        "type": "object"
+      },
+      "DeploymentMistralCloudBackendSpec": {
+        "additionalProperties": false,
+        "description": "Worker configuration for the Mistral Cloud backend.",
+        "properties": {
+          "build_directory": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Docker build context, as a path in the repo. Defaults to the repo root.",
+            "title": "Build Directory"
+          },
+          "dockerfile_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Path to the Dockerfile, relative to 'build_directory'. Defaults to 'Dockerfile'.",
+            "title": "Dockerfile Path"
+          },
+          "secrets": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DeploymentSecretBinding"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Secrets to bind to the worker, as 'secret:workspace:<NAME>' references. Each is available during build and run: as a Dockerfile build arg (declare a matching 'ARG') and as an env var. On update, the field carries the complete set: send the full list to rebind, an empty list to unbind all, omit it to leave the bindings unchanged.",
+            "title": "Secrets"
+          },
+          "type": {
+            "default": "mistral_cloud",
+            "enum": [
+              "mistral_cloud",
+              "koyeb"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "title": "DeploymentMistralCloudBackendSpec",
+        "type": "object"
+      },
+      "DeploymentK8sBackendSpec": {
+        "additionalProperties": false,
+        "description": "Worker configuration for the Kubernetes backend.",
+        "properties": {
+          "entrypoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Either a 'module:function' reference (e.g. 'worker:main') or a '.py' script path relative to 'working_dir'.",
+            "title": "Entrypoint"
+          },
+          "type": {
+            "const": "kubernetes",
+            "default": "kubernetes",
+            "title": "Type",
+            "type": "string"
+          },
+          "working_dir": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Path in the repo holding the worker's pyproject.toml, for monorepo layouts. Leave empty for single-package repos.",
+            "title": "Working Dir"
+          }
+        },
+        "title": "DeploymentK8sBackendSpec",
+        "type": "object"
+      },
+      "GitCommitMetadata": {
+        "properties": {
+          "author": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GitCommitAuthor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "html_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Html Url"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "sha": {
+            "title": "Sha",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sha"
+        ],
+        "title": "GitCommitMetadata",
+        "type": "object"
+      },
+      "DeploymentBuildState": {
+        "properties": {
+          "commit_sha": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commit Sha"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "phase": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phase"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          }
+        },
+        "title": "DeploymentBuildState",
+        "type": "object"
+      },
+      "DeploymentSecretBinding": {
+        "description": "Binds one env var to one platform secret; the value is resolved at boot, never stored.",
+        "properties": {
+          "env_var_name": {
+            "description": "Environment variable the worker process reads; the secret's name lives in 'reference'.",
+            "title": "Env Var Name",
+            "type": "string"
+          },
+          "reference": {
+            "description": "Secret reference as 'secret:workspace:<NAME>'. Resolved at boot by the runtime-init container; the value never reaches the control plane.",
+            "title": "Reference",
+            "type": "string"
+          }
+        },
+        "required": [
+          "env_var_name",
+          "reference"
+        ],
+        "title": "DeploymentSecretBinding",
+        "type": "object"
+      },
+      "GitCommitAuthor": {
+        "properties": {
+          "html_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Html Url"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          }
+        },
+        "title": "GitCommitAuthor",
         "type": "object"
       }
     }

@@ -1,0 +1,277 @@
+{
+  "description": "Stream logs for a deployment (all of its workers) via SSE.\n\nResume cursor comes from the `Last-Event-ID` header or `last_event_id` query param (header wins)\nand takes precedence over `after`; omit all to tail from the deployment start.",
+  "operationId": "stream_deployment_logs",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "name",
+      "required": true,
+      "schema": {
+        "title": "Name",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Filter logs by worker name",
+      "in": "query",
+      "name": "worker_name",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter logs by worker name",
+        "title": "Worker Name"
+      }
+    },
+    {
+      "description": "Filter logs by workflow name",
+      "in": "query",
+      "name": "workflow_name",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filter logs by workflow name",
+        "title": "Workflow Name"
+      }
+    },
+    {
+      "description": "Start a fresh stream at this timestamp (ignored when resuming via last_event_id)",
+      "in": "query",
+      "name": "after",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date-time",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Start a fresh stream at this timestamp (ignored when resuming via last_event_id)",
+        "title": "After"
+      }
+    },
+    {
+      "description": "Resume from this cursor (a prior response's SSE id)",
+      "in": "query",
+      "name": "last_event_id",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Resume from this cursor (a prior response's SSE id)",
+        "title": "Last Event Id"
+      }
+    },
+    {
+      "description": "Resume from this cursor (a prior response's SSE id). Takes precedence over the query parameter.",
+      "in": "header",
+      "name": "Last-Event-ID",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Resume from this cursor (a prior response's SSE id). Takes precedence over the query parameter.",
+        "title": "Last-Event-Id"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "text/event-stream": {
+          "schema": {
+            "properties": {
+              "data": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/DeploymentLogRecord"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StreamError"
+                  }
+                ]
+              },
+              "event": {
+                "enum": [
+                  "log",
+                  "error"
+                ],
+                "type": "string"
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        }
+      },
+      "description": "Stream of Server-Sent Events (SSE): `log` events carry a DeploymentLogRecord; `error` events carry a StreamError payload."
+    },
+    "404": {
+      "description": "Deployment not found"
+    },
+    "422": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/HTTPValidationError"
+          }
+        }
+      },
+      "description": "Validation Error"
+    },
+    "503": {
+      "description": "Logs backend unavailable"
+    }
+  },
+  "summary": "Stream Deployment Logs",
+  "tags": [
+    "workflows.deployments"
+  ],
+  "components": {
+    "schemas": {
+      "DeploymentLogRecord": {
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "log_attributes": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Log Attributes",
+            "type": "object"
+          },
+          "severity_text": {
+            "title": "Severity Text",
+            "type": "string"
+          },
+          "span_id": {
+            "title": "Span Id",
+            "type": "string"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          },
+          "trace_id": {
+            "title": "Trace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "timestamp",
+          "trace_id",
+          "span_id",
+          "severity_text",
+          "body",
+          "log_attributes"
+        ],
+        "title": "DeploymentLogRecord",
+        "type": "object"
+      },
+      "StreamError": {
+        "properties": {
+          "error": {
+            "title": "Error",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "reason"
+        ],
+        "title": "StreamError",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  }
+}
