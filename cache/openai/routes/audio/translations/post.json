@@ -1,4 +1,6 @@
 {
+  "deprecated": true,
+  "description": "Translates audio into English.\n\nThis endpoint supports only `whisper-1`. The endpoint and model are deprecated\nand scheduled to shut down on February 26, 2027. Migrate to\n`/v1/realtime/translations`, which requires a separate integration. See the\n[deprecation schedule](https://developers.openai.com/api/docs/deprecations)\nfor details.\n",
   "operationId": "createTranslation",
   "requestBody": {
     "content": {
@@ -24,12 +26,90 @@
               }
             ]
           }
+        },
+        "text/plain": {
+          "schema": {
+            "type": "string"
+          }
         }
       },
       "description": "OK"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Invalid audio input or request parameters."
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        },
+        "text/plain": {
+          "schema": {
+            "description": "JSON-encoded error text containing an error object and the HTTP status.",
+            "type": "string"
+          }
+        }
+      },
+      "description": "Authentication failed because the API key is missing or revoked, or the client IP is not authorized."
+    },
+    "403": {
+      "content": {
+        "text/plain": {
+          "schema": {
+            "description": "JSON-encoded error text containing an error object and the HTTP status.",
+            "type": "string"
+          }
+        }
+      },
+      "description": "Access to a personal API organization is blocked by the organization policy."
+    },
+    "413": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The audio request exceeds the supported size limit."
+    },
+    "429": {
+      "$ref": "#/components/responses/InferenceRateLimited"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The audio could not be processed."
+    },
+    "502": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The upstream audio service connection failed."
+    },
+    "503": {
+      "$ref": "#/components/responses/InferenceServiceUnavailable"
     }
   },
-  "summary": "Translates audio into English.",
+  "summary": "Create translation",
   "tags": [
     "Audio"
   ],
@@ -39,7 +119,7 @@
         "additionalProperties": false,
         "properties": {
           "file": {
-            "description": "The audio file object (not file name) translate, in one of these formats: flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, or webm.\n",
+            "description": "The audio file object (not file name) translate, in one of these formats: flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, or webm. The request must include enough format metadata for the file to be identified. We recommend an extension-bearing filename and an appropriate content type.\n",
             "format": "binary",
             "type": "string"
           },
@@ -59,7 +139,7 @@
             "example": "whisper-1"
           },
           "prompt": {
-            "description": "An optional text to guide the model's style or continue a previous audio segment. The [prompt](/docs/guides/speech-to-text#prompting) should be in English.\n",
+            "description": "An optional text to guide the model's style or continue a previous audio segment. The [prompt](https://developers.openai.com/api/docs/guides/speech-to-text#prompting) should be in English.\n",
             "type": "string"
           },
           "response_format": {
@@ -124,6 +204,17 @@
           "language",
           "duration",
           "text"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
         ],
         "type": "object"
       },
@@ -192,6 +283,175 @@
           "no_speech_prob"
         ],
         "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      }
+    },
+    "responses": {
+      "InferenceRateLimited": {
+        "content": {
+          "application/json": {
+            "examples": {
+              "slowDown": {
+                "summary": "Traffic increased too quickly",
+                "value": {
+                  "error": {
+                    "code": "slow_down",
+                    "message": "Your request rate increased too quickly. Please reduce the request rate and gradually increase it again.",
+                    "param": null,
+                    "type": "rate_limit_error"
+                  }
+                }
+              }
+            },
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The request was rejected because a rate limit was exceeded. A slow_down error means traffic increased too quickly; reduce your request rate, then increase it gradually.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "InferenceServiceUnavailable": {
+        "content": {
+          "application/json": {
+            "examples": {
+              "serverOverloaded": {
+                "summary": "The requested model is temporarily overloaded",
+                "value": {
+                  "error": {
+                    "code": "server_is_overloaded",
+                    "message": "The model is temporarily overloaded. Please retry your request after a brief delay.",
+                    "param": null,
+                    "type": "service_unavailable_error"
+                  }
+                }
+              }
+            },
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The service is temporarily unavailable. A server_is_overloaded error means the requested model is temporarily overloaded; retry after a brief delay.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
       }
     }
   }

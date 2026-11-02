@@ -1,8 +1,9 @@
 {
+  "description": "Returns a list of messages for a given thread.",
   "operationId": "listMessages",
   "parameters": [
     {
-      "description": "The ID of the [thread](/docs/api-reference/threads) the messages belong to.",
+      "description": "The ID of the [thread](https://developers.openai.com/api/docs/assistants/migration) the messages belong to.",
       "in": "path",
       "name": "thread_id",
       "required": true,
@@ -68,9 +69,12 @@
         }
       },
       "description": "OK"
+    },
+    "429": {
+      "$ref": "#/components/responses/TooManyRequests"
     }
   },
-  "summary": "Returns a list of messages for a given thread.",
+  "summary": "List messages",
   "tags": [
     "Assistants"
   ],
@@ -110,12 +114,12 @@
         ]
       },
       "MessageObject": {
-        "description": "Represents a message within a [thread](/docs/api-reference/threads).",
+        "description": "Represents a message within a [thread](https://developers.openai.com/api/docs/assistants/migration).",
         "properties": {
           "assistant_id": {
             "anyOf": [
               {
-                "description": "If applicable, the ID of the [assistant](/docs/api-reference/assistants) that authored this message.",
+                "description": "If applicable, the ID of the [assistant](https://developers.openai.com/api/docs/assistants/migration) that authored this message.",
                 "type": "string"
               },
               {
@@ -258,7 +262,7 @@
           "run_id": {
             "anyOf": [
               {
-                "description": "The ID of the [run](/docs/api-reference/runs) associated with the creation of this message. Value is `null` when messages are created manually using the create message or create thread endpoints.",
+                "description": "The ID of the [run](https://developers.openai.com/api/docs/assistants/migration) associated with the creation of this message. Value is `null` when messages are created manually using the create message or create thread endpoints.",
                 "type": "string"
               },
               {
@@ -276,7 +280,7 @@
             "type": "string"
           },
           "thread_id": {
-            "description": "The [thread](/docs/api-reference/threads) ID that this message belongs to.",
+            "description": "The [thread](https://developers.openai.com/api/docs/assistants/migration) ID that this message belongs to.",
             "type": "string"
           }
         },
@@ -297,6 +301,17 @@
           "metadata"
         ],
         "title": "The message object",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
         "type": "object"
       },
       "AssistantToolsCode": {
@@ -332,7 +347,7 @@
         "type": "object"
       },
       "MessageContentImageFileObject": {
-        "description": "References an image [File](/docs/api-reference/files) in the content of a message.",
+        "description": "References an image [File](https://developers.openai.com/api/reference/resources/files) in the content of a message.",
         "properties": {
           "image_file": {
             "properties": {
@@ -347,7 +362,7 @@
                 "type": "string"
               },
               "file_id": {
-                "description": "The [File](/docs/api-reference/files) ID of the image in the message content. Set `purpose=\"vision\"` when uploading the File if you need to later display the file content.",
+                "description": "The [File](https://developers.openai.com/api/reference/resources/files) ID of the image in the message content. Set `purpose=\"vision\"` when uploading the File if you need to later display the file content.",
                 "type": "string"
               }
             },
@@ -491,6 +506,46 @@
           }
         ]
       },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
       "MessageContentTextAnnotationsFileCitationObject": {
         "description": "A citation within the message that points to a specific quote from a specific File associated with the assistant or the message. Generated when the assistant uses the \"file_search\" tool to search files.",
         "properties": {
@@ -580,6 +635,90 @@
         ],
         "title": "File path",
         "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      }
+    },
+    "responses": {
+      "TooManyRequests": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The request was rejected because a rate limit was exceeded.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted for 429 responses that require user action.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
       }
     }
   }

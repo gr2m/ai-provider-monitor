@@ -1,4 +1,5 @@
 {
+  "description": "Creates an embedding vector representing the input text.",
   "operationId": "createEmbedding",
   "requestBody": {
     "content": {
@@ -20,9 +21,62 @@
         }
       },
       "description": "OK"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Invalid embedding input or request parameters."
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        },
+        "text/plain": {
+          "schema": {
+            "description": "JSON-encoded error text containing an error object and the HTTP status.",
+            "type": "string"
+          }
+        }
+      },
+      "description": "Authentication failed because the API key is missing or revoked, or the client IP is not authorized."
+    },
+    "403": {
+      "content": {
+        "text/plain": {
+          "schema": {
+            "description": "JSON-encoded error text containing an error object and the HTTP status.",
+            "type": "string"
+          }
+        }
+      },
+      "description": "Access to a personal API organization is blocked by the organization policy."
+    },
+    "429": {
+      "$ref": "#/components/responses/InferenceRateLimited"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The embedding request could not be processed due to an internal error."
+    },
+    "503": {
+      "$ref": "#/components/responses/InferenceServiceUnavailable"
     }
   },
-  "summary": "Creates an embedding vector representing the input text.",
+  "summary": "Create embeddings",
   "tags": [
     "Embeddings"
   ],
@@ -47,7 +101,7 @@
             "type": "string"
           },
           "input": {
-            "description": "Input text to embed, encoded as a string or array of tokens. To embed multiple inputs in a single request, pass an array of strings or array of token arrays. The input must not exceed the max input tokens for the model (8192 tokens for all embedding models), cannot be an empty string, and any array must be 2048 dimensions or less. [Example Python code](https://cookbook.openai.com/examples/how_to_count_tokens_with_tiktoken) for counting tokens. In addition to the per-input token limit, all embedding  models enforce a maximum of 300,000 tokens summed across all inputs in a  single request.\n",
+            "description": "Input text to embed, encoded as a string or array of tokens. To embed multiple inputs in a single request, pass an array of strings or array of token arrays. The input must not exceed the max input tokens for the model (8192 tokens for all embedding models), cannot be an empty string, and any array must be 2048 dimensions or less. [Example Python code](https://cookbook.openai.com/examples/how_to_count_tokens_with_tiktoken) for counting tokens. In addition to the per-input token limit, all embedding models enforce a maximum of 300,000 tokens summed across all inputs in a single request.\n",
             "example": "The quick brown fox jumped over the lazy dog",
             "oneOf": [
               {
@@ -111,11 +165,11 @@
                 "type": "string"
               }
             ],
-            "description": "ID of the model to use. You can use the [List models](/docs/api-reference/models/list) API to see all of your available models, or see our [Model overview](/docs/models) for descriptions of them.\n",
+            "description": "ID of the model to use. You can use the [List models](https://developers.openai.com/api/reference/resources/models/methods/list) API to see all of your available models, or see our [Model overview](https://developers.openai.com/api/docs/models) for descriptions of them.\n",
             "example": "text-embedding-3-small"
           },
           "user": {
-            "description": "A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. [Learn more](/docs/guides/safety-best-practices#end-user-ids).\n",
+            "description": "A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. [Learn more](https://developers.openai.com/api/docs/guides/safety-best-practices#implement-safety-identifiers).\n",
             "example": "user-1234",
             "type": "string"
           }
@@ -173,16 +227,35 @@
         ],
         "type": "object"
       },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
       "Embedding": {
         "description": "Represents an embedding vector returned by embedding endpoint.\n",
         "properties": {
           "embedding": {
-            "description": "The embedding vector, which is a list of floats. The length of vector depends on the model as listed in the [embedding guide](/docs/guides/embeddings).\n",
-            "items": {
-              "format": "float",
-              "type": "number"
-            },
-            "type": "array"
+            "anyOf": [
+              {
+                "items": {
+                  "format": "float",
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "contentEncoding": "base64",
+                "type": "string"
+              }
+            ],
+            "description": "The embedding vector, returned as a list of floats when `encoding_format` is `float` (the default), or as a base64-encoded string when `encoding_format` is `base64`. The length of the vector depends on the model as listed in the [embedding guide](https://developers.openai.com/api/docs/guides/embeddings).\n"
           },
           "index": {
             "description": "The index of the embedding in the list of embeddings.",
@@ -202,6 +275,175 @@
           "embedding"
         ],
         "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      }
+    },
+    "responses": {
+      "InferenceRateLimited": {
+        "content": {
+          "application/json": {
+            "examples": {
+              "slowDown": {
+                "summary": "Traffic increased too quickly",
+                "value": {
+                  "error": {
+                    "code": "slow_down",
+                    "message": "Your request rate increased too quickly. Please reduce the request rate and gradually increase it again.",
+                    "param": null,
+                    "type": "rate_limit_error"
+                  }
+                }
+              }
+            },
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The request was rejected because a rate limit was exceeded. A slow_down error means traffic increased too quickly; reduce your request rate, then increase it gradually.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "InferenceServiceUnavailable": {
+        "content": {
+          "application/json": {
+            "examples": {
+              "serverOverloaded": {
+                "summary": "The requested model is temporarily overloaded",
+                "value": {
+                  "error": {
+                    "code": "server_is_overloaded",
+                    "message": "The model is temporarily overloaded. Please retry your request after a brief delay.",
+                    "param": null,
+                    "type": "service_unavailable_error"
+                  }
+                }
+              }
+            },
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The service is temporarily unavailable. A server_is_overloaded error means the requested model is temporarily overloaded; retry after a brief delay.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
       }
     }
   }

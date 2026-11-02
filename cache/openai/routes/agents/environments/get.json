@@ -1,0 +1,573 @@
+{
+  "description": "Lists OpenAI-hosted environments owned by the authenticated principal. Requires access to the prewarming beta.",
+  "operationId": "listAgentEnvironments",
+  "parameters": [
+    {
+      "description": "The maximum number of resources to return, between 1 and 100. Defaults to 20.",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "default": 20,
+        "format": "int64",
+        "maximum": 100,
+        "minimum": 1,
+        "type": "integer"
+      }
+    },
+    {
+      "description": "The order in which resources are returned. Defaults to `desc`.",
+      "in": "query",
+      "name": "order",
+      "required": false,
+      "schema": {
+        "$ref": "#/components/schemas/ListOrderParam",
+        "default": "desc"
+      }
+    },
+    {
+      "description": "Return resources after this resource ID in the selected order.",
+      "in": "query",
+      "name": "after",
+      "required": false,
+      "schema": {
+        "maxLength": 1048576,
+        "minLength": 0,
+        "type": "string"
+      }
+    },
+    {
+      "description": "The hosting type to list. Defaults to `openai_hosted`.",
+      "in": "query",
+      "name": "type",
+      "required": false,
+      "schema": {
+        "$ref": "#/components/schemas/EnvironmentTypeParam"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AgentEnvironmentListResource",
+            "description": "An ID-paginated list of owned environments."
+          }
+        }
+      },
+      "description": "A page of owned environments."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request was invalid."
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "Authentication or project context was missing."
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The API key lacks the required permission."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The requested environment or referenced resource was not found."
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request conflicted with the current environment state."
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "An internal error occurred."
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The service is temporarily unavailable."
+    }
+  },
+  "summary": "List agent environments",
+  "tags": [
+    "Agents"
+  ],
+  "components": {
+    "schemas": {
+      "ListOrderParam": {
+        "description": "The order in which paginated resources are returned.",
+        "enum": [
+          "asc",
+          "desc"
+        ],
+        "type": "string"
+      },
+      "EnvironmentTypeParam": {
+        "description": "The hosting type of an execution environment.",
+        "enum": [
+          "openai_hosted"
+        ],
+        "type": "string"
+      },
+      "AgentEnvironmentListResource": {
+        "additionalProperties": false,
+        "description": "A page of Agents API resources, with IDs for retrieving additional pages.",
+        "properties": {
+          "data": {
+            "description": "The resources returned in this page, in the requested sort order.",
+            "items": {
+              "$ref": "#/components/schemas/PublicEnvironmentResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "first_id": {
+            "description": "The ID of the first resource in `data`, or `null` if the page is empty.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "has_more": {
+            "description": "Whether there are more resources to retrieve after this page.",
+            "type": "boolean"
+          },
+          "last_id": {
+            "description": "The ID of the last resource in `data`, or `null` if the page is empty. Pass this as `after` with the same order and filters.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "default": "list",
+            "description": "The object type, which is always `list`.",
+            "enum": [
+              "list"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "data",
+          "first_id",
+          "last_id",
+          "has_more"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse-2": {
+        "additionalProperties": false,
+        "description": "An API error response.",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBodyResource",
+            "description": "The error returned by the API."
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "PublicEnvironmentResource": {
+        "additionalProperties": false,
+        "description": "Safe metadata for a first-class execution environment.",
+        "properties": {
+          "files": {
+            "description": "Files installed in the environment, without their contents.",
+            "items": {
+              "$ref": "#/components/schemas/HostedEnvironmentFileResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "id": {
+            "description": "The ID of the environment.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "object": {
+            "default": "agent.environment",
+            "description": "The object type. Always `agent.environment`.",
+            "enum": [
+              "agent.environment"
+            ],
+            "type": "string"
+          },
+          "plugins": {
+            "description": "Plugins installed in the environment, without their archive contents.",
+            "items": {
+              "$ref": "#/components/schemas/HostedPluginResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "skills": {
+            "description": "Skills installed in the environment, without their archive contents.",
+            "items": {
+              "$ref": "#/components/schemas/HostedSkillResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EnvironmentStatusResource",
+            "description": "The current environment connection status."
+          },
+          "type": {
+            "$ref": "#/components/schemas/EnvironmentTypeResource",
+            "description": "Whether the environment is hosted by OpenAI or by the application."
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "type",
+          "status",
+          "files",
+          "skills",
+          "plugins"
+        ],
+        "type": "object"
+      },
+      "ErrorBodyResource": {
+        "additionalProperties": false,
+        "description": "Details about an API error.",
+        "properties": {
+          "code": {
+            "description": "A machine-readable error code.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "message": {
+            "description": "A human-readable error message.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "param": {
+            "description": "The request parameter that caused the error, or null for a request-wide error.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "description": "The error type.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "code",
+          "message",
+          "param"
+        ],
+        "type": "object"
+      },
+      "HostedEnvironmentFileResource": {
+        "description": "Metadata for a file materialized in an OpenAI-hosted execution environment.",
+        "discriminator": {
+          "mapping": {
+            "file_id": "#/components/schemas/HostedEnvironmentFileResourceFileId",
+            "inline": "#/components/schemas/HostedEnvironmentFileResourceInline"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HostedEnvironmentFileResourceFileId"
+          },
+          {
+            "$ref": "#/components/schemas/HostedEnvironmentFileResourceInline"
+          }
+        ]
+      },
+      "HostedPluginResource": {
+        "description": "A plugin installed in an OpenAI-hosted environment.",
+        "discriminator": {
+          "mapping": {
+            "inline": "#/components/schemas/HostedPluginResourceInline"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HostedPluginResourceInline"
+          }
+        ]
+      },
+      "HostedSkillResource": {
+        "description": "A skill installed in an OpenAI-hosted environment.",
+        "discriminator": {
+          "mapping": {
+            "inline": "#/components/schemas/HostedSkillResourceInline",
+            "skill_reference": "#/components/schemas/HostedSkillResourceSkillReference"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HostedSkillResourceSkillReference"
+          },
+          {
+            "$ref": "#/components/schemas/HostedSkillResourceInline"
+          }
+        ]
+      },
+      "EnvironmentStatusResource": {
+        "description": "The public lifecycle status of an execution environment.",
+        "enum": [
+          "pending",
+          "ready",
+          "connected",
+          "disconnected",
+          "suspended",
+          "expired",
+          "failed"
+        ],
+        "type": "string"
+      },
+      "EnvironmentTypeResource": {
+        "description": "The kind of execution environment.",
+        "enum": [
+          "openai_hosted",
+          "self_hosted"
+        ],
+        "type": "string"
+      },
+      "HostedEnvironmentFileResourceFileId": {
+        "additionalProperties": false,
+        "description": "A file copied from the OpenAI Files API.",
+        "properties": {
+          "file_id": {
+            "description": "The ID of the uploaded file.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "id": {
+            "description": "The session-scoped ID of the file in the execution environment.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "path": {
+            "description": "The file's absolute path inside the environment.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "size_bytes": {
+            "description": "The decoded file size in bytes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": {
+            "default": "file_id",
+            "description": "The type of the object. Always `file_id`.",
+            "enum": [
+              "file_id"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "file_id",
+          "path",
+          "size_bytes"
+        ],
+        "type": "object"
+      },
+      "HostedEnvironmentFileResourceInline": {
+        "additionalProperties": false,
+        "description": "A file supplied inline when the session was created.",
+        "properties": {
+          "id": {
+            "description": "The session-scoped ID of the file in the execution environment.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "path": {
+            "description": "The file's absolute path inside the environment.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "size_bytes": {
+            "description": "The decoded file size in bytes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": {
+            "default": "inline",
+            "description": "The type of the object. Always `inline`.",
+            "enum": [
+              "inline"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "path",
+          "size_bytes"
+        ],
+        "type": "object"
+      },
+      "HostedPluginResourceInline": {
+        "additionalProperties": false,
+        "description": "A plugin installed from an inline ZIP archive.",
+        "properties": {
+          "description": {
+            "description": "The installed plugin description.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "name": {
+            "description": "The installed plugin name.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "inline",
+            "description": "The type of the object. Always `inline`.",
+            "enum": [
+              "inline"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description"
+        ],
+        "type": "object"
+      },
+      "HostedSkillResourceSkillReference": {
+        "additionalProperties": false,
+        "description": "A skill installed from the Skills API.",
+        "properties": {
+          "description": {
+            "description": "The installed skill description.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "name": {
+            "description": "The installed skill name.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "skill_id": {
+            "description": "The referenced skill ID.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "skill_reference",
+            "description": "The type of the object. Always `skill_reference`.",
+            "enum": [
+              "skill_reference"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "description": "The concrete skill version installed for this session.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "skill_id",
+          "version",
+          "name",
+          "description"
+        ],
+        "type": "object"
+      },
+      "HostedSkillResourceInline": {
+        "additionalProperties": false,
+        "description": "A skill installed from an inline ZIP archive.",
+        "properties": {
+          "description": {
+            "description": "The installed skill description.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "name": {
+            "description": "The installed skill name.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "inline",
+            "description": "The type of the object. Always `inline`.",
+            "enum": [
+              "inline"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

@@ -1,4 +1,5 @@
 {
+  "description": "Cancels a model response with the given ID. Only responses created with\nthe `background` parameter set to `true` can be cancelled.\n[Learn more](https://developers.openai.com/api/docs/guides/background).\n",
   "operationId": "cancelResponse",
   "parameters": [
     {
@@ -27,14 +28,17 @@
       "content": {
         "application/json": {
           "schema": {
-            "$ref": "#/components/schemas/Error"
+            "$ref": "#/components/schemas/ErrorResponse"
           }
         }
       },
       "description": "Not Found"
+    },
+    "429": {
+      "$ref": "#/components/responses/TooManyRequests"
     }
   },
-  "summary": "Cancels a model response with the given ID. Only responses created with\nthe `background` parameter set to `true` can be cancelled. \n[Learn more](/docs/guides/background).\n",
+  "summary": "Cancel a response",
   "tags": [
     "Responses"
   ],
@@ -50,6 +54,16 @@
           },
           {
             "properties": {
+              "access_programs": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AccessProgramsBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "completed_at": {
                 "anyOf": [
                   {
@@ -91,10 +105,12 @@
                     "description": "Details about why the response is incomplete.\n",
                     "properties": {
                       "reason": {
-                        "description": "The reason why the response is incomplete.",
+                        "description": "The reason why the response is incomplete. `steered` means\nthe response stopped at a safe output boundary after a\nWebSocket `response.steer` event. The server can then create\na successor response automatically with the queued input.\n",
                         "enum": [
                           "max_output_tokens",
-                          "content_filter"
+                          "max_messages",
+                          "content_filter",
+                          "steered"
                         ],
                         "type": "string"
                       }
@@ -133,7 +149,7 @@
               "max_output_tokens": {
                 "anyOf": [
                   {
-                    "description": "An upper bound for the number of tokens that can be generated for a response, including visible output tokens and [reasoning tokens](/docs/guides/reasoning).\n",
+                    "description": "An upper bound for the number of tokens that can be generated for a response, including visible output tokens and [reasoning tokens](https://developers.openai.com/api/docs/guides/reasoning).\n",
                     "type": "integer"
                   },
                   {
@@ -182,6 +198,9 @@
                 "description": "Whether to allow the model to run tool calls in parallel.\n",
                 "type": "boolean"
               },
+              "prompt_cache_diagnostics": {
+                "$ref": "#/components/schemas/PromptCacheDiagnostics"
+              },
               "prompt_cache_options": {
                 "$ref": "#/components/schemas/PromptCacheOptions"
               },
@@ -195,6 +214,9 @@
                   }
                 ]
               },
+              "service_tier": {
+                "$ref": "#/components/schemas/ServiceTierResponses"
+              },
               "status": {
                 "description": "The status of the response generation. One of `completed`, `failed`,\n`in_progress`, `cancelled`, `queued`, or `incomplete`.\n",
                 "enum": [
@@ -206,6 +228,10 @@
                   "incomplete"
                 ],
                 "type": "string"
+              },
+              "tool_usage": {
+                "$ref": "#/components/schemas/ResponseToolUsage",
+                "description": "Usage reported by hosted tools, separate from base model `usage`. The field\ncan be omitted when tool usage is unavailable. When present, tool families\nwith no recorded usage have zero counts.\n\n`image_gen` sums available token counts across image generation calls.\nCalls with missing or incomplete usage records may be skipped. Output\ntoken details and cached input counts can be omitted. An omitted cache\ncount means cache usage is unknown.\n\n`web_search.num_requests` counts billable searches. Discounted searches\nand actions such as opening a page are excluded. Use billing records to\nreconcile final charges.\n"
               },
               "truncation": {
                 "anyOf": [
@@ -224,10 +250,18 @@
                 ]
               },
               "usage": {
-                "$ref": "#/components/schemas/ResponseUsage"
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ResponseUsage"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": [
+              "access_programs",
               "id",
               "object",
               "created_at",
@@ -247,6 +281,7 @@
           }
         ],
         "example": {
+          "access_programs": null,
           "completed_at": 1741476778,
           "created_at": 1741476777,
           "error": null,
@@ -255,13 +290,14 @@
           "instructions": null,
           "max_output_tokens": null,
           "metadata": {},
-          "model": "gpt-4o-2024-08-06",
+          "model": "gpt-6-astra",
           "object": "response",
           "output": [
             {
               "content": [
                 {
                   "annotations": [],
+                  "logprobs": [],
                   "text": "The image depicts a scenic landscape with a wooden boardwalk or pathway leading through lush, green grass under a blue sky with some clouds. The setting suggests a peaceful natural area, possibly a park or nature reserve. There are trees and shrubs in the background.",
                   "type": "output_text"
                 }
@@ -288,6 +324,24 @@
             }
           },
           "tool_choice": "auto",
+          "tool_usage": {
+            "image_gen": {
+              "input_tokens": 0,
+              "input_tokens_details": {
+                "image_tokens": 0,
+                "text_tokens": 0
+              },
+              "output_tokens": 0,
+              "output_tokens_details": {
+                "image_tokens": 0,
+                "text_tokens": 0
+              },
+              "total_tokens": 0
+            },
+            "web_search": {
+              "num_requests": 0
+            }
+          },
           "tools": [],
           "top_p": 1,
           "truncation": "disabled",
@@ -307,40 +361,14 @@
         },
         "title": "The response object"
       },
-      "Error": {
+      "ErrorResponse": {
         "properties": {
-          "code": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "message": {
-            "type": "string"
-          },
-          "param": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "type": {
-            "type": "string"
+          "error": {
+            "$ref": "#/components/schemas/Error"
           }
         },
         "required": [
-          "type",
-          "message",
-          "param",
-          "code"
+          "error"
         ],
         "type": "object"
       },
@@ -352,7 +380,7 @@
           "prompt_cache_key": {
             "anyOf": [
               {
-                "description": "Used by OpenAI to cache responses for similar requests to optimize your cache hit rates. Replaces the `user` field. [Learn more](/docs/guides/prompt-caching).\n",
+                "description": "Used by OpenAI to cache responses for similar requests to optimize your cache hit rates. Replaces the `user` field. [Learn more](https://developers.openai.com/api/docs/guides/prompt-caching).\n",
                 "example": "prompt-cache-key-1234",
                 "type": "string"
               },
@@ -364,7 +392,7 @@
           "prompt_cache_retention": {
             "anyOf": [
               {
-                "description": "Deprecated. Use `prompt_cache_options.ttl` instead.\n\nThe retention policy for the prompt cache. Set to `24h` to enable extended prompt caching, which keeps cached prefixes active for longer, up to a maximum of 24 hours. [Learn more](/docs/guides/prompt-caching#prompt-cache-retention).\nThis field expresses a maximum retention policy, while\n`prompt_cache_options.ttl` expresses a minimum cache lifetime. The two\nfields are independent and do not interact.\nFor `gpt-5.5`, `gpt-5.5-pro`, and future models, only `24h` is supported.\n\nFor older models that support both `in_memory` and `24h`, the default depends on your organization's data retention policy:\n  - Organizations without ZDR enabled default to `24h`.\n  - Organizations with ZDR enabled default to `in_memory` when `prompt_cache_retention` is not specified.\n",
+                "description": "Deprecated. Use `prompt_cache_options.ttl` instead.\n\nThe retention policy for the prompt cache. Set to `24h` to enable extended prompt caching, which keeps cached prefixes active for longer, up to a maximum of 24 hours. [Learn more](https://developers.openai.com/api/docs/guides/prompt-caching#prompt-cache-retention).\nThis field expresses a maximum retention policy, while\n`prompt_cache_options.ttl` expresses a minimum cache lifetime. The two\nfields are independent and do not interact.\nFor `gpt-5.5`, `gpt-5.5-pro`, and future models, only `24h` is supported.\n\nFor older models that support both `in_memory` and `24h`, the default depends on your organization's data retention policy:\n  - Organizations without ZDR enabled default to `24h`.\n  - Organizations with ZDR enabled default to `in_memory` when `prompt_cache_retention` is not specified.\n",
                 "enum": [
                   "in_memory",
                   "24h"
@@ -380,18 +408,15 @@
           "safety_identifier": {
             "anyOf": [
               {
-                "description": "A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies.\nThe IDs should be a string that uniquely identifies each user, with a maximum length of 64 characters. We recommend hashing their username or email address, in order to avoid sending us any identifying information. [Learn more](/docs/guides/safety-best-practices#safety-identifiers).\n",
+                "description": "A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies.\nThe IDs should be a string that uniquely identifies each user, with a maximum length of 128 characters. We recommend hashing their username or email address, in order to avoid sending us any identifying information. [Learn more](https://developers.openai.com/api/docs/guides/safety-best-practices#implement-safety-identifiers).\n",
                 "example": "safety-identifier-1234",
-                "maxLength": 64,
+                "maxLength": 128,
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ]
-          },
-          "service_tier": {
-            "$ref": "#/components/schemas/ServiceTier"
           },
           "temperature": {
             "anyOf": [
@@ -438,9 +463,12 @@
           },
           "user": {
             "deprecated": true,
-            "description": "This field is being replaced by `safety_identifier` and `prompt_cache_key`. Use `prompt_cache_key` instead to maintain caching optimizations.\nA stable identifier for your end-users.\nUsed to boost cache hit rates by better bucketing similar requests and  to help OpenAI detect and prevent abuse. [Learn more](/docs/guides/safety-best-practices#safety-identifiers).\n",
+            "description": "This field is being replaced by `safety_identifier` and `prompt_cache_key`. Use `prompt_cache_key` instead to maintain caching optimizations.\nA stable identifier for your end-users.\nUsed to boost cache hit rates by better bucketing similar requests and  to help OpenAI detect and prevent abuse. [Learn more](https://developers.openai.com/api/docs/guides/safety-best-practices#implement-safety-identifiers).\n",
             "example": "user-1234",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "type": "object"
@@ -451,7 +479,7 @@
             "anyOf": [
               {
                 "default": false,
-                "description": "Whether to run the model response in the background.\n[Learn more](/docs/guides/background).\n",
+                "description": "Whether to run the model response in the background.\n[Learn more](https://developers.openai.com/api/docs/guides/background).\n",
                 "type": "boolean"
               },
               {
@@ -472,12 +500,12 @@
           },
           "model": {
             "$ref": "#/components/schemas/ModelIdsResponses",
-            "description": "Model ID used to generate the response, like `gpt-4o` or `o3`. OpenAI\noffers a wide range of models with different capabilities, performance\ncharacteristics, and price points. Refer to the [model guide](/docs/models)\nto browse and compare available models.\n"
+            "description": "Model ID used to generate the response, like `gpt-6-astra`. OpenAI\noffers a wide range of models with different capabilities, performance\ncharacteristics, and price points. Refer to the [model guide](https://developers.openai.com/api/docs/models)\nto browse and compare available models.\n"
           },
           "previous_response_id": {
             "anyOf": [
               {
-                "description": "The unique ID of the previous response to the model. Use this to\ncreate multi-turn conversations. Learn more about\n[conversation state](/docs/guides/conversation-state). Cannot be used in conjunction with `conversation`.\n",
+                "description": "The unique ID of the previous response to the model. Use this to\ncreate multi-turn conversations. Learn more about\n[conversation state](https://developers.openai.com/api/docs/guides/conversation-state). Cannot be used in conjunction with `conversation`.\n",
                 "type": "string"
               },
               {
@@ -498,6 +526,18 @@
             "$ref": "#/components/schemas/ToolsArray"
           }
         },
+        "type": "object"
+      },
+      "AccessProgramsBody": {
+        "properties": {
+          "cyber": {
+            "$ref": "#/components/schemas/CyberAccessProgramEnum",
+            "description": "The effective Cyber access program used for this response."
+          }
+        },
+        "required": [
+          "cyber"
+        ],
         "type": "object"
       },
       "ResponseConversation": {
@@ -525,6 +565,31 @@
               "message": {
                 "description": "A human-readable description of the error.\n",
                 "type": "string"
+              },
+              "misalignment": {
+                "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+              },
+              "param": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The request parameter associated with the error, or null if none was recorded."
+              },
+              "type": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The original error type, or null if it was not recorded."
               }
             },
             "required": [
@@ -696,9 +761,40 @@
           }
         ]
       },
+      "PromptCacheDiagnostics": {
+        "description": "Prompt cache diagnostics requested for this response.",
+        "discriminator": {
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PromptCacheMissDiagnosticsBody"
+          },
+          {
+            "$ref": "#/components/schemas/PromptCacheHitDiagnosticsBody"
+          },
+          {
+            "$ref": "#/components/schemas/PromptCacheComparisonResponseNotFoundDiagnosticsBody"
+          },
+          {
+            "$ref": "#/components/schemas/PromptCacheUnavailableDiagnosticsBody"
+          }
+        ]
+      },
       "PromptCacheOptions": {
         "description": "The prompt-caching options that were applied to the response. Supported for `gpt-5.6` and later models.",
         "properties": {
+          "comparison_response_id": {
+            "anyOf": [
+              {
+                "description": "The response ID supplied as the prompt cache diagnostics comparison.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "mode": {
             "$ref": "#/components/schemas/PromptCacheModeEnum",
             "description": "Whether implicit prompt-cache breakpoints were enabled."
@@ -716,7 +812,7 @@
         "type": "object"
       },
       "Reasoning": {
-        "description": "**gpt-5 and o-series models only**\n\nConfiguration options for\n[reasoning models](https://platform.openai.com/docs/guides/reasoning).\n",
+        "description": "Configuration options for\n[reasoning models](https://developers.openai.com/api/docs/guides/reasoning).\n",
         "properties": {
           "context": {
             "anyOf": [
@@ -778,6 +874,46 @@
         "title": "Reasoning",
         "type": "object"
       },
+      "ServiceTierResponses": {
+        "anyOf": [
+          {
+            "default": "auto",
+            "description": "Specifies the processing type used for serving the request.\n  - If set to 'auto', then the request will be processed with the service tier configured in the Project settings. Unless otherwise configured, the Project will use 'default'.\n  - If set to 'default', then the request will be processed with the standard pricing and performance for the selected model.\n  - If set to '[flex](https://developers.openai.com/api/docs/guides/flex-processing)', then the request will be processed with the Flex Processing service tier.\n  - To opt-in to [Fast mode](https://developers.openai.com/api/docs/guides/fast-mode) at the request level, include the `service_tier=fast` or `service_tier=priority` parameter for Responses or Chat Completions. The response will show `service_tier=priority` regardless of if you specify `service_tier=fast` or `priority` in your request.\n  - If set to 'ultrafast', then the request will be processed with the access-controlled Ultrafast Processing service tier. This tier is currently available for `gpt-5.6-sol`; a response served through it will show `service_tier=ultrafast`.\n  - When not set, the default behavior is 'auto'.\n\n  When the `service_tier` parameter is set, the response body will include the `service_tier` value based on the processing mode actually used to serve the request. This response value may be different from the value set in the parameter.\n",
+            "enum": [
+              "auto",
+              "default",
+              "flex",
+              "scale",
+              "priority",
+              "fast",
+              "ultrafast"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "ResponseToolUsage": {
+        "description": "Aggregated usage details for billable tools that ran while generating the response.",
+        "properties": {
+          "image_gen": {
+            "$ref": "#/components/schemas/ImageGenToolUsage",
+            "description": "Aggregated usage statistics for image generation tool calls."
+          },
+          "web_search": {
+            "$ref": "#/components/schemas/WebSearchUsage",
+            "description": "Aggregated billable usage statistics for web search tool calls."
+          }
+        },
+        "required": [
+          "image_gen",
+          "web_search"
+        ],
+        "title": "Response tool usage",
+        "type": "object"
+      },
       "ResponseUsage": {
         "description": "Represents token usage details including input tokens, output tokens,\na breakdown of output tokens, and the total tokens used.\n",
         "properties": {
@@ -793,7 +929,7 @@
                 "type": "integer"
               },
               "cached_tokens": {
-                "description": "The number of tokens that were retrieved from the cache. \n[More on prompt caching](/docs/guides/prompt-caching).\n",
+                "description": "The number of tokens that were retrieved from the cache.\n[More on prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching).\n",
                 "type": "integer"
               }
             },
@@ -834,6 +970,46 @@
         ],
         "type": "object"
       },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
       "Metadata": {
         "anyOf": [
           {
@@ -842,26 +1018,6 @@
             },
             "description": "Set of 16 key-value pairs that can be attached to an object. This can be\nuseful for storing additional information about the object in a structured\nformat, and querying for objects via API or the dashboard.\n\nKeys are strings with a maximum length of 64 characters. Values are strings\nwith a maximum length of 512 characters.\n",
             "type": "object"
-          },
-          {
-            "type": "null"
-          }
-        ]
-      },
-      "ServiceTier": {
-        "anyOf": [
-          {
-            "default": "auto",
-            "description": "Specifies the processing type used for serving the request.\n  - If set to 'auto', then the request will be processed with the service tier configured in the Project settings. Unless otherwise configured, the Project will use 'default'.\n  - If set to 'default', then the request will be processed with the standard pricing and performance for the selected model.\n  - If set to '[flex](/docs/guides/flex-processing)', then the request will be processed with the Flex Processing service tier.\n  - To opt-in to [Fast mode](/api/docs/guides/fast-mode) at the request level, include the `service_tier=fast` or `service_tier=priority` parameter for Responses or Chat Completions. The response will show `service_tier=priority` regardless of if you specify `service_tier=fast` or `priority` in your request.\n  - When not set, the default behavior is 'auto'.\n\n  When the `service_tier` parameter is set, the response body will include the `service_tier` value based on the processing mode actually used to serve the request. This response value may be different from the value set in the parameter.\n",
-            "enum": [
-              "auto",
-              "default",
-              "flex",
-              "scale",
-              "priority",
-              "fast"
-            ],
-            "type": "string"
           },
           {
             "type": "null"
@@ -885,21 +1041,27 @@
               "o4-mini-deep-research-2025-06-26",
               "computer-use-preview",
               "computer-use-preview-2025-03-11",
+              "gpt-5.5-pro",
+              "gpt-5.5-pro-2026-04-23",
               "gpt-5-codex",
               "gpt-5-pro",
               "gpt-5-pro-2025-10-06",
-              "gpt-5.1-codex-max"
+              "gpt-5.1-codex-max",
+              "gpt-daybreak-blue-latest",
+              "gpt-daybreak-red-latest",
+              "gpt-5.6-cyber",
+              "gpt-rosalind-research"
             ],
             "title": "ResponsesOnlyModel",
             "type": "string"
           }
         ],
-        "example": "gpt-5.1"
+        "example": "gpt-6-astra"
       },
       "Prompt": {
         "anyOf": [
           {
-            "description": "Reference to a prompt template and its variables.\n[Learn more](/docs/guides/text?api-mode=responses#reusable-prompts).\n",
+            "description": "Reference to a prompt template and its variables.\n[Learn more](https://developers.openai.com/api/docs/guides/text?api-mode=responses#version-prompts-in-code).\n",
             "properties": {
               "id": {
                 "description": "The unique identifier of the prompt template to use.",
@@ -931,7 +1093,7 @@
         ]
       },
       "ResponseTextParam": {
-        "description": "Configuration options for a text response from the model. Can be plain\ntext or structured JSON data. Learn more:\n- [Text inputs and outputs](/docs/guides/text)\n- [Structured Outputs](/docs/guides/structured-outputs)\n",
+        "description": "Configuration options for a text response from the model. Can be plain\ntext or structured JSON data. Learn more:\n- [Text inputs and outputs](https://developers.openai.com/api/docs/guides/text)\n- [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs)\n",
         "properties": {
           "format": {
             "$ref": "#/components/schemas/TextResponseFormatConfiguration"
@@ -975,11 +1137,19 @@
         ]
       },
       "ToolsArray": {
-        "description": "An array of tools the model may call while generating a response. You\ncan specify which tool to use by setting the `tool_choice` parameter.\n\nWe support the following categories of tools:\n- **Built-in tools**: Tools that are provided by OpenAI that extend the\n  model's capabilities, like [web search](/docs/guides/tools-web-search)\n  or [file search](/docs/guides/tools-file-search). Learn more about\n  [built-in tools](/docs/guides/tools).\n- **MCP Tools**: Integrations with third-party systems via custom MCP servers\n  or predefined connectors such as Google Drive and SharePoint. Learn more about\n  [MCP Tools](/docs/guides/tools-connectors-mcp).\n- **Function calls (custom tools)**: Functions that are defined by you,\n  enabling the model to call your own code with strongly typed arguments\n  and outputs. Learn more about\n  [function calling](/docs/guides/function-calling). You can also use\n  custom tools to call your own code.\n",
+        "description": "An array of tools the model may call while generating a response. You\ncan specify which tool to use by setting the `tool_choice` parameter.\n\nWe support the following categories of tools:\n- **Built-in tools**: Tools that are provided by OpenAI that extend the\n  model's capabilities, like [web search](https://developers.openai.com/api/docs/guides/tools-web-search)\n  or [file search](https://developers.openai.com/api/docs/guides/tools-file-search). Learn more about\n  [built-in tools](https://developers.openai.com/api/docs/guides/tools).\n- **MCP Tools**: Integrations with third-party systems via custom MCP servers\n  or predefined connectors such as Google Drive and SharePoint. Learn more about\n  [MCP Tools](https://developers.openai.com/api/docs/guides/tools-connectors-mcp).\n- **Function calls (custom tools)**: Functions that are defined by you,\n  enabling the model to call your own code with strongly typed arguments\n  and outputs. Learn more about\n  [function calling](https://developers.openai.com/api/docs/guides/function-calling). You can also use\n  custom tools to call your own code.\n",
         "items": {
           "$ref": "#/components/schemas/Tool"
         },
         "type": "array"
+      },
+      "CyberAccessProgramEnum": {
+        "enum": [
+          "standard",
+          "daybreak_blue",
+          "daybreak_red"
+        ],
+        "type": "string"
       },
       "ResponseErrorCode": {
         "description": "The error code for the response.\n",
@@ -989,6 +1159,7 @@
           "invalid_prompt",
           "data_residency_mismatch",
           "bio_policy",
+          "misalignment_policy_violation",
           "vector_store_timeout",
           "invalid_image",
           "invalid_image_format",
@@ -1006,6 +1177,41 @@
           "image_file_not_found"
         ],
         "type": "string"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
       },
       "EasyInputMessage": {
         "description": "A message input to the model with a role indicating instruction following\nhierarchy. Instructions given with the `developer` or `system` role take\nprecedence over instructions given with the `user` role. Messages with the\n`assistant` role are presumed to have been generated by the model in previous\ninteractions.\n",
@@ -1098,6 +1304,9 @@
             "$ref": "#/components/schemas/AdditionalToolsItemParam"
           },
           {
+            "$ref": "#/components/schemas/ResponseConfigurationUpdateItemParam"
+          },
+          {
             "$ref": "#/components/schemas/ReasoningItem"
           },
           {
@@ -1151,6 +1360,18 @@
       "CompactionTriggerItemParam": {
         "description": "Compacts the current context. Must be the final input item.",
         "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "description": "The unique ID of this compaction trigger.",
+                "example": "msg_123",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "type": {
             "default": "compaction_trigger",
             "description": "The type of the item. Always `compaction_trigger`.",
@@ -1418,7 +1639,7 @@
         "type": "object"
       },
       "FileSearchToolCall": {
-        "description": "The results of a file search tool call. See the\n[file search guide](/docs/guides/tools-file-search) for more information.\n",
+        "description": "The results of a file search tool call. See the\n[file search guide](https://developers.openai.com/api/docs/guides/tools-file-search) for more information.\n",
         "properties": {
           "id": {
             "description": "The unique ID of the file search tool call.\n",
@@ -1496,11 +1717,15 @@
         "type": "object"
       },
       "FunctionToolCall": {
-        "description": "A tool call to run a function. See the \n[function calling guide](/docs/guides/function-calling) for more information.\n",
+        "description": "A tool call to run a function. See the\n[function calling guide](https://developers.openai.com/api/docs/guides/function-calling) for more information.\n",
         "properties": {
           "arguments": {
             "description": "A JSON string of the arguments to pass to the function.\n",
             "type": "string"
+          },
+          "async": {
+            "description": "Whether the function tool call runs asynchronously.\n",
+            "type": "boolean"
           },
           "call_id": {
             "description": "The unique ID of the function tool call generated by the model.\n",
@@ -1583,7 +1808,7 @@
         ]
       },
       "WebSearchToolCall": {
-        "description": "The results of a web search tool call. See the\n[web search guide](/docs/guides/tools-web-search) for more information.\n",
+        "description": "The results of a web search tool call. See the\n[web search guide](https://developers.openai.com/api/docs/guides/tools-web-search) for more information.\n",
         "properties": {
           "action": {
             "description": "An object describing the specific action taken in this web search call.\nIncludes details on how the model used the web (search, open_page, find_in_page).\n",
@@ -1608,14 +1833,8 @@
             "type": "string"
           },
           "status": {
-            "description": "The status of the web search tool call.\n",
-            "enum": [
-              "in_progress",
-              "searching",
-              "completed",
-              "failed"
-            ],
-            "type": "string"
+            "$ref": "#/components/schemas/WebSearchCallStatus",
+            "description": "The status of the web search tool call.\n"
           },
           "type": {
             "description": "The type of the web search tool call. Always `web_search_call`.\n",
@@ -1628,14 +1847,13 @@
         "required": [
           "id",
           "type",
-          "status",
-          "action"
+          "status"
         ],
         "title": "Web search tool call",
         "type": "object"
       },
       "ComputerToolCall": {
-        "description": "A tool call to a computer use tool. See the\n[computer use guide](/docs/guides/tools-computer-use) for more information.\n",
+        "description": "A tool call to a computer use tool. See the\n[computer use guide](https://developers.openai.com/api/docs/guides/tools-computer-use) for more information.\n",
         "properties": {
           "action": {
             "$ref": "#/components/schemas/ComputerAction"
@@ -1697,10 +1915,6 @@
                 "description": "The identifier of the actor that created the item.\n",
                 "type": "string"
               },
-              "id": {
-                "description": "The unique ID of the computer call tool output.\n",
-                "type": "string"
-              },
               "status": {
                 "$ref": "#/components/schemas/ComputerCallOutputStatus",
                 "description": "The status of the message input. One of `in_progress`, `completed`, or\n`incomplete`. Populated when input items are returned via API.\n"
@@ -1715,7 +1929,7 @@
         ]
       },
       "ReasoningItem": {
-        "description": "A description of the chain of thought used by a reasoning model while generating\na response. Be sure to include these items in your `input` to the Responses API\nfor subsequent turns of a conversation if you are manually\n[managing context](/docs/guides/conversation-state).\n",
+        "description": "A description of the chain of thought used by a reasoning model while generating\na response. Be sure to include these items in your `input` to the Responses API\nfor subsequent turns of a conversation if you are manually\n[managing context](https://developers.openai.com/api/docs/guides/conversation-state).\n",
         "properties": {
           "content": {
             "description": "Reasoning text content.\n",
@@ -1727,7 +1941,7 @@
           "encrypted_content": {
             "anyOf": [
               {
-                "description": "The encrypted content of the reasoning item. This is populated by default\nfor reasoning items returned by `POST /v1/responses` and WebSocket\n`response.create` requests.\n",
+                "description": "The encrypted content of the reasoning item. This is populated by default\nfor reasoning items returned by `POST /v1/responses` and WebSocket\n`response.create` requests.\n\nWhen streaming, use the completed reasoning item and its\n`encrypted_content` from the `response.output_item.done` event in\nsubsequent requests. The `encrypted_content` in\n`response.output_item.added` may be incomplete. This is especially\nimportant when `store` is `false` or when using Zero Data Retention.\n",
                 "type": "string"
               },
               {
@@ -1984,7 +2198,7 @@
         "type": "object"
       },
       "CompactionBody": {
-        "description": "A compaction item generated by the [`v1/responses/compact` API](/docs/api-reference/responses/compact).",
+        "description": "A compaction item generated by the [`v1/responses/compact` API](https://developers.openai.com/api/reference/resources/responses/methods/compact).",
         "properties": {
           "created_by": {
             "description": "The identifier of the actor that created the item.",
@@ -2016,16 +2230,61 @@
         "type": "object"
       },
       "ImageGenToolCall": {
-        "description": "An image generation request made by the model.\n",
+        "description": "An image generation request made by the model.",
         "properties": {
-          "id": {
-            "description": "The unique ID of the image generation call.\n",
-            "type": "string"
-          },
-          "result": {
+          "action": {
             "anyOf": [
               {
-                "description": "The generated image encoded in base64.\n",
+                "$ref": "#/components/schemas/ImageGenActionEnum",
+                "description": "The action used for image generation."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "background": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImageBackground",
+                "description": "The background setting used for generation."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "$ref": "#/components/schemas/ImageGenToolCallError",
+            "description": "Details of a moderation failure, when available."
+          },
+          "id": {
+            "description": "The unique ID of the image generation call.",
+            "type": "string"
+          },
+          "output_format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ImageOutputFormat",
+                "description": "The output format used for generation."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quality": {
+            "anyOf": [
+              {
+                "description": "The quality of the image generated by the image generation tool call. One of `low`, `medium`, `high`, `xhigh`, `max`, or `auto`.",
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh",
+                  "max",
+                  "auto"
+                ],
                 "type": "string"
               },
               {
@@ -2033,8 +2292,53 @@
               }
             ]
           },
+          "result": {
+            "anyOf": [
+              {
+                "description": "The generated image encoded in base64.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revised_prompt": {
+            "anyOf": [
+              {
+                "description": "The prompt that was used after any model prompt rewriting.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "size": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "enum": [
+                      "1024x1024",
+                      "1024x1536",
+                      "1536x1024"
+                    ],
+                    "type": "string"
+                  }
+                ],
+                "description": "The image dimensions as a `WIDTHxHEIGHT` string, for example `1536x864`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "status": {
-            "description": "The status of the image generation call.\n",
+            "description": "The status of the image generation call.",
             "enum": [
               "in_progress",
               "completed",
@@ -2044,7 +2348,7 @@
             "type": "string"
           },
           "type": {
-            "description": "The type of the image generation call. Always `image_generation_call`.\n",
+            "description": "The type of the image generation call. Always `image_generation_call`.",
             "enum": [
               "image_generation_call"
             ],
@@ -2514,13 +2818,13 @@
           "error": {
             "anyOf": [
               {
-                "description": "The error from the tool call, if any.\n",
-                "type": "string"
+                "$ref": "#/components/schemas/MCPToolCallError"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "description": "The error from the tool call, if any."
           },
           "id": {
             "description": "The unique ID of the tool call.\n",
@@ -2697,6 +3001,10 @@
       "CustomToolCall": {
         "description": "A call to a custom tool created by the model.\n",
         "properties": {
+          "async": {
+            "description": "Whether the custom tool call runs asynchronously.\n",
+            "type": "boolean"
+          },
           "call_id": {
             "description": "An identifier used to map this custom tool call to a tool call output.\n",
             "type": "string"
@@ -2773,6 +3081,80 @@
         ],
         "title": "ResponseCustomToolCallOutputItem"
       },
+      "PromptCacheMissDiagnosticsBody": {
+        "properties": {
+          "cache_missed_tokens": {
+            "description": "The estimated number of input tokens affected after the first detected divergence.",
+            "type": "integer"
+          },
+          "comparison_reusable_tokens": {
+            "description": "The raw token count of the reusable prefix in the compared response.",
+            "type": "integer"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/CacheMissReasonTypeEnum",
+            "description": "The reason prompt cache reuse did not occur."
+          },
+          "type": {
+            "default": "cache_miss",
+            "enum": [
+              "cache_miss"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "reason",
+          "cache_missed_tokens"
+        ],
+        "type": "object"
+      },
+      "PromptCacheHitDiagnosticsBody": {
+        "properties": {
+          "type": {
+            "default": "cache_hit",
+            "enum": [
+              "cache_hit"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "PromptCacheComparisonResponseNotFoundDiagnosticsBody": {
+        "properties": {
+          "type": {
+            "default": "comparison_response_not_found",
+            "enum": [
+              "comparison_response_not_found"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "PromptCacheUnavailableDiagnosticsBody": {
+        "properties": {
+          "type": {
+            "default": "unavailable",
+            "enum": [
+              "unavailable"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
       "PromptCacheModeEnum": {
         "enum": [
           "implicit",
@@ -2790,7 +3172,7 @@
         "anyOf": [
           {
             "default": "medium",
-            "description": "Constrains effort on reasoning for reasoning models. Currently supported\nvalues are `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`.\nReducing reasoning effort can result in faster responses and fewer tokens\nused on reasoning in a response. Not all reasoning models support every\nvalue. See the\n[reasoning guide](https://platform.openai.com/docs/guides/reasoning)\nfor model-specific support.\n",
+            "description": "Constrains effort on reasoning for reasoning models. Currently supported\nvalues are `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`.\nReducing reasoning effort can result in faster responses and fewer tokens\nused on reasoning in a response. Not all reasoning models support every\nvalue. See the\n[reasoning guide](https://developers.openai.com/api/docs/guides/reasoning)\nfor model-specific support.\n",
             "enum": [
               "none",
               "minimal",
@@ -2821,6 +3203,57 @@
           }
         ]
       },
+      "ImageGenToolUsage": {
+        "description": "Token usage for image generation tool calls in a response.",
+        "properties": {
+          "cached_tokens": {
+            "type": "integer"
+          },
+          "cached_tokens_details": {
+            "$ref": "#/components/schemas/CachedUsageDetails"
+          },
+          "input_tokens": {
+            "description": "The number of tokens (images and text) in the input prompt.",
+            "type": "integer"
+          },
+          "input_tokens_details": {
+            "$ref": "#/components/schemas/ImageGenInputUsageDetails"
+          },
+          "output_tokens": {
+            "description": "The number of output tokens generated by the model.",
+            "type": "integer"
+          },
+          "output_tokens_details": {
+            "$ref": "#/components/schemas/ImageGenOutputTokensDetails"
+          },
+          "total_tokens": {
+            "description": "The total number of tokens (images and text) used for the image generation.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "input_tokens",
+          "total_tokens",
+          "output_tokens",
+          "input_tokens_details"
+        ],
+        "title": "Image generation tool usage",
+        "type": "object"
+      },
+      "WebSearchUsage": {
+        "description": "Usage details for web search requests that ran while generating the response.",
+        "properties": {
+          "num_requests": {
+            "description": "The number of billable web search requests issued.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "num_requests"
+        ],
+        "title": "Web search usage",
+        "type": "object"
+      },
       "ModelIdsShared": {
         "anyOf": [
           {
@@ -2828,10 +3261,16 @@
           },
           {
             "enum": [
+              "gpt-6-astra",
+              "gpt-6.1-sol",
+              "gpt-6.1-terra",
+              "gpt-6-sol",
+              "gpt-6-luna",
               "gpt-5.6-sol",
               "gpt-5.6-terra",
               "gpt-5.6-luna",
               "gpt-5.5",
+              "gpt-5.5-2026-04-23",
               "gpt-5.4",
               "gpt-5.4-mini",
               "gpt-5.4-nano",
@@ -2877,6 +3316,8 @@
               "gpt-4o-2024-11-20",
               "gpt-4o-2024-08-06",
               "gpt-4o-2024-05-13",
+              "gpt-audio-mini",
+              "gpt-audio-mini-2025-12-15",
               "gpt-4o-audio-preview",
               "gpt-4o-audio-preview-2024-10-01",
               "gpt-4o-audio-preview-2024-12-17",
@@ -2914,7 +3355,7 @@
             "type": "string"
           }
         ],
-        "example": "gpt-5.4"
+        "example": "gpt-6-astra"
       },
       "ResponsePromptVariables": {
         "anyOf": [
@@ -2945,7 +3386,10 @@
         ]
       },
       "TextResponseFormatConfiguration": {
-        "description": "An object specifying the format that the model must output.\n\nConfiguring `{ \"type\": \"json_schema\" }` enables Structured Outputs, \nwhich ensures the model will match your supplied JSON schema. Learn more in the \n[Structured Outputs guide](/docs/guides/structured-outputs).\n\nThe default format is `{ \"type\": \"text\" }` with no additional options.\n\n**Not recommended for gpt-4o and newer models:**\n\nSetting to `{ \"type\": \"json_object\" }` enables the older JSON mode, which\nensures the message the model generates is valid JSON. Using `json_schema`\nis preferred for models that support it.\n",
+        "description": "An object specifying the format that the model must output.\n\nConfiguring `{ \"type\": \"json_schema\" }` enables Structured Outputs,\nwhich ensures the model will match your supplied JSON schema. Learn more in the\n[Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs).\n\nThe default format is `{ \"type\": \"text\" }` with no additional options.\n\n**Not recommended for gpt-4o and newer models:**\n\nSetting to `{ \"type\": \"json_object\" }` enables the older JSON mode, which\nensures the message the model generates is valid JSON. Using `json_schema`\nis preferred for models that support it.\n",
+        "discriminator": {
+          "propertyName": "type"
+        },
         "oneOf": [
           {
             "$ref": "#/components/schemas/ResponseFormatText"
@@ -3022,10 +3466,10 @@
         "type": "object"
       },
       "ToolChoiceTypes": {
-        "description": "Indicates that the model should use a built-in tool to generate a response.\n[Learn more about built-in tools](/docs/guides/tools).\n",
+        "description": "Indicates that the model should use a built-in tool to generate a response.\n[Learn more about built-in tools](https://developers.openai.com/api/docs/guides/tools).\n",
         "properties": {
           "type": {
-            "description": "The type of hosted tool the model should to use. Learn more about\n[built-in tools](/docs/guides/tools).\n\nAllowed values are:\n- `file_search`\n- `web_search_preview`\n- `computer`\n- `computer_use_preview`\n- `computer_use`\n- `code_interpreter`\n- `image_generation`\n",
+            "description": "The type of hosted tool the model should to use. Learn more about\n[built-in tools](https://developers.openai.com/api/docs/guides/tools).\n\nAllowed values are:\n- `file_search`\n- `web_search_preview`\n- `computer`\n- `computer_use_preview`\n- `computer_use`\n- `code_interpreter`\n- `image_generation`\n",
             "enum": [
               "file_search",
               "web_search_preview",
@@ -3230,6 +3674,34 @@
           }
         ]
       },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
       "InputMessageContentList": {
         "description": "A list of one or many input items to the model, containing different content \ntypes.\n",
         "items": {
@@ -3355,10 +3827,17 @@
         "description": "The output of a function tool call.",
         "properties": {
           "call_id": {
-            "description": "The unique ID of the function tool call generated by the model.",
-            "maxLength": 64,
-            "minLength": 1,
-            "type": "string"
+            "anyOf": [
+              {
+                "description": "The unique ID of the function tool call generated by the model.",
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "caller": {
             "anyOf": [
@@ -3462,7 +3941,6 @@
           }
         },
         "required": [
-          "call_id",
           "type",
           "output"
         ],
@@ -3575,7 +4053,7 @@
           "tools": {
             "description": "The loaded tool definitions returned by the tool search output.",
             "items": {
-              "$ref": "#/components/schemas/Tool"
+              "$ref": "#/components/schemas/ToolSearchOutputTool"
             },
             "type": "array"
           },
@@ -3639,12 +4117,74 @@
         ],
         "type": "object"
       },
+      "ResponseConfigurationUpdateItemParam": {
+        "description": "An update to the conversation's response configuration. Supply reasoning,\ntext, or both. Each setting stays in effect until a later update replaces it.\n",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "description": "The unique ID of the configuration update item.",
+                "example": "cnfu_123",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reasoning": {
+            "description": "Updates to reasoning configuration. Only effort is supported.",
+            "properties": {
+              "effort": {
+                "$ref": "#/components/schemas/ReasoningEffort",
+                "description": "The reasoning effort to use for subsequent responses until another\nconfiguration update replaces it.\n"
+              }
+            },
+            "type": "object"
+          },
+          "text": {
+            "description": "The text output configuration for subsequent responses.",
+            "properties": {
+              "format": {
+                "description": "Use a JSON schema for structured output or text to return to plain text.",
+                "discriminator": {
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ResponseFormatText"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TextResponseFormatJsonSchema"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "format"
+            ],
+            "type": "object"
+          },
+          "type": {
+            "default": "configuration_update",
+            "description": "The item type. Always `configuration_update`.",
+            "enum": [
+              "configuration_update"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
       "CompactionSummaryItemParam": {
-        "description": "A compaction item generated by the [`v1/responses/compact` API](/docs/api-reference/responses/compact).",
+        "description": "A compaction item generated by the [`v1/responses/compact` API](https://developers.openai.com/api/reference/resources/responses/methods/compact).",
         "properties": {
           "encrypted_content": {
             "description": "The encrypted content of the compaction summary.",
-            "maxLength": 10485760,
+            "maxLength": 104857600,
             "type": "string"
           },
           "id": {
@@ -4203,7 +4743,6 @@
         },
         "required": [
           "type",
-          "call_id",
           "output"
         ],
         "title": "Function tool call output",
@@ -4320,18 +4859,34 @@
             "type": "string"
           },
           "url": {
-            "description": "The URL of the page searched for the pattern.\n",
-            "format": "uri",
-            "type": "string"
+            "anyOf": [
+              {
+                "format": "uri",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The URL of the page searched for the pattern, when available.\n"
           }
         },
         "required": [
           "type",
-          "url",
           "pattern"
         ],
         "title": "Find action",
         "type": "object"
+      },
+      "WebSearchCallStatus": {
+        "enum": [
+          "in_progress",
+          "searching",
+          "completed",
+          "failed",
+          "incomplete"
+        ],
+        "type": "string"
       },
       "ComputerAction": {
         "discriminator": {
@@ -4543,6 +5098,75 @@
           "discriminator",
           "developer",
           "tool"
+        ],
+        "type": "string"
+      },
+      "ImageGenActionEnum": {
+        "enum": [
+          "generate",
+          "edit",
+          "auto"
+        ],
+        "type": "string"
+      },
+      "ImageBackground": {
+        "enum": [
+          "transparent",
+          "opaque",
+          "auto"
+        ],
+        "type": "string"
+      },
+      "ImageGenToolCallError": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "description": "The error code.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "description": "A description of the error.",
+            "type": "string"
+          },
+          "moderation_details": {
+            "$ref": "#/components/schemas/ImageGenToolCallModerationDetails",
+            "description": "Public details for a `moderation_blocked` error, when available."
+          },
+          "param": {
+            "anyOf": [
+              {
+                "description": "The related request parameter.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "description": "The error type.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "type",
+          "message",
+          "param"
+        ],
+        "type": "object"
+      },
+      "ImageOutputFormat": {
+        "enum": [
+          "png",
+          "webp",
+          "jpeg"
         ],
         "type": "string"
       },
@@ -4889,6 +5513,22 @@
         ],
         "type": "string"
       },
+      "MCPToolCallError": {
+        "discriminator": {
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/MCPProtocolError"
+          },
+          {
+            "$ref": "#/components/schemas/MCPToolExecutionError"
+          },
+          {
+            "$ref": "#/components/schemas/HTTPError"
+          }
+        ]
+      },
       "MCPToolCallStatus": {
         "enum": [
           "in_progress",
@@ -4940,6 +5580,73 @@
         "title": "MCP list tools tool",
         "type": "object"
       },
+      "CacheMissReasonTypeEnum": {
+        "enum": [
+          "model_changed",
+          "prompt_cache_key_changed",
+          "tools_changed",
+          "text_format_changed",
+          "reasoning_effort_changed",
+          "verbosity_changed",
+          "context_compacted",
+          "input_changed",
+          "service_tier_changed"
+        ],
+        "type": "string"
+      },
+      "CachedUsageDetails": {
+        "properties": {
+          "cached_image_tokens": {
+            "type": "integer"
+          },
+          "cached_text_tokens": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cached_text_tokens",
+          "cached_image_tokens"
+        ],
+        "type": "object"
+      },
+      "ImageGenInputUsageDetails": {
+        "description": "The input tokens detailed information for the image generation.",
+        "properties": {
+          "image_tokens": {
+            "description": "The number of image tokens in the input prompt.",
+            "type": "integer"
+          },
+          "text_tokens": {
+            "description": "The number of text tokens in the input prompt.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "text_tokens",
+          "image_tokens"
+        ],
+        "title": "Input usage details",
+        "type": "object"
+      },
+      "ImageGenOutputTokensDetails": {
+        "description": "The output token details for the image generation.",
+        "properties": {
+          "image_tokens": {
+            "description": "The number of image output tokens generated by the model.",
+            "type": "integer"
+          },
+          "text_tokens": {
+            "description": "The number of text output tokens generated by the model.",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "image_tokens",
+          "text_tokens"
+        ],
+        "title": "Image generation output token details",
+        "type": "object"
+      },
       "InputTextContent": {
         "description": "A text input to the model.",
         "properties": {
@@ -4967,7 +5674,7 @@
         "type": "object"
       },
       "InputImageContent": {
-        "description": "An image input to the model. Learn about [image inputs](/docs/guides/vision).",
+        "description": "An image input to the model. Learn about [image inputs](https://developers.openai.com/api/docs/guides/images-vision).",
         "properties": {
           "detail": {
             "$ref": "#/components/schemas/ImageDetail",
@@ -5082,7 +5789,7 @@
         "type": "object"
       },
       "TextResponseFormatJsonSchema": {
-        "description": "JSON Schema response format. Used to generate structured JSON responses.\nLearn more about [Structured Outputs](/docs/guides/structured-outputs).\n",
+        "description": "JSON Schema response format. Used to generate structured JSON responses.\nLearn more about [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs).\n",
         "properties": {
           "description": {
             "description": "A description of what the response format is for, used by the model to\ndetermine how to respond in the format.\n",
@@ -5099,7 +5806,7 @@
             "anyOf": [
               {
                 "default": false,
-                "description": "Whether to enable strict schema adherence when generating the output.\nIf set to true, the model will always follow the exact schema defined\nin the `schema` field. Only a subset of JSON Schema is supported when\n`strict` is `true`. To learn more, read the [Structured Outputs\nguide](/docs/guides/structured-outputs).\n",
+                "description": "Whether to enable strict schema adherence when generating the output.\nIf set to true, the model will always follow the exact schema defined\nin the `schema` field. Only a subset of JSON Schema is supported when\n`strict` is `true`. To learn more, read the [Structured Outputs\nguide](https://developers.openai.com/api/docs/guides/structured-outputs).\n",
                 "type": "boolean"
               },
               {
@@ -5141,7 +5848,7 @@
         "type": "object"
       },
       "FunctionTool": {
-        "description": "Defines a function in your own code the model can choose to call. Learn more about [function calling](https://platform.openai.com/docs/guides/function-calling).",
+        "description": "Defines a function in your own code the model can choose to call. Learn more about [function calling](https://developers.openai.com/api/docs/guides/function-calling).",
         "properties": {
           "allowed_callers": {
             "anyOf": [
@@ -5156,6 +5863,9 @@
                 "type": "null"
               }
             ]
+          },
+          "async": {
+            "type": "boolean"
           },
           "defer_loading": {
             "description": "Whether this function is deferred and loaded via tool search.",
@@ -5230,7 +5940,7 @@
         "type": "object"
       },
       "FileSearchTool": {
-        "description": "A tool that searches for relevant content from uploaded files. Learn more about the [file search tool](https://platform.openai.com/docs/guides/tools-file-search).",
+        "description": "A tool that searches for relevant content from uploaded files. Learn more about the [file search tool](https://developers.openai.com/api/docs/guides/tools-file-search).",
         "properties": {
           "filters": {
             "anyOf": [
@@ -5275,7 +5985,7 @@
         "type": "object"
       },
       "ComputerTool": {
-        "description": "A tool that controls a virtual computer. Learn more about the [computer tool](https://platform.openai.com/docs/guides/tools-computer-use).",
+        "description": "A tool that controls a virtual computer. Learn more about the [computer tool](https://developers.openai.com/api/docs/guides/tools-computer-use).",
         "properties": {
           "type": {
             "default": "computer",
@@ -5293,7 +6003,7 @@
         "type": "object"
       },
       "ComputerUsePreviewTool": {
-        "description": "A tool that controls a virtual computer. Learn more about the [computer tool](https://platform.openai.com/docs/guides/tools-computer-use).",
+        "description": "A tool that controls a virtual computer. Learn more about the [computer tool](https://developers.openai.com/api/docs/guides/tools-computer-use).",
         "properties": {
           "display_height": {
             "description": "The height of the computer display.",
@@ -5326,8 +6036,13 @@
         "type": "object"
       },
       "WebSearchTool": {
-        "description": "Search the Internet for sources related to the prompt. Learn more about the\n[web search tool](/docs/guides/tools-web-search).\n",
+        "description": "Search the Internet for sources related to the prompt. Learn more about the\n[web search tool](https://developers.openai.com/api/docs/guides/tools-web-search).\n",
         "properties": {
+          "external_web_access": {
+            "default": true,
+            "description": "Allow live internet access for web search. Defaults to true when omitted. When false, the web search tool runs in offline/cache-only mode and will not fetch new external content.",
+            "type": "boolean"
+          },
           "filters": {
             "anyOf": [
               {
@@ -5378,7 +6093,8 @@
             "type": "string"
           },
           "user_location": {
-            "$ref": "#/components/schemas/WebSearchApproximateLocation"
+            "$ref": "#/components/schemas/WebSearchApproximateLocation",
+            "description": "The approximate location of the user. If omitted or null, defaults to the\nUnited States. To avoid this fallback, pass `{\"type\": \"approximate\"}` without\nlocation fields. To localize results, provide the relevant location fields.\n"
           }
         },
         "required": [
@@ -5388,7 +6104,7 @@
         "type": "object"
       },
       "MCPTool": {
-        "description": "Give the model access to additional tools via remote Model Context Protocol\n(MCP) servers. [Learn more about MCP](/docs/guides/tools-remote-mcp).\n",
+        "description": "Give the model access to additional tools via remote Model Context Protocol\n(MCP) servers. [Learn more about MCP](https://developers.openai.com/api/docs/guides/tools-connectors-mcp).\n",
         "properties": {
           "allowed_callers": {
             "anyOf": [
@@ -5433,7 +6149,8 @@
             "type": "string"
           },
           "connector_id": {
-            "description": "Identifier for service connectors, like those available in ChatGPT. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided. Learn more\nabout service connectors [here](/docs/guides/tools-remote-mcp#connectors).\n\nCurrently supported `connector_id` values are:\n\n- Dropbox: `connector_dropbox`\n- Gmail: `connector_gmail`\n- Google Calendar: `connector_googlecalendar`\n- Google Drive: `connector_googledrive`\n- Microsoft Teams: `connector_microsoftteams`\n- Outlook Calendar: `connector_outlookcalendar`\n- Outlook Email: `connector_outlookemail`\n- SharePoint: `connector_sharepoint`\n",
+            "deprecated": true,
+            "description": "Identifier for service connectors, like those available in ChatGPT. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided. Learn more\nabout service connectors [here](https://developers.openai.com/api/docs/guides/tools-connectors-mcp#connectors).\n\nThis field is deprecated for models released after September 1, 2026.\nUse `server_url` to connect to a remote MCP server, or `tunnel_id` to\nconnect through a Secure MCP Tunnel.\n\nCurrently supported `connector_id` values are:\n\n- Dropbox: `connector_dropbox`\n- Gmail: `connector_gmail`\n- Google Calendar: `connector_googlecalendar`\n- Google Drive: `connector_googledrive`\n- Microsoft Teams: `connector_microsoftteams`\n- Outlook Calendar: `connector_outlookcalendar`\n- Outlook Email: `connector_outlookemail`\n- SharePoint: `connector_sharepoint`\n",
             "enum": [
               "connector_dropbox",
               "connector_gmail",
@@ -5603,7 +6320,7 @@
           },
           "background": {
             "default": "auto",
-            "description": "Background type for the generated image. One of `transparent`,\n`opaque`, or `auto`. Default: `auto`.\n",
+            "description": "Set the background of the generated image. One of `transparent`, `opaque`,\nor `auto`. `gpt-image-2.5-sunburst` and `gpt-image-2.5-flare`, including\ntheir `2026-09-08` snapshots, support `opaque` and `transparent`\nbackgrounds. Transparent backgrounds are available for supported GPT Image\nmodels. For `gpt-image-2` and `gpt-image-2-2026-04-21`, this support is in\npreview. When using `transparent`, set the output format to `png` or `webp`.\nDefault: `auto`.\n",
             "enum": [
               "transparent",
               "opaque",
@@ -5643,12 +6360,18 @@
                 "type": "string"
               },
               {
-                "default": "gpt-image-1",
-                "description": "The image generation model to use. Default: `gpt-image-1`.\n",
+                "default": "gpt-image-2",
+                "description": "The image generation model to use. One of `gpt-image-1-mini`,\n`gpt-image-1.5`, `gpt-image-2`,\n`gpt-image-2-2026-04-21`, `gpt-image-2.5-sunburst`,\n`gpt-image-2.5-sunburst-2026-09-08`, `gpt-image-2.5-flare`,\n`gpt-image-2.5-flare-2026-09-08`, or `chatgpt-image-latest`. Default:\n`gpt-image-2`.\n\n`gpt-image-1` was shut down on October 23, 2026. Use\n`gpt-image-2.5-sunburst` or `gpt-image-2.5-flare` instead.\n",
                 "enum": [
                   "gpt-image-1",
                   "gpt-image-1-mini",
-                  "gpt-image-1.5"
+                  "gpt-image-1.5",
+                  "gpt-image-2",
+                  "gpt-image-2-2026-04-21",
+                  "gpt-image-2.5-sunburst",
+                  "gpt-image-2.5-sunburst-2026-09-08",
+                  "gpt-image-2.5-flare",
+                  "gpt-image-2.5-flare-2026-09-08"
                 ],
                 "type": "string"
               }
@@ -5689,11 +6412,13 @@
           },
           "quality": {
             "default": "auto",
-            "description": "The quality of the generated image. One of `low`, `medium`, `high`,\nor `auto`. Default: `auto`.\n",
+            "description": "The quality of the generated image. The GPT image models support `low`,\n`medium`, and `high`. `gpt-image-2.5-sunburst` and `gpt-image-2.5-flare`,\nincluding their `2026-09-08` snapshots, also support `xhigh` and `max`.\nDefault: `auto`.\n",
             "enum": [
               "low",
               "medium",
               "high",
+              "xhigh",
+              "max",
               "auto"
             ],
             "type": "string"
@@ -5714,7 +6439,7 @@
               }
             ],
             "default": "auto",
-            "description": "The size of the generated images. For `gpt-image-2` and `gpt-image-2-2026-04-21`, arbitrary resolutions are supported as `WIDTHxHEIGHT` strings, for example `1536x864`. Width and height must both be divisible by 16 and the requested aspect ratio must be between 1:3 and 3:1. Resolutions above `2560x1440` are experimental, and the maximum supported resolution is `3840x2160`. The requested size must also satisfy the model's current pixel and edge limits. The standard sizes `1024x1024`, `1536x1024`, and `1024x1536` are supported by the GPT image models; `auto` is supported for models that allow automatic sizing. For `dall-e-2`, use one of `256x256`, `512x512`, or `1024x1024`. For `dall-e-3`, use one of `1024x1024`, `1792x1024`, or `1024x1792`."
+            "description": "The size of the generated images. For `gpt-image-2`, `gpt-image-2-2026-04-21`, `gpt-image-2.5-sunburst`, `gpt-image-2.5-sunburst-2026-09-08`, `gpt-image-2.5-flare`, and `gpt-image-2.5-flare-2026-09-08`, arbitrary resolutions are supported as `WIDTHxHEIGHT` strings, for example `1536x864`. Width and height must both be divisible by 16 and the requested aspect ratio must be between 1:3 and 3:1. Resolutions above `2560x1440` are experimental, and the maximum supported resolution is `3840x2160`. The requested size must also satisfy the model's current pixel and edge limits. The standard sizes `1024x1024`, `1536x1024`, and `1024x1536` are supported by the GPT image models; `auto` is supported for models that allow automatic sizing."
           },
           "type": {
             "description": "The type of the image generation tool. Always `image_generation`.\n",
@@ -5805,7 +6530,7 @@
         "type": "object"
       },
       "CustomToolParam": {
-        "description": "A custom tool that processes input using a specified format. Learn more about   [custom tools](/docs/guides/function-calling#custom-tools)",
+        "description": "A custom tool that processes input using a specified format. Learn more about   [custom tools](https://developers.openai.com/api/docs/guides/function-calling#custom-tools)",
         "properties": {
           "allowed_callers": {
             "anyOf": [
@@ -5821,6 +6546,10 @@
                 "type": "null"
               }
             ]
+          },
+          "async": {
+            "description": "Whether the tool response can be returned asynchronously versus immediately returned on next response creation.",
+            "type": "boolean"
           },
           "defer_loading": {
             "description": "Whether this tool should be deferred and discovered via tool search.",
@@ -5869,7 +6598,6 @@
         "properties": {
           "description": {
             "description": "A description of the namespace shown to the model.",
-            "minLength": 1,
             "type": "string"
           },
           "name": {
@@ -5959,7 +6687,7 @@
         "type": "object"
       },
       "WebSearchPreviewTool": {
-        "description": "This tool searches the web for relevant results to use in a response. Learn more about the [web search tool](https://platform.openai.com/docs/guides/tools-web-search).",
+        "description": "This tool searches the web for relevant results to use in a response. Learn more about the [web search tool](https://developers.openai.com/api/docs/guides/tools-web-search).",
         "properties": {
           "search_content_types": {
             "items": {
@@ -5984,7 +6712,7 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ApproximateLocation",
-                "description": "The user's location."
+                "description": "The approximate location of the user. If omitted or null, defaults to the United States. To avoid this fallback, pass `{\"type\": \"approximate\"}` without location fields. To localize results, provide the relevant location fields."
               },
               {
                 "type": "null"
@@ -6130,7 +6858,7 @@
         "type": "object"
       },
       "InputImageContentParamAutoParam": {
-        "description": "An image input to the model. Learn about [image inputs](/docs/guides/vision)",
+        "description": "An image input to the model. Learn about [image inputs](https://developers.openai.com/api/docs/guides/images-vision)",
         "properties": {
           "detail": {
             "anyOf": [
@@ -6276,6 +7004,62 @@
         "properties": {},
         "required": [],
         "type": "object"
+      },
+      "ToolSearchOutputTool": {
+        "description": "A tool definition returned by a tool search output.\n",
+        "discriminator": {
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FunctionTool"
+          },
+          {
+            "$ref": "#/components/schemas/FileSearchTool"
+          },
+          {
+            "$ref": "#/components/schemas/ComputerTool"
+          },
+          {
+            "$ref": "#/components/schemas/ComputerUsePreviewTool"
+          },
+          {
+            "$ref": "#/components/schemas/WebSearchTool"
+          },
+          {
+            "$ref": "#/components/schemas/MCPTool"
+          },
+          {
+            "$ref": "#/components/schemas/CodeInterpreterTool"
+          },
+          {
+            "$ref": "#/components/schemas/ProgrammaticToolCallingParam"
+          },
+          {
+            "$ref": "#/components/schemas/ImageGenTool"
+          },
+          {
+            "$ref": "#/components/schemas/LocalShellToolParam"
+          },
+          {
+            "$ref": "#/components/schemas/FunctionShellToolParam"
+          },
+          {
+            "$ref": "#/components/schemas/CustomToolParam"
+          },
+          {
+            "$ref": "#/components/schemas/ToolSearchOutputNamespaceToolParam"
+          },
+          {
+            "$ref": "#/components/schemas/ToolSearchToolParam"
+          },
+          {
+            "$ref": "#/components/schemas/WebSearchPreviewTool"
+          },
+          {
+            "$ref": "#/components/schemas/ApplyPatchToolParam"
+          }
+        ]
       },
       "FunctionShellActionParam": {
         "description": "Commands and limits describing how to run the shell tool call.",
@@ -6856,6 +7640,31 @@
         "title": "Wait",
         "type": "object"
       },
+      "ImageGenToolCallModerationDetails": {
+        "properties": {
+          "categories": {
+            "description": "Public moderation categories. New category values may be added over time.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "moderation_stage": {
+            "description": "The stage where moderation blocked the image generation call.",
+            "enum": [
+              "input",
+              "output",
+              "unknown"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "moderation_stage",
+          "categories"
+        ],
+        "type": "object"
+      },
       "FunctionShellCallOutputTimeoutOutcome": {
         "description": "Indicates that the shell call exceeded its configured time limit.",
         "properties": {
@@ -6897,14 +7706,85 @@
         "title": "Shell call exit outcome",
         "type": "object"
       },
+      "MCPProtocolError": {
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "type": {
+            "default": "mcp_protocol_error",
+            "enum": [
+              "mcp_protocol_error"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "MCPToolExecutionError": {
+        "properties": {
+          "content": {},
+          "type": {
+            "default": "mcp_tool_execution_error",
+            "enum": [
+              "mcp_tool_execution_error"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "content"
+        ],
+        "type": "object"
+      },
+      "HTTPError": {
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          },
+          "type": {
+            "default": "http_error",
+            "enum": [
+              "http_error"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
       "PromptCacheBreakpointConfig": {
-        "description": "Marks the exact end of a reusable prompt prefix. The breakpoint inherits its TTL from the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
+        "description": "Marks the exact end of a reusable prompt prefix. When `ttl` is omitted, the breakpoint inherits the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
         "properties": {
           "mode": {
             "default": "explicit",
             "description": "The breakpoint mode. Always `explicit`.",
             "enum": [
               "explicit"
+            ],
+            "type": "string"
+          },
+          "ttl": {
+            "description": "The minimum lifetime of this cache breakpoint. Defaults to the request TTL.",
+            "enum": [
+              "30m",
+              "12h"
             ],
             "type": "string"
           }
@@ -7122,16 +8002,8 @@
         "title": "CodeInterpreterToolAuto",
         "type": "object"
       },
-      "ImageGenActionEnum": {
-        "enum": [
-          "generate",
-          "edit",
-          "auto"
-        ],
-        "type": "string"
-      },
       "InputFidelity": {
-        "description": "Control how much effort the model will exert to match the style and features, especially facial features, of input images. This parameter is only supported for `gpt-image-1` and `gpt-image-1.5` and later models, unsupported for `gpt-image-1-mini`. Supports `high` and `low`. Defaults to `low`.",
+        "description": "Control how much effort the model will exert to match the style and features, especially facial features, of input images. Supports `high` and `low` on `gpt-image-1.5`; `gpt-image-1-mini` supports only `low`. For `gpt-image-2`, omit this parameter. Defaults to `low` on supported models.",
         "enum": [
           "high",
           "low"
@@ -7268,6 +8140,10 @@
                 "type": "null"
               }
             ]
+          },
+          "async": {
+            "description": "Whether the tool response can be returned asynchronously versus immediately returned on next response creation.",
+            "type": "boolean"
           },
           "defer_loading": {
             "description": "Whether this function should be deferred and discovered via tool search.",
@@ -7451,13 +8327,21 @@
         "type": "object"
       },
       "PromptCacheBreakpointParam": {
-        "description": "Marks the exact end of a reusable prompt prefix. The breakpoint inherits its TTL from the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
+        "description": "Marks the exact end of a reusable prompt prefix. When `ttl` is omitted, the breakpoint inherits the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
         "properties": {
           "mode": {
             "default": "explicit",
             "description": "The breakpoint mode. Always `explicit`.",
             "enum": [
               "explicit"
+            ],
+            "type": "string"
+          },
+          "ttl": {
+            "description": "The minimum lifetime of this cache breakpoint. Defaults to the request TTL.",
+            "enum": [
+              "30m",
+              "12h"
             ],
             "type": "string"
           }
@@ -7484,6 +8368,55 @@
           "high"
         ],
         "type": "string"
+      },
+      "ToolSearchOutputNamespaceToolParam": {
+        "description": "Groups function/custom tools under a shared namespace.",
+        "properties": {
+          "description": {
+            "description": "A description of the namespace shown to the model.",
+            "type": "string"
+          },
+          "name": {
+            "description": "The namespace name used in tool calls (for example, `crm`).",
+            "minLength": 1,
+            "type": "string"
+          },
+          "tools": {
+            "description": "The function/custom tools loaded inside this namespace.",
+            "items": {
+              "description": "A function or custom tool loaded into a namespace by tool search.",
+              "discriminator": {
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ToolSearchOutputFunctionToolParam"
+                },
+                {
+                  "$ref": "#/components/schemas/CustomToolParam"
+                }
+              ]
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "type": {
+            "default": "namespace",
+            "description": "The type of the tool. Always `namespace`.",
+            "enum": [
+              "namespace"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description",
+          "tools"
+        ],
+        "title": "Namespace",
+        "type": "object"
       },
       "LocalSkillParam": {
         "properties": {
@@ -7746,7 +8679,6 @@
         "type": "object"
       },
       "CompoundFilter": {
-        "$recursiveAnchor": true,
         "additionalProperties": false,
         "description": "Combine multiple filters using `and` or `or`.",
         "properties": {
@@ -7761,7 +8693,7 @@
                   "$ref": "#/components/schemas/ComparisonFilter"
                 },
                 {
-                  "$recursiveRef": "#"
+                  "$ref": "#/components/schemas/CompoundFilter"
                 }
               ]
             },
@@ -7930,6 +8862,95 @@
         ],
         "type": "string"
       },
+      "ToolSearchOutputFunctionToolParam": {
+        "properties": {
+          "allowed_callers": {
+            "anyOf": [
+              {
+                "description": "The tool invocation context(s).",
+                "items": {
+                  "$ref": "#/components/schemas/CallableToolAllowedCaller"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "async": {
+            "description": "Whether the tool response can be returned asynchronously versus immediately returned on next response creation.",
+            "type": "boolean"
+          },
+          "defer_loading": {
+            "description": "Whether this function should be deferred and discovered via tool search.",
+            "type": "boolean"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "description": "The name of the loaded function tool.",
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^(?![\\s\\S]*[\\r\\n])[a-zA-Z0-9_.-]+$",
+            "type": "string"
+          },
+          "output_schema": {
+            "anyOf": [
+              {
+                "additionalProperties": {},
+                "description": "A JSON Schema describing the JSON value encoded in string outputs for this function tool. This does not describe content-array outputs.",
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmptyModelParam"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "strict": {
+            "anyOf": [
+              {
+                "description": "Whether to enforce strict parameter validation. If omitted, Responses attempts to use strict validation when the schema is compatible, and falls back to non-strict validation otherwise.",
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "default": "function",
+            "enum": [
+              "function"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ],
+        "type": "object"
+      },
       "FunctionShellCallOutputTimeoutOutcomeParam": {
         "description": "Indicates that the shell call exceeded its configured time limit.",
         "properties": {
@@ -7983,7 +9004,7 @@
             "type": "string"
           },
           "index": {
-            "description": "The index of the file in the list of files.",
+            "description": "The index in the output text at which to insert the file citation.",
             "type": "integer"
           },
           "type": {
@@ -8195,6 +9216,27 @@
           "data"
         ],
         "type": "object"
+      }
+    },
+    "responses": {
+      "TooManyRequests": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The request was rejected because a rate limit was exceeded.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted for 429 responses that require user action.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
       }
     }
   }

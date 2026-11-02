@@ -1,0 +1,635 @@
+{
+  "description": "Submits message, cancellation, tool-result, or computer-use approval-response events to a managed agent session. Cancellation can recover a still-open turn whose backend execution has ended by marking it cancelled and abandoning unpublished outputs. Saved results, published files, and existing terminal outcomes are preserved. HTTP 202 confirms acceptance, not durable completion. See [session events](https://developers.openai.com/api/docs/guides/agents-api/sessions/events).",
+  "operationId": "createAgentSessionEvents",
+  "parameters": [
+    {
+      "description": "The ID of the session.",
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+        "maxLength": 1048576,
+        "minLength": 0,
+        "type": "string"
+      }
+    },
+    {
+      "description": "An optional client-generated key that makes retries of submitted messages idempotent.",
+      "in": "header",
+      "name": "Idempotency-Key",
+      "required": false,
+      "schema": {
+        "maxLength": 256,
+        "minLength": 1,
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/CreateSessionEventsParams"
+        }
+      }
+    }
+  },
+  "responses": {
+    "202": {
+      "description": "The events were accepted."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request was invalid."
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "Authentication or project context was missing."
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The API key lacks the required permission."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The requested session or event was not found."
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request conflicted with the current session state."
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "An internal error occurred."
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The service is temporarily unavailable."
+    }
+  },
+  "summary": "Create agent session input events",
+  "tags": [
+    "Agents"
+  ],
+  "components": {
+    "schemas": {
+      "CreateSessionEventsParams": {
+        "additionalProperties": false,
+        "description": "Input events submitted to an existing session.",
+        "properties": {
+          "events": {
+            "description": "The input events to submit to the session.",
+            "items": {
+              "$ref": "#/components/schemas/SessionInputParam"
+            },
+            "maxItems": 16384,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": [
+          "events"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse-2": {
+        "additionalProperties": false,
+        "description": "An API error response.",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBodyResource",
+            "description": "The error returned by the API."
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "SessionInputParam": {
+        "description": "Input submitted to an existing session.",
+        "discriminator": {
+          "mapping": {
+            "agent.session.input.cancel": "#/components/schemas/SessionInputParamAgentSessionInputCancel",
+            "agent.session.input.computer_use_approval_request_result": "#/components/schemas/SessionInputParamAgentSessionInputComputerUseApprovalRequestResult",
+            "agent.session.input.message": "#/components/schemas/SessionInputParamAgentSessionInputMessage",
+            "agent.session.input.tool_result": "#/components/schemas/SessionInputParamAgentSessionInputToolResult"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SessionInputParamAgentSessionInputComputerUseApprovalRequestResult"
+          },
+          {
+            "$ref": "#/components/schemas/SessionInputParamAgentSessionInputMessage"
+          },
+          {
+            "$ref": "#/components/schemas/SessionInputParamAgentSessionInputCancel"
+          },
+          {
+            "$ref": "#/components/schemas/SessionInputParamAgentSessionInputToolResult"
+          }
+        ]
+      },
+      "ErrorBodyResource": {
+        "additionalProperties": false,
+        "description": "Details about an API error.",
+        "properties": {
+          "code": {
+            "description": "A machine-readable error code.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "message": {
+            "description": "A human-readable error message.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "param": {
+            "description": "The request parameter that caused the error, or null for a request-wide error.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "description": "The error type.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "code",
+          "message",
+          "param"
+        ],
+        "type": "object"
+      },
+      "SessionInputParamAgentSessionInputComputerUseApprovalRequestResult": {
+        "additionalProperties": false,
+        "description": "Responds to a pending Computer Use approval request.",
+        "properties": {
+          "request_id": {
+            "description": "The registered request ID from the required action.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": "string"
+          },
+          "response": {
+            "$ref": "#/components/schemas/ComputerUseApprovalResponseParam",
+            "description": "The response for this request type."
+          },
+          "type": {
+            "default": "agent.session.input.computer_use_approval_request_result",
+            "description": "The type of the object. Always `agent.session.input.computer_use_approval_request_result`.",
+            "enum": [
+              "agent.session.input.computer_use_approval_request_result"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "request_id",
+          "response"
+        ],
+        "type": "object"
+      },
+      "SessionInputParamAgentSessionInputMessage": {
+        "additionalProperties": false,
+        "description": "Adds one or more user messages and starts a turn.",
+        "properties": {
+          "input": {
+            "description": "The user messages to add to the session.",
+            "items": {
+              "$ref": "#/components/schemas/InputMessageParam"
+            },
+            "maxItems": 16384,
+            "minItems": 0,
+            "type": "array"
+          },
+          "type": {
+            "default": "agent.session.input.message",
+            "description": "The type of the object. Always `agent.session.input.message`.",
+            "enum": [
+              "agent.session.input.message"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "input"
+        ],
+        "type": "object"
+      },
+      "SessionInputParamAgentSessionInputCancel": {
+        "additionalProperties": false,
+        "description": "Cancels the session's active turn.",
+        "properties": {
+          "type": {
+            "default": "agent.session.input.cancel",
+            "description": "The type of the object. Always `agent.session.input.cancel`.",
+            "enum": [
+              "agent.session.input.cancel"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "SessionInputParamAgentSessionInputToolResult": {
+        "additionalProperties": false,
+        "description": "Submits the result of a function call.",
+        "properties": {
+          "call_id": {
+            "description": "The ID of the function call.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": "string"
+          },
+          "error": {
+            "description": "The error message when the call failed.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "output": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FunctionCallOutputParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The function result when the call succeeded."
+          },
+          "success": {
+            "description": "Whether the function call succeeded.",
+            "type": "boolean"
+          },
+          "turn_id": {
+            "description": "The ID of the turn that requested the function call.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "agent.session.input.tool_result",
+            "description": "The type of the object. Always `agent.session.input.tool_result`.",
+            "enum": [
+              "agent.session.input.tool_result"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "turn_id",
+          "call_id",
+          "success"
+        ],
+        "type": "object"
+      },
+      "ComputerUseApprovalResponseParam": {
+        "discriminator": {
+          "mapping": {
+            "browser_authentication": "#/components/schemas/ComputerUseApprovalResponseParamBrowserAuthentication",
+            "browser_origin_access": "#/components/schemas/ComputerUseApprovalResponseParamBrowserOriginAccessParam"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ComputerUseApprovalResponseParamBrowserAuthentication"
+          },
+          {
+            "$ref": "#/components/schemas/ComputerUseApprovalResponseParamBrowserOriginAccessParam"
+          }
+        ]
+      },
+      "InputMessageParam": {
+        "additionalProperties": false,
+        "description": "A user message submitted to a session.",
+        "properties": {
+          "content": {
+            "description": "The content of the message.",
+            "items": {
+              "$ref": "#/components/schemas/InputContentParam"
+            },
+            "maxItems": 16384,
+            "minItems": 0,
+            "type": "array"
+          },
+          "role": {
+            "default": "user",
+            "description": "The role of the message author. Always `user`.",
+            "enum": [
+              "user"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "default": "message",
+            "description": "The type of the input item. Always `message`.",
+            "enum": [
+              "message"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "type": "object"
+      },
+      "FunctionCallOutputParam": {
+        "description": "A function result represented as text or supported model-input content.",
+        "oneOf": [
+          {
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": "string"
+          },
+          {
+            "items": {
+              "$ref": "#/components/schemas/InputContentParam"
+            },
+            "maxItems": 16384,
+            "minItems": 0,
+            "type": "array"
+          }
+        ]
+      },
+      "ComputerUseApprovalResponseParamBrowserAuthentication": {
+        "discriminator": {
+          "mapping": {
+            "cancel": "#/components/schemas/ComputerUseApprovalResponseParamBrowserAuthenticationCancelParam",
+            "submit": "#/components/schemas/ComputerUseApprovalResponseParamBrowserAuthenticationSubmitParam"
+          },
+          "propertyName": "action"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ComputerUseApprovalResponseParamBrowserAuthenticationSubmitParam"
+          },
+          {
+            "$ref": "#/components/schemas/ComputerUseApprovalResponseParamBrowserAuthenticationCancelParam"
+          }
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "browser_authentication"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "ComputerUseApprovalResponseParamBrowserOriginAccessParam": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/BrowserOriginAccessDecisionParam",
+            "description": "Whether to allow, deny, or cancel the requested origin access."
+          },
+          "type": {
+            "default": "browser_origin_access",
+            "enum": [
+              "browser_origin_access"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "decision"
+        ],
+        "type": "object"
+      },
+      "InputContentParam": {
+        "description": "Content included in an input message.",
+        "discriminator": {
+          "mapping": {
+            "input_image": "#/components/schemas/InputContentParamInputImage",
+            "input_text": "#/components/schemas/InputContentParamInputText"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/InputContentParamInputText"
+          },
+          {
+            "$ref": "#/components/schemas/InputContentParamInputImage"
+          }
+        ]
+      },
+      "ComputerUseApprovalResponseParamBrowserAuthenticationSubmitParam": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "default": "submit",
+            "enum": [
+              "submit"
+            ],
+            "type": "string"
+          },
+          "fields": {
+            "description": "Values for up to six active fields in the required action. The submitted field-value mapping and selected option must fit within 120 KiB of JSON.",
+            "items": {
+              "$ref": "#/components/schemas/BrowserAuthenticationFieldValueParam"
+            },
+            "maxItems": 6,
+            "minItems": 0,
+            "type": "array"
+          },
+          "selected_option": {
+            "description": "The chosen method. Required when the required action contains options.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "default": "browser_authentication",
+            "enum": [
+              "browser_authentication"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "action",
+          "fields"
+        ],
+        "type": "object"
+      },
+      "ComputerUseApprovalResponseParamBrowserAuthenticationCancelParam": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "default": "cancel",
+            "enum": [
+              "cancel"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "default": "browser_authentication",
+            "enum": [
+              "browser_authentication"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "action"
+        ],
+        "type": "object"
+      },
+      "BrowserOriginAccessDecisionParam": {
+        "description": "The user's decision for a browser origin access request.",
+        "enum": [
+          "approve",
+          "deny",
+          "cancel"
+        ],
+        "type": "string"
+      },
+      "InputContentParamInputText": {
+        "additionalProperties": false,
+        "description": "Text input to the model.",
+        "properties": {
+          "text": {
+            "description": "The text sent to the model.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "input_text",
+            "description": "The type of the object. Always `input_text`.",
+            "enum": [
+              "input_text"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ],
+        "type": "object"
+      },
+      "InputContentParamInputImage": {
+        "additionalProperties": false,
+        "description": "Image input to the model.",
+        "properties": {
+          "image_url": {
+            "description": "The URL of the image sent to the model.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "input_image",
+            "description": "The type of the object. Always `input_image`.",
+            "enum": [
+              "input_image"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "image_url"
+        ],
+        "type": "object"
+      },
+      "BrowserAuthenticationFieldValueParam": {
+        "additionalProperties": false,
+        "description": "One user-entered value, including non-password fields such as an email address.",
+        "properties": {
+          "field_id": {
+            "description": "The field ID from the required action.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": "string"
+          },
+          "value": {
+            "description": "The value to enter into the registered control.",
+            "maxLength": 16384,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "field_id",
+          "value"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

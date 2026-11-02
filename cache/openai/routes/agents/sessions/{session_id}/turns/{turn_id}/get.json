@@ -1,0 +1,398 @@
+{
+  "description": "Retrieves a turn's current status, timestamps, usage, and error. Returns 404 if the turn does not belong to the session. See [session turns](https://developers.openai.com/api/docs/guides/agents-api/sessions/manage#inspect-session-turns).",
+  "operationId": "retrieveAgentSessionTurn",
+  "parameters": [
+    {
+      "description": "The ID of the session that owns the turn.",
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+        "maxLength": 1048576,
+        "minLength": 0,
+        "type": "string"
+      }
+    },
+    {
+      "description": "The ID of the turn.",
+      "in": "path",
+      "name": "turn_id",
+      "required": true,
+      "schema": {
+        "maxLength": 1048576,
+        "minLength": 0,
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/TurnResource"
+          }
+        }
+      },
+      "description": "The requested turn."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request was invalid."
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "Authentication or project context was missing."
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The API key lacks the required permission."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The requested session or event was not found."
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request conflicted with the current session state."
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "An internal error occurred."
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The service is temporarily unavailable."
+    }
+  },
+  "summary": "Retrieve an agent session turn",
+  "tags": [
+    "Agents"
+  ],
+  "components": {
+    "schemas": {
+      "TurnResource": {
+        "additionalProperties": false,
+        "description": "The canonical public representation of a session turn.",
+        "properties": {
+          "agent_id": {
+            "description": "The ID of the agent that ran the turn.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "completed_at": {
+            "description": "The Unix timestamp, in seconds, when the turn reached a terminal state.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_at": {
+            "description": "The Unix timestamp, in seconds, used to order the turn by creation time. Subagent turns use their start time, falling back to completion time or the subagent opening time when the preceding timestamps are unavailable.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionTurnErrorResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "A customer-safe error. Non-null only for a failed turn."
+          },
+          "id": {
+            "description": "The ID of the turn.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "object": {
+            "$ref": "#/components/schemas/TurnObjectResource",
+            "description": "The object type. Always `agent.session.turn`."
+          },
+          "session_id": {
+            "description": "The ID of the session that owns the turn.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "started_at": {
+            "description": "The Unix timestamp, in seconds, when the turn started.",
+            "format": "int64",
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/TurnStatusResource",
+            "description": "The current status of the turn."
+          },
+          "subagent_id": {
+            "description": "The ID of the subagent that ran the turn, if applicable.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TokenUsageResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Best-effort token usage for the turn, or null if unknown. Recorded usage may change."
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "session_id",
+          "agent_id",
+          "subagent_id",
+          "status",
+          "created_at",
+          "started_at",
+          "completed_at",
+          "error",
+          "usage"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse-2": {
+        "additionalProperties": false,
+        "description": "An API error response.",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBodyResource",
+            "description": "The error returned by the API."
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "SessionTurnErrorResource": {
+        "additionalProperties": false,
+        "description": "A customer-safe error describing why a session request failed.",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/SessionTurnErrorCodeResource",
+            "description": "A stable, machine-readable failure category."
+          },
+          "message": {
+            "description": "A customer-safe explanation of the failure.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "TurnObjectResource": {
+        "default": "agent.session.turn",
+        "description": "The object type for a turn.",
+        "enum": [
+          "agent.session.turn"
+        ],
+        "type": "string"
+      },
+      "TurnStatusResource": {
+        "description": "The current status of a turn.",
+        "enum": [
+          "queued",
+          "in_progress",
+          "waiting",
+          "completed",
+          "failed",
+          "cancelled"
+        ],
+        "type": "string"
+      },
+      "TokenUsageResource": {
+        "additionalProperties": false,
+        "description": "Recorded token usage for a session or turn. Usage is best effort and may change.",
+        "properties": {
+          "input_tokens": {
+            "description": "The number of input tokens used by the agent.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "input_tokens_details": {
+            "$ref": "#/components/schemas/InputTokensDetailsResource-2",
+            "description": "A breakdown of the agent's input token usage."
+          },
+          "output_tokens": {
+            "description": "The number of output tokens generated by the agent.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "output_tokens_details": {
+            "$ref": "#/components/schemas/OutputTokensDetailsResource-2",
+            "description": "A breakdown of the agent's output token usage."
+          },
+          "total_tokens": {
+            "description": "The total number of input and output tokens used by the agent.",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "input_tokens",
+          "input_tokens_details",
+          "output_tokens",
+          "output_tokens_details",
+          "total_tokens"
+        ],
+        "type": "object"
+      },
+      "ErrorBodyResource": {
+        "additionalProperties": false,
+        "description": "Details about an API error.",
+        "properties": {
+          "code": {
+            "description": "A machine-readable error code.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "message": {
+            "description": "A human-readable error message.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "param": {
+            "description": "The request parameter that caused the error, or null for a request-wide error.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "description": "The error type.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "code",
+          "message",
+          "param"
+        ],
+        "type": "object"
+      },
+      "SessionTurnErrorCodeResource": {
+        "description": "Stable public categories for session request failures.",
+        "enum": [
+          "context_length_exceeded",
+          "session_budget_exceeded",
+          "usage_limit_exceeded",
+          "project_spend_limit_exceeded",
+          "organization_spend_limit_exceeded",
+          "organization_usage_limit_exceeded",
+          "billing_not_active",
+          "credit_balance_exhausted",
+          "rate_limit_exceeded",
+          "flex_unavailable",
+          "server_overloaded",
+          "cyber_policy",
+          "misalignment_policy_violation",
+          "connection_failed",
+          "server_error",
+          "authentication_error",
+          "invalid_request",
+          "resource_not_found",
+          "sandbox_error",
+          "executor_version_incompatible",
+          "active_turn_not_steerable",
+          "request_timeout",
+          "internal_error"
+        ],
+        "type": "string"
+      },
+      "InputTokensDetailsResource-2": {
+        "additionalProperties": false,
+        "description": "A breakdown of input token usage for a session or turn.",
+        "properties": {
+          "cached_tokens": {
+            "description": "The number of input tokens retrieved from the prompt cache.",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cached_tokens"
+        ],
+        "type": "object"
+      },
+      "OutputTokensDetailsResource-2": {
+        "additionalProperties": false,
+        "description": "A breakdown of output token usage for a session or turn.",
+        "properties": {
+          "reasoning_tokens": {
+            "description": "The number of output tokens used for reasoning.",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "reasoning_tokens"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

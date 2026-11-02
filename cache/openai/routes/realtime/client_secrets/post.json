@@ -1,4 +1,5 @@
 {
+  "description": "Create a Realtime client secret with an associated session configuration.\n\nClient secrets are short-lived tokens that can be passed to a client app,\nsuch as a web frontend or mobile client, which grants access to the Realtime API without\nleaking your main API key. You can configure a custom TTL for each client secret.\n\nYou can also attach session configuration options to the client secret, which will be\napplied to any sessions created using that client secret, but these can also be overridden\nby the client connection.\n\n[Learn more about authentication with client secrets over WebRTC](https://developers.openai.com/api/docs/guides/realtime-webrtc).\n\nReturns the created client secret and the effective session object. The client secret is a string that looks like `ek_1234`.\n",
   "operationId": "create-realtime-client-secret",
   "requestBody": {
     "content": {
@@ -21,16 +22,46 @@
         }
       },
       "description": "Client secret created successfully."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Invalid session configuration or model."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The requested model was not found or is unavailable to this caller."
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The requested model's availability could not be determined."
     }
   },
-  "summary": "Create a Realtime client secret with an associated session configuration.\n\nClient secrets are short-lived tokens that can be passed to a client app,\nsuch as a web frontend or mobile client, which grants access to the Realtime API without\nleaking your main API key. You can configure a custom TTL for each client secret.\n\nYou can also attach session configuration options to the client secret, which will be\napplied to any sessions created using that client secret, but these can also be overridden\nby the client connection.\n\n[Learn more about authentication with client secrets over WebRTC](/docs/guides/realtime-webrtc).\n\nReturns the created client secret and the effective session object. The client secret is a string that looks like `ek_1234`.\n",
+  "summary": "Create client secret",
   "tags": [
     "Realtime"
   ],
   "components": {
     "schemas": {
       "RealtimeCreateClientSecretRequest": {
-        "description": "Create a session and client secret for the Realtime API. The request can specify\neither a realtime or a transcription session configuration.\n[Learn more about the Realtime API](/docs/guides/realtime).\n",
+        "description": "Create a session and client secret for the Realtime API. The request can specify\neither a realtime or a transcription session configuration.\n[Learn more about the Realtime API](https://developers.openai.com/api/docs/guides/realtime).\n",
         "properties": {
           "expires_after": {
             "description": "Configuration for the client secret expiration. Expiration refers to the time after which\na client secret will no longer be valid for creating sessions. The session itself may\ncontinue after that time once started. A secret can be used to create multiple sessions\nuntil it expires.\n",
@@ -82,6 +113,10 @@
           "session": {
             "description": "The session configuration for either a realtime or transcription session.\n",
             "discriminator": {
+              "mapping": {
+                "realtime": "#/components/schemas/RealtimeSessionCreateResponseGA",
+                "transcription": "#/components/schemas/RealtimeTranscriptionSessionCreateResponseGA"
+              },
               "propertyName": "type"
             },
             "oneOf": [
@@ -107,6 +142,17 @@
         "title": "Realtime session and client secret",
         "type": "object"
       },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
       "RealtimeSessionCreateRequestGA": {
         "description": "Realtime session object configuration.",
         "properties": {
@@ -122,16 +168,26 @@
                   "noise_reduction": {
                     "default": null,
                     "description": "Configuration for input audio noise reduction. This can be set to `null` to turn off.\nNoise reduction filters audio added to the input audio buffer before it is sent to VAD and the model.\nFiltering the audio can improve VAD and turn detection accuracy (reducing false positives) and model performance by improving perception of the input audio.\n",
+                    "not": {
+                      "type": [
+                        "array",
+                        "string",
+                        "number",
+                        "boolean"
+                      ]
+                    },
                     "properties": {
+                      "strength": {
+                        "$ref": "#/components/schemas/RealtimeNoiseReductionStrength"
+                      },
                       "type": {
                         "$ref": "#/components/schemas/NoiseReductionType"
                       }
-                    },
-                    "type": "object"
+                    }
                   },
                   "transcription": {
                     "$ref": "#/components/schemas/AudioTranscription",
-                    "description": "Configuration for input audio transcription, defaults to off and can be set to `null` to turn off once on. Input audio transcription is not native to the model, since the model consumes audio directly. Transcription runs asynchronously through [the /audio/transcriptions endpoint](/docs/api-reference/audio/createTranscription) and should be treated as guidance of input audio content rather than precisely what the model heard. The client can optionally set the language and prompt for transcription, these offer additional guidance to the transcription service.\n"
+                    "description": "Configuration for input audio transcription, defaults to off and can be set to `null` to turn off once on. Input audio transcription is not native to the model, since the model consumes audio directly. Transcription runs asynchronously through [the /audio/transcriptions endpoint](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create) and should be treated as guidance of input audio content rather than precisely what the model heard. The client can optionally set the language and prompt for transcription, these offer additional guidance to the transcription service.\n"
                   },
                   "turn_detection": {
                     "$ref": "#/components/schemas/RealtimeTurnDetection"
@@ -155,7 +211,7 @@
                   "voice": {
                     "$ref": "#/components/schemas/VoiceIdsOrCustomVoice",
                     "default": "alloy",
-                    "description": "The voice the model uses to respond. Supported built-in voices are\n`alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`,\n`marin`, and `cedar`. You may also provide a custom voice object with\nan `id`, for example `{ \"id\": \"voice_1234\" }`. Voice cannot be changed\nduring the session once the model has responded with audio at least once.\nWe recommend `marin` and `cedar` for best quality.\n"
+                    "description": "The voice the model uses to respond. Supported built-in voices are\n`alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`,\n`marin`, and `cedar`. You may also provide a custom voice object with\nan `id`, for example `{ \"id\": \"voice_1234\" }`. Voice cannot be changed\nduring the session once the model has responded with audio at least once.\nCustom voices must be created from audio samples. Voices created from text prompts are supported only in Live.\nWe recommend `marin` and `cedar` for best quality.\n"
                   }
                 },
                 "type": "object"
@@ -279,7 +335,6 @@
           "tracing": {
             "default": null,
             "description": "Realtime API can write session traces to the [Traces Dashboard](https://platform.openai.com/logs?api=traces). Set to null to disable tracing. Once\ntracing is enabled for a session, the configuration cannot be modified.\n\n`auto` will create a trace for the session with default values for the\nworkflow name, group id, and metadata.\n",
-            "nullable": true,
             "oneOf": [
               {
                 "default": "auto",
@@ -308,6 +363,9 @@
                 },
                 "title": "Tracing Configuration",
                 "type": "object"
+              },
+              {
+                "type": "null"
               }
             ],
             "title": "Tracing Configuration"
@@ -343,16 +401,26 @@
                   "noise_reduction": {
                     "default": null,
                     "description": "Configuration for input audio noise reduction. This can be set to `null` to turn off.\nNoise reduction filters audio added to the input audio buffer before it is sent to VAD and the model.\nFiltering the audio can improve VAD and turn detection accuracy (reducing false positives) and model performance by improving perception of the input audio.\n",
+                    "not": {
+                      "type": [
+                        "array",
+                        "string",
+                        "number",
+                        "boolean"
+                      ]
+                    },
                     "properties": {
+                      "strength": {
+                        "$ref": "#/components/schemas/RealtimeNoiseReductionStrength"
+                      },
                       "type": {
                         "$ref": "#/components/schemas/NoiseReductionType"
                       }
-                    },
-                    "type": "object"
+                    }
                   },
                   "transcription": {
                     "$ref": "#/components/schemas/AudioTranscription",
-                    "description": "Configuration for input audio transcription, defaults to off and can be set to `null` to turn off once on. Input audio transcription is not native to the model, since the model consumes audio directly. Transcription runs asynchronously through [the /audio/transcriptions endpoint](/docs/api-reference/audio/createTranscription) and should be treated as guidance of input audio content rather than precisely what the model heard. The client can optionally set the language and prompt for transcription, these offer additional guidance to the transcription service.\n"
+                    "description": "Configuration for input audio transcription, defaults to off and can be set to `null` to turn off once on. Input audio transcription is not native to the model, since the model consumes audio directly. Transcription runs asynchronously through [the /audio/transcriptions endpoint](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create) and should be treated as guidance of input audio content rather than precisely what the model heard. The client can optionally set the language and prompt for transcription, these offer additional guidance to the transcription service.\n"
                   },
                   "turn_detection": {
                     "$ref": "#/components/schemas/RealtimeTurnDetection"
@@ -403,15 +471,28 @@
                     "default": null,
                     "description": "Configuration for input audio noise reduction. This can be set to `null` to turn off.\nNoise reduction filters audio added to the input audio buffer before it is sent to VAD and the model.\nFiltering the audio can improve VAD and turn detection accuracy (reducing false positives) and model performance by improving perception of the input audio.\n",
                     "properties": {
+                      "strength": {
+                        "$ref": "#/components/schemas/RealtimeNoiseReductionStrength"
+                      },
                       "type": {
                         "$ref": "#/components/schemas/NoiseReductionType"
                       }
                     },
-                    "type": "object"
+                    "type": [
+                      "object",
+                      "null"
+                    ]
                   },
                   "transcription": {
-                    "$ref": "#/components/schemas/AudioTranscriptionResponse",
-                    "description": "Configuration for input audio transcription, defaults to off and can be set to `null` to turn off once on. Input audio transcription is not native to the model, since the model consumes audio directly. Transcription runs asynchronously through [the /audio/transcriptions endpoint](/docs/api-reference/audio/createTranscription) and should be treated as guidance of input audio content rather than precisely what the model heard. The client can optionally set the language and prompt for transcription, these offer additional guidance to the transcription service.\n"
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/AudioTranscriptionResponse"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Configuration for input audio transcription, defaults to off and can be set to `null` to turn off once on. Input audio transcription is not native to the model, since the model consumes audio directly. Transcription runs asynchronously through [the /audio/transcriptions endpoint](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create) and should be treated as guidance of input audio content rather than precisely what the model heard. The client can optionally set the language and prompt for transcription, these offer additional guidance to the transcription service.\n"
                   },
                   "turn_detection": {
                     "$ref": "#/components/schemas/RealtimeTurnDetection"
@@ -460,7 +541,10 @@
               ],
               "type": "string"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "instructions": {
             "description": "The default system instructions (i.e. system message) prepended to model calls. This field allows the client to guide the model on desired responses. The model can be instructed on response content and format, (e.g. \"be extremely succinct\", \"act friendly\", \"here are examples of good responses\") and on audio behavior (e.g. \"talk quickly\", \"inject emotion into your voice\", \"laugh frequently\"). The instructions are not guaranteed to be followed by the model, but they provide guidance to the model on the desired behavior.\n\nNote that the server sets default instructions which will be used if this field is not set and are visible in the `session.created` event at the start of the session.\n",
@@ -643,14 +727,27 @@
                   "noise_reduction": {
                     "description": "Configuration for input audio noise reduction.\n",
                     "properties": {
+                      "strength": {
+                        "$ref": "#/components/schemas/RealtimeNoiseReductionStrength"
+                      },
                       "type": {
                         "$ref": "#/components/schemas/NoiseReductionType"
                       }
                     },
-                    "type": "object"
+                    "type": [
+                      "object",
+                      "null"
+                    ]
                   },
                   "transcription": {
-                    "$ref": "#/components/schemas/AudioTranscriptionResponse",
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/AudioTranscriptionResponse"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
                     "description": "Configuration of the transcription model.\n"
                   },
                   "turn_detection": {
@@ -706,7 +803,10 @@
               ],
               "type": "string"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "object": {
             "description": "The object type. Always `realtime.transcription_session`.",
@@ -726,6 +826,46 @@
           "object"
         ],
         "title": "Realtime transcription session configuration object",
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
         "type": "object"
       },
       "RealtimeAudioFormats": {
@@ -780,6 +920,13 @@
             "type": "object"
           }
         ]
+      },
+      "RealtimeNoiseReductionStrength": {
+        "default": 1,
+        "description": "Input noise suppression strength. Higher values apply more suppression.\nDefaults to 1 when noise reduction is first enabled. Omitting strength\nfrom a session update preserves the current strength.\n",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number"
       },
       "NoiseReductionType": {
         "description": "Type of noise reduction. `near_field` is for close-talking microphones such as headphones, `far_field` is for far-field microphones such as laptop or conference room microphones.\n",
@@ -843,7 +990,7 @@
             "description": "The model to use for transcription. Current options are `whisper-1`, `gpt-transcribe`, `gpt-live-transcribe`, `gpt-4o-mini-transcribe`, `gpt-4o-mini-transcribe-2025-12-15`, `gpt-4o-transcribe`, `gpt-4o-transcribe-diarize`, and `gpt-realtime-whisper`. Use `gpt-4o-transcribe-diarize` when you need diarization with speaker labels.\n"
           },
           "prompt": {
-            "description": "An optional text to guide the model's style or continue a previous audio\nsegment.\nFor `whisper-1`, the [prompt is a list of keywords](/docs/guides/speech-to-text#prompting).\nFor `gpt-4o-transcribe` models (excluding `gpt-4o-transcribe-diarize`), the prompt is a free text string, for example \"expect words related to technology\".\nPrompt is not supported with `gpt-realtime-whisper` in GA Realtime sessions.\n",
+            "description": "An optional text to guide the model's style or continue a previous audio\nsegment.\nFor `whisper-1`, the [prompt is a list of keywords](https://developers.openai.com/api/docs/guides/speech-to-text#prompting).\nFor `gpt-4o-transcribe` models (excluding `gpt-4o-transcribe-diarize`), the prompt is a free text string, for example \"expect words related to technology\".\nPrompt is not supported with `gpt-realtime-whisper` in GA Realtime sessions.\n",
             "type": "string"
           }
         },
@@ -979,7 +1126,7 @@
       "Prompt": {
         "anyOf": [
           {
-            "description": "Reference to a prompt template and its variables.\n[Learn more](/docs/guides/text?api-mode=responses#reusable-prompts).\n",
+            "description": "Reference to a prompt template and its variables.\n[Learn more](https://developers.openai.com/api/docs/guides/text?api-mode=responses#version-prompts-in-code).\n",
             "properties": {
               "id": {
                 "description": "The unique identifier of the prompt template to use.",
@@ -1111,7 +1258,7 @@
         "type": "object"
       },
       "MCPTool": {
-        "description": "Give the model access to additional tools via remote Model Context Protocol\n(MCP) servers. [Learn more about MCP](/docs/guides/tools-remote-mcp).\n",
+        "description": "Give the model access to additional tools via remote Model Context Protocol\n(MCP) servers. [Learn more about MCP](https://developers.openai.com/api/docs/guides/tools-connectors-mcp).\n",
         "properties": {
           "allowed_callers": {
             "anyOf": [
@@ -1156,7 +1303,8 @@
             "type": "string"
           },
           "connector_id": {
-            "description": "Identifier for service connectors, like those available in ChatGPT. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided. Learn more\nabout service connectors [here](/docs/guides/tools-remote-mcp#connectors).\n\nCurrently supported `connector_id` values are:\n\n- Dropbox: `connector_dropbox`\n- Gmail: `connector_gmail`\n- Google Calendar: `connector_googlecalendar`\n- Google Drive: `connector_googledrive`\n- Microsoft Teams: `connector_microsoftteams`\n- Outlook Calendar: `connector_outlookcalendar`\n- Outlook Email: `connector_outlookemail`\n- SharePoint: `connector_sharepoint`\n",
+            "deprecated": true,
+            "description": "Identifier for service connectors, like those available in ChatGPT. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided. Learn more\nabout service connectors [here](https://developers.openai.com/api/docs/guides/tools-connectors-mcp#connectors).\n\nThis field is deprecated for models released after September 1, 2026.\nUse `server_url` to connect to a remote MCP server, or `tunnel_id` to\nconnect through a Secure MCP Tunnel.\n\nCurrently supported `connector_id` values are:\n\n- Dropbox: `connector_dropbox`\n- Gmail: `connector_gmail`\n- Google Calendar: `connector_googlecalendar`\n- Google Drive: `connector_googledrive`\n- Microsoft Teams: `connector_microsoftteams`\n- Outlook Calendar: `connector_outlookcalendar`\n- Outlook Email: `connector_outlookemail`\n- SharePoint: `connector_sharepoint`\n",
             "enum": [
               "connector_dropbox",
               "connector_gmail",
@@ -1307,9 +1455,19 @@
       },
       "AudioTranscriptionResponse": {
         "properties": {
+          "keywords": {
+            "description": "Words or phrases configured to guide transcription of the input audio.\n",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
           "language": {
             "description": "The language of the input audio.\n",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "languages": {
             "description": "The possible input audio languages configured for transcription, in [ISO-639-1](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes) format.\n",
@@ -1369,6 +1527,41 @@
           }
         ],
         "example": "ash"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
       },
       "ResponsePromptVariables": {
         "anyOf": [
@@ -1438,6 +1631,34 @@
         "title": "MCP tool filter",
         "type": "object"
       },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
       "InputTextContent": {
         "description": "A text input to the model.",
         "properties": {
@@ -1465,7 +1686,7 @@
         "type": "object"
       },
       "InputImageContent": {
-        "description": "An image input to the model. Learn about [image inputs](/docs/guides/vision).",
+        "description": "An image input to the model. Learn about [image inputs](https://developers.openai.com/api/docs/guides/images-vision).",
         "properties": {
           "detail": {
             "$ref": "#/components/schemas/ImageDetail",
@@ -1563,13 +1784,21 @@
         "type": "object"
       },
       "PromptCacheBreakpointConfig": {
-        "description": "Marks the exact end of a reusable prompt prefix. The breakpoint inherits its TTL from the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
+        "description": "Marks the exact end of a reusable prompt prefix. When `ttl` is omitted, the breakpoint inherits the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
         "properties": {
           "mode": {
             "default": "explicit",
             "description": "The breakpoint mode. Always `explicit`.",
             "enum": [
               "explicit"
+            ],
+            "type": "string"
+          },
+          "ttl": {
+            "description": "The minimum lifetime of this cache breakpoint. Defaults to the request TTL.",
+            "enum": [
+              "30m",
+              "12h"
             ],
             "type": "string"
           }

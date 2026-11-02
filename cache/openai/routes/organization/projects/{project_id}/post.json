@@ -1,4 +1,5 @@
 {
+  "description": "Modifies a project in the organization.",
   "operationId": "modify-project",
   "parameters": [
     {
@@ -42,6 +43,36 @@
         }
       },
       "description": "Error response when updating the default project."
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/PermissionErrorResponse"
+          }
+        }
+      },
+      "description": "The caller does not have permission to perform this operation."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "A requested project, user, service account, or API key was not found."
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Too many management requests. Reduce the request rate and try again later."
     }
   },
   "security": [
@@ -49,7 +80,7 @@
       "AdminApiKeyAuth": []
     }
   ],
-  "summary": "Modifies a project in the organization.",
+  "summary": "Modify project",
   "tags": [
     "Projects"
   ],
@@ -77,7 +108,8 @@
                 "type": "null"
               }
             ],
-            "description": "Geography for the project."
+            "deprecated": true,
+            "description": "Geography for the project.\nDeprecated: use `residency` when creating a project to configure data residency. This field is retained for backward compatibility."
           },
           "name": {
             "anyOf": [
@@ -146,6 +178,10 @@
             ],
             "type": "string"
           },
+          "residency": {
+            "$ref": "#/components/schemas/PublicProjectResidency",
+            "description": "The residency configuration for the project."
+          },
           "status": {
             "anyOf": [
               {
@@ -176,6 +212,46 @@
         ],
         "type": "object"
       },
+      "PermissionErrorResponse": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Error"
+              },
+              {
+                "description": "An explanation of the missing API permissions.",
+                "type": "string"
+              }
+            ],
+            "description": "Details about the permission error."
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "PublicProjectResidency": {
+        "enum": [
+          "GLOBAL",
+          "US_STORAGE_PROCESSING",
+          "EU_STORAGE_PROCESSING",
+          "JP_STORAGE",
+          "JP_STORAGE_PROCESSING",
+          "KR_STORAGE",
+          "CA_STORAGE",
+          "SG_STORAGE",
+          "IN_STORAGE",
+          "IN_STORAGE_PROCESSING",
+          "AU_STORAGE",
+          "AU_STORAGE_PROCESSING",
+          "GB_STORAGE",
+          "AE_STORAGE",
+          "AE_STORAGE_PROCESSING"
+        ],
+        "type": "string"
+      },
       "Error": {
         "properties": {
           "code": {
@@ -190,6 +266,9 @@
           },
           "message": {
             "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
           },
           "param": {
             "anyOf": [
@@ -210,6 +289,69 @@
           "message",
           "param",
           "code"
+        ],
+        "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
         ],
         "type": "object"
       }

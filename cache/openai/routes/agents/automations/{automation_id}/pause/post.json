@@ -1,0 +1,1883 @@
+{
+  "description": "Pauses future scheduled delivery without stopping an active session.",
+  "operationId": "pauseAgentAutomation",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "automation_id",
+      "required": true,
+      "schema": {
+        "maxLength": 1048576,
+        "minLength": 0,
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AutomationResource"
+          }
+        }
+      },
+      "description": "Successful response."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request was invalid."
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "Authentication or project context was missing."
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The API key lacks the required permission."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The requested session or event was not found."
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request conflicted with the current session state."
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "An internal error occurred."
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The service is temporarily unavailable."
+    }
+  },
+  "summary": "Pause an automation",
+  "tags": [
+    "Agents"
+  ],
+  "components": {
+    "schemas": {
+      "AutomationResource": {
+        "description": "A saved automation and its schedule.",
+        "discriminator": {
+          "mapping": {
+            "once": "#/components/schemas/AutomationResourceOnce",
+            "periodic": "#/components/schemas/AutomationResourcePeriodic"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AutomationResourcePeriodic"
+          },
+          {
+            "$ref": "#/components/schemas/AutomationResourceOnce"
+          }
+        ]
+      },
+      "ErrorResponse-2": {
+        "additionalProperties": false,
+        "description": "An API error response.",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBodyResource",
+            "description": "The error returned by the API."
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "AutomationResourcePeriodic": {
+        "additionalProperties": false,
+        "description": "Fields shared by periodic and one-time automations.",
+        "properties": {
+          "created_at": {
+            "description": "The creation time as a Unix timestamp in seconds.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/AutomationCreatedByResource",
+            "description": "Service-recorded provenance; callers cannot supply this field."
+          },
+          "expression": {
+            "description": "The cron expression determining scheduled occurrences.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "id": {
+            "description": "The automation ID.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "description": "Custom string key-value pairs attached to the automation.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "name": {
+            "description": "The automation's display name.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "object": {
+            "default": "agent.automation",
+            "description": "Always `agent.automation`.",
+            "enum": [
+              "agent.automation"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PeriodicAutomationStatusResource",
+            "description": "Whether scheduled delivery is active or paused."
+          },
+          "target": {
+            "$ref": "#/components/schemas/AutomationTargetResource",
+            "description": "The session configuration or existing session receiving invocations."
+          },
+          "timezone": {
+            "description": "The timezone used to interpret the expression.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "periodic",
+            "description": "The type of the object. Always `periodic`.",
+            "enum": [
+              "periodic"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "object",
+          "created_at",
+          "name",
+          "target",
+          "metadata",
+          "created_by",
+          "expression",
+          "timezone",
+          "status"
+        ],
+        "type": "object"
+      },
+      "AutomationResourceOnce": {
+        "additionalProperties": false,
+        "description": "Fields shared by periodic and one-time automations.",
+        "properties": {
+          "created_at": {
+            "description": "The creation time as a Unix timestamp in seconds.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "created_by": {
+            "$ref": "#/components/schemas/AutomationCreatedByResource",
+            "description": "Service-recorded provenance; callers cannot supply this field."
+          },
+          "id": {
+            "description": "The automation ID.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "description": "Custom string key-value pairs attached to the automation.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "name": {
+            "description": "The automation's display name.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "object": {
+            "default": "agent.automation",
+            "description": "Always `agent.automation`.",
+            "enum": [
+              "agent.automation"
+            ],
+            "type": "string"
+          },
+          "run_at": {
+            "description": "The Unix timestamp, in seconds, of the scheduled occurrence.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/OnceAutomationStatusResource",
+            "description": "Completion means the schedule has finished, not the agent's work."
+          },
+          "target": {
+            "$ref": "#/components/schemas/AutomationTargetResource",
+            "description": "The session configuration or existing session receiving invocations."
+          },
+          "type": {
+            "default": "once",
+            "description": "The type of the object. Always `once`.",
+            "enum": [
+              "once"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "object",
+          "created_at",
+          "name",
+          "target",
+          "metadata",
+          "created_by",
+          "run_at",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ErrorBodyResource": {
+        "additionalProperties": false,
+        "description": "Details about an API error.",
+        "properties": {
+          "code": {
+            "description": "A machine-readable error code.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "message": {
+            "description": "A human-readable error message.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "param": {
+            "description": "The request parameter that caused the error, or null for a request-wide error.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "description": "The error type.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "code",
+          "message",
+          "param"
+        ],
+        "type": "object"
+      },
+      "AutomationCreatedByResource": {
+        "description": "How the automation was created, independently of how an invocation started.",
+        "discriminator": {
+          "mapping": {
+            "agent": "#/components/schemas/AutomationCreatedByResourceAgent",
+            "developer": "#/components/schemas/AutomationCreatedByResourceDeveloper"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AutomationCreatedByResourceDeveloper"
+          },
+          {
+            "$ref": "#/components/schemas/AutomationCreatedByResourceAgent"
+          }
+        ]
+      },
+      "PeriodicAutomationStatusResource": {
+        "enum": [
+          "active",
+          "paused"
+        ],
+        "type": "string"
+      },
+      "AutomationTargetResource": {
+        "description": "Saved target configuration, excluding confidential request-only values.",
+        "discriminator": {
+          "mapping": {
+            "existing_session": "#/components/schemas/AutomationTargetResourceExistingSession",
+            "new_session": "#/components/schemas/AutomationTargetResourceNewSession"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AutomationTargetResourceNewSession"
+          },
+          {
+            "$ref": "#/components/schemas/AutomationTargetResourceExistingSession"
+          }
+        ]
+      },
+      "OnceAutomationStatusResource": {
+        "enum": [
+          "active",
+          "paused",
+          "completed"
+        ],
+        "type": "string"
+      },
+      "AutomationCreatedByResourceDeveloper": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "default": "developer",
+            "description": "The type of the object. Always `developer`.",
+            "enum": [
+              "developer"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "AutomationCreatedByResourceAgent": {
+        "additionalProperties": false,
+        "properties": {
+          "session_id": {
+            "description": "The creator session, which is also the automation's target.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "tool_call_id": {
+            "description": "The tool call that created the automation.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "agent",
+            "description": "The type of the object. Always `agent`.",
+            "enum": [
+              "agent"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "session_id",
+          "tool_call_id"
+        ],
+        "type": "object"
+      },
+      "AutomationTargetResourceNewSession": {
+        "additionalProperties": false,
+        "properties": {
+          "agent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AutomationAgentConfigResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The inline agent configuration, or null when agent_id is configured."
+          },
+          "agent_id": {
+            "description": "The saved agent reference, or null when an inline agent is configured.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "environment": {
+            "$ref": "#/components/schemas/AutomationEnvironmentResource",
+            "description": "Configuration or references used to select the execution environment."
+          },
+          "input": {
+            "description": "Initial input delivered to each new session.",
+            "items": {
+              "$ref": "#/components/schemas/InputMessageResource-2"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "description": "Metadata attached to each new session.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "type": {
+            "default": "new_session",
+            "description": "The type of the object. Always `new_session`.",
+            "enum": [
+              "new_session"
+            ],
+            "type": "string"
+          },
+          "vault_ids": {
+            "description": "Vaults made available to each new session.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": [
+          "type",
+          "agent_id",
+          "agent",
+          "environment",
+          "input",
+          "vault_ids",
+          "metadata"
+        ],
+        "type": "object"
+      },
+      "AutomationTargetResourceExistingSession": {
+        "additionalProperties": false,
+        "properties": {
+          "instructions": {
+            "description": "Saved instructions delivered as an automation notification.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "session_id": {
+            "description": "The session receiving each invocation.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "existing_session",
+            "description": "The type of the object. Always `existing_session`.",
+            "enum": [
+              "existing_session"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "session_id",
+          "instructions"
+        ],
+        "type": "object"
+      },
+      "AutomationAgentConfigResource": {
+        "additionalProperties": false,
+        "description": "Inline agent configuration without a generated session-local identity.",
+        "properties": {
+          "compaction": {
+            "$ref": "#/components/schemas/CompactionResource",
+            "description": "The effective context compaction settings."
+          },
+          "experimental": {
+            "$ref": "#/components/schemas/ExperimentalConfigResource",
+            "description": "The effective experimental settings for the agent."
+          },
+          "instructions": {
+            "description": "Custom instructions, or null when absent.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "description": "The requested model name.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "multi_agent": {
+            "$ref": "#/components/schemas/MultiAgentConfigResource",
+            "description": "The configuration for creating and coordinating subagents."
+          },
+          "reasoning": {
+            "$ref": "#/components/schemas/ReasoningResource",
+            "description": "The configured reasoning policy."
+          },
+          "service_tier": {
+            "$ref": "#/components/schemas/ServiceTierResource",
+            "description": "The configured service-tier policy."
+          },
+          "text": {
+            "$ref": "#/components/schemas/TextResource",
+            "description": "The configured output format and verbosity."
+          },
+          "tools": {
+            "description": "Configured tools, excluding confidential credentials.",
+            "items": {
+              "$ref": "#/components/schemas/AgentToolResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": [
+          "model",
+          "reasoning",
+          "text",
+          "service_tier",
+          "instructions",
+          "tools",
+          "multi_agent"
+        ],
+        "type": "object"
+      },
+      "AutomationEnvironmentResource": {
+        "description": "Environment selection saved before an invocation creates its session.",
+        "discriminator": {
+          "mapping": {
+            "none": "#/components/schemas/AutomationEnvironmentResourceNone",
+            "openai_hosted": "#/components/schemas/AutomationEnvironmentResourceOpenaiHosted",
+            "self_hosted": "#/components/schemas/AutomationEnvironmentResourceSelfHosted"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AutomationEnvironmentResourceNone"
+          },
+          {
+            "$ref": "#/components/schemas/AutomationEnvironmentResourceOpenaiHosted"
+          },
+          {
+            "$ref": "#/components/schemas/AutomationEnvironmentResourceSelfHosted"
+          }
+        ]
+      },
+      "InputMessageResource-2": {
+        "additionalProperties": false,
+        "description": "A user message recorded in a session.",
+        "properties": {
+          "content": {
+            "description": "The content of the message.",
+            "items": {
+              "$ref": "#/components/schemas/InputContentResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "role": {
+            "default": "user",
+            "description": "The role of the message author. Always `user`.",
+            "enum": [
+              "user"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "default": "message",
+            "description": "The type of the input item. Always `message`.",
+            "enum": [
+              "message"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "role",
+          "content"
+        ],
+        "type": "object"
+      },
+      "CompactionResource": {
+        "additionalProperties": false,
+        "description": "The effective settings for compacting the agent's context.",
+        "properties": {
+          "async": {
+            "description": "Whether context is compacted in the background. Defaults to true.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "async"
+        ],
+        "type": "object"
+      },
+      "ExperimentalConfigResource": {
+        "additionalProperties": false,
+        "description": "The effective experimental settings for an agent.",
+        "properties": {
+          "time_awareness": {
+            "description": "Whether the model receives periodic current-time reminders.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "time_awareness"
+        ],
+        "type": "object"
+      },
+      "MultiAgentConfigResource": {
+        "additionalProperties": false,
+        "description": "The resolved configuration for creating and coordinating subagents.",
+        "properties": {
+          "enabled": {
+            "description": "Whether subagent tools are enabled. Defaults to false.",
+            "type": "boolean"
+          },
+          "max_concurrent_subagents": {
+            "description": "Maximum number of subagents that may run concurrently, or null when disabled. Defaults to 6 when enabled.",
+            "format": "int64",
+            "maximum": 4294967295,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "enabled",
+          "max_concurrent_subagents"
+        ],
+        "type": "object"
+      },
+      "ReasoningResource": {
+        "additionalProperties": false,
+        "description": "The reasoning configuration used by an agent.",
+        "properties": {
+          "effort": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningEffortResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The requested reasoning effort, or `null` when the model selects its own default."
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningSummaryResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The requested reasoning summary format, or `null` when summaries are disabled."
+          }
+        },
+        "required": [
+          "effort",
+          "summary"
+        ],
+        "type": "object"
+      },
+      "ServiceTierResource": {
+        "description": "The service-tier policy configured for an agent.",
+        "enum": [
+          "auto",
+          "default",
+          "flex",
+          "priority",
+          "fast",
+          "ultrafast"
+        ],
+        "type": "string"
+      },
+      "TextResource": {
+        "additionalProperties": false,
+        "description": "The text configuration used by an agent.",
+        "properties": {
+          "format": {
+            "$ref": "#/components/schemas/TextFormatResource",
+            "description": "The effective output format. Defaults to ordinary text."
+          },
+          "verbosity": {
+            "$ref": "#/components/schemas/VerbosityResource",
+            "description": "The amount of text produced by the agent. Defaults to `medium`."
+          }
+        },
+        "required": [
+          "format",
+          "verbosity"
+        ],
+        "type": "object"
+      },
+      "AgentToolResource": {
+        "description": "A tool available to the agent.",
+        "discriminator": {
+          "mapping": {
+            "automations": "#/components/schemas/AgentToolResourceAutomations",
+            "computer_use": "#/components/schemas/AgentToolResourceComputerUse",
+            "function": "#/components/schemas/AgentToolResourceFunction",
+            "mcp": "#/components/schemas/AgentToolResourceMcp",
+            "programmatic_tool_calling": "#/components/schemas/AgentToolResourceProgrammaticToolCalling",
+            "web_search": "#/components/schemas/AgentToolResourceWebSearch"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AgentToolResourceFunction"
+          },
+          {
+            "$ref": "#/components/schemas/AgentToolResourceProgrammaticToolCalling"
+          },
+          {
+            "$ref": "#/components/schemas/AgentToolResourceMcp"
+          },
+          {
+            "$ref": "#/components/schemas/AgentToolResourceWebSearch"
+          },
+          {
+            "$ref": "#/components/schemas/AgentToolResourceComputerUse"
+          },
+          {
+            "$ref": "#/components/schemas/AgentToolResourceAutomations"
+          }
+        ]
+      },
+      "AutomationEnvironmentResourceNone": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "default": "none",
+            "description": "The type of the object. Always `none`.",
+            "enum": [
+              "none"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "AutomationEnvironmentResourceOpenaiHosted": {
+        "additionalProperties": false,
+        "description": "Hosted environment selection with confidential setup commands and variables omitted.",
+        "properties": {
+          "capability_directories": {
+            "description": "Directory overrides, or null to inherit the template or creation default.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "container_size": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContainerSizeResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The configured container size, or null to use the creation default."
+          },
+          "desktop": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DesktopResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Desktop overrides, or null to inherit the template or creation default."
+          },
+          "environment_id": {
+            "description": "An existing environment reference, or null when provisioning a new environment.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "environment_template_id": {
+            "description": "A template reference, or null when no template is selected.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "files": {
+            "description": "File overrides, excluding contents, or null to inherit.",
+            "items": {
+              "$ref": "#/components/schemas/HostedTemplateFileResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "network": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/NetworkPolicyResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Network overrides, or null to inherit the template or creation default."
+          },
+          "packages": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnvironmentPackagesResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Package overrides, or null to inherit the template or creation default."
+          },
+          "plugins": {
+            "description": "Plugin overrides, excluding archive contents, or null to inherit.",
+            "items": {
+              "$ref": "#/components/schemas/HostedPluginResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "skills": {
+            "description": "Skill overrides, excluding archive contents, or null to inherit.",
+            "items": {
+              "$ref": "#/components/schemas/HostedTemplateSkillResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "type": {
+            "default": "openai_hosted",
+            "description": "The type of the object. Always `openai_hosted`.",
+            "enum": [
+              "openai_hosted"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "environment_id",
+          "environment_template_id",
+          "container_size",
+          "packages",
+          "network",
+          "desktop",
+          "capability_directories",
+          "skills",
+          "plugins",
+          "files"
+        ],
+        "type": "object"
+      },
+      "AutomationEnvironmentResourceSelfHosted": {
+        "additionalProperties": false,
+        "properties": {
+          "capability_directories": {
+            "description": "Directories that expose capabilities to the agent.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "environment_id": {
+            "description": "An existing registration, or null to create a session-owned environment.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "default": "self_hosted",
+            "description": "The type of the object. Always `self_hosted`.",
+            "enum": [
+              "self_hosted"
+            ],
+            "type": "string"
+          },
+          "workspace_directory": {
+            "description": "The absolute project directory in the environment.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "environment_id",
+          "workspace_directory",
+          "capability_directories"
+        ],
+        "type": "object"
+      },
+      "InputContentResource": {
+        "description": "User-provided content recorded in a session item.",
+        "discriminator": {
+          "mapping": {
+            "input_image": "#/components/schemas/InputContentResourceInputImage",
+            "input_text": "#/components/schemas/InputContentResourceInputText"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/InputContentResourceInputText"
+          },
+          {
+            "$ref": "#/components/schemas/InputContentResourceInputImage"
+          }
+        ]
+      },
+      "ReasoningEffortResource": {
+        "description": "The amount of reasoning effort used by an agent.",
+        "enum": [
+          "none",
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ],
+        "type": "string"
+      },
+      "ReasoningSummaryResource": {
+        "description": "The reasoning summary format requested from an agent.",
+        "enum": [
+          "concise",
+          "detailed",
+          "auto"
+        ],
+        "type": "string"
+      },
+      "TextFormatResource": {
+        "description": "The effective output format for generated text.",
+        "discriminator": {
+          "mapping": {
+            "json_schema": "#/components/schemas/TextFormatResourceJsonSchema",
+            "text": "#/components/schemas/TextFormatResourceText"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TextFormatResourceText"
+          },
+          {
+            "$ref": "#/components/schemas/TextFormatResourceJsonSchema"
+          }
+        ]
+      },
+      "VerbosityResource": {
+        "description": "The amount of text produced by an agent.",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "type": "string"
+      },
+      "AgentToolResourceFunction": {
+        "additionalProperties": false,
+        "description": "A function defined by the application.",
+        "properties": {
+          "defer_loading": {
+            "description": "Whether the function is deferred and discovered through tool search.",
+            "type": "boolean"
+          },
+          "description": {
+            "description": "A description of what the function does.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the function.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "parameters": {
+            "additionalProperties": {},
+            "description": "A JSON Schema object describing the function's arguments.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "type": {
+            "default": "function",
+            "description": "The type of the object. Always `function`.",
+            "enum": [
+              "function"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description",
+          "parameters",
+          "defer_loading"
+        ],
+        "type": "object"
+      },
+      "AgentToolResourceProgrammaticToolCalling": {
+        "additionalProperties": false,
+        "description": "Enables calling tools from model-generated code.",
+        "properties": {
+          "enabled": {
+            "description": "Whether tools can be called from model-generated code.",
+            "type": "boolean"
+          },
+          "type": {
+            "default": "programmatic_tool_calling",
+            "description": "The type of the object. Always `programmatic_tool_calling`.",
+            "enum": [
+              "programmatic_tool_calling"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "enabled"
+        ],
+        "type": "object"
+      },
+      "AgentToolResourceMcp": {
+        "additionalProperties": false,
+        "description": "Tools provided by a remote MCP server.",
+        "properties": {
+          "allowed_tools": {
+            "description": "The MCP tools the agent may call.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "connection_origin": {
+            "$ref": "#/components/schemas/McpConnectionOriginResource",
+            "description": "Where outbound MCP HTTP connections originate."
+          },
+          "credential_id": {
+            "description": "The attached vault credential selected for this MCP server, if any. Optional when exactly one attached credential matches the server URL.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request_metadata": {
+            "additionalProperties": {},
+            "description": "Metadata included with requests to this MCP server.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "required": {
+            "description": "Whether this MCP server must initialize before the first turn.",
+            "type": "boolean"
+          },
+          "server_label": {
+            "description": "A label used to identify the MCP server in tool calls.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "transport": {
+            "$ref": "#/components/schemas/McpTransportResource",
+            "description": "The transport used to connect to the MCP server."
+          },
+          "type": {
+            "default": "mcp",
+            "description": "The type of the object. Always `mcp`.",
+            "enum": [
+              "mcp"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "server_label",
+          "credential_id",
+          "transport",
+          "request_metadata",
+          "allowed_tools",
+          "required",
+          "connection_origin"
+        ],
+        "type": "object"
+      },
+      "AgentToolResourceWebSearch": {
+        "additionalProperties": false,
+        "description": "Web search.",
+        "properties": {
+          "allowed_domains": {
+            "description": "Allowed search domains, or `null` when the search is unrestricted.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "context_size": {
+            "$ref": "#/components/schemas/WebSearchContextSizeResource",
+            "description": "The amount of search context made available to the model. Defaults to `medium`."
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WebSearchLocationResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Approximate location used to localize search results, if provided."
+          },
+          "mode": {
+            "$ref": "#/components/schemas/WebSearchModeResource",
+            "description": "The source used for web search results."
+          },
+          "type": {
+            "default": "web_search",
+            "description": "The type of the object. Always `web_search`.",
+            "enum": [
+              "web_search"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "mode",
+          "context_size",
+          "allowed_domains",
+          "location"
+        ],
+        "type": "object"
+      },
+      "AgentToolResourceComputerUse": {
+        "additionalProperties": false,
+        "description": "Browser use in an OpenAI-hosted session.",
+        "properties": {
+          "include_screenshots": {
+            "description": "Whether computer tool outputs include screenshots.",
+            "type": "boolean"
+          },
+          "type": {
+            "default": "computer_use",
+            "description": "The type of the object. Always `computer_use`.",
+            "enum": [
+              "computer_use"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "include_screenshots"
+        ],
+        "type": "object"
+      },
+      "AgentToolResourceAutomations": {
+        "additionalProperties": false,
+        "description": "Lets the agent manage its own scheduled wakeups.",
+        "properties": {
+          "type": {
+            "default": "automations",
+            "description": "The type of the object. Always `automations`.",
+            "enum": [
+              "automations"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "ContainerSizeResource": {
+        "description": "The effective CPU and memory tier of an OpenAI-hosted environment.",
+        "enum": [
+          "small",
+          "medium",
+          "large"
+        ],
+        "type": "string"
+      },
+      "DesktopResource": {
+        "additionalProperties": false,
+        "description": "The effective desktop configuration for an OpenAI-hosted environment.",
+        "properties": {
+          "enabled": {
+            "description": "Whether the environment provisions a desktop and browser proxy.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "type": "object"
+      },
+      "HostedTemplateFileResource": {
+        "description": "Safe metadata for a file configured by an environment template.",
+        "discriminator": {
+          "mapping": {
+            "file_id": "#/components/schemas/HostedTemplateFileResourceFileId",
+            "inline": "#/components/schemas/HostedTemplateFileResourceInline"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HostedTemplateFileResourceFileId"
+          },
+          {
+            "$ref": "#/components/schemas/HostedTemplateFileResourceInline"
+          }
+        ]
+      },
+      "NetworkPolicyResource": {
+        "additionalProperties": false,
+        "description": "Network access for an OpenAI-hosted environment.",
+        "properties": {
+          "access": {
+            "$ref": "#/components/schemas/NetworkAccessResource",
+            "description": "The environment's network access mode."
+          },
+          "allowed_domains": {
+            "description": "Domains the environment may access when network access is restricted.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": [
+          "access",
+          "allowed_domains"
+        ],
+        "type": "object"
+      },
+      "EnvironmentPackagesResource": {
+        "additionalProperties": false,
+        "description": "Packages installed in an OpenAI-hosted environment.",
+        "properties": {
+          "npm": {
+            "description": "npm packages installed globally in the environment.",
+            "items": {
+              "maxLength": 1048576,
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 16384,
+            "minItems": 0,
+            "type": "array"
+          },
+          "python": {
+            "description": "Python packages installed in the environment.",
+            "items": {
+              "maxLength": 1048576,
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 16384,
+            "minItems": 0,
+            "type": "array"
+          },
+          "system": {
+            "description": "System packages installed in the environment.",
+            "items": {
+              "maxLength": 1048576,
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 16384,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": [
+          "python",
+          "system",
+          "npm"
+        ],
+        "type": "object"
+      },
+      "HostedPluginResource": {
+        "description": "A plugin installed in an OpenAI-hosted environment.",
+        "discriminator": {
+          "mapping": {
+            "inline": "#/components/schemas/HostedPluginResourceInline"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HostedPluginResourceInline"
+          }
+        ]
+      },
+      "HostedTemplateSkillResource": {
+        "description": "Safe metadata for a skill configured by an environment template.",
+        "discriminator": {
+          "mapping": {
+            "inline": "#/components/schemas/HostedTemplateSkillResourceInline",
+            "skill_reference": "#/components/schemas/HostedTemplateSkillResourceSkillReference"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HostedTemplateSkillResourceSkillReference"
+          },
+          {
+            "$ref": "#/components/schemas/HostedTemplateSkillResourceInline"
+          }
+        ]
+      },
+      "InputContentResourceInputText": {
+        "additionalProperties": false,
+        "description": "Text input recorded in a session item.",
+        "properties": {
+          "text": {
+            "description": "The text supplied to the agent.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "input_text",
+            "description": "The type of the object. Always `input_text`.",
+            "enum": [
+              "input_text"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ],
+        "type": "object"
+      },
+      "InputContentResourceInputImage": {
+        "additionalProperties": false,
+        "description": "Image input recorded in a session item.",
+        "properties": {
+          "image_url": {
+            "description": "The URL of the image supplied to the agent, which may be a base64-encoded data URL.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "input_image",
+            "description": "The type of the object. Always `input_image`.",
+            "enum": [
+              "input_image"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "image_url"
+        ],
+        "type": "object"
+      },
+      "TextFormatResourceText": {
+        "additionalProperties": false,
+        "description": "Generates ordinary text without a structured-output constraint.",
+        "properties": {
+          "type": {
+            "default": "text",
+            "description": "The type of the object. Always `text`.",
+            "enum": [
+              "text"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "TextFormatResourceJsonSchema": {
+        "additionalProperties": false,
+        "description": "Constrains generated text to a JSON Schema.",
+        "properties": {
+          "schema": {
+            "additionalProperties": {},
+            "description": "The JSON Schema that generated text must match.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "type": {
+            "default": "json_schema",
+            "description": "The type of the object. Always `json_schema`.",
+            "enum": [
+              "json_schema"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "schema"
+        ],
+        "type": "object"
+      },
+      "McpConnectionOriginResource": {
+        "description": "Where outbound MCP HTTP connections originate.",
+        "enum": [
+          "service",
+          "environment"
+        ],
+        "type": "string"
+      },
+      "McpTransportResource": {
+        "description": "The transport used to connect to an MCP server.",
+        "discriminator": {
+          "mapping": {
+            "http": "#/components/schemas/McpTransportResourceHttp",
+            "stdio": "#/components/schemas/McpTransportResourceStdio"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/McpTransportResourceHttp"
+          },
+          {
+            "$ref": "#/components/schemas/McpTransportResourceStdio"
+          }
+        ]
+      },
+      "WebSearchContextSizeResource": {
+        "description": "The amount of web search context made available to the model.",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "type": "string"
+      },
+      "WebSearchLocationResource": {
+        "additionalProperties": false,
+        "description": "Approximate user location used to localize web search results.",
+        "properties": {
+          "city": {
+            "description": "The city name.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "country": {
+            "description": "The two-letter ISO country code, such as `US`.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "region": {
+            "description": "The region or state name.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "timezone": {
+            "description": "The IANA timezone, such as `America/Los_Angeles`.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "country",
+          "region",
+          "city",
+          "timezone"
+        ],
+        "type": "object"
+      },
+      "WebSearchModeResource": {
+        "description": "The source used for web search results.",
+        "enum": [
+          "disabled",
+          "cached",
+          "live"
+        ],
+        "type": "string"
+      },
+      "HostedTemplateFileResourceFileId": {
+        "additionalProperties": false,
+        "description": "A project-scoped Files API reference resolved separately for each session.",
+        "properties": {
+          "file_id": {
+            "description": "The ID of the uploaded file.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "path": {
+            "description": "The file's absolute path inside the environment.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "file_id",
+            "description": "The type of the object. Always `file_id`.",
+            "enum": [
+              "file_id"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "file_id",
+          "path"
+        ],
+        "type": "object"
+      },
+      "HostedTemplateFileResourceInline": {
+        "additionalProperties": false,
+        "description": "Metadata for confidential inline file contents.",
+        "properties": {
+          "path": {
+            "description": "The file's absolute path inside the environment.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "size_bytes": {
+            "description": "The decoded size of the inline file in bytes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": {
+            "default": "inline",
+            "description": "The type of the object. Always `inline`.",
+            "enum": [
+              "inline"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "path",
+          "size_bytes"
+        ],
+        "type": "object"
+      },
+      "NetworkAccessResource": {
+        "description": "The network access mode for an OpenAI-hosted environment.",
+        "enum": [
+          "enabled",
+          "disabled",
+          "restricted"
+        ],
+        "type": "string"
+      },
+      "HostedPluginResourceInline": {
+        "additionalProperties": false,
+        "description": "A plugin installed from an inline ZIP archive.",
+        "properties": {
+          "description": {
+            "description": "The installed plugin description.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "name": {
+            "description": "The installed plugin name.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "inline",
+            "description": "The type of the object. Always `inline`.",
+            "enum": [
+              "inline"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description"
+        ],
+        "type": "object"
+      },
+      "HostedTemplateSkillResourceSkillReference": {
+        "additionalProperties": false,
+        "description": "A skill resolved afresh from the Skills API whenever a session starts.",
+        "properties": {
+          "skill_id": {
+            "description": "The referenced skill ID.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "skill_reference",
+            "description": "The type of the object. Always `skill_reference`.",
+            "enum": [
+              "skill_reference"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "description": "The requested version selector, including `latest`.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "skill_id",
+          "version"
+        ],
+        "type": "object"
+      },
+      "HostedTemplateSkillResourceInline": {
+        "additionalProperties": false,
+        "description": "Safe metadata for an inline skill archive.",
+        "properties": {
+          "description": {
+            "description": "The skill description declared in `SKILL.md`.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "name": {
+            "description": "The skill name declared in `SKILL.md`.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "inline",
+            "description": "The type of the object. Always `inline`.",
+            "enum": [
+              "inline"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description"
+        ],
+        "type": "object"
+      },
+      "McpTransportResourceHttp": {
+        "additionalProperties": false,
+        "description": "Connects to an MCP server over HTTP.",
+        "properties": {
+          "server_url": {
+            "description": "The URL of the MCP server.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "http",
+            "description": "The type of the object. Always `http`.",
+            "enum": [
+              "http"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "server_url"
+        ],
+        "type": "object"
+      },
+      "McpTransportResourceStdio": {
+        "additionalProperties": false,
+        "description": "Starts an MCP server as a local process.",
+        "properties": {
+          "args": {
+            "description": "Arguments passed to the MCP server command.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "command": {
+            "description": "The command used to start the MCP server.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "cwd": {
+            "description": "The working directory used to start the MCP server.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "env_vars": {
+            "description": "Environment variable names inherited from the execution environment.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "type": {
+            "default": "stdio",
+            "description": "The type of the object. Always `stdio`.",
+            "enum": [
+              "stdio"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "command",
+          "args",
+          "cwd",
+          "env_vars"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

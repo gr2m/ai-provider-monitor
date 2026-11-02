@@ -1,0 +1,253 @@
+{
+  "description": "Rotates the signing secret for a webhook endpoint in the authenticated project.",
+  "operationId": "RotateWebhookEndpointSigningSecret",
+  "parameters": [
+    {
+      "description": "The ID of the webhook endpoint whose signing secret will be rotated.",
+      "in": "path",
+      "name": "webhook_endpoint_id",
+      "required": true,
+      "schema": {
+        "example": "whe_123",
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/PublicRotateSecretBody"
+        }
+      }
+    }
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/WebhookEndpointWithSecretResource"
+          }
+        }
+      },
+      "description": "Success"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The request parameters are invalid."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The webhook endpoint was not found in the authenticated project."
+    }
+  },
+  "summary": "Rotate Webhook Endpoint Signing Secret",
+  "components": {
+    "schemas": {
+      "PublicRotateSecretBody": {
+        "properties": {
+          "keep_old_secret_active_for_24_hours": {
+            "description": "Whether to keep the previous signing secret valid for 24 hours after rotation. Defaults to false, which invalidates the previous secret immediately.",
+            "type": "boolean"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "WebhookEndpointWithSecretResource": {
+        "properties": {
+          "created_at": {
+            "description": "The Unix timestamp when the endpoint was created.",
+            "format": "unixtime",
+            "type": "integer"
+          },
+          "event_types": {
+            "description": "The event types that trigger deliveries to this endpoint.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "id": {
+            "description": "The unique ID of the webhook endpoint.",
+            "type": "string"
+          },
+          "name": {
+            "description": "The human-readable name of the endpoint.",
+            "type": "string"
+          },
+          "object": {
+            "default": "webhook_endpoint",
+            "description": "The object type, which is always webhook_endpoint.",
+            "enum": [
+              "webhook_endpoint"
+            ],
+            "type": "string"
+          },
+          "signing_secret": {
+            "description": "The endpoint's signing secret. This is returned only when the endpoint is created or the secret is rotated.",
+            "type": "string"
+          },
+          "signing_secret_hint": {
+            "anyOf": [
+              {
+                "description": "A masked hint for the endpoint's signing secret.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updated_at": {
+            "description": "The Unix timestamp of the last endpoint configuration or signing-secret change. Initialized at creation; tests and unchanged updates do not advance it.",
+            "format": "unixtime",
+            "type": "integer"
+          },
+          "url": {
+            "description": "The HTTPS URL that receives webhook deliveries.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "created_at",
+          "name",
+          "url",
+          "event_types",
+          "signing_secret_hint",
+          "signing_secret"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

@@ -19,3 +19,158 @@
       after: unixtime
   date: '2026-08-24'
   diff_url: https://github.com/gr2m/ai-provider-monitor/pull/941
+- change: added
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: Added application/json request body to create voices from a text prompt.
+  paths:
+    - path: requestBody.content.application/json.schema.$ref
+      before: 'null'
+      after: '#/components/schemas/CreateVoicePromptRequest'
+  date: '2026-11-02'
+  diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1161
+- change: changed
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: multipart/form-data schema is now a discriminated union supporting consent-based or prompt-based creation; existing consent-based payloads remain valid.
+  paths:
+    - path: components.schemas.CreateVoiceRequest
+      before: '{"type":"object","additionalProperties":false,"properties":{"audio_sample":{"type":"string","format":"binary"},"consent":{"type":"string"},"name":{"type":"string"}},"required":["name","audio_sample","consent"]}'
+      after: '{"discriminator":{"propertyName":"type","mapping":{"audio_sample":"#/components/schemas/CreateVoiceFromConsentRequest","prompt":"#/components/schemas/CreateVoicePromptRequest"}},"oneOf":[{"$ref":"#/components/schemas/CreateVoiceFromConsentRequest"},{"$ref":"#/components/schemas/CreateVoicePromptRequest"}]}'
+  date: '2026-11-02'
+  diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1161
+- change: added
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: 'New prompt-based creation schema with fields: type=prompt, name (1–256 chars), prompt (1–2000 chars), optional script_hint, and model (default ''auto''). Usable with JSON or multipart.'
+  paths:
+    - path: components.schemas.CreateVoicePromptRequest
+      before: 'null'
+      after: 'object with required [type,name,prompt]; properties: type(enum: prompt), name(1..256), prompt(1..2000), script_hint(optional), model(default: auto)'
+  date: '2026-11-02'
+  diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1161
+- change: changed
+  target: request
+  breaking: true
+  deprecated: false
+  doc_only: false
+  note: Consent-based 'name' now must be 1–256 characters; blank or overly long names are rejected.
+  paths:
+    - path: components.schemas.CreateVoiceFromConsentRequest.properties.name.minLength
+      before: 'null'
+      after: '1'
+    - path: components.schemas.CreateVoiceFromConsentRequest.properties.name.maxLength
+      before: 'null'
+      after: '256'
+  date: '2026-11-02'
+  diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1161
+- change: added
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: Consent-based schema now allows optional 'type' (defaults to 'audio_sample').
+  paths:
+    - path: components.schemas.CreateVoiceFromConsentRequest.properties.type.enum
+      before: 'null'
+      after: '["audio_sample"]'
+    - path: components.schemas.CreateVoiceFromConsentRequest.properties.type.default
+      before: 'null'
+      after: audio_sample
+  date: '2026-11-02'
+  diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1161
+- change: added
+  target: response
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: Added error responses 400, 404, and 500 with ErrorResponse schema.
+  paths:
+    - path: responses.400.content.application/json.schema.$ref
+      before: 'null'
+      after: '#/components/schemas/ErrorResponse'
+    - path: responses.404.content.application/json.schema.$ref
+      before: 'null'
+      after: '#/components/schemas/ErrorResponse'
+    - path: responses.500.content.application/json.schema.$ref
+      before: 'null'
+      after: '#/components/schemas/ErrorResponse'
+  date: '2026-11-02'
+  diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1161
+- change: added
+  target: response
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: VoiceResource now includes a required 'type' field indicating creation method.
+  paths:
+    - path: components.schemas.VoiceResource.properties.type.enum
+      before: 'null'
+      after: '["audio_sample","prompt"]'
+    - path: components.schemas.VoiceResource.required
+      before: '["object","id","name","created_at"]'
+      after: '["object","id","name","type","created_at"]'
+  date: '2026-11-02'
+  diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1161
+- change: added
+  target: response
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: VoiceResource may include the original 'prompt' text for prompt-generated voices.
+  paths:
+    - path: components.schemas.VoiceResource.properties.prompt.type
+      before: 'null'
+      after: string
+  date: '2026-11-02'
+  diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1161
+- change: changed
+  target: route
+  breaking: false
+  deprecated: false
+  doc_only: true
+  note: Route description updated to cover prompt-based creation, supported surfaces, and that no preview audio is returned.
+  paths:
+    - path: description
+      before: |
+        Create a custom voice you can use for audio output (for example, in Text-to-Speech and the Realtime API). This requires an audio sample and a previously uploaded consent recording.
+
+        See the [custom voices guide](/docs/guides/text-to-speech#custom-voices) for requirements and best practices. Custom voices are limited to eligible customers.
+      after: |
+        Creates a voice from a text prompt or from a consent recording and an audio sample.
+
+        For prompt-based creation, send `type: "prompt"` with a `name` and `prompt` as JSON or multipart form data. For creation from an audio sample, send `type: "audio_sample"` with a `name`, `audio_sample`, and `consent` recording ID as multipart form data. The type defaults to `audio_sample` when omitted.
+
+        Returns the saved voice's metadata. Voices created from text prompts are supported only in Live, not in Realtime or the speech endpoint. The response does not include preview audio.
+  date: '2026-11-02'
+  diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1161
+- change: changed
+  target: route
+  breaking: false
+  deprecated: false
+  doc_only: true
+  note: Summary updated.
+  paths:
+    - path: summary
+      before: Creates a custom voice.
+      after: Create voice
+  date: '2026-11-02'
+  diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1161
+- change: changed
+  target: response
+  breaking: false
+  deprecated: false
+  doc_only: true
+  note: VoiceResource description clarifies prompt-generated voices are supported only in Live.
+  paths:
+    - path: components.schemas.VoiceResource.description
+      before: A custom voice that can be used for audio output.
+      after: A custom voice that can be used for audio output. Voices created from text prompts are supported only in Live.
+  date: '2026-11-02'
+  diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1161

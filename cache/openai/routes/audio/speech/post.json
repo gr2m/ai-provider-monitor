@@ -1,4 +1,5 @@
 {
+  "description": "Generates audio from the input text.\n\nReturns the audio file content, or a stream of audio events.\n\nThe `tts-1`, `tts-1-hd`, `gpt-4o-mini-tts`, `gpt-4o-mini-tts-2025-03-20`, and\n`gpt-4o-mini-tts-2025-12-15` models are deprecated and scheduled to shut down\non January 6, 2027. These examples use the existing Speech API; for new\nintegrations, migrate to `gpt-realtime-2.1-mini` through the\n[Realtime API](https://developers.openai.com/api/docs/guides/realtime). See the\n[deprecation schedule](https://developers.openai.com/api/docs/deprecations) for migration details.\n",
   "operationId": "createSpeech",
   "requestBody": {
     "content": {
@@ -19,6 +20,42 @@
             "type": "string"
           }
         },
+        "audio/aac": {
+          "schema": {
+            "format": "binary",
+            "type": "string"
+          }
+        },
+        "audio/flac": {
+          "schema": {
+            "format": "binary",
+            "type": "string"
+          }
+        },
+        "audio/mpeg": {
+          "schema": {
+            "format": "binary",
+            "type": "string"
+          }
+        },
+        "audio/opus": {
+          "schema": {
+            "format": "binary",
+            "type": "string"
+          }
+        },
+        "audio/pcm": {
+          "schema": {
+            "format": "binary",
+            "type": "string"
+          }
+        },
+        "audio/wav": {
+          "schema": {
+            "format": "binary",
+            "type": "string"
+          }
+        },
         "text/event-stream": {
           "schema": {
             "$ref": "#/components/schemas/CreateSpeechResponseStreamEvent"
@@ -34,9 +71,62 @@
           }
         }
       }
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Invalid speech request, input, output format, or voice."
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        },
+        "text/plain": {
+          "schema": {
+            "description": "JSON-encoded error text containing an error object and the HTTP status.",
+            "type": "string"
+          }
+        }
+      },
+      "description": "Authentication failed because the API key is missing or revoked, or the client IP is not authorized."
+    },
+    "403": {
+      "content": {
+        "text/plain": {
+          "schema": {
+            "description": "JSON-encoded error text containing an error object and the HTTP status.",
+            "type": "string"
+          }
+        }
+      },
+      "description": "Access to a personal API organization is blocked by the organization policy."
+    },
+    "429": {
+      "$ref": "#/components/responses/InferenceRateLimited"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The voice or speech audio could not be processed."
+    },
+    "503": {
+      "$ref": "#/components/responses/InferenceServiceUnavailable"
     }
   },
-  "summary": "Generates audio from the input text.\n\nReturns the audio file content, or a stream of audio events.\n",
+  "summary": "Create speech",
   "tags": [
     "Audio"
   ],
@@ -70,7 +160,7 @@
                 "type": "string"
               }
             ],
-            "description": "One of the available [TTS models](/docs/models#tts): `tts-1`, `tts-1-hd`, `gpt-4o-mini-tts`, or `gpt-4o-mini-tts-2025-12-15`.\n"
+            "description": "One of the available [TTS models](https://developers.openai.com/api/docs/guides/text-to-speech): `tts-1`, `tts-1-hd`, `gpt-4o-mini-tts`, or `gpt-4o-mini-tts-2025-12-15`.\n"
           },
           "response_format": {
             "default": "mp3",
@@ -102,8 +192,40 @@
             "type": "string"
           },
           "voice": {
-            "$ref": "#/components/schemas/VoiceIdsOrCustomVoice",
-            "description": "The voice to use when generating the audio. Supported built-in voices are `alloy`, `ash`, `ballad`, `coral`, `echo`, `fable`, `onyx`, `nova`, `sage`, `shimmer`, `verse`, `marin`, and `cedar`. You may also provide a custom voice object with an `id`, for example `{ \"id\": \"voice_1234\" }`. Previews of the voices are available in the [Text to speech guide](/docs/guides/text-to-speech#voice-options)."
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/VoiceIdsShared"
+                  },
+                  {
+                    "enum": [
+                      "fable",
+                      "onyx",
+                      "nova"
+                    ],
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "additionalProperties": false,
+                "description": "Custom voice reference.",
+                "properties": {
+                  "id": {
+                    "description": "The custom voice ID, e.g. `voice_1234`.",
+                    "example": "voice_1234",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "type": "object"
+              }
+            ],
+            "description": "The voice to use when generating the audio. Supported built-in voices are `alloy`, `ash`, `ballad`, `coral`, `echo`, `fable`, `onyx`, `nova`, `sage`, `shimmer`, `verse`, `marin`, and `cedar`. You may also provide a custom voice object with an `id`, for example `{ \"id\": \"voice_1234\" }`. Previews of the voices are available in the [Text to speech guide](https://developers.openai.com/api/docs/guides/text-to-speech#voice-options). Custom voices must be created from audio samples. Voices created from text prompts are supported only in Live.",
+            "title": "Voice"
           }
         },
         "required": [
@@ -126,29 +248,39 @@
           "propertyName": "type"
         }
       },
-      "VoiceIdsOrCustomVoice": {
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "VoiceIdsShared": {
         "anyOf": [
           {
-            "$ref": "#/components/schemas/VoiceIdsShared"
+            "type": "string"
           },
           {
-            "additionalProperties": false,
-            "description": "Custom voice reference.",
-            "properties": {
-              "id": {
-                "description": "The custom voice ID, e.g. `voice_1234`.",
-                "example": "voice_1234",
-                "type": "string"
-              }
-            },
-            "required": [
-              "id"
+            "enum": [
+              "alloy",
+              "ash",
+              "ballad",
+              "coral",
+              "echo",
+              "sage",
+              "shimmer",
+              "verse",
+              "marin",
+              "cedar"
             ],
-            "type": "object"
+            "type": "string"
           }
         ],
-        "description": "A built-in voice name or a custom voice reference.\n",
-        "title": "Voice"
+        "example": "ash"
       },
       "SpeechAudioDeltaEvent": {
         "description": "Emitted for each chunk of audio data generated during speech synthesis.",
@@ -211,28 +343,174 @@
         ],
         "type": "object"
       },
-      "VoiceIdsShared": {
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
         "anyOf": [
           {
             "type": "string"
           },
           {
             "enum": [
-              "alloy",
-              "ash",
-              "ballad",
-              "coral",
-              "echo",
-              "sage",
-              "shimmer",
-              "verse",
-              "marin",
-              "cedar"
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
             ],
             "type": "string"
           }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
         ],
-        "example": "ash"
+        "type": "object"
+      }
+    },
+    "responses": {
+      "InferenceRateLimited": {
+        "content": {
+          "application/json": {
+            "examples": {
+              "slowDown": {
+                "summary": "Traffic increased too quickly",
+                "value": {
+                  "error": {
+                    "code": "slow_down",
+                    "message": "Your request rate increased too quickly. Please reduce the request rate and gradually increase it again.",
+                    "param": null,
+                    "type": "rate_limit_error"
+                  }
+                }
+              }
+            },
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The request was rejected because a rate limit was exceeded. A slow_down error means traffic increased too quickly; reduce your request rate, then increase it gradually.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "InferenceServiceUnavailable": {
+        "content": {
+          "application/json": {
+            "examples": {
+              "serverOverloaded": {
+                "summary": "The requested model is temporarily overloaded",
+                "value": {
+                  "error": {
+                    "code": "server_is_overloaded",
+                    "message": "The model is temporarily overloaded. Please retry your request after a brief delay.",
+                    "param": null,
+                    "type": "service_unavailable_error"
+                  }
+                }
+              }
+            },
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The service is temporarily unavailable. A server_is_overloaded error means the requested model is temporarily overloaded; retry after a brief delay.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
       }
     }
   }

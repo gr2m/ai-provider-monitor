@@ -1,0 +1,423 @@
+{
+  "description": "Updates the scopes and/or expiration of an existing API key in the project, including a\nservice-account-owned key. Requires permission to write project API keys.\n\nProvide at least one of `scopes` or `expires_in_seconds`. Omitted fields stay\nunchanged; neither field accepts `null`. Both changes are saved together.\n\n`scopes` replaces the key's scope restrictions using the same scope identifiers\nas the dashboard. An empty array means All permissions, subject to the owner's\neffective access; it does not mean no access. Use `[\"api.all.read\"]` for read-only\naccess or specific scopes such as `[\"api.files.read\"]` for restricted access.\nThis does not change user or service-account roles or grant admin permissions.\nScope changes follow the same authentication-cache propagation as dashboard edits.\n\nProvide `expires_in_seconds` to set the expiration relative to this request.\nThe value must satisfy the organization's and project's expiry policies.\nExpired keys cannot be updated. Retrying resets the expiration relative to\nthe new request. The response contains only the redacted key, not its secret.\n",
+  "operationId": "update-project-api-key",
+  "parameters": [
+    {
+      "description": "The ID of the project.",
+      "in": "path",
+      "name": "project_id",
+      "required": true,
+      "schema": {
+        "type": "string"
+      }
+    },
+    {
+      "description": "The ID of the API key.",
+      "in": "path",
+      "name": "api_key_id",
+      "required": true,
+      "schema": {
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "example": {
+          "scopes": [
+            "api.all.read"
+          ]
+        },
+        "schema": {
+          "$ref": "#/components/schemas/UpdateProjectApiKeyBody"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ProjectApiKey"
+          }
+        }
+      },
+      "description": "Project API key updated successfully."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The project is archived, the key is expired, or the requested scopes or expiration are invalid."
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/PermissionErrorResponse"
+          }
+        }
+      },
+      "description": "The caller does not have permission to update this API key."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The project or API key was not found."
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Too many management requests. Reduce the request rate and try again later."
+    }
+  },
+  "security": [
+    {
+      "AdminApiKeyAuth": []
+    }
+  ],
+  "summary": "Update project API key",
+  "tags": [
+    "Projects"
+  ],
+  "components": {
+    "schemas": {
+      "UpdateProjectApiKeyBody": {
+        "anyOf": [
+          {
+            "required": [
+              "scopes"
+            ]
+          },
+          {
+            "required": [
+              "expires_in_seconds"
+            ]
+          }
+        ],
+        "properties": {
+          "expires_in_seconds": {
+            "description": "Number of seconds from this request until the API key expires. Must comply with the organization and project expiry policies. Expired keys cannot be updated. Retrying resets the expiry relative to the new request. Omit to keep the current expiration.",
+            "maximum": 31536000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "scopes": {
+            "description": "Replace the API key scope restrictions. Omit to leave scopes unchanged. An empty array removes key restrictions (All permissions), subject to the owner's effective permissions. Use [\"api.all.read\"] for read-only access. Scopes do not change the owner's roles or grant administrative permissions.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "ProjectApiKey": {
+        "description": "Represents an individual API key in a project.",
+        "properties": {
+          "created_at": {
+            "description": "The Unix timestamp (in seconds) of when the API key was created",
+            "format": "unixtime",
+            "type": "integer"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "unixtime",
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Unix timestamp (in seconds) when the API key expires, or null if it does not expire."
+          },
+          "id": {
+            "description": "The identifier, which can be referenced in API endpoints",
+            "type": "string"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "unixtime",
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Unix timestamp (in seconds) of when the API key was last used."
+          },
+          "name": {
+            "description": "The name of the API key",
+            "type": "string"
+          },
+          "object": {
+            "description": "The object type, which is always `organization.project.api_key`",
+            "enum": [
+              "organization.project.api_key"
+            ],
+            "type": "string"
+          },
+          "owner": {
+            "properties": {
+              "service_account": {
+                "$ref": "#/components/schemas/ProjectApiKeyOwnerServiceAccount"
+              },
+              "type": {
+                "description": "`user` or `service_account`",
+                "enum": [
+                  "user",
+                  "service_account"
+                ],
+                "type": "string"
+              },
+              "user": {
+                "$ref": "#/components/schemas/ProjectApiKeyOwnerUser"
+              }
+            },
+            "type": "object"
+          },
+          "owner_project_access": {
+            "description": "Whether the API key's owner currently has effective access to the project.",
+            "enum": [
+              "active",
+              "inactive"
+            ],
+            "type": "string"
+          },
+          "redacted_value": {
+            "description": "The redacted value of the API key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "redacted_value",
+          "name",
+          "created_at",
+          "last_used_at",
+          "id",
+          "owner_project_access",
+          "owner"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "PermissionErrorResponse": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Error"
+              },
+              {
+                "description": "An explanation of the missing API permissions.",
+                "type": "string"
+              }
+            ],
+            "description": "Details about the permission error."
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "ProjectApiKeyOwnerServiceAccount": {
+        "description": "The service account that owns a project API key.",
+        "properties": {
+          "created_at": {
+            "description": "The Unix timestamp (in seconds) of when the service account was created.",
+            "format": "unixtime",
+            "type": "integer"
+          },
+          "id": {
+            "description": "The identifier, which can be referenced in API endpoints",
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the service account.",
+            "type": "string"
+          },
+          "role": {
+            "description": "The service account's project role.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "created_at",
+          "role"
+        ],
+        "type": "object"
+      },
+      "ProjectApiKeyOwnerUser": {
+        "description": "The user that owns a project API key.",
+        "properties": {
+          "created_at": {
+            "description": "The Unix timestamp (in seconds) of when the user was created.",
+            "format": "unixtime",
+            "type": "integer"
+          },
+          "email": {
+            "description": "The email address of the user.",
+            "type": "string"
+          },
+          "id": {
+            "description": "The identifier, which can be referenced in API endpoints",
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the user.",
+            "type": "string"
+          },
+          "role": {
+            "description": "The user's project role.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "created_at",
+          "role"
+        ],
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

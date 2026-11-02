@@ -1,0 +1,297 @@
+{
+  "description": "Lists published root-turn traces as OTLP JSON, ordered by turn creation time and ID. Unpublished traces are skipped. Each page returns data available when read; it does not wait for late traces. Trace reads and the JSON response are limited to 16 MiB per request. If the limit is exceeded, request fewer traces.",
+  "operationId": "listAgentSessionTraces",
+  "parameters": [
+    {
+      "description": "The ID of the session.",
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+        "maxLength": 1048576,
+        "minLength": 0,
+        "type": "string"
+      }
+    },
+    {
+      "description": "The maximum number of resources to return, between 1 and 100. Defaults to 20.",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "default": 20,
+        "format": "int64",
+        "maximum": 100,
+        "minimum": 1,
+        "type": "integer"
+      }
+    },
+    {
+      "description": "The order in which resources are returned. Defaults to `desc`.",
+      "in": "query",
+      "name": "order",
+      "required": false,
+      "schema": {
+        "$ref": "#/components/schemas/ListOrderParam",
+        "default": "desc"
+      }
+    },
+    {
+      "description": "Return resources after this resource ID in the selected order.",
+      "in": "query",
+      "name": "after",
+      "required": false,
+      "schema": {
+        "maxLength": 1048576,
+        "minLength": 0,
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/SessionTraceListResource",
+            "description": "A page of published session traces."
+          }
+        }
+      },
+      "description": "A page of published session traces."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request was invalid."
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "Authentication or project context was missing."
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The API key lacks the required permission."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The requested session or event was not found."
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request conflicted with the current session state."
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "An internal error occurred."
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The service is temporarily unavailable."
+    }
+  },
+  "summary": "List agent session traces",
+  "tags": [
+    "Agents"
+  ],
+  "components": {
+    "schemas": {
+      "ListOrderParam": {
+        "description": "The order in which paginated resources are returned.",
+        "enum": [
+          "asc",
+          "desc"
+        ],
+        "type": "string"
+      },
+      "SessionTraceListResource": {
+        "additionalProperties": false,
+        "description": "A page of Agents API resources, with IDs for retrieving additional pages.",
+        "properties": {
+          "data": {
+            "description": "The resources returned in this page, in the requested sort order.",
+            "items": {
+              "$ref": "#/components/schemas/SessionTurnTraceResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "first_id": {
+            "description": "The ID of the first resource in `data`, or `null` if the page is empty.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "has_more": {
+            "description": "Whether there are more resources to retrieve after this page.",
+            "type": "boolean"
+          },
+          "last_id": {
+            "description": "The ID of the last resource in `data`, or `null` if the page is empty. Pass this as `after` with the same order and filters.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "default": "list",
+            "description": "The object type, which is always `list`.",
+            "enum": [
+              "list"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "object",
+          "data",
+          "first_id",
+          "last_id",
+          "has_more"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse-2": {
+        "additionalProperties": false,
+        "description": "An API error response.",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBodyResource",
+            "description": "The error returned by the API."
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "SessionTurnTraceResource": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "description": "The Unix timestamp in seconds when the root turn was created.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "id": {
+            "description": "The root turn ID. Use this ID as the pagination anchor.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "object": {
+            "default": "agent.session.trace",
+            "description": "The object type, which is always `agent.session.trace`.",
+            "enum": [
+              "agent.session.trace"
+            ],
+            "type": "string"
+          },
+          "otlp": {
+            "additionalProperties": {},
+            "description": "An OTLP JSON ExportTraceServiceRequest containing resourceSpans. Only currently published data is returned; later trace updates are not awaited.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "session_id": {
+            "description": "The session that owns this trace.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "session_id",
+          "created_at",
+          "otlp"
+        ],
+        "type": "object"
+      },
+      "ErrorBodyResource": {
+        "additionalProperties": false,
+        "description": "Details about an API error.",
+        "properties": {
+          "code": {
+            "description": "A machine-readable error code.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "message": {
+            "description": "A human-readable error message.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "param": {
+            "description": "The request parameter that caused the error, or null for a request-wide error.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "description": "The error type.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "code",
+          "message",
+          "param"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}
