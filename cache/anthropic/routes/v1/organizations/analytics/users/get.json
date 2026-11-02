@@ -1,0 +1,1770 @@
+{
+  "description": "Get per-user activity for a given day, with cursor-based pagination.\n\nReturns activity metrics for each user in the organization, sorted by email\naddress. Use `group_by[]` for per-RBAC-group aggregates, or `filter[]` to\nscope results to specific members, groups, or a chat project. Available\nto organizations on a Claude Enterprise plan. Requires an API key with\nthe `read:analytics` scope.",
+  "operationId": "get_users_v1_organizations_analytics_users_get",
+  "parameters": [
+    {
+      "description": "UTC date in YYYY-MM-DD format. The day to get user activity for. Data is typically available with a 1-day lag (varies by query; the error for a too-recent date names the latest available day) and may be revised by a few percent over the following days. No earlier than 2026-01-01.",
+      "in": "query",
+      "name": "date",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "UTC date in YYYY-MM-DD format. The day to get user activity for. Data is typically available with a 1-day lag (varies by query; the error for a too-recent date names the latest available day) and may be revised by a few percent over the following days. No earlier than 2026-01-01.",
+        "title": "Date"
+      }
+    },
+    {
+      "description": "UTC date in YYYY-MM-DD format. Start of a date range (inclusive). Enables rollup mode: one row per entity aggregated over the whole range — addable counters are summed across days, and a distinct count is never summed where summing could double-count (a field's range value is recomputed exactly over the window, approximate via HLL with typical error under 2%, null, or — for the creation-event counts, whose per-day values cannot overlap — a per-day sum that is itself exact; each field's own description says which). Use either `date` or `starting_date`, not both. Data is typically available with a 1-day lag (varies by query; the error for a too-recent date names the latest available day) and may be revised by a few percent over the following days. No earlier than 2026-01-01.",
+      "in": "query",
+      "name": "starting_date",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "UTC date in YYYY-MM-DD format. Start of a date range (inclusive). Enables rollup mode: one row per entity aggregated over the whole range — addable counters are summed across days, and a distinct count is never summed where summing could double-count (a field's range value is recomputed exactly over the window, approximate via HLL with typical error under 2%, null, or — for the creation-event counts, whose per-day values cannot overlap — a per-day sum that is itself exact; each field's own description says which). Use either `date` or `starting_date`, not both. Data is typically available with a 1-day lag (varies by query; the error for a too-recent date names the latest available day) and may be revised by a few percent over the following days. No earlier than 2026-01-01.",
+        "title": "Starting Date"
+      }
+    },
+    {
+      "description": "UTC date in YYYY-MM-DD format. End of the date range (exclusive); only valid with `starting_date`. Data is typically available with a 1-day lag (varies by query; the error for a too-recent date names the latest available day), so this can be at most today — which is also the default when omitted, resolved once when the first page is served and reused for the rest of the pagination sequence. At most 366 days after `starting_date`.",
+      "in": "query",
+      "name": "ending_date",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "UTC date in YYYY-MM-DD format. End of the date range (exclusive); only valid with `starting_date`. Data is typically available with a 1-day lag (varies by query; the error for a too-recent date names the latest available day), so this can be at most today — which is also the default when omitted, resolved once when the first page is served and reused for the rest of the pagination sequence. At most 366 days after `starting_date`.",
+        "title": "Ending Date"
+      }
+    },
+    {
+      "description": "Number of results per page (1-1000, default 100).",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Number of results per page (1-1000, default 100).",
+        "title": "Limit"
+      }
+    },
+    {
+      "description": "Opaque cursor from a previous response's `next_page` field.",
+      "in": "query",
+      "name": "page",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Opaque cursor from a previous response's `next_page` field.",
+        "title": "Page"
+      }
+    },
+    {
+      "description": "Dimensions to break results out by (e.g. `group_by[]=rbac_group_id`). Supported on this endpoint: `rbac_group_id`. Rows are already per-member, so the one supported grouping aggregates them per RBAC group instead. Grouped rows carry the requested dimension values as additional fields and paginate like ungrouped responses via `next_page`; an unsupported dimension returns 400. `rbac_group_id` attributes a user to every group they held at any point during each covered UTC day, so grouped rows are not an exclusive partition and can sum above org-level totals. At most 100 entries.",
+      "in": "query",
+      "name": "group_by[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsUserGroupBy"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Dimensions to break results out by (e.g. `group_by[]=rbac_group_id`). Supported on this endpoint: `rbac_group_id`. Rows are already per-member, so the one supported grouping aggregates them per RBAC group instead. Grouped rows carry the requested dimension values as additional fields and paginate like ungrouped responses via `next_page`; an unsupported dimension returns 400. `rbac_group_id` attributes a user to every group they held at any point during each covered UTC day, so grouped rows are not an exclusive partition and can sum above org-level totals. At most 100 entries.",
+        "maxItems": 100,
+        "title": "Group By[]"
+      }
+    },
+    {
+      "description": "Filters as `dimension:value`, e.g. `filter[]=rbac_group_id:{id}`. Repeat the param for OR within a dimension and across dimensions for AND. Supported dimensions on this endpoint: `project_id`, `rbac_group_id`, `user_id`. Value forms: `project_id` takes a tagged project id (`claude_proj_...`); `rbac_group_id` takes the tagged id (`rbac_group_...`, as emitted in responses and by the spend-limits API) or a bare group UUID, and matches users who held the group at any point during each covered UTC day (time-of-usage attribution); `user_id` takes a tagged user id (`user_...`), as emitted in responses. An unsupported dimension returns 400. At most 100 entries. A `project_id` filter limits each member's row to their claude.ai chat activity in that project and cannot be combined with `group_by[]` or an `rbac_group_id` filter. On these rows, every count in `chat_cowork_unified_metrics.sessions` is 0, because sessions are not measured per project. On any day a member sent a chat message in Chat and Cowork unified, all of that member's project activity for the day is counted in `chat_cowork_unified_metrics.chat` instead of `chat_metrics`.",
+      "in": "query",
+      "name": "filter[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filters as `dimension:value`, e.g. `filter[]=rbac_group_id:{id}`. Repeat the param for OR within a dimension and across dimensions for AND. Supported dimensions on this endpoint: `project_id`, `rbac_group_id`, `user_id`. Value forms: `project_id` takes a tagged project id (`claude_proj_...`); `rbac_group_id` takes the tagged id (`rbac_group_...`, as emitted in responses and by the spend-limits API) or a bare group UUID, and matches users who held the group at any point during each covered UTC day (time-of-usage attribution); `user_id` takes a tagged user id (`user_...`), as emitted in responses. An unsupported dimension returns 400. At most 100 entries. A `project_id` filter limits each member's row to their claude.ai chat activity in that project and cannot be combined with `group_by[]` or an `rbac_group_id` filter. On these rows, every count in `chat_cowork_unified_metrics.sessions` is 0, because sessions are not measured per project. On any day a member sent a chat message in Chat and Cowork unified, all of that member's project activity for the day is counted in `chat_cowork_unified_metrics.chat` instead of `chat_metrics`.",
+        "maxItems": 100,
+        "title": "Filter[]"
+      }
+    },
+    {
+      "description": "Sort field. Restricted to the endpoint's sort column plus its rankable metrics (metrics default to descending; a few metrics rank in date-range mode only, per the endpoint's documented orderable set).",
+      "in": "query",
+      "name": "order_by",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Sort field. Restricted to the endpoint's sort column plus its rankable metrics (metrics default to descending; a few metrics rank in date-range mode only, per the endpoint's documented orderable set).",
+        "title": "Order By"
+      }
+    },
+    {
+      "description": "Sort direction: `asc` or `desc`. Defaults to `asc` for the endpoint's sort column and to `desc` when `order_by` names a metric (a top-N ranking). Applies to `order_by`, or to the endpoint's default sort field when `order_by` is omitted.",
+      "in": "query",
+      "name": "order",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/AnalyticsOrder"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Sort direction: `asc` or `desc`. Defaults to `asc` for the endpoint's sort column and to `desc` when `order_by` names a metric (a top-N ranking). Applies to `order_by`, or to the endpoint's default sort field when `order_by` is omitted.",
+        "title": "Order"
+      }
+    },
+    {
+      "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+      "in": "header",
+      "name": "anthropic-version",
+      "required": false,
+      "schema": {
+        "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+        "title": "Anthropic-Version",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AnalyticsUsersResponse"
+          }
+        }
+      },
+      "description": "Successful Response"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Invalid argument - The client specified an invalid argument"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Unauthenticated - The request does not have valid authentication credentials"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Permission denied - The caller does not have permission to execute the specified operation"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Not found - Some requested entity was not found"
+    },
+    "408": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - The deadline expired before the operation could complete"
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Aborted - The operation was aborted due to concurrency issue"
+    },
+    "412": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Failed precondition - Operation was rejected because the system is not in required state"
+    },
+    "413": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Out of range - Operation was attempted past the valid range"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Resource exhausted - Some resource has been exhausted (rate limiting)"
+    },
+    "431": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Request header fields too large - Request metadata was too large"
+    },
+    "499": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Cancelled - The operation was cancelled by the client"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Internal - Internal server error"
+    },
+    "501": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Unimplemented - The operation is not implemented or supported"
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Unavailable - The service is currently unavailable"
+    },
+    "504": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - Upstream service did not respond in time"
+    },
+    "529": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Overloaded - The service is temporarily overloaded"
+    }
+  },
+  "summary": "List User Activity",
+  "components": {
+    "schemas": {
+      "AnalyticsUserGroupBy": {
+        "description": "A dimension to group user activity by.",
+        "enum": [
+          "rbac_group_id"
+        ],
+        "type": "string"
+      },
+      "AnalyticsOrder": {
+        "description": "Sort direction: `asc` or `desc`. Defaults to `asc` for the endpoint's sort column and to `desc` when `order_by` names a metric (a top-N ranking). Applies to `order_by`, or to the endpoint's default sort field when `order_by` is omitted.",
+        "enum": [
+          "asc",
+          "desc"
+        ],
+        "type": "string"
+      },
+      "AnalyticsUsersResponse": {
+        "description": "Response for GET /v1/organizations/analytics/users.",
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsUserActivity"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more results",
+            "title": "Next Page"
+          }
+        },
+        "required": [
+          "data",
+          "next_page"
+        ],
+        "title": "AnalyticsUsersResponse",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "discriminator": {
+              "mapping": {
+                "api_error": "#/components/schemas/APIError",
+                "authentication_error": "#/components/schemas/AuthenticationError",
+                "billing_error": "#/components/schemas/BillingError",
+                "invalid_request_error": "#/components/schemas/InvalidRequestError",
+                "not_found_error": "#/components/schemas/NotFoundError",
+                "overloaded_error": "#/components/schemas/OverloadedError",
+                "permission_error": "#/components/schemas/PermissionError",
+                "rate_limit_error": "#/components/schemas/RateLimitError",
+                "timeout_error": "#/components/schemas/GatewayTimeoutError"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InvalidRequestError"
+              },
+              {
+                "$ref": "#/components/schemas/AuthenticationError"
+              },
+              {
+                "$ref": "#/components/schemas/BillingError"
+              },
+              {
+                "$ref": "#/components/schemas/PermissionError"
+              },
+              {
+                "$ref": "#/components/schemas/NotFoundError"
+              },
+              {
+                "$ref": "#/components/schemas/RateLimitError"
+              },
+              {
+                "$ref": "#/components/schemas/GatewayTimeoutError"
+              },
+              {
+                "$ref": "#/components/schemas/APIError"
+              },
+              {
+                "$ref": "#/components/schemas/OverloadedError"
+              }
+            ],
+            "title": "Error"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Id"
+          },
+          "type": {
+            "const": "error",
+            "default": "error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "request_id",
+          "type"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "AnalyticsUserActivity": {
+        "description": "Per-user activity data for a given day.",
+        "properties": {
+          "chat_cowork_unified_metrics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalyticsChatCoworkUnifiedMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Activity recorded while the member had Chat and Cowork unified (Cowork's features inside claude.ai chat) turned on, split into `chat` (chat activity) and `sessions` (Cowork activity). Omitted from the response on deployments that do not offer Chat and Cowork unified."
+          },
+          "chat_metrics": {
+            "$ref": "#/components/schemas/AnalyticsChatMetrics"
+          },
+          "claude_code_metrics": {
+            "$ref": "#/components/schemas/AnalyticsClaudeCodeMetrics"
+          },
+          "cowork_metrics": {
+            "$ref": "#/components/schemas/AnalyticsCoworkMetrics"
+          },
+          "design_metrics": {
+            "$ref": "#/components/schemas/AnalyticsDesignMetrics"
+          },
+          "distinct_user_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct active users represented by this row. Only set for grouped rollups (`group_by[]`); null for per-user rows. In date-range mode, recomputed as an exact distinct count of the group's active members over the requested window, never a sum of per-day values.",
+            "title": "Distinct User Count"
+          },
+          "last_activity_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Most recent UTC day (YYYY-MM-DD) on which the user had any counted activity, within the requested window: equal to the requested `date` in single-day mode, and to the latest active day from `starting_date` (inclusive) to `ending_date` (exclusive) in date-range rollup mode — never a day earlier than the window start. On filtered requests (`filter[]`) only days matching the filter count: with `filter[]=rbac_group_id:{id}` it is the last day the user was active while a member of that group, consistent with the row's other metrics. On grouped (`group_by[]`) rows it is the latest day any member of the group was active (the requested `date` in single-day mode). Omitted from the response while last-activity reporting is not enabled for this organization.",
+            "title": "Last Activity Date"
+          },
+          "office_metrics": {
+            "$ref": "#/components/schemas/AnalyticsOfficeMetrics"
+          },
+          "rbac_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tagged RBAC group identifier (`rbac_group_...`), matching the spend-limits API spelling. Present only when the request grouped by `rbac_group_id`.",
+            "title": "Rbac Group Id"
+          },
+          "rbac_group_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resolved RBAC group display name, alongside `rbac_group_id` when name resolution is available. Null if the group has been deleted or its name could not be resolved; `rbac_group_id` remains the stable key.",
+            "title": "Rbac Group Name"
+          },
+          "science_metrics": {
+            "$ref": "#/components/schemas/AnalyticsScienceMetrics"
+          },
+          "user": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalyticsUser"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The user this row describes. Null on rows aggregated across users."
+          },
+          "web_search_count": {
+            "description": "Number of web searches performed",
+            "title": "Web Search Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "chat_metrics",
+          "claude_code_metrics",
+          "cowork_metrics",
+          "design_metrics",
+          "distinct_user_count",
+          "office_metrics",
+          "science_metrics",
+          "user",
+          "web_search_count"
+        ],
+        "title": "AnalyticsUserActivity",
+        "type": "object"
+      },
+      "InvalidRequestError": {
+        "properties": {
+          "message": {
+            "default": "Invalid request",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "invalid_request_error",
+            "default": "invalid_request_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "InvalidRequestError",
+        "type": "object"
+      },
+      "AuthenticationError": {
+        "properties": {
+          "message": {
+            "default": "Authentication error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "authentication_error",
+            "default": "authentication_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "AuthenticationError",
+        "type": "object"
+      },
+      "BillingError": {
+        "properties": {
+          "message": {
+            "default": "Billing error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "billing_error",
+            "default": "billing_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "BillingError",
+        "type": "object"
+      },
+      "PermissionError": {
+        "properties": {
+          "message": {
+            "default": "Permission denied",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "permission_error",
+            "default": "permission_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "PermissionError",
+        "type": "object"
+      },
+      "NotFoundError": {
+        "properties": {
+          "message": {
+            "default": "Not found",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "not_found_error",
+            "default": "not_found_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "NotFoundError",
+        "type": "object"
+      },
+      "RateLimitError": {
+        "properties": {
+          "message": {
+            "default": "Rate limited",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "rate_limit_error",
+            "default": "rate_limit_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "RateLimitError",
+        "type": "object"
+      },
+      "GatewayTimeoutError": {
+        "properties": {
+          "message": {
+            "default": "Request timeout",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "timeout_error",
+            "default": "timeout_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "GatewayTimeoutError",
+        "type": "object"
+      },
+      "APIError": {
+        "properties": {
+          "message": {
+            "default": "Internal server error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "api_error",
+            "default": "api_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "APIError",
+        "type": "object"
+      },
+      "OverloadedError": {
+        "properties": {
+          "message": {
+            "default": "Overloaded",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "overloaded_error",
+            "default": "overloaded_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "OverloadedError",
+        "type": "object"
+      },
+      "AnalyticsChatCoworkUnifiedMetrics": {
+        "description": "Activity in Chat and Cowork unified for one user on one day: `chat` holds\nchat activity and `sessions` holds Cowork session activity.",
+        "properties": {
+          "chat": {
+            "$ref": "#/components/schemas/AnalyticsChatCoworkUnifiedChatMetrics"
+          },
+          "sessions": {
+            "$ref": "#/components/schemas/AnalyticsChatCoworkUnifiedSessionsMetrics"
+          }
+        },
+        "required": [
+          "chat",
+          "sessions"
+        ],
+        "title": "AnalyticsChatCoworkUnifiedMetrics",
+        "type": "object"
+      },
+      "AnalyticsChatMetrics": {
+        "description": "Claude.ai activity metrics for a single user on a given day.",
+        "properties": {
+          "connectors_used_count": {
+            "description": "Number of MCP connector invocations.",
+            "title": "Connectors Used Count",
+            "type": "integer"
+          },
+          "distinct_artifacts_created_count": {
+            "description": "Number of distinct artifacts created. Exact in date-range mode: a creation belongs to exactly one day, so the per-day counts never overlap and their sum over the window is the exact count of distinct creations in it.",
+            "title": "Distinct Artifacts Created Count",
+            "type": "integer"
+          },
+          "distinct_connectors_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Distinct claude.ai connectors this user used. Excludes calls whose connector could not be identified and all calls from organizations with zero data retention. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Connectors Used Count"
+          },
+          "distinct_conversation_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct conversations the user participated in. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Conversation Count"
+          },
+          "distinct_files_uploaded_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct files uploaded. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Files Uploaded Count"
+          },
+          "distinct_projects_created_count": {
+            "description": "Number of distinct projects created. Exact in date-range mode: a creation belongs to exactly one day, so the per-day counts never overlap and their sum over the window is the exact count of distinct creations in it.",
+            "title": "Distinct Projects Created Count",
+            "type": "integer"
+          },
+          "distinct_projects_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct projects used. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Projects Used Count"
+          },
+          "distinct_shared_artifacts_viewed_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct shared artifacts the user viewed. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Shared Artifacts Viewed Count"
+          },
+          "distinct_skills_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct skills used. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Skills Used Count"
+          },
+          "message_count": {
+            "description": "Number of messages sent",
+            "title": "Message Count",
+            "type": "integer"
+          },
+          "shared_conversations_viewed_count": {
+            "description": "Number of times the user opened a shared conversation in a project",
+            "title": "Shared Conversations Viewed Count",
+            "type": "integer"
+          },
+          "thinking_message_count": {
+            "description": "Number of messages that used extended thinking",
+            "title": "Thinking Message Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "connectors_used_count",
+          "distinct_artifacts_created_count",
+          "distinct_connectors_used_count",
+          "distinct_conversation_count",
+          "distinct_files_uploaded_count",
+          "distinct_projects_created_count",
+          "distinct_projects_used_count",
+          "distinct_shared_artifacts_viewed_count",
+          "distinct_skills_used_count",
+          "message_count",
+          "shared_conversations_viewed_count",
+          "thinking_message_count"
+        ],
+        "title": "AnalyticsChatMetrics",
+        "type": "object"
+      },
+      "AnalyticsClaudeCodeMetrics": {
+        "description": "Claude Code activity metrics for a single user on a given day.",
+        "properties": {
+          "core_metrics": {
+            "$ref": "#/components/schemas/AnalyticsCoreCodeMetrics"
+          },
+          "tool_actions": {
+            "$ref": "#/components/schemas/AnalyticsToolActions"
+          }
+        },
+        "required": [
+          "core_metrics",
+          "tool_actions"
+        ],
+        "title": "AnalyticsClaudeCodeMetrics",
+        "type": "object"
+      },
+      "AnalyticsCoworkMetrics": {
+        "description": "Cowork activity metrics for a single user on a given day.",
+        "properties": {
+          "action_count": {
+            "description": "Number of tool actions completed in Cowork sessions",
+            "title": "Action Count",
+            "type": "integer"
+          },
+          "artifacts_created_count": {
+            "description": "Number of artifacts created in Cowork sessions: an artifact counts once, on the day a session first saves it. Counted from 2026-08-17; 0 on earlier days. Exact in date-range mode: a creation belongs to exactly one day, so the per-day counts never overlap and their sum over the window is the exact count of distinct creations in it.",
+            "title": "Artifacts Created Count",
+            "type": "integer"
+          },
+          "connectors_used_count": {
+            "description": "Total number of connector invocations in Cowork sessions",
+            "title": "Connectors Used Count",
+            "type": "integer"
+          },
+          "dispatch_turn_count": {
+            "description": "Number of Dispatch (background agent) turns completed",
+            "title": "Dispatch Turn Count",
+            "type": "integer"
+          },
+          "distinct_connectors_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct connectors used in Cowork sessions. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Connectors Used Count"
+          },
+          "distinct_plugins_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct plugins used in Cowork sessions. Null while Cowork plugin-use metrics are not enabled for this organization. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Plugins Used Count"
+          },
+          "distinct_session_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct Cowork sessions. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Session Count"
+          },
+          "distinct_skills_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct skills used in Cowork sessions. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Skills Used Count"
+          },
+          "edit_tool_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of successful Edit tool calls in Cowork sessions. Null while the file-edit metrics are not enabled for this organization.",
+            "title": "Edit Tool Count"
+          },
+          "file_edit_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of successful file-edit tool calls (Edit, MultiEdit, Write, NotebookEdit) in Cowork sessions. Null, never 0, while the file-edit metrics are not enabled for this organization.",
+            "title": "File Edit Count"
+          },
+          "message_count": {
+            "description": "Number of messages sent in Cowork sessions",
+            "title": "Message Count",
+            "type": "integer"
+          },
+          "multi_edit_tool_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of successful MultiEdit tool calls in Cowork sessions. Null while the file-edit metrics are not enabled for this organization.",
+            "title": "Multi Edit Tool Count"
+          },
+          "notebook_edit_tool_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of successful NotebookEdit tool calls in Cowork sessions. Null while the file-edit metrics are not enabled for this organization.",
+            "title": "Notebook Edit Tool Count"
+          },
+          "plugins_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Total number of plugin invocations in Cowork sessions. Null while Cowork plugin-use metrics are not enabled for this organization.",
+            "title": "Plugins Used Count"
+          },
+          "sessions_with_file_edits_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct Cowork sessions with at least one successful file-edit tool call. Null while the file-edit metrics are not enabled for this organization. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Sessions With File Edits Count"
+          },
+          "skills_used_count": {
+            "description": "Total number of skill invocations in Cowork sessions",
+            "title": "Skills Used Count",
+            "type": "integer"
+          },
+          "write_tool_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of successful Write tool calls in Cowork sessions. Null while the file-edit metrics are not enabled for this organization.",
+            "title": "Write Tool Count"
+          }
+        },
+        "required": [
+          "action_count",
+          "artifacts_created_count",
+          "connectors_used_count",
+          "dispatch_turn_count",
+          "distinct_connectors_used_count",
+          "distinct_plugins_used_count",
+          "distinct_session_count",
+          "distinct_skills_used_count",
+          "edit_tool_count",
+          "file_edit_count",
+          "message_count",
+          "multi_edit_tool_count",
+          "notebook_edit_tool_count",
+          "plugins_used_count",
+          "sessions_with_file_edits_count",
+          "skills_used_count",
+          "write_tool_count"
+        ],
+        "title": "AnalyticsCoworkMetrics",
+        "type": "object"
+      },
+      "AnalyticsDesignMetrics": {
+        "description": "Claude Design activity metrics for a single user on a given day.",
+        "properties": {
+          "distinct_projects_created_count": {
+            "description": "Number of distinct Claude Design projects created. Exact in date-range mode: a creation belongs to exactly one day, so the per-day counts never overlap and their sum over the window is the exact count of distinct creations in it.",
+            "title": "Distinct Projects Created Count",
+            "type": "integer"
+          },
+          "distinct_projects_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct Claude Design projects the user worked in. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Projects Used Count"
+          },
+          "distinct_session_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct Claude Design sessions. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Session Count"
+          },
+          "message_count": {
+            "description": "Number of messages sent in Claude Design sessions",
+            "title": "Message Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "distinct_projects_created_count",
+          "distinct_projects_used_count",
+          "distinct_session_count",
+          "message_count"
+        ],
+        "title": "AnalyticsDesignMetrics",
+        "type": "object"
+      },
+      "AnalyticsOfficeMetrics": {
+        "description": "Office Agent activity metrics for a single user on a given day, broken out by Office product.",
+        "properties": {
+          "excel": {
+            "$ref": "#/components/schemas/AnalyticsOfficeProductMetrics"
+          },
+          "outlook": {
+            "$ref": "#/components/schemas/AnalyticsOfficeProductMetrics"
+          },
+          "powerpoint": {
+            "$ref": "#/components/schemas/AnalyticsOfficeProductMetrics"
+          },
+          "word": {
+            "$ref": "#/components/schemas/AnalyticsOfficeProductMetrics"
+          }
+        },
+        "required": [
+          "excel",
+          "outlook",
+          "powerpoint",
+          "word"
+        ],
+        "title": "AnalyticsOfficeMetrics",
+        "type": "object"
+      },
+      "AnalyticsScienceMetrics": {
+        "description": "Claude Science activity metrics for a single user on a given day.",
+        "properties": {
+          "delegation_count": {
+            "description": "Number of delegations (handoffs to a specialized agent) in Claude Science sessions",
+            "title": "Delegation Count",
+            "type": "integer"
+          },
+          "distinct_session_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct Claude Science sessions. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Session Count"
+          },
+          "message_count": {
+            "description": "Number of messages sent in Claude Science sessions",
+            "title": "Message Count",
+            "type": "integer"
+          },
+          "remote_compute_job_count": {
+            "description": "Number of remote compute jobs launched from Claude Science sessions",
+            "title": "Remote Compute Job Count",
+            "type": "integer"
+          },
+          "skills_used_count": {
+            "description": "Total number of skill invocations in Claude Science sessions",
+            "title": "Skills Used Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "delegation_count",
+          "distinct_session_count",
+          "message_count",
+          "remote_compute_job_count",
+          "skills_used_count"
+        ],
+        "title": "AnalyticsScienceMetrics",
+        "type": "object"
+      },
+      "AnalyticsUser": {
+        "description": "A user in the organization, identified by tagged id and email address.",
+        "properties": {
+          "email_address": {
+            "description": "Email address of the user",
+            "title": "Email Address",
+            "type": "string"
+          },
+          "id": {
+            "description": "Tagged user identifier (e.g. `user_...`)",
+            "title": "Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "user",
+            "default": "user",
+            "description": "Object type. Always `user`.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email_address",
+          "id",
+          "type"
+        ],
+        "title": "AnalyticsUser",
+        "type": "object"
+      },
+      "AnalyticsChatCoworkUnifiedChatMetrics": {
+        "description": "Chat activity recorded while members had Chat and Cowork unified turned\non.",
+        "properties": {
+          "connectors_used_count": {
+            "description": "Same measure as `chat_metrics.connectors_used_count`, for activity recorded while members had Chat and Cowork unified turned on.",
+            "title": "Connectors Used Count",
+            "type": "integer"
+          },
+          "distinct_artifacts_created_count": {
+            "description": "Same measure as `chat_metrics.distinct_artifacts_created_count`, for activity recorded while members had Chat and Cowork unified turned on. Exact in date-range mode: a creation belongs to exactly one day, so the per-day counts never overlap and their sum over the window is the exact count of distinct creations in it.",
+            "title": "Distinct Artifacts Created Count",
+            "type": "integer"
+          },
+          "distinct_connectors_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `chat_metrics.distinct_connectors_used_count`, for activity recorded while members had Chat and Cowork unified turned on. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Connectors Used Count"
+          },
+          "distinct_conversation_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `chat_metrics.distinct_conversation_count`, for activity recorded while members had Chat and Cowork unified turned on. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Conversation Count"
+          },
+          "distinct_files_uploaded_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `chat_metrics.distinct_files_uploaded_count`, for activity recorded while members had Chat and Cowork unified turned on. It counts uploaded files as well as files Claude created and images returned by Claude's tools, such as screenshots. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Files Uploaded Count"
+          },
+          "distinct_projects_created_count": {
+            "description": "Same measure as `chat_metrics.distinct_projects_created_count`, for activity recorded while members had Chat and Cowork unified turned on. Exact in date-range mode: a creation belongs to exactly one day, so the per-day counts never overlap and their sum over the window is the exact count of distinct creations in it.",
+            "title": "Distinct Projects Created Count",
+            "type": "integer"
+          },
+          "distinct_projects_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `chat_metrics.distinct_projects_used_count`, for activity recorded while members had Chat and Cowork unified turned on. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Projects Used Count"
+          },
+          "distinct_shared_artifacts_viewed_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Always null: shared-artifact views are not currently measured.",
+            "title": "Distinct Shared Artifacts Viewed Count"
+          },
+          "distinct_skills_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `chat_metrics.distinct_skills_used_count`, for activity recorded while members had Chat and Cowork unified turned on. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Skills Used Count"
+          },
+          "message_count": {
+            "description": "Same measure as `chat_metrics.message_count`, for activity recorded while members had Chat and Cowork unified turned on.",
+            "title": "Message Count",
+            "type": "integer"
+          },
+          "shared_conversations_viewed_count": {
+            "description": "Same measure as `chat_metrics.shared_conversations_viewed_count`, for activity recorded while members had Chat and Cowork unified turned on.",
+            "title": "Shared Conversations Viewed Count",
+            "type": "integer"
+          },
+          "thinking_message_count": {
+            "description": "Same measure as `chat_metrics.thinking_message_count`, for activity recorded while members had Chat and Cowork unified turned on.",
+            "title": "Thinking Message Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "connectors_used_count",
+          "distinct_artifacts_created_count",
+          "distinct_connectors_used_count",
+          "distinct_conversation_count",
+          "distinct_files_uploaded_count",
+          "distinct_projects_created_count",
+          "distinct_projects_used_count",
+          "distinct_shared_artifacts_viewed_count",
+          "distinct_skills_used_count",
+          "message_count",
+          "shared_conversations_viewed_count",
+          "thinking_message_count"
+        ],
+        "title": "AnalyticsChatCoworkUnifiedChatMetrics",
+        "type": "object"
+      },
+      "AnalyticsChatCoworkUnifiedSessionsMetrics": {
+        "description": "Cowork session activity recorded while members had Chat and Cowork\nunified turned on.",
+        "properties": {
+          "action_count": {
+            "description": "Same measure as `cowork_metrics.action_count`, for activity recorded while members had Chat and Cowork unified turned on.",
+            "title": "Action Count",
+            "type": "integer"
+          },
+          "artifacts_created_count": {
+            "description": "Same measure as `cowork_metrics.artifacts_created_count`, for activity recorded while members had Chat and Cowork unified turned on. Exact in date-range mode: a creation belongs to exactly one day, so the per-day counts never overlap and their sum over the window is the exact count of distinct creations in it.",
+            "title": "Artifacts Created Count",
+            "type": "integer"
+          },
+          "connectors_used_count": {
+            "description": "Same measure as `cowork_metrics.connectors_used_count`, for activity recorded while members had Chat and Cowork unified turned on.",
+            "title": "Connectors Used Count",
+            "type": "integer"
+          },
+          "dispatch_turn_count": {
+            "description": "Same measure as `cowork_metrics.dispatch_turn_count`, for activity recorded while members had Chat and Cowork unified turned on.",
+            "title": "Dispatch Turn Count",
+            "type": "integer"
+          },
+          "distinct_connectors_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `cowork_metrics.distinct_connectors_used_count`, for activity recorded while members had Chat and Cowork unified turned on. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Connectors Used Count"
+          },
+          "distinct_plugins_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `cowork_metrics.distinct_plugins_used_count`, for activity recorded while members had Chat and Cowork unified turned on. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Plugins Used Count"
+          },
+          "distinct_session_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `cowork_metrics.distinct_session_count`, for activity recorded while members had Chat and Cowork unified turned on. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Session Count"
+          },
+          "distinct_skills_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `cowork_metrics.distinct_skills_used_count`, for activity recorded while members had Chat and Cowork unified turned on. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Skills Used Count"
+          },
+          "edit_tool_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `cowork_metrics.edit_tool_count`, for activity recorded while members had Chat and Cowork unified turned on.",
+            "title": "Edit Tool Count"
+          },
+          "file_edit_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `cowork_metrics.file_edit_count`, for activity recorded while members had Chat and Cowork unified turned on.",
+            "title": "File Edit Count"
+          },
+          "message_count": {
+            "description": "Same measure as `cowork_metrics.message_count`, for activity recorded while members had Chat and Cowork unified turned on.",
+            "title": "Message Count",
+            "type": "integer"
+          },
+          "multi_edit_tool_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `cowork_metrics.multi_edit_tool_count`, for activity recorded while members had Chat and Cowork unified turned on. Claude no longer has a multi-edit tool, so expect 0 when not null; each edit is now a separate Edit tool call, counted in `edit_tool_count` and `file_edit_count`.",
+            "title": "Multi Edit Tool Count"
+          },
+          "notebook_edit_tool_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `cowork_metrics.notebook_edit_tool_count`, for activity recorded while members had Chat and Cowork unified turned on.",
+            "title": "Notebook Edit Tool Count"
+          },
+          "plugins_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `cowork_metrics.plugins_used_count`, for activity recorded while members had Chat and Cowork unified turned on.",
+            "title": "Plugins Used Count"
+          },
+          "sessions_with_file_edits_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `cowork_metrics.sessions_with_file_edits_count`, for activity recorded while members had Chat and Cowork unified turned on. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Sessions With File Edits Count"
+          },
+          "skills_used_count": {
+            "description": "Same measure as `cowork_metrics.skills_used_count`, for activity recorded while members had Chat and Cowork unified turned on.",
+            "title": "Skills Used Count",
+            "type": "integer"
+          },
+          "write_tool_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `cowork_metrics.write_tool_count`, for activity recorded while members had Chat and Cowork unified turned on.",
+            "title": "Write Tool Count"
+          }
+        },
+        "required": [
+          "action_count",
+          "artifacts_created_count",
+          "connectors_used_count",
+          "dispatch_turn_count",
+          "distinct_connectors_used_count",
+          "distinct_plugins_used_count",
+          "distinct_session_count",
+          "distinct_skills_used_count",
+          "edit_tool_count",
+          "file_edit_count",
+          "message_count",
+          "multi_edit_tool_count",
+          "notebook_edit_tool_count",
+          "plugins_used_count",
+          "sessions_with_file_edits_count",
+          "skills_used_count",
+          "write_tool_count"
+        ],
+        "title": "AnalyticsChatCoworkUnifiedSessionsMetrics",
+        "type": "object"
+      },
+      "AnalyticsCoreCodeMetrics": {
+        "description": "Core Claude Code activity metrics for a single user on a given day.",
+        "properties": {
+          "artifacts_created_count": {
+            "description": "Number of artifacts created in Claude Code sessions: an artifact counts once, on the day a session first saves it. Counted from 2026-08-17; 0 on earlier days. Exact in date-range mode: a creation belongs to exactly one day, so the per-day counts never overlap and their sum over the window is the exact count of distinct creations in it.",
+            "title": "Artifacts Created Count",
+            "type": "integer"
+          },
+          "commit_count": {
+            "description": "Number of commits made via Claude Code",
+            "title": "Commit Count",
+            "type": "integer"
+          },
+          "distinct_session_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct Claude Code sessions. On aggregated rows and in date-range mode: summed per-day distinct counts. A session essentially never spans a UTC day, so the sum is in practice the true distinct count.",
+            "title": "Distinct Session Count"
+          },
+          "lines_of_code": {
+            "$ref": "#/components/schemas/AnalyticsLinesOfCode"
+          },
+          "pull_request_count": {
+            "description": "Number of pull requests created via Claude Code",
+            "title": "Pull Request Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "artifacts_created_count",
+          "commit_count",
+          "distinct_session_count",
+          "lines_of_code",
+          "pull_request_count"
+        ],
+        "title": "AnalyticsCoreCodeMetrics",
+        "type": "object"
+      },
+      "AnalyticsToolActions": {
+        "description": "Per-tool accepted/rejected counts for Claude Code file modification tools.",
+        "properties": {
+          "edit_tool": {
+            "$ref": "#/components/schemas/AnalyticsToolActionCounts"
+          },
+          "multi_edit_tool": {
+            "$ref": "#/components/schemas/AnalyticsToolActionCounts"
+          },
+          "notebook_edit_tool": {
+            "$ref": "#/components/schemas/AnalyticsToolActionCounts"
+          },
+          "write_tool": {
+            "$ref": "#/components/schemas/AnalyticsToolActionCounts"
+          }
+        },
+        "required": [
+          "edit_tool",
+          "multi_edit_tool",
+          "notebook_edit_tool",
+          "write_tool"
+        ],
+        "title": "AnalyticsToolActions",
+        "type": "object"
+      },
+      "AnalyticsOfficeProductMetrics": {
+        "description": "Office Agent activity metrics for a single user on a given day within one Office product.",
+        "properties": {
+          "connectors_used_count": {
+            "description": "Number of MCP connector invocations",
+            "title": "Connectors Used Count",
+            "type": "integer"
+          },
+          "distinct_connectors_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct MCP connectors used. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Connectors Used Count"
+          },
+          "distinct_session_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct Office Agent sessions. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Session Count"
+          },
+          "distinct_skills_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct skills used. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Skills Used Count"
+          },
+          "message_count": {
+            "description": "Number of messages sent",
+            "title": "Message Count",
+            "type": "integer"
+          },
+          "skills_used_count": {
+            "description": "Number of skill invocations",
+            "title": "Skills Used Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "connectors_used_count",
+          "distinct_connectors_used_count",
+          "distinct_session_count",
+          "distinct_skills_used_count",
+          "message_count",
+          "skills_used_count"
+        ],
+        "title": "AnalyticsOfficeProductMetrics",
+        "type": "object"
+      },
+      "AnalyticsLinesOfCode": {
+        "description": "Lines of code added and removed via Claude Code.",
+        "properties": {
+          "added_count": {
+            "description": "Lines of code added",
+            "title": "Added Count",
+            "type": "integer"
+          },
+          "removed_count": {
+            "description": "Lines of code removed",
+            "title": "Removed Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "added_count",
+          "removed_count"
+        ],
+        "title": "AnalyticsLinesOfCode",
+        "type": "object"
+      },
+      "AnalyticsToolActionCounts": {
+        "description": "Accepted/rejected counts for a single Claude Code tool type.",
+        "properties": {
+          "accepted_count": {
+            "description": "Number of tool proposals accepted",
+            "title": "Accepted Count",
+            "type": "integer"
+          },
+          "rejected_count": {
+            "description": "Number of tool proposals rejected",
+            "title": "Rejected Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "accepted_count",
+          "rejected_count"
+        ],
+        "title": "AnalyticsToolActionCounts",
+        "type": "object"
+      }
+    }
+  }
+}

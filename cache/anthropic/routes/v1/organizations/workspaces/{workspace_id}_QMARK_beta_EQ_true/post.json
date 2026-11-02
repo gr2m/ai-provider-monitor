@@ -47,7 +47,71 @@
       "content": {
         "application/json": {
           "schema": {
-            "$ref": "#/components/schemas/BetaErrorResponse"
+            "properties": {
+              "error": {
+                "properties": {
+                  "details": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/BetaKeyProfileMismatchErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaUserProfileNotFoundErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaWorkspacePolicyViolationErrorDetails"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Machine-readable detail about the cause of the error. `error_code` names the cause; branch on it rather than on `message`. Absent when the error has no code. Treat an unrecognized `error_code` as the bare `type`.",
+                    "title": "Details"
+                  },
+                  "message": {
+                    "default": "Invalid request",
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "invalid_request_error",
+                    "default": "invalid_request_error",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "type"
+                ],
+                "title": "InvalidRequestError",
+                "type": "object"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "type": {
+                "const": "error",
+                "default": "error",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "error",
+              "request_id",
+              "type"
+            ],
+            "title": "ErrorResponse",
+            "type": "object"
           }
         }
       },
@@ -290,7 +354,7 @@
             "type": "string"
           },
           "external_key_id": {
-            "description": "ID of the customer-managed encryption key (CMEK) configuration to use for this\nWorkspace. Setting this field requires CMEK to be enabled for your\norganization. When set, data stored for this Workspace is encrypted with the\nreferenced key. Create key configurations with the External Keys API. On\nClaude Platform on AWS the value is the AWS KMS key ARN, and the key must be a\nsingle-Region key in the same AWS account and Region as the Workspace. On that\nplatform the key is validated against this Workspace when it is attached, so a\nkey-policy problem is reported as an error on this request. This field is write-once:\nonce a key is attached to a Workspace it cannot be detached or replaced. To\nrotate key material, rotate the underlying key on your cloud KMS; the\n`external_key_id` stays the same.",
+            "description": "ID of the customer-managed encryption key (CMEK) configuration to use for this\nWorkspace. Setting this field requires CMEK to be enabled for your\norganization. When set, data stored for this Workspace is encrypted with the\nreferenced key. Create key configurations with the External Keys API. On\nClaude Platform on AWS the value for an AWS KMS key is the key's ARN, and your\norganization's own key must be a single-Region key in the same AWS account and\nRegion as the Workspace. On that platform the key is validated against this\nWorkspace when it is attached, so a key-policy problem is reported as an error\non this request. This field is write-once: once a key is attached to a Workspace\nit cannot be detached or replaced. To rotate key material, rotate the underlying\nkey on your cloud KMS; the `external_key_id` stays the same.",
             "examples": [
               "ekey_01SDCCSbTxrXDpWc1phhtcfK"
             ],
@@ -331,6 +395,14 @@
               }
             ],
             "title": "Tags"
+          },
+          "user_profile_id": {
+            "description": "ID of a user profile to attach to the Workspace. Every inference request through the Workspace must then name this user profile; the API rejects a request that names none or a different one. Once set, it can't be replaced or removed (sending the same ID again changes nothing); only deleting the user profile clears it. The default Workspace can't have a user profile.",
+            "examples": [
+              "uprof_01SDCCSbTxrXDpWc1phhtcfK"
+            ],
+            "title": "User Profile Id",
+            "type": "string"
           }
         },
         "title": "WorkspaceUpdateParams",
@@ -355,7 +427,7 @@
             "title": "Archived At"
           },
           "compartment_id": {
-            "description": "Identifier for this Workspace's encryption compartment. When you configure a\ncustomer-managed encryption key (CMEK) on AWS, reference this value in your\nKMS key-policy condition so the key is scoped to this compartment. On GCP and\nAzure, Anthropic enforces the compartment binding automatically; you do not\nneed to reference this value in your key configuration. See the CMEK\nintegration guide for the required key configuration; unless your organization\nis on Claude Platform on AWS, it includes a separate value used during key\nvalidation. On Claude Platform on AWS there is no separate validation value:\nthe key is validated against this Workspace's own value when it is attached, so\nif your key policy uses the compartment condition, add this value to it before\nattaching the key.",
+            "description": "Identifier for this Workspace's encryption compartment. When you configure an\nAWS KMS customer-managed encryption key (CMEK) that isn't bound to a user\nprofile, reference this value in your KMS key-policy condition so the key is\nscoped to this compartment. On GCP and Azure, Anthropic enforces the compartment\nbinding automatically; you do not need to reference this value in your key\nconfiguration. See the CMEK integration guide for the required key\nconfiguration; unless your organization is on Claude Platform on AWS, it\nincludes a separate value used during key validation. On Claude Platform on AWS\nthere is no separate validation value: your organization's own key is validated\nagainst this Workspace's own value when it is attached, so if its key policy\nuses the compartment condition, add this value to it before attaching the key.",
             "examples": [
               "f8a7b6c5-4d3e-4f1a-8b9c-0d1e2f3a4b5c"
             ],
@@ -392,7 +464,7 @@
                 "type": "null"
               }
             ],
-            "description": "ID of the customer-managed encryption key (CMEK) configuration to use for this\nWorkspace. Setting this field requires CMEK to be enabled for your\norganization. When set, data stored for this Workspace is encrypted with the\nreferenced key. Create key configurations with the External Keys API. On\nClaude Platform on AWS the value is the AWS KMS key ARN, and the key must be a\nsingle-Region key in the same AWS account and Region as the Workspace. On that\nplatform the key is validated against this Workspace when it is attached, so a\nkey-policy problem is reported as an error on this request. This field is write-once:\nonce a key is attached to a Workspace it cannot be detached or replaced. To\nrotate key material, rotate the underlying key on your cloud KMS; the\n`external_key_id` stays the same.",
+            "description": "ID of the customer-managed encryption key (CMEK) configuration to use for this\nWorkspace. Setting this field requires CMEK to be enabled for your\norganization. When set, data stored for this Workspace is encrypted with the\nreferenced key. Create key configurations with the External Keys API. On\nClaude Platform on AWS the value for an AWS KMS key is the key's ARN, and your\norganization's own key must be a single-Region key in the same AWS account and\nRegion as the Workspace. On that platform the key is validated against this\nWorkspace when it is attached, so a key-policy problem is reported as an error\non this request. This field is write-once: once a key is attached to a Workspace\nit cannot be detached or replaced. To rotate key material, rotate the underlying\nkey on your cloud KMS; the `external_key_id` stays the same.",
             "examples": [
               "ekey_01SDCCSbTxrXDpWc1phhtcfK"
             ],
@@ -434,6 +506,21 @@
             "description": "Object type.\n\nFor Workspaces, this is always `\"workspace\"`.",
             "title": "Type",
             "type": "string"
+          },
+          "user_profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "ID of the user profile attached to the Workspace, or null if it has none. Every inference request through a Workspace that has a user profile must name that profile.",
+            "examples": [
+              "uprof_01SDCCSbTxrXDpWc1phhtcfK"
+            ],
+            "title": "User Profile Id"
           }
         },
         "required": [
@@ -446,9 +533,63 @@
           "id",
           "name",
           "tags",
-          "type"
+          "type",
+          "user_profile_id"
         ],
         "title": "Workspace",
+        "type": "object"
+      },
+      "BetaKeyProfileMismatchErrorDetails": {
+        "description": "The External Key is bound to a user profile, and the Workspace does not have that user profile. A Workspace can use only a key bound to its own user profile or a key that isn't bound to one.",
+        "properties": {
+          "error_code": {
+            "const": "key_profile_mismatch",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "KeyProfileMismatchErrorDetails",
+        "type": "object"
+      },
+      "BetaUserProfileNotFoundErrorDetails": {
+        "description": "The request depends on a user profile that does not exist in the organization or is no longer active. The request either names this user profile by ID, or names a resource, such as an External Key, that is bound to it.",
+        "properties": {
+          "error_code": {
+            "const": "user_profile_not_found",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "UserProfileNotFoundErrorDetails",
+        "type": "object"
+      },
+      "BetaWorkspacePolicyViolationErrorDetails": {
+        "description": "The request breaks the organization's Workspace Policy. The message says which rule it broke; an organization admin can see and change the policy in the Console.",
+        "properties": {
+          "error_code": {
+            "const": "workspace_policy_violation",
+            "title": "Error Code",
+            "type": "string"
+          },
+          "field": {
+            "$ref": "#/components/schemas/BetaWorkspacePolicyField",
+            "description": "The request field the broken rule applies to.",
+            "examples": [
+              "external_key_id"
+            ]
+          }
+        },
+        "required": [
+          "error_code",
+          "field"
+        ],
+        "title": "WorkspacePolicyViolationErrorDetails",
         "type": "object"
       },
       "BetaErrorResponse": {
@@ -616,6 +757,13 @@
         ],
         "title": "DataResidency",
         "type": "object"
+      },
+      "BetaWorkspacePolicyField": {
+        "enum": [
+          "external_key_id"
+        ],
+        "title": "WorkspacePolicyField",
+        "type": "string"
       },
       "BetaInvalidRequestError": {
         "properties": {
