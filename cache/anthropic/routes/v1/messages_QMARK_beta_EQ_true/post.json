@@ -128,6 +128,18 @@
                         "$ref": "#/components/schemas/BetaRequestBodyEncodingUnsupportedErrorDetails"
                       },
                       {
+                        "$ref": "#/components/schemas/BetaThreadAlreadyContinuedErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaThreadContinueInFlightErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaThreadFingerprintMismatchErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaThreadUnsupportedRequestErrorDetails"
+                      },
+                      {
                         "$ref": "#/components/schemas/BetaToolNameConflictErrorDetails"
                       },
                       {
@@ -213,7 +225,64 @@
       "content": {
         "application/json": {
           "schema": {
-            "$ref": "#/components/schemas/BetaErrorResponse"
+            "properties": {
+              "error": {
+                "properties": {
+                  "details": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/BetaThreadNotFoundErrorDetails"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Machine-readable detail about the cause of the error. `error_code` names the cause; branch on it rather than on `message`. Absent when the error has no code. Treat an unrecognized `error_code` as the bare `type`."
+                  },
+                  "message": {
+                    "default": "Not found",
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "not_found_error",
+                    "default": "not_found_error",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "type"
+                ],
+                "title": "NotFoundError",
+                "type": "object"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "type": {
+                "const": "error",
+                "default": "error",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "error",
+              "request_id",
+              "type"
+            ],
+            "title": "ErrorResponse",
+            "type": "object"
           }
         }
       },
@@ -693,7 +762,8 @@
             ],
             "type": "string"
           }
-        ]
+        ],
+        "description": "Beta names you can send in the `anthropic-beta` header.\n\nSee [Beta headers](https://platform.claude.com/docs/en/api/beta-headers) for how to send them and where to find the name a feature needs."
       },
       "BetaCreateMessageParams": {
         "additionalProperties": false,
@@ -1444,6 +1514,90 @@
         "title": "RequestBodyEncodingUnsupportedErrorDetails",
         "type": "object"
       },
+      "BetaThreadAlreadyContinuedErrorDetails": {
+        "description": "The response that `previous_message_id` names has already been continued, and each response can be continued only once. Continue from the Thread's most recent response `id`.",
+        "properties": {
+          "error_code": {
+            "const": "thread_already_continued",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "ThreadAlreadyContinuedErrorDetails",
+        "type": "object"
+      },
+      "BetaThreadContinueInFlightErrorDetails": {
+        "description": "Another request is still continuing from the same `previous_message_id`. Wait for it to complete and continue from its response `id`, or replay the full conversation with `thread: {\"type\": \"create\"}`.",
+        "properties": {
+          "error_code": {
+            "const": "thread_continue_in_flight",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "ThreadContinueInFlightErrorDetails",
+        "type": "object"
+      },
+      "BetaThreadFingerprintMismatchErrorDetails": {
+        "description": "A field that must stay the same across a Thread's turns differs from the value stored with the Thread; the message names each such field. Send the stored values, or replay the full conversation with `thread: {\"type\": \"create\"}` to change them.",
+        "properties": {
+          "error_code": {
+            "const": "thread_fingerprint_mismatch",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "ThreadFingerprintMismatchErrorDetails",
+        "type": "object"
+      },
+      "BetaThreadUnsupportedRequestErrorDetails": {
+        "description": "The request combines `thread` with a request field or an organization setting that Threads do not support; `unsupported`, when present, names it. Send the full conversation without `thread`, or change that field.",
+        "properties": {
+          "error_code": {
+            "const": "thread_unsupported_request",
+            "title": "Error Code",
+            "type": "string"
+          },
+          "unsupported": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "cache_control",
+                    "context_management",
+                    "fallbacks",
+                    "hipaa",
+                    "inference_hooks",
+                    "thinking",
+                    "zdr"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Each entry names a request field or an organization setting that Threads do not support. On a value you do not recognize, send the full conversation without `thread`.",
+            "title": "Unsupported"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "ThreadUnsupportedRequestErrorDetails",
+        "type": "object"
+      },
       "BetaToolNameConflictErrorDetails": {
         "description": "A tool made available in `messages` takes a name that an available tool of another kind, or of another MCP server, already holds.",
         "properties": {
@@ -1547,6 +1701,21 @@
           "type"
         ],
         "title": "ErrorResponse",
+        "type": "object"
+      },
+      "BetaThreadNotFoundErrorDetails": {
+        "description": "No usable Thread state was found for `previous_message_id`. Replay the full conversation with `thread: {\"type\": \"create\"}` to start a new Thread.",
+        "properties": {
+          "error_code": {
+            "const": "thread_not_found",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "ThreadNotFoundErrorDetails",
         "type": "object"
       },
       "BetaSkillReadBlockedUndecryptableErrorDetails": {
@@ -7584,7 +7753,6 @@
             "type": "null"
           }
         ],
-        "default": null,
         "description": "Per-iteration token usage breakdown.\n\nEach entry represents one sampling iteration, with its own input/output token counts and cache statistics, discriminated by `type`. For `message` entries (model sampling iterations, such as the turns of a server-side tool use loop), this allows you to:\n- Calculate the context window size from the last `message` entry\n- Understand token accumulation across server-side tool use loops\n\nA `compaction` entry reports the token usage of the compaction operation itself — the server-side request that summarizes the context being closed — NOT the size of the context that was compacted away, and its token counts can be much smaller than that closed context (for example, a compaction that closes a ~200k-token context can report only a few thousand tokens). Do not derive the context window size from a `compaction` entry, even when it is the last entry. A `compaction` entry's tokens are not included in the top-level `usage` fields. When an input-token trigger is in effect (the default — 150,000 tokens unless configured otherwise), each `compaction` entry closes a context that had reached at least that threshold, though the context can exceed it by the final iteration's output and tool results.",
         "title": "Iterations"
       },

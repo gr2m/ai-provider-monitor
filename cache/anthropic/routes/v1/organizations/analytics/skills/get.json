@@ -1,0 +1,1046 @@
+{
+  "description": "Get per-skill usage for a given day, with cursor-based pagination.\n\nReturns skill usage metrics for the organization, sorted by skill name.\nUse `group_by[]` to break usage out per member, per RBAC group, or per\nproduct surface, and `filter[]` to scope results; the parameter\ndescriptions list the supported dimensions. Available to organizations\non a Claude Enterprise plan. Requires an API key with the\n`read:analytics` scope.",
+  "operationId": "get_skills_v1_organizations_analytics_skills_get",
+  "parameters": [
+    {
+      "description": "UTC date in YYYY-MM-DD format. The day to get skill usage for. Data is typically available with a 1-day lag (varies by query; the error for a too-recent date names the latest available day) and may be revised by a few percent over the following days. No earlier than 2026-01-01.",
+      "in": "query",
+      "name": "date",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "UTC date in YYYY-MM-DD format. The day to get skill usage for. Data is typically available with a 1-day lag (varies by query; the error for a too-recent date names the latest available day) and may be revised by a few percent over the following days. No earlier than 2026-01-01.",
+        "title": "Date"
+      }
+    },
+    {
+      "description": "UTC date in YYYY-MM-DD format. Start of a date range (inclusive). Enables rollup mode: one row per entity aggregated over the whole range — addable counters are summed across days, and a distinct count is never summed where summing could double-count (a field's range value is recomputed exactly over the window, approximate via HLL with typical error under 2%, null, or — for the creation-event counts, whose per-day values cannot overlap — a per-day sum that is itself exact; each field's own description says which). Use either `date` or `starting_date`, not both. Data is typically available with a 1-day lag (varies by query; the error for a too-recent date names the latest available day) and may be revised by a few percent over the following days. No earlier than 2026-01-01.",
+      "in": "query",
+      "name": "starting_date",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "UTC date in YYYY-MM-DD format. Start of a date range (inclusive). Enables rollup mode: one row per entity aggregated over the whole range — addable counters are summed across days, and a distinct count is never summed where summing could double-count (a field's range value is recomputed exactly over the window, approximate via HLL with typical error under 2%, null, or — for the creation-event counts, whose per-day values cannot overlap — a per-day sum that is itself exact; each field's own description says which). Use either `date` or `starting_date`, not both. Data is typically available with a 1-day lag (varies by query; the error for a too-recent date names the latest available day) and may be revised by a few percent over the following days. No earlier than 2026-01-01.",
+        "title": "Starting Date"
+      }
+    },
+    {
+      "description": "UTC date in YYYY-MM-DD format. End of the date range (exclusive); only valid with `starting_date`. Data is typically available with a 1-day lag (varies by query; the error for a too-recent date names the latest available day), so this can be at most today — which is also the default when omitted, resolved once when the first page is served and reused for the rest of the pagination sequence. At most 366 days after `starting_date`.",
+      "in": "query",
+      "name": "ending_date",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "format": "date",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "UTC date in YYYY-MM-DD format. End of the date range (exclusive); only valid with `starting_date`. Data is typically available with a 1-day lag (varies by query; the error for a too-recent date names the latest available day), so this can be at most today — which is also the default when omitted, resolved once when the first page is served and reused for the rest of the pagination sequence. At most 366 days after `starting_date`.",
+        "title": "Ending Date"
+      }
+    },
+    {
+      "description": "Number of results per page (1-1000, default 100).",
+      "in": "query",
+      "name": "limit",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "maximum": 1000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Number of results per page (1-1000, default 100).",
+        "title": "Limit"
+      }
+    },
+    {
+      "description": "Opaque cursor from a previous response's `next_page` field.",
+      "in": "query",
+      "name": "page",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Opaque cursor from a previous response's `next_page` field.",
+        "title": "Page"
+      }
+    },
+    {
+      "description": "Dimensions to break results out by (e.g. `group_by[]=user_id`). Supported on this endpoint: `product`, `rbac_group_id`, `user_id`. Grouped rows carry the requested dimension values as additional fields and paginate like ungrouped responses via `next_page`; an unsupported dimension returns 400. `rbac_group_id` attributes a user to every group they held at any point during each covered UTC day, so grouped rows are not an exclusive partition and can sum above org-level totals. At most 100 entries.",
+      "in": "query",
+      "name": "group_by[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsSkillGroupBy"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Dimensions to break results out by (e.g. `group_by[]=user_id`). Supported on this endpoint: `product`, `rbac_group_id`, `user_id`. Grouped rows carry the requested dimension values as additional fields and paginate like ungrouped responses via `next_page`; an unsupported dimension returns 400. `rbac_group_id` attributes a user to every group they held at any point during each covered UTC day, so grouped rows are not an exclusive partition and can sum above org-level totals. At most 100 entries.",
+        "maxItems": 100,
+        "title": "Group By[]"
+      }
+    },
+    {
+      "description": "Filters as `dimension:value`, e.g. `filter[]=rbac_group_id:{id}`. Repeat the param for OR within a dimension and across dimensions for AND. Supported dimensions on this endpoint: `product`, `rbac_group_id`, `share_status`, `skill_name`, `user_id`. Value forms: `product` is one of `chat_cowork_unified`, `chat`, `claude_code`, `cowork`, or `office_agent`; `rbac_group_id` takes the tagged id (`rbac_group_...`, as emitted in responses and by the spend-limits API) or a bare group UUID, and matches users who held the group at any point during each covered UTC day (time-of-usage attribution); `share_status` is one of `organization`, `private`, or `public`; `skill_name` matches case-insensitively; `user_id` takes a tagged user id (`user_...`), as emitted in responses. An unsupported dimension returns 400. At most 100 entries. `chat_cowork_unified` is accepted as a `product` value only on deployments that offer Chat and Cowork unified.",
+      "in": "query",
+      "name": "filter[]",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Filters as `dimension:value`, e.g. `filter[]=rbac_group_id:{id}`. Repeat the param for OR within a dimension and across dimensions for AND. Supported dimensions on this endpoint: `product`, `rbac_group_id`, `share_status`, `skill_name`, `user_id`. Value forms: `product` is one of `chat_cowork_unified`, `chat`, `claude_code`, `cowork`, or `office_agent`; `rbac_group_id` takes the tagged id (`rbac_group_...`, as emitted in responses and by the spend-limits API) or a bare group UUID, and matches users who held the group at any point during each covered UTC day (time-of-usage attribution); `share_status` is one of `organization`, `private`, or `public`; `skill_name` matches case-insensitively; `user_id` takes a tagged user id (`user_...`), as emitted in responses. An unsupported dimension returns 400. At most 100 entries. `chat_cowork_unified` is accepted as a `product` value only on deployments that offer Chat and Cowork unified.",
+        "maxItems": 100,
+        "title": "Filter[]"
+      }
+    },
+    {
+      "description": "Sort field. Restricted to the endpoint's sort column plus its rankable metrics (metrics default to descending; a few metrics rank in date-range mode only, per the endpoint's documented orderable set).",
+      "in": "query",
+      "name": "order_by",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Sort field. Restricted to the endpoint's sort column plus its rankable metrics (metrics default to descending; a few metrics rank in date-range mode only, per the endpoint's documented orderable set).",
+        "title": "Order By"
+      }
+    },
+    {
+      "description": "Sort direction: `asc` or `desc`. Defaults to `asc` for the endpoint's sort column and to `desc` when `order_by` names a metric (a top-N ranking). Applies to `order_by`, or to the endpoint's default sort field when `order_by` is omitted.",
+      "in": "query",
+      "name": "order",
+      "required": false,
+      "schema": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/AnalyticsOrder"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Sort direction: `asc` or `desc`. Defaults to `asc` for the endpoint's sort column and to `desc` when `order_by` names a metric (a top-N ranking). Applies to `order_by`, or to the endpoint's default sort field when `order_by` is omitted.",
+        "title": "Order"
+      }
+    },
+    {
+      "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+      "in": "header",
+      "name": "anthropic-version",
+      "required": false,
+      "schema": {
+        "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+        "title": "Anthropic-Version",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AnalyticsSkillsResponse"
+          }
+        }
+      },
+      "description": "Successful Response"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Invalid argument - The client specified an invalid argument"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Unauthenticated - The request does not have valid authentication credentials"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Permission denied - The caller does not have permission to execute the specified operation"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Not found - Some requested entity was not found"
+    },
+    "408": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - The deadline expired before the operation could complete"
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Aborted - The operation was aborted due to concurrency issue"
+    },
+    "412": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Failed precondition - Operation was rejected because the system is not in required state"
+    },
+    "413": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Out of range - Operation was attempted past the valid range"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Resource exhausted - Some resource has been exhausted (rate limiting)"
+    },
+    "431": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Request header fields too large - Request metadata was too large"
+    },
+    "499": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Cancelled - The operation was cancelled by the client"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Internal - Internal server error"
+    },
+    "501": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Unimplemented - The operation is not implemented or supported"
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Unavailable - The service is currently unavailable"
+    },
+    "504": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - Upstream service did not respond in time"
+    },
+    "529": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Overloaded - The service is temporarily overloaded"
+    }
+  },
+  "summary": "Get Skill Usage",
+  "components": {
+    "schemas": {
+      "AnalyticsSkillGroupBy": {
+        "description": "A dimension to group skill activity by.",
+        "enum": [
+          "product",
+          "rbac_group_id",
+          "user_id"
+        ],
+        "type": "string"
+      },
+      "AnalyticsOrder": {
+        "description": "Sort direction: `asc` or `desc`. Defaults to `asc` for the endpoint's sort column and to `desc` when `order_by` names a metric (a top-N ranking). Applies to `order_by`, or to the endpoint's default sort field when `order_by` is omitted.",
+        "enum": [
+          "asc",
+          "desc"
+        ],
+        "type": "string"
+      },
+      "AnalyticsSkillsResponse": {
+        "description": "Response for GET /v1/organizations/analytics/skills.",
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsSkillActivity"
+            },
+            "title": "Data",
+            "type": "array"
+          },
+          "next_page": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Opaque cursor for the next page, or null if no more results",
+            "title": "Next Page"
+          }
+        },
+        "required": [
+          "data",
+          "next_page"
+        ],
+        "title": "AnalyticsSkillsResponse",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "discriminator": {
+              "mapping": {
+                "api_error": "#/components/schemas/APIError",
+                "authentication_error": "#/components/schemas/AuthenticationError",
+                "billing_error": "#/components/schemas/BillingError",
+                "invalid_request_error": "#/components/schemas/InvalidRequestError",
+                "not_found_error": "#/components/schemas/NotFoundError",
+                "overloaded_error": "#/components/schemas/OverloadedError",
+                "permission_error": "#/components/schemas/PermissionError",
+                "rate_limit_error": "#/components/schemas/RateLimitError",
+                "timeout_error": "#/components/schemas/GatewayTimeoutError"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/InvalidRequestError"
+              },
+              {
+                "$ref": "#/components/schemas/AuthenticationError"
+              },
+              {
+                "$ref": "#/components/schemas/BillingError"
+              },
+              {
+                "$ref": "#/components/schemas/PermissionError"
+              },
+              {
+                "$ref": "#/components/schemas/NotFoundError"
+              },
+              {
+                "$ref": "#/components/schemas/RateLimitError"
+              },
+              {
+                "$ref": "#/components/schemas/GatewayTimeoutError"
+              },
+              {
+                "$ref": "#/components/schemas/APIError"
+              },
+              {
+                "$ref": "#/components/schemas/OverloadedError"
+              }
+            ],
+            "title": "Error"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Id"
+          },
+          "type": {
+            "const": "error",
+            "default": "error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "request_id",
+          "type"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "AnalyticsSkillActivity": {
+        "description": "Per-skill activity data for a given day.",
+        "properties": {
+          "attributed_list_price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "List-price (rate-card) value of the member requests attributed to this skill, as a decimal string in the minor unit of `currency` (cents for USD), from Claude Code, Cowork, and Office Agent request-level attribution — the value of requests that involved the skill, not the skill's incremental cost. Unlike `estimated_overage_spend` this reflects usage value regardless of how it was funded — seat-covered usage counts — but it is undiscounted and does not tie to billed spend or the organization's spend reporting. claude.ai chat usage carries no request-level attribution and contributes nothing: the field is null on `chat` product rows and on `office_agent` product cuts dated before 2026-06-18 (the Office Agent attribution data-start), and on ungrouped rows it covers the Claude Code + Cowork + Office Agent share only (null when no attributable usage exists). Also null under the same conditions as `estimated_overage_spend` (spend reporting not enabled for this organization, `office_agent` product cuts before the 2026-06-18 data-start). \"0\" means attributable usage existed but none was attributed to this skill. Addable across days: date-range rollup mode returns the window's sum. On `group_by[]` and `filter[]` shapes both amounts can total below the ungrouped value for the same skill over the same date or range: spend attributed to a member–skill pair with no counted usage on that day is excluded from those cuts.",
+            "title": "Attributed List Price"
+          },
+          "chat_cowork_unified_metrics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalyticsSkillChatCoworkUnifiedMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Skill use recorded while members had Chat and Cowork unified (Cowork's features inside claude.ai chat) turned on, split into chat conversations and Cowork sessions. A count is null in date-range mode where it cannot be computed. Omitted from the response on deployments that do not offer Chat and Cowork unified."
+          },
+          "chat_metrics": {
+            "$ref": "#/components/schemas/AnalyticsSkillChatMetrics"
+          },
+          "claude_code_metrics": {
+            "$ref": "#/components/schemas/AnalyticsSkillClaudeCodeMetrics"
+          },
+          "cowork_metrics": {
+            "$ref": "#/components/schemas/AnalyticsSkillCoworkMetrics"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Currency for this row's monetary fields (`estimated_overage_spend` and `attributed_list_price`), as an uppercase ISO-4217 code. Always \"USD\" when either amount is populated; null whenever both amounts are null.",
+            "title": "Currency"
+          },
+          "distinct_user_count": {
+            "description": "Number of distinct users who used the skill on the requested day, or, in date-range mode, over the requested window — recomputed as an exact distinct count over the window's per-member daily rows, never a sum of per-day values. A skill counts as used only when it is explicitly activated — the model (or the user, via the skill's slash command) invokes it, reading its instructions into context as part of that activation. Skills that are merely installed or listed as available, or whose content reaches the context without an activation (preloaded, hook-injected, or read as a plain file), are not counted.",
+            "title": "Distinct User Count",
+            "type": "integer"
+          },
+          "enable_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Distinct accounts that enabled this skill on the requested day (claude.ai only — the skill analog of plugin `install_count`). The count is org-wide: null when enable reporting is not enabled for this organization, or when the request scopes to `user_id` / `rbac_group_id` / `product` via `group_by[]` or `filter[]` (an org-wide count would be misleading on per-cut rows). A distinct count, not an event count: summing across days double-counts members who enable the skill on more than one day, so it is also null in date-range rollup mode (`starting_date`/`ending_date`).",
+            "title": "Enable Count"
+          },
+          "estimated_overage_spend": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Estimated overage spend attributed to this skill, as a decimal string in the minor unit of `currency` (cents for USD; \"1250\" is $12.50, fractional cents possible) — an allocation of each member's daily post-discount, pre-credit metered overage spend (the same cost basis as the organization's spend reporting and the Cost & Usage API, so per-skill figures are directly comparable; spend with no skill attribution — including any member-day without skill invocations — is not represented, so skill rows sum to at most those totals) across the skills the member used. Overage only: usage covered by included seat allowances bills nothing and allocates $0 here — see `attributed_list_price` for the funding-independent usage-value companion. Claude Code, Cowork, and Office Agent spend use request-level skill attribution; claude.ai chat spend is approximated proportionally to skill-invoking messages. An estimate, not a billing number — and the cost of the requests/messages that involved the skill, not the skill's incremental cost (the same request would still have cost something without the skill active). \"0\" means no overage spend was attributed; null when spend reporting is not enabled for this organization, on `office_agent` product cuts dated before 2026-06-18 (the Office Agent attribution data-start). Addable across days: date-range rollup mode (`starting_date`/`ending_date`) returns the window's sum. With `group_by[]=user_id` each row carries the user's own attributed spend. On `group_by[]` and `filter[]` shapes both amounts can total below the ungrouped value for the same skill over the same date or range: spend attributed to a member–skill pair with no counted usage on that day is excluded from those cuts.",
+            "title": "Estimated Overage Spend"
+          },
+          "invocation_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Total number of times this skill was invoked on the requested day (the skill analog of plugin `invocation_count`). Unlike `distinct_user_count` — which answers '# of users' — this is the true '# of uses'. A skill counts as used only when it is explicitly activated — the model (or the user, via the skill's slash command) invokes it, reading its instructions into context as part of that activation. Skills that are merely installed or listed as available, or whose content reaches the context without an activation (preloaded, hook-injected, or read as a plain file), are not counted. Null when invocation reporting is not enabled for this organization. Sum across a date range for total uses in the window — date-range rollup mode (`starting_date`/`ending_date`) returns this sum directly.",
+            "title": "Invocation Count"
+          },
+          "office_metrics": {
+            "$ref": "#/components/schemas/AnalyticsSkillOfficeMetrics"
+          },
+          "product": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Product that produced this row's activity: one of `chat`, `claude_code`, `cowork`, `office_agent`, or `chat_cowork_unified` (Chat and Cowork unified). These are the canonical Cost & Usage product names; an `office_agent` row's per-surface breakdown is in its `office_metrics`. On `/plugins` only `cowork`, `claude_code` and `chat_cowork_unified` occur (the only surfaces with plugin attribution); on `/artifacts` only `chat`, `claude_code`, `cowork` and `chat_cowork_unified` occur (the surfaces that create artifacts); `/apps/chat/projects` does not support the product dimension (a `product` entry in `group_by[]` or `filter[]` there is rejected). Present only when the request grouped by `product`.",
+            "title": "Product"
+          },
+          "rbac_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tagged RBAC group identifier (`rbac_group_...`), matching the spend-limits API spelling. Present only when the request grouped by `rbac_group_id`.",
+            "title": "Rbac Group Id"
+          },
+          "rbac_group_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Resolved RBAC group display name, alongside `rbac_group_id` when name resolution is available. Null if the group has been deleted or its name could not be resolved; `rbac_group_id` remains the stable key.",
+            "title": "Rbac Group Name"
+          },
+          "share_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "organization",
+                  "private",
+                  "public"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Skill share status (claude.ai only): one of `private`, `organization`, or `public`. Null for skills used only in Claude Code or Office (no per-skill share-status concept) and when share-status reporting is not yet available for the organization. Filterable via `filter[]=share_status:{value}`.",
+            "title": "Share Status"
+          },
+          "skill_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Human-readable display name for rows whose `skill_name` is an opaque skill id (user/organization skill types and plugin-delivered skills, whose user-defined names usage reports generally withhold). Organization-shared skills and skills delivered by the organization's own plugins (its plugin marketplaces and its library) resolve; plugin skill names are shown without their 'plugin:' prefix. The literal 'unknown' bucket row gets a fixed 'Unknown skill' label. For a member's own skill (private or personal-plugin) it is null, except when the skill's owner used it from Claude Code or Cowork in the requested period: then it shows the name that client reported at the time. Apart from that, the names of members' own skills are not disclosed to analytics-key holders. Also null for Anthropic-provided plugin skills (not resolved), for an organization skill or plugin whose name can no longer be found (for example, one since deleted), when `skill_name` is already a display name, or when display-name resolution is not enabled for this organization.",
+            "title": "Skill Display Name"
+          },
+          "skill_name": {
+            "description": "Name of the skill",
+            "title": "Skill Name",
+            "type": "string"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Tagged user identifier (e.g. `user_...`). Present only when the request grouped by `user_id`.",
+            "title": "User Id"
+          }
+        },
+        "required": [
+          "attributed_list_price",
+          "chat_metrics",
+          "claude_code_metrics",
+          "cowork_metrics",
+          "currency",
+          "distinct_user_count",
+          "enable_count",
+          "estimated_overage_spend",
+          "invocation_count",
+          "office_metrics",
+          "share_status",
+          "skill_display_name",
+          "skill_name"
+        ],
+        "title": "AnalyticsSkillActivity",
+        "type": "object"
+      },
+      "InvalidRequestError": {
+        "properties": {
+          "message": {
+            "default": "Invalid request",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "invalid_request_error",
+            "default": "invalid_request_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "InvalidRequestError",
+        "type": "object"
+      },
+      "AuthenticationError": {
+        "properties": {
+          "message": {
+            "default": "Authentication error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "authentication_error",
+            "default": "authentication_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "AuthenticationError",
+        "type": "object"
+      },
+      "BillingError": {
+        "properties": {
+          "message": {
+            "default": "Billing error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "billing_error",
+            "default": "billing_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "BillingError",
+        "type": "object"
+      },
+      "PermissionError": {
+        "properties": {
+          "message": {
+            "default": "Permission denied",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "permission_error",
+            "default": "permission_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "PermissionError",
+        "type": "object"
+      },
+      "NotFoundError": {
+        "properties": {
+          "message": {
+            "default": "Not found",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "not_found_error",
+            "default": "not_found_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "NotFoundError",
+        "type": "object"
+      },
+      "RateLimitError": {
+        "properties": {
+          "message": {
+            "default": "Rate limited",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "rate_limit_error",
+            "default": "rate_limit_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "RateLimitError",
+        "type": "object"
+      },
+      "GatewayTimeoutError": {
+        "properties": {
+          "message": {
+            "default": "Request timeout",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "timeout_error",
+            "default": "timeout_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "GatewayTimeoutError",
+        "type": "object"
+      },
+      "APIError": {
+        "properties": {
+          "message": {
+            "default": "Internal server error",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "api_error",
+            "default": "api_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "APIError",
+        "type": "object"
+      },
+      "OverloadedError": {
+        "properties": {
+          "message": {
+            "default": "Overloaded",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "overloaded_error",
+            "default": "overloaded_error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "OverloadedError",
+        "type": "object"
+      },
+      "AnalyticsSkillChatCoworkUnifiedMetrics": {
+        "description": "A skill's use in Chat and Cowork unified on one day: `chat` holds its use\nin chat conversations and `sessions` its use in Cowork sessions.",
+        "properties": {
+          "chat": {
+            "$ref": "#/components/schemas/AnalyticsSkillChatCoworkUnifiedChatMetrics"
+          },
+          "sessions": {
+            "$ref": "#/components/schemas/AnalyticsSkillChatCoworkUnifiedSessionsMetrics"
+          }
+        },
+        "required": [
+          "chat",
+          "sessions"
+        ],
+        "title": "AnalyticsSkillChatCoworkUnifiedMetrics",
+        "type": "object"
+      },
+      "AnalyticsSkillChatMetrics": {
+        "description": "Claude.ai activity metrics for a single skill on a given day.",
+        "properties": {
+          "distinct_conversation_skill_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct conversations in which the skill was used. A skill counts as used only when it is explicitly activated — the model (or the user, via the skill's slash command) invokes it, reading its instructions into context as part of that activation. Skills that are merely installed or listed as available, or whose content reaches the context without an activation (preloaded, hook-injected, or read as a plain file), are not counted. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Conversation Skill Used Count"
+          }
+        },
+        "required": [
+          "distinct_conversation_skill_used_count"
+        ],
+        "title": "AnalyticsSkillChatMetrics",
+        "type": "object"
+      },
+      "AnalyticsSkillClaudeCodeMetrics": {
+        "description": "Claude Code activity metrics for a single skill on a given day.",
+        "properties": {
+          "distinct_session_skill_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct Claude Code sessions in which the skill was used. A skill counts as used only when it is explicitly activated — the model (or the user, via the skill's slash command) invokes it, reading its instructions into context as part of that activation. Skills that are merely installed or listed as available, or whose content reaches the context without an activation (preloaded, hook-injected, or read as a plain file), are not counted. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Session Skill Used Count"
+          }
+        },
+        "required": [
+          "distinct_session_skill_used_count"
+        ],
+        "title": "AnalyticsSkillClaudeCodeMetrics",
+        "type": "object"
+      },
+      "AnalyticsSkillCoworkMetrics": {
+        "description": "Cowork activity metrics for a single skill on a given day.",
+        "properties": {
+          "distinct_session_skill_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct Cowork sessions in which the skill was used. A skill counts as used only when it is explicitly activated — the model (or the user, via the skill's slash command) invokes it, reading its instructions into context as part of that activation. Skills that are merely installed or listed as available, or whose content reaches the context without an activation (preloaded, hook-injected, or read as a plain file), are not counted. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Session Skill Used Count"
+          }
+        },
+        "required": [
+          "distinct_session_skill_used_count"
+        ],
+        "title": "AnalyticsSkillCoworkMetrics",
+        "type": "object"
+      },
+      "AnalyticsSkillOfficeMetrics": {
+        "description": "Office Agent activity metrics for a single skill on a given day, broken out by Office product.",
+        "properties": {
+          "excel": {
+            "$ref": "#/components/schemas/AnalyticsSkillOfficeProductMetrics"
+          },
+          "outlook": {
+            "$ref": "#/components/schemas/AnalyticsSkillOfficeProductMetrics"
+          },
+          "powerpoint": {
+            "$ref": "#/components/schemas/AnalyticsSkillOfficeProductMetrics"
+          },
+          "word": {
+            "$ref": "#/components/schemas/AnalyticsSkillOfficeProductMetrics"
+          }
+        },
+        "required": [
+          "excel",
+          "outlook",
+          "powerpoint",
+          "word"
+        ],
+        "title": "AnalyticsSkillOfficeMetrics",
+        "type": "object"
+      },
+      "AnalyticsSkillChatCoworkUnifiedChatMetrics": {
+        "description": "A skill's use in chat conversations recorded while members had\nChat and Cowork unified turned on.",
+        "properties": {
+          "distinct_conversation_skill_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `chat_metrics.distinct_conversation_skill_used_count`, for activity recorded while members had Chat and Cowork unified turned on. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Conversation Skill Used Count"
+          }
+        },
+        "required": [
+          "distinct_conversation_skill_used_count"
+        ],
+        "title": "AnalyticsSkillChatCoworkUnifiedChatMetrics",
+        "type": "object"
+      },
+      "AnalyticsSkillChatCoworkUnifiedSessionsMetrics": {
+        "description": "A skill's use in Cowork sessions recorded while members had Chat\nand Cowork unified turned on.",
+        "properties": {
+          "distinct_session_skill_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Same measure as `cowork_metrics.distinct_session_skill_used_count`, for activity recorded while members had Chat and Cowork unified turned on. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Session Skill Used Count"
+          }
+        },
+        "required": [
+          "distinct_session_skill_used_count"
+        ],
+        "title": "AnalyticsSkillChatCoworkUnifiedSessionsMetrics",
+        "type": "object"
+      },
+      "AnalyticsSkillOfficeProductMetrics": {
+        "description": "Office Agent activity metrics for a single skill on a given day within one Office product.",
+        "properties": {
+          "distinct_session_skill_used_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of distinct Office Agent sessions in which the skill was used. A skill counts as used only when it is explicitly activated — the model (or the user, via the skill's slash command) invokes it, reading its instructions into context as part of that activation. Skills that are merely installed or listed as available, or whose content reaches the context without an activation (preloaded, hook-injected, or read as a plain file), are not counted. Approximate (HLL, typical error <2%) in date-range mode. Null on aggregated rows where a distinct count cannot be computed.",
+            "title": "Distinct Session Skill Used Count"
+          }
+        },
+        "required": [
+          "distinct_session_skill_used_count"
+        ],
+        "title": "AnalyticsSkillOfficeProductMetrics",
+        "type": "object"
+      }
+    }
+  }
+}
