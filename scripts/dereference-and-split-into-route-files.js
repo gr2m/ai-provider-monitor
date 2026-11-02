@@ -1,7 +1,7 @@
 import { writeFile, readFile, mkdir, glob } from "node:fs/promises";
 import { dirname } from "node:path";
 
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 
 console.log("");
 

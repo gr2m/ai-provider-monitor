@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { glob } from "node:fs/promises";
 
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 
 /**
  * Adds diff_url to change records that are missing it.

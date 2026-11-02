@@ -3,7 +3,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 import test from "ava";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 
 const exec = promisify(execFile);
 const SCRIPT = "scripts/append-changes.js";
