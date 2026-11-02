@@ -1,10 +1,14 @@
+import { promisify } from "node:util";
+import { gunzip } from "node:zlib";
+
 import yaml from "js-yaml";
 
+const decompressGzip = promisify(gunzip);
 const DEFAULT_RETRY_DELAYS_MS = [5_000, 30_000];
 
 /**
  * Downloads text with bounded retries for HTTP errors, network failures, and
- * response-body read errors.
+ * response-body read errors. Decodes gzip artifacts as well as plain text.
  */
 export async function downloadText(
   url,
@@ -35,7 +39,14 @@ export async function downloadText(
         );
       }
 
-      return await response.text();
+      const body = Buffer.from(await response.arrayBuffer());
+      // fetch already decodes HTTP Content-Encoding. Check the remaining bytes
+      // so raw .gz files are decoded without decompressing HTTP gzip twice.
+      const decoded =
+        body[0] === 0x1f && body[1] === 0x8b
+          ? await decompressGzip(body)
+          : body;
+      return decoded.toString("utf8");
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
 

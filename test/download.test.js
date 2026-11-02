@@ -1,3 +1,5 @@
+import { gzipSync } from "node:zlib";
+
 import test from "ava";
 
 import {
@@ -12,6 +14,48 @@ test("downloadText returns a successful response body", async (t) => {
   });
 
   t.is(body, '{"openapi":"3.1.0"}');
+});
+
+test("downloadText decodes a gzip spec artifact", async (t) => {
+  const spec = '{"openapi":"3.1.0","info":{"title":"Anthropic API"}}';
+  const body = await downloadText("https://example.test/mock-spec.json.gz", {
+    fetchImpl: async () => new Response(gzipSync(spec)),
+    retryDelaysMs: [],
+  });
+
+  t.is(body, spec);
+});
+
+test("downloadText accepts a gzip response already decoded by fetch", async (t) => {
+  const spec = "openapi: 3.1.0\n";
+  const body = await downloadText("https://example.test/openapi.yml.gz", {
+    fetchImpl: async () =>
+      new Response(spec, { headers: { "content-encoding": "gzip" } }),
+    retryDelaysMs: [],
+  });
+
+  t.is(body, spec);
+});
+
+test("downloadText retries a truncated gzip artifact", async (t) => {
+  const spec = '{"openapi":"3.1.0"}';
+  const compressed = gzipSync(spec);
+  const responses = [
+    new Response(compressed.subarray(0, 10)),
+    new Response(compressed),
+  ];
+  const retries = [];
+
+  const body = await downloadText("https://example.test/mock-spec.json.gz", {
+    fetchImpl: async () => responses.shift(),
+    retryDelaysMs: [0],
+    sleep: async () => {},
+    onRetry: (retry) => retries.push(retry),
+  });
+
+  t.is(body, spec);
+  t.is(retries.length, 1);
+  t.is(retries[0].error.code, "Z_BUF_ERROR");
 });
 
 test("downloadText retries network and HTTP failures", async (t) => {
