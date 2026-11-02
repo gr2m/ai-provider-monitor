@@ -1,0 +1,1802 @@
+{
+  "description": "Creates a reusable agent without storing credentials. See [agent configuration](https://developers.openai.com/api/docs/guides/agents-api/configuration).",
+  "operationId": "createAgent",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/CreateAgentParams"
+        }
+      }
+    }
+  },
+  "responses": {
+    "201": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AgentResource"
+          }
+        }
+      },
+      "description": "The created agent."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request was invalid."
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "Authentication or project context was missing."
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The API key lacks the required permission."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The requested session or event was not found."
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request conflicted with the current session state."
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "An internal error occurred."
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The service is temporarily unavailable."
+    }
+  },
+  "summary": "Create an agent",
+  "tags": [
+    "Agents"
+  ],
+  "components": {
+    "schemas": {
+      "CreateAgentParams": {
+        "additionalProperties": false,
+        "description": "Parameters for creating a reusable agent.",
+        "properties": {
+          "compaction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompactionParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Context compaction settings. Omission or null enables background compaction."
+          },
+          "experimental": {
+            "$ref": "#/components/schemas/ExperimentalConfigParam",
+            "default": {
+              "time_awareness": false
+            },
+            "description": "Experimental agent settings. All experimental features default to disabled."
+          },
+          "instructions": {
+            "description": "Additional instructions appended to the agent's default base instructions. Omit or set to null to add no custom instructions.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metadata": {
+            "additionalProperties": {
+              "maxLength": 512,
+              "minLength": 0,
+              "type": "string"
+            },
+            "description": "Up to 16 string key-value pairs, with keys up to 64 and values up to 512 characters. Omission or null defaults to an empty map.",
+            "maxProperties": 16,
+            "minProperties": 0,
+            "propertyNames": {
+              "maxLength": 64,
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "model": {
+            "description": "The model to use for the agent. The requested model name is preserved.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": "string"
+          },
+          "multi_agent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MultiAgentConfigCurrentParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Configuration for creating and coordinating subagents. Subagent tools are disabled by default."
+          },
+          "name": {
+            "description": "A human-readable name for the agent. Omission or null leaves the agent unnamed.",
+            "maxLength": 128,
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Configuration for model reasoning. Omission uses the model's default effort."
+          },
+          "service_tier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ServiceTierParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The service tier used for model requests. Defaults to `auto`."
+          },
+          "text": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TextParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Configuration for generated text. Defaults to the `text` format and medium verbosity."
+          },
+          "tools": {
+            "description": "Tools available to the agent. Defaults to an empty list. The tool list must fit within 3 MiB (3,145,728 bytes) of compact UTF-8 JSON.",
+            "items": {
+              "$ref": "#/components/schemas/PersistedAgentToolConfigParam"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "type": "object"
+      },
+      "AgentResource": {
+        "additionalProperties": false,
+        "description": "A reusable agent scoped to the caller's project.",
+        "properties": {
+          "compaction": {
+            "$ref": "#/components/schemas/CompactionResource",
+            "description": "The effective context compaction settings."
+          },
+          "created_at": {
+            "description": "The Unix timestamp, in seconds, when the agent was created.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "experimental": {
+            "$ref": "#/components/schemas/ExperimentalConfigResource",
+            "description": "The effective experimental settings for the agent."
+          },
+          "id": {
+            "description": "The ID of the reusable agent.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "instructions": {
+            "description": "Custom instructions appended to the agent's default base instructions.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "metadata": {
+            "additionalProperties": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "description": "Custom string key-value pairs attached to the agent.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "model": {
+            "description": "The requested model name used for inference.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "multi_agent": {
+            "$ref": "#/components/schemas/MultiAgentConfigResource",
+            "description": "The resolved configuration for creating and coordinating subagents."
+          },
+          "name": {
+            "description": "A human-readable name for the agent, or null if it is unnamed.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "object": {
+            "default": "agent",
+            "description": "The object type. Always `agent`.",
+            "enum": [
+              "agent"
+            ],
+            "type": "string"
+          },
+          "reasoning": {
+            "$ref": "#/components/schemas/ReasoningResource",
+            "description": "The resolved reasoning configuration, including the model default for an omitted effort."
+          },
+          "service_tier": {
+            "$ref": "#/components/schemas/ServiceTierResource",
+            "description": "The resolved service-tier policy used for model requests."
+          },
+          "text": {
+            "$ref": "#/components/schemas/TextResource",
+            "description": "The resolved configuration for text generated by the agent."
+          },
+          "tools": {
+            "description": "Tools available to the agent.",
+            "items": {
+              "$ref": "#/components/schemas/PersistedAgentToolResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "updated_at": {
+            "description": "The Unix timestamp, in seconds, when the agent was last updated.",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "created_at",
+          "updated_at",
+          "name",
+          "metadata",
+          "model",
+          "reasoning",
+          "text",
+          "service_tier",
+          "instructions",
+          "tools",
+          "multi_agent"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse-2": {
+        "additionalProperties": false,
+        "description": "An API error response.",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBodyResource",
+            "description": "The error returned by the API."
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "CompactionParam": {
+        "additionalProperties": false,
+        "description": "Settings for compacting the agent's context.",
+        "properties": {
+          "async": {
+            "description": "Whether to compact context in the background. Omission or null defaults to true. Set to false to use blocking compaction. Background compaction may increase token usage.",
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "ExperimentalConfigParam": {
+        "additionalProperties": false,
+        "description": "Experimental agent settings. These features may change.",
+        "properties": {
+          "time_awareness": {
+            "default": false,
+            "description": "Whether to give the model periodic current-time reminders. Defaults to false.",
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
+      "MultiAgentConfigCurrentParam": {
+        "additionalProperties": false,
+        "description": "Explicit configuration for creating and coordinating subagents.",
+        "properties": {
+          "enabled": {
+            "description": "Whether subagent tools are enabled.",
+            "type": "boolean"
+          },
+          "max_concurrent_subagents": {
+            "description": "Maximum number of subagents that may run concurrently. Defaults to 6.",
+            "format": "int64",
+            "maximum": 4294967295,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "type": "object"
+      },
+      "ReasoningParam": {
+        "additionalProperties": false,
+        "description": "Reasoning configuration for the agent.",
+        "properties": {
+          "effort": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningEffortParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The amount of reasoning effort the model should use. Omission lets the model select it."
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningSummaryParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Controls whether the response includes a reasoning summary."
+          }
+        },
+        "type": "object"
+      },
+      "ServiceTierParam": {
+        "description": "The service tier used for model requests.",
+        "enum": [
+          "auto",
+          "default",
+          "flex",
+          "priority",
+          "fast",
+          "ultrafast"
+        ],
+        "type": "string"
+      },
+      "TextParam": {
+        "additionalProperties": false,
+        "description": "Configuration for text generated by the agent.",
+        "properties": {
+          "format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TextFormatParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The output format. Omission uses ordinary text (`{\"type\": \"text\"}`)."
+          },
+          "verbosity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VerbosityParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The amount of text the model should produce. Defaults to `medium`, matching Responses."
+          }
+        },
+        "type": "object"
+      },
+      "PersistedAgentToolConfigParam": {
+        "description": "A tool that can be stored on a reusable agent without session credentials.",
+        "discriminator": {
+          "mapping": {
+            "automations": "#/components/schemas/PersistedAgentToolConfigParamAutomations",
+            "computer_use": "#/components/schemas/PersistedAgentToolConfigParamComputerUse",
+            "function": "#/components/schemas/PersistedAgentToolConfigParamFunction",
+            "mcp": "#/components/schemas/PersistedAgentToolConfigParamMcp",
+            "programmatic_tool_calling": "#/components/schemas/PersistedAgentToolConfigParamProgrammaticToolCalling",
+            "tool_search": "#/components/schemas/PersistedAgentToolConfigParamToolSearch",
+            "web_search": "#/components/schemas/PersistedAgentToolConfigParamWebSearch"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PersistedAgentToolConfigParamFunction"
+          },
+          {
+            "$ref": "#/components/schemas/PersistedAgentToolConfigParamToolSearch"
+          },
+          {
+            "$ref": "#/components/schemas/PersistedAgentToolConfigParamProgrammaticToolCalling"
+          },
+          {
+            "$ref": "#/components/schemas/PersistedAgentToolConfigParamMcp"
+          },
+          {
+            "$ref": "#/components/schemas/PersistedAgentToolConfigParamWebSearch"
+          },
+          {
+            "$ref": "#/components/schemas/PersistedAgentToolConfigParamComputerUse"
+          },
+          {
+            "$ref": "#/components/schemas/PersistedAgentToolConfigParamAutomations"
+          }
+        ]
+      },
+      "CompactionResource": {
+        "additionalProperties": false,
+        "description": "The effective settings for compacting the agent's context.",
+        "properties": {
+          "async": {
+            "description": "Whether context is compacted in the background. Defaults to true.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "async"
+        ],
+        "type": "object"
+      },
+      "ExperimentalConfigResource": {
+        "additionalProperties": false,
+        "description": "The effective experimental settings for an agent.",
+        "properties": {
+          "time_awareness": {
+            "description": "Whether the model receives periodic current-time reminders.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "time_awareness"
+        ],
+        "type": "object"
+      },
+      "MultiAgentConfigResource": {
+        "additionalProperties": false,
+        "description": "The resolved configuration for creating and coordinating subagents.",
+        "properties": {
+          "enabled": {
+            "description": "Whether subagent tools are enabled. Defaults to false.",
+            "type": "boolean"
+          },
+          "max_concurrent_subagents": {
+            "description": "Maximum number of subagents that may run concurrently, or null when disabled. Defaults to 6 when enabled.",
+            "format": "int64",
+            "maximum": 4294967295,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "enabled",
+          "max_concurrent_subagents"
+        ],
+        "type": "object"
+      },
+      "ReasoningResource": {
+        "additionalProperties": false,
+        "description": "The reasoning configuration used by an agent.",
+        "properties": {
+          "effort": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningEffortResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The requested reasoning effort, or `null` when the model selects its own default."
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningSummaryResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The requested reasoning summary format, or `null` when summaries are disabled."
+          }
+        },
+        "required": [
+          "effort",
+          "summary"
+        ],
+        "type": "object"
+      },
+      "ServiceTierResource": {
+        "description": "The service-tier policy configured for an agent.",
+        "enum": [
+          "auto",
+          "default",
+          "flex",
+          "priority",
+          "fast",
+          "ultrafast"
+        ],
+        "type": "string"
+      },
+      "TextResource": {
+        "additionalProperties": false,
+        "description": "The text configuration used by an agent.",
+        "properties": {
+          "format": {
+            "$ref": "#/components/schemas/TextFormatResource",
+            "description": "The effective output format. Defaults to ordinary text."
+          },
+          "verbosity": {
+            "$ref": "#/components/schemas/VerbosityResource",
+            "description": "The amount of text produced by the agent. Defaults to `medium`."
+          }
+        },
+        "required": [
+          "format",
+          "verbosity"
+        ],
+        "type": "object"
+      },
+      "PersistedAgentToolResource": {
+        "description": "A credential-free tool available to a reusable agent.",
+        "discriminator": {
+          "mapping": {
+            "automations": "#/components/schemas/PersistedAgentToolResourceAutomations",
+            "computer_use": "#/components/schemas/PersistedAgentToolResourceComputerUse",
+            "function": "#/components/schemas/PersistedAgentToolResourceFunction",
+            "mcp": "#/components/schemas/PersistedAgentToolResourceMcp",
+            "programmatic_tool_calling": "#/components/schemas/PersistedAgentToolResourceProgrammaticToolCalling",
+            "tool_search": "#/components/schemas/PersistedAgentToolResourceToolSearch",
+            "web_search": "#/components/schemas/PersistedAgentToolResourceWebSearch"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PersistedAgentToolResourceFunction"
+          },
+          {
+            "$ref": "#/components/schemas/PersistedAgentToolResourceToolSearch"
+          },
+          {
+            "$ref": "#/components/schemas/PersistedAgentToolResourceProgrammaticToolCalling"
+          },
+          {
+            "$ref": "#/components/schemas/PersistedAgentToolResourceMcp"
+          },
+          {
+            "$ref": "#/components/schemas/PersistedAgentToolResourceWebSearch"
+          },
+          {
+            "$ref": "#/components/schemas/PersistedAgentToolResourceComputerUse"
+          },
+          {
+            "$ref": "#/components/schemas/PersistedAgentToolResourceAutomations"
+          }
+        ]
+      },
+      "ErrorBodyResource": {
+        "additionalProperties": false,
+        "description": "Details about an API error.",
+        "properties": {
+          "code": {
+            "description": "A machine-readable error code.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "message": {
+            "description": "A human-readable error message.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "param": {
+            "description": "The request parameter that caused the error, or null for a request-wide error.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "description": "The error type.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "code",
+          "message",
+          "param"
+        ],
+        "type": "object"
+      },
+      "ReasoningEffortParam": {
+        "description": "The amount of reasoning effort the model should use.",
+        "enum": [
+          "none",
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ],
+        "type": "string"
+      },
+      "ReasoningSummaryParam": {
+        "description": "The reasoning summary format requested from the model.",
+        "enum": [
+          "concise",
+          "detailed",
+          "auto"
+        ],
+        "type": "string"
+      },
+      "TextFormatParam": {
+        "description": "The output format for generated text.",
+        "discriminator": {
+          "mapping": {
+            "json_schema": "#/components/schemas/TextFormatParamJsonSchema",
+            "text": "#/components/schemas/TextFormatParamText"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TextFormatParamText"
+          },
+          {
+            "$ref": "#/components/schemas/TextFormatParamJsonSchema"
+          }
+        ]
+      },
+      "VerbosityParam": {
+        "description": "The amount of text the model should produce.",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "type": "string"
+      },
+      "PersistedAgentToolConfigParamFunction": {
+        "additionalProperties": false,
+        "description": "A function defined by the application.",
+        "properties": {
+          "defer_loading": {
+            "default": false,
+            "description": "Whether this function is deferred and discovered through tool search. Defaults to `false`.",
+            "type": "boolean"
+          },
+          "description": {
+            "description": "A description of what the function does.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the function.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": "string"
+          },
+          "parameters": {
+            "additionalProperties": {},
+            "description": "A JSON Schema object describing the function's arguments.",
+            "maxProperties": 1024,
+            "minProperties": 0,
+            "propertyNames": {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "type": {
+            "default": "function",
+            "description": "The type of the object. Always `function`.",
+            "enum": [
+              "function"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description",
+          "parameters"
+        ],
+        "type": "object"
+      },
+      "PersistedAgentToolConfigParamToolSearch": {
+        "additionalProperties": false,
+        "description": "Discovers deferred function tools and loads them into the model context.",
+        "properties": {
+          "type": {
+            "default": "tool_search",
+            "description": "The type of the object. Always `tool_search`.",
+            "enum": [
+              "tool_search"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "PersistedAgentToolConfigParamProgrammaticToolCalling": {
+        "additionalProperties": false,
+        "description": "Enables calling tools from model-generated code.",
+        "properties": {
+          "enabled": {
+            "default": true,
+            "description": "Whether tools can be called from model-generated code. Defaults to `true`.",
+            "type": "boolean"
+          },
+          "type": {
+            "default": "programmatic_tool_calling",
+            "description": "The type of the object. Always `programmatic_tool_calling`.",
+            "enum": [
+              "programmatic_tool_calling"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "PersistedAgentToolConfigParamMcp": {
+        "additionalProperties": false,
+        "description": "Tools provided by a remote MCP server without stored credentials.",
+        "properties": {
+          "allowed_tools": {
+            "description": "The MCP tools the agent may call. All server tools are allowed when omitted.",
+            "items": {
+              "maxLength": 1048576,
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 16384,
+            "minItems": 0,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "connection_origin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/McpConnectionOriginParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Selects where outbound MCP HTTP connections originate."
+          },
+          "credential_id": {
+            "description": "The vault credential selected for this MCP server. Optional when exactly one attached credential matches the server URL.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request_metadata": {
+            "additionalProperties": {},
+            "description": "Metadata included with requests to this MCP server.",
+            "maxProperties": 1024,
+            "minProperties": 0,
+            "propertyNames": {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "required": {
+            "default": false,
+            "description": "Whether this MCP server must initialize before the first turn. Defaults to `false`.",
+            "type": "boolean"
+          },
+          "server_label": {
+            "description": "A label used to identify the MCP server in tool calls.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": "string"
+          },
+          "transport": {
+            "$ref": "#/components/schemas/PersistedMcpTransportConfigParam",
+            "description": "The credential-free transport used to connect to the MCP server."
+          },
+          "type": {
+            "default": "mcp",
+            "description": "The type of the object. Always `mcp`.",
+            "enum": [
+              "mcp"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "server_label",
+          "transport"
+        ],
+        "type": "object"
+      },
+      "PersistedAgentToolConfigParamWebSearch": {
+        "additionalProperties": false,
+        "description": "Web search.",
+        "properties": {
+          "allowed_domains": {
+            "description": "Domains the search may include.",
+            "items": {
+              "maxLength": 1048576,
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 16384,
+            "minItems": 0,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "context_size": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WebSearchContextSizeParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The amount of search context made available to the model. Defaults to `medium`."
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WebSearchLocationParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Approximate location used to localize search results."
+          },
+          "mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WebSearchModeParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The source used for web search results. Defaults to `live`."
+          },
+          "type": {
+            "default": "web_search",
+            "description": "The type of the object. Always `web_search`.",
+            "enum": [
+              "web_search"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "PersistedAgentToolConfigParamComputerUse": {
+        "additionalProperties": false,
+        "description": "Browser use in an OpenAI-hosted session.",
+        "properties": {
+          "include_screenshots": {
+            "default": false,
+            "description": "Whether computer tool outputs include screenshots. Defaults to `false`.",
+            "type": "boolean"
+          },
+          "type": {
+            "default": "computer_use",
+            "description": "The type of the object. Always `computer_use`.",
+            "enum": [
+              "computer_use"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "PersistedAgentToolConfigParamAutomations": {
+        "additionalProperties": false,
+        "description": "Lets the agent manage its own scheduled wakeups.",
+        "properties": {
+          "type": {
+            "default": "automations",
+            "description": "The type of the object. Always `automations`.",
+            "enum": [
+              "automations"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "ReasoningEffortResource": {
+        "description": "The amount of reasoning effort used by an agent.",
+        "enum": [
+          "none",
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ],
+        "type": "string"
+      },
+      "ReasoningSummaryResource": {
+        "description": "The reasoning summary format requested from an agent.",
+        "enum": [
+          "concise",
+          "detailed",
+          "auto"
+        ],
+        "type": "string"
+      },
+      "TextFormatResource": {
+        "description": "The effective output format for generated text.",
+        "discriminator": {
+          "mapping": {
+            "json_schema": "#/components/schemas/TextFormatResourceJsonSchema",
+            "text": "#/components/schemas/TextFormatResourceText"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TextFormatResourceText"
+          },
+          {
+            "$ref": "#/components/schemas/TextFormatResourceJsonSchema"
+          }
+        ]
+      },
+      "VerbosityResource": {
+        "description": "The amount of text produced by an agent.",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "type": "string"
+      },
+      "PersistedAgentToolResourceFunction": {
+        "additionalProperties": false,
+        "description": "A function defined by the application.",
+        "properties": {
+          "defer_loading": {
+            "description": "Whether the function is deferred and discovered through tool search.",
+            "type": "boolean"
+          },
+          "description": {
+            "description": "A description of what the function does.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the function.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "parameters": {
+            "additionalProperties": {},
+            "description": "A JSON Schema object describing the function's arguments.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "type": {
+            "default": "function",
+            "description": "The type of the object. Always `function`.",
+            "enum": [
+              "function"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description",
+          "parameters",
+          "defer_loading"
+        ],
+        "type": "object"
+      },
+      "PersistedAgentToolResourceToolSearch": {
+        "additionalProperties": false,
+        "description": "Discovers deferred function tools and loads them into the model context.",
+        "properties": {
+          "type": {
+            "default": "tool_search",
+            "description": "The type of the object. Always `tool_search`.",
+            "enum": [
+              "tool_search"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "PersistedAgentToolResourceProgrammaticToolCalling": {
+        "additionalProperties": false,
+        "description": "Enables calling tools from model-generated code.",
+        "properties": {
+          "enabled": {
+            "description": "Whether tools can be called from model-generated code.",
+            "type": "boolean"
+          },
+          "type": {
+            "default": "programmatic_tool_calling",
+            "description": "The type of the object. Always `programmatic_tool_calling`.",
+            "enum": [
+              "programmatic_tool_calling"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "enabled"
+        ],
+        "type": "object"
+      },
+      "PersistedAgentToolResourceMcp": {
+        "additionalProperties": false,
+        "description": "Tools provided by a remote MCP server without stored credentials.",
+        "properties": {
+          "allowed_tools": {
+            "description": "The MCP tools the agent may call, or null when all server tools are allowed.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "connection_origin": {
+            "$ref": "#/components/schemas/McpConnectionOriginResource",
+            "description": "Where outbound MCP HTTP connections originate."
+          },
+          "credential_id": {
+            "description": "The vault credential selected for this MCP server, if any.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request_metadata": {
+            "additionalProperties": {},
+            "description": "Metadata included with requests to this MCP server.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "required": {
+            "description": "Whether this MCP server must initialize before the first turn.",
+            "type": "boolean"
+          },
+          "server_label": {
+            "description": "A label used to identify the MCP server in tool calls.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "transport": {
+            "$ref": "#/components/schemas/PersistedMcpTransportResource",
+            "description": "The credential-free transport used to connect to the MCP server."
+          },
+          "type": {
+            "default": "mcp",
+            "description": "The type of the object. Always `mcp`.",
+            "enum": [
+              "mcp"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "server_label",
+          "credential_id",
+          "transport",
+          "request_metadata",
+          "allowed_tools",
+          "required",
+          "connection_origin"
+        ],
+        "type": "object"
+      },
+      "PersistedAgentToolResourceWebSearch": {
+        "additionalProperties": false,
+        "description": "Web search.",
+        "properties": {
+          "allowed_domains": {
+            "description": "Allowed search domains, or `null` when the search is unrestricted.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "context_size": {
+            "$ref": "#/components/schemas/WebSearchContextSizeResource",
+            "description": "The amount of search context made available to the model. Defaults to `medium`."
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WebSearchLocationResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Approximate location used to localize search results, if provided."
+          },
+          "mode": {
+            "$ref": "#/components/schemas/WebSearchModeResource",
+            "description": "The source used for web search results."
+          },
+          "type": {
+            "default": "web_search",
+            "description": "The type of the object. Always `web_search`.",
+            "enum": [
+              "web_search"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "mode",
+          "context_size",
+          "allowed_domains",
+          "location"
+        ],
+        "type": "object"
+      },
+      "PersistedAgentToolResourceComputerUse": {
+        "additionalProperties": false,
+        "description": "Browser use in an OpenAI-hosted session.",
+        "properties": {
+          "include_screenshots": {
+            "description": "Whether computer tool outputs include screenshots.",
+            "type": "boolean"
+          },
+          "type": {
+            "default": "computer_use",
+            "description": "The type of the object. Always `computer_use`.",
+            "enum": [
+              "computer_use"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "include_screenshots"
+        ],
+        "type": "object"
+      },
+      "PersistedAgentToolResourceAutomations": {
+        "additionalProperties": false,
+        "description": "Lets the agent manage its own scheduled wakeups.",
+        "properties": {
+          "type": {
+            "default": "automations",
+            "description": "The type of the object. Always `automations`.",
+            "enum": [
+              "automations"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "TextFormatParamText": {
+        "additionalProperties": false,
+        "description": "Generates ordinary text without a structured-output constraint.",
+        "properties": {
+          "type": {
+            "default": "text",
+            "description": "The type of the object. Always `text`.",
+            "enum": [
+              "text"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "TextFormatParamJsonSchema": {
+        "additionalProperties": false,
+        "description": "Constrains generated text to a JSON Schema.",
+        "properties": {
+          "schema": {
+            "additionalProperties": {},
+            "description": "The JSON Schema that generated text must match.",
+            "maxProperties": 1024,
+            "minProperties": 0,
+            "propertyNames": {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "type": {
+            "default": "json_schema",
+            "description": "The type of the object. Always `json_schema`.",
+            "enum": [
+              "json_schema"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "schema"
+        ],
+        "type": "object"
+      },
+      "McpConnectionOriginParam": {
+        "description": "Where outbound MCP HTTP connections originate.",
+        "enum": [
+          "service",
+          "environment"
+        ],
+        "type": "string"
+      },
+      "PersistedMcpTransportConfigParam": {
+        "description": "A credential-free transport used to connect to an MCP server.",
+        "discriminator": {
+          "mapping": {
+            "http": "#/components/schemas/PersistedMcpTransportConfigParamHttp",
+            "stdio": "#/components/schemas/PersistedMcpTransportConfigParamStdio"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PersistedMcpTransportConfigParamHttp"
+          },
+          {
+            "$ref": "#/components/schemas/PersistedMcpTransportConfigParamStdio"
+          }
+        ]
+      },
+      "WebSearchContextSizeParam": {
+        "description": "The amount of web search context made available to the model.",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "type": "string"
+      },
+      "WebSearchLocationParam": {
+        "additionalProperties": false,
+        "description": "Approximate user location used to localize web search results.",
+        "properties": {
+          "city": {
+            "description": "The city name.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "country": {
+            "description": "The two-letter ISO country code, such as `US`.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "region": {
+            "description": "The region or state name.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "timezone": {
+            "description": "The IANA timezone, such as `America/Los_Angeles`.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "type": "object"
+      },
+      "WebSearchModeParam": {
+        "description": "The source used for web search results.",
+        "enum": [
+          "disabled",
+          "cached",
+          "live"
+        ],
+        "type": "string"
+      },
+      "TextFormatResourceText": {
+        "additionalProperties": false,
+        "description": "Generates ordinary text without a structured-output constraint.",
+        "properties": {
+          "type": {
+            "default": "text",
+            "description": "The type of the object. Always `text`.",
+            "enum": [
+              "text"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "TextFormatResourceJsonSchema": {
+        "additionalProperties": false,
+        "description": "Constrains generated text to a JSON Schema.",
+        "properties": {
+          "schema": {
+            "additionalProperties": {},
+            "description": "The JSON Schema that generated text must match.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "type": {
+            "default": "json_schema",
+            "description": "The type of the object. Always `json_schema`.",
+            "enum": [
+              "json_schema"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "schema"
+        ],
+        "type": "object"
+      },
+      "McpConnectionOriginResource": {
+        "description": "Where outbound MCP HTTP connections originate.",
+        "enum": [
+          "service",
+          "environment"
+        ],
+        "type": "string"
+      },
+      "PersistedMcpTransportResource": {
+        "description": "A credential-free transport used to connect to an MCP server.",
+        "discriminator": {
+          "mapping": {
+            "http": "#/components/schemas/PersistedMcpTransportResourceHttp",
+            "stdio": "#/components/schemas/PersistedMcpTransportResourceStdio"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PersistedMcpTransportResourceHttp"
+          },
+          {
+            "$ref": "#/components/schemas/PersistedMcpTransportResourceStdio"
+          }
+        ]
+      },
+      "WebSearchContextSizeResource": {
+        "description": "The amount of web search context made available to the model.",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "type": "string"
+      },
+      "WebSearchLocationResource": {
+        "additionalProperties": false,
+        "description": "Approximate user location used to localize web search results.",
+        "properties": {
+          "city": {
+            "description": "The city name.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "country": {
+            "description": "The two-letter ISO country code, such as `US`.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "region": {
+            "description": "The region or state name.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "timezone": {
+            "description": "The IANA timezone, such as `America/Los_Angeles`.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "country",
+          "region",
+          "city",
+          "timezone"
+        ],
+        "type": "object"
+      },
+      "WebSearchModeResource": {
+        "description": "The source used for web search results.",
+        "enum": [
+          "disabled",
+          "cached",
+          "live"
+        ],
+        "type": "string"
+      },
+      "PersistedMcpTransportConfigParamHttp": {
+        "additionalProperties": false,
+        "description": "Connects to an MCP server over HTTP.",
+        "properties": {
+          "headers": {
+            "additionalProperties": {
+              "maxLength": 1048576,
+              "minLength": 0,
+              "type": "string"
+            },
+            "description": "Non-secret HTTP headers sent to the MCP server.",
+            "maxProperties": 1024,
+            "minProperties": 0,
+            "propertyNames": {
+              "maxLength": 256,
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "server_url": {
+            "description": "The URL of the MCP server.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "http",
+            "description": "The type of the object. Always `http`.",
+            "enum": [
+              "http"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "server_url"
+        ],
+        "type": "object"
+      },
+      "PersistedMcpTransportConfigParamStdio": {
+        "additionalProperties": false,
+        "description": "Starts an MCP server as a local process.",
+        "properties": {
+          "args": {
+            "description": "Arguments passed to the MCP server command.",
+            "items": {
+              "maxLength": 1048576,
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 16384,
+            "minItems": 0,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "command": {
+            "description": "The command used to start the MCP server.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": "string"
+          },
+          "cwd": {
+            "description": "The working directory used to start the MCP server.",
+            "maxLength": 1048576,
+            "minLength": 0,
+            "type": "string"
+          },
+          "env_vars": {
+            "description": "Environment variable names to inherit from the selected execution environment.",
+            "items": {
+              "maxLength": 1048576,
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 16384,
+            "minItems": 0,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "type": {
+            "default": "stdio",
+            "description": "The type of the object. Always `stdio`.",
+            "enum": [
+              "stdio"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "command",
+          "cwd"
+        ],
+        "type": "object"
+      },
+      "PersistedMcpTransportResourceHttp": {
+        "additionalProperties": false,
+        "description": "Connects to an MCP server over HTTP.",
+        "properties": {
+          "headers": {
+            "additionalProperties": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "description": "Non-secret HTTP headers sent to the MCP server.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "server_url": {
+            "description": "The URL of the MCP server.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "http",
+            "description": "The type of the object. Always `http`.",
+            "enum": [
+              "http"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "server_url",
+          "headers"
+        ],
+        "type": "object"
+      },
+      "PersistedMcpTransportResourceStdio": {
+        "additionalProperties": false,
+        "description": "Starts an MCP server as a local process.",
+        "properties": {
+          "args": {
+            "description": "Arguments passed to the MCP server command.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "command": {
+            "description": "The command used to start the MCP server.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "cwd": {
+            "description": "The working directory used to start the MCP server.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "env_vars": {
+            "description": "Environment variable names inherited from the execution environment.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "type": {
+            "default": "stdio",
+            "description": "The type of the object. Always `stdio`.",
+            "enum": [
+              "stdio"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "command",
+          "args",
+          "cwd",
+          "env_vars"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

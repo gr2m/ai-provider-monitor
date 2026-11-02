@@ -1,4 +1,5 @@
 {
+  "description": "Create a new Realtime API call over WebRTC and receive the SDP answer needed\nto complete the peer connection.",
   "operationId": "create-realtime-call",
   "requestBody": {
     "content": {
@@ -45,7 +46,7 @@
       }
     }
   },
-  "summary": "Create a new Realtime API call over WebRTC and receive the SDP answer needed\nto complete the peer connection.",
+  "summary": "Create call",
   "tags": [
     "Realtime"
   ],
@@ -65,7 +66,7 @@
                 "$ref": "#/components/schemas/RealtimeSessionCreateRequestGA"
               }
             ],
-            "description": "Optional session configuration to apply before the realtime session is\ncreated. Use the same parameters you would send in a [`create client secret`](/docs/api-reference/realtime-sessions/create-realtime-client-secret)\nrequest.",
+            "description": "Optional session configuration to apply before the realtime session is\ncreated. Use the same parameters you would send in a [`create client secret`](https://developers.openai.com/api/reference/resources/realtime/subresources/client_secrets/methods/create)\nrequest.",
             "title": "Session configuration"
           }
         },
@@ -90,16 +91,26 @@
                   "noise_reduction": {
                     "default": null,
                     "description": "Configuration for input audio noise reduction. This can be set to `null` to turn off.\nNoise reduction filters audio added to the input audio buffer before it is sent to VAD and the model.\nFiltering the audio can improve VAD and turn detection accuracy (reducing false positives) and model performance by improving perception of the input audio.\n",
+                    "not": {
+                      "type": [
+                        "array",
+                        "string",
+                        "number",
+                        "boolean"
+                      ]
+                    },
                     "properties": {
+                      "strength": {
+                        "$ref": "#/components/schemas/RealtimeNoiseReductionStrength"
+                      },
                       "type": {
                         "$ref": "#/components/schemas/NoiseReductionType"
                       }
-                    },
-                    "type": "object"
+                    }
                   },
                   "transcription": {
                     "$ref": "#/components/schemas/AudioTranscription",
-                    "description": "Configuration for input audio transcription, defaults to off and can be set to `null` to turn off once on. Input audio transcription is not native to the model, since the model consumes audio directly. Transcription runs asynchronously through [the /audio/transcriptions endpoint](/docs/api-reference/audio/createTranscription) and should be treated as guidance of input audio content rather than precisely what the model heard. The client can optionally set the language and prompt for transcription, these offer additional guidance to the transcription service.\n"
+                    "description": "Configuration for input audio transcription, defaults to off and can be set to `null` to turn off once on. Input audio transcription is not native to the model, since the model consumes audio directly. Transcription runs asynchronously through [the /audio/transcriptions endpoint](https://developers.openai.com/api/reference/resources/audio/subresources/transcriptions/methods/create) and should be treated as guidance of input audio content rather than precisely what the model heard. The client can optionally set the language and prompt for transcription, these offer additional guidance to the transcription service.\n"
                   },
                   "turn_detection": {
                     "$ref": "#/components/schemas/RealtimeTurnDetection"
@@ -123,7 +134,7 @@
                   "voice": {
                     "$ref": "#/components/schemas/VoiceIdsOrCustomVoice",
                     "default": "alloy",
-                    "description": "The voice the model uses to respond. Supported built-in voices are\n`alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`,\n`marin`, and `cedar`. You may also provide a custom voice object with\nan `id`, for example `{ \"id\": \"voice_1234\" }`. Voice cannot be changed\nduring the session once the model has responded with audio at least once.\nWe recommend `marin` and `cedar` for best quality.\n"
+                    "description": "The voice the model uses to respond. Supported built-in voices are\n`alloy`, `ash`, `ballad`, `coral`, `echo`, `sage`, `shimmer`, `verse`,\n`marin`, and `cedar`. You may also provide a custom voice object with\nan `id`, for example `{ \"id\": \"voice_1234\" }`. Voice cannot be changed\nduring the session once the model has responded with audio at least once.\nCustom voices must be created from audio samples. Voices created from text prompts are supported only in Live.\nWe recommend `marin` and `cedar` for best quality.\n"
                   }
                 },
                 "type": "object"
@@ -247,7 +258,6 @@
           "tracing": {
             "default": null,
             "description": "Realtime API can write session traces to the [Traces Dashboard](https://platform.openai.com/logs?api=traces). Set to null to disable tracing. Once\ntracing is enabled for a session, the configuration cannot be modified.\n\n`auto` will create a trace for the session with default values for the\nworkflow name, group id, and metadata.\n",
-            "nullable": true,
             "oneOf": [
               {
                 "default": "auto",
@@ -276,6 +286,9 @@
                 },
                 "title": "Tracing Configuration",
                 "type": "object"
+              },
+              {
+                "type": "null"
               }
             ],
             "title": "Tracing Configuration"
@@ -350,6 +363,13 @@
           }
         ]
       },
+      "RealtimeNoiseReductionStrength": {
+        "default": 1,
+        "description": "Input noise suppression strength. Higher values apply more suppression.\nDefaults to 1 when noise reduction is first enabled. Omitting strength\nfrom a session update preserves the current strength.\n",
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number"
+      },
       "NoiseReductionType": {
         "description": "Type of noise reduction. `near_field` is for close-talking microphones such as headphones, `far_field` is for far-field microphones such as laptop or conference room microphones.\n",
         "enum": [
@@ -412,7 +432,7 @@
             "description": "The model to use for transcription. Current options are `whisper-1`, `gpt-transcribe`, `gpt-live-transcribe`, `gpt-4o-mini-transcribe`, `gpt-4o-mini-transcribe-2025-12-15`, `gpt-4o-transcribe`, `gpt-4o-transcribe-diarize`, and `gpt-realtime-whisper`. Use `gpt-4o-transcribe-diarize` when you need diarization with speaker labels.\n"
           },
           "prompt": {
-            "description": "An optional text to guide the model's style or continue a previous audio\nsegment.\nFor `whisper-1`, the [prompt is a list of keywords](/docs/guides/speech-to-text#prompting).\nFor `gpt-4o-transcribe` models (excluding `gpt-4o-transcribe-diarize`), the prompt is a free text string, for example \"expect words related to technology\".\nPrompt is not supported with `gpt-realtime-whisper` in GA Realtime sessions.\n",
+            "description": "An optional text to guide the model's style or continue a previous audio\nsegment.\nFor `whisper-1`, the [prompt is a list of keywords](https://developers.openai.com/api/docs/guides/speech-to-text#prompting).\nFor `gpt-4o-transcribe` models (excluding `gpt-4o-transcribe-diarize`), the prompt is a free text string, for example \"expect words related to technology\".\nPrompt is not supported with `gpt-realtime-whisper` in GA Realtime sessions.\n",
             "type": "string"
           }
         },
@@ -548,7 +568,7 @@
       "Prompt": {
         "anyOf": [
           {
-            "description": "Reference to a prompt template and its variables.\n[Learn more](/docs/guides/text?api-mode=responses#reusable-prompts).\n",
+            "description": "Reference to a prompt template and its variables.\n[Learn more](https://developers.openai.com/api/docs/guides/text?api-mode=responses#version-prompts-in-code).\n",
             "properties": {
               "id": {
                 "description": "The unique identifier of the prompt template to use.",
@@ -680,7 +700,7 @@
         "type": "object"
       },
       "MCPTool": {
-        "description": "Give the model access to additional tools via remote Model Context Protocol\n(MCP) servers. [Learn more about MCP](/docs/guides/tools-remote-mcp).\n",
+        "description": "Give the model access to additional tools via remote Model Context Protocol\n(MCP) servers. [Learn more about MCP](https://developers.openai.com/api/docs/guides/tools-connectors-mcp).\n",
         "properties": {
           "allowed_callers": {
             "anyOf": [
@@ -725,7 +745,8 @@
             "type": "string"
           },
           "connector_id": {
-            "description": "Identifier for service connectors, like those available in ChatGPT. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided. Learn more\nabout service connectors [here](/docs/guides/tools-remote-mcp#connectors).\n\nCurrently supported `connector_id` values are:\n\n- Dropbox: `connector_dropbox`\n- Gmail: `connector_gmail`\n- Google Calendar: `connector_googlecalendar`\n- Google Drive: `connector_googledrive`\n- Microsoft Teams: `connector_microsoftteams`\n- Outlook Calendar: `connector_outlookcalendar`\n- Outlook Email: `connector_outlookemail`\n- SharePoint: `connector_sharepoint`\n",
+            "deprecated": true,
+            "description": "Identifier for service connectors, like those available in ChatGPT. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided. Learn more\nabout service connectors [here](https://developers.openai.com/api/docs/guides/tools-connectors-mcp#connectors).\n\nThis field is deprecated for models released after September 1, 2026.\nUse `server_url` to connect to a remote MCP server, or `tunnel_id` to\nconnect through a Secure MCP Tunnel.\n\nCurrently supported `connector_id` values are:\n\n- Dropbox: `connector_dropbox`\n- Gmail: `connector_gmail`\n- Google Calendar: `connector_googlecalendar`\n- Google Drive: `connector_googledrive`\n- Microsoft Teams: `connector_microsoftteams`\n- Outlook Calendar: `connector_outlookcalendar`\n- Outlook Email: `connector_outlookemail`\n- SharePoint: `connector_sharepoint`\n",
             "enum": [
               "connector_dropbox",
               "connector_gmail",
@@ -992,7 +1013,7 @@
         "type": "object"
       },
       "InputImageContent": {
-        "description": "An image input to the model. Learn about [image inputs](/docs/guides/vision).",
+        "description": "An image input to the model. Learn about [image inputs](https://developers.openai.com/api/docs/guides/images-vision).",
         "properties": {
           "detail": {
             "$ref": "#/components/schemas/ImageDetail",
@@ -1090,13 +1111,21 @@
         "type": "object"
       },
       "PromptCacheBreakpointConfig": {
-        "description": "Marks the exact end of a reusable prompt prefix. The breakpoint inherits its TTL from the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
+        "description": "Marks the exact end of a reusable prompt prefix. When `ttl` is omitted, the breakpoint inherits the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
         "properties": {
           "mode": {
             "default": "explicit",
             "description": "The breakpoint mode. Always `explicit`.",
             "enum": [
               "explicit"
+            ],
+            "type": "string"
+          },
+          "ttl": {
+            "description": "The minimum lifetime of this cache breakpoint. Defaults to the request TTL.",
+            "enum": [
+              "30m",
+              "12h"
             ],
             "type": "string"
           }

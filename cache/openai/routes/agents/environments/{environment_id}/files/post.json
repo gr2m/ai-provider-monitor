@@ -1,0 +1,295 @@
+{
+  "description": "Copies inline bytes or a Files API file into a connected execution environment, replacing an existing regular file at the same path. Upload between turns and wait for success before starting the next turn. See [environment files](https://developers.openai.com/api/docs/guides/agents-api/environments/files).",
+  "operationId": "createAgentEnvironmentFile",
+  "parameters": [
+    {
+      "description": "The ID of the environment.",
+      "in": "path",
+      "name": "environment_id",
+      "required": true,
+      "schema": {
+        "maxLength": 1048576,
+        "minLength": 0,
+        "type": "string"
+      }
+    }
+  ],
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/HostedEnvironmentFileParam"
+        }
+      }
+    }
+  },
+  "responses": {
+    "201": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/EnvironmentFileResource"
+          }
+        }
+      },
+      "description": "The written live environment file."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request was invalid."
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "Authentication or project context was missing."
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The API key lacks the required permission."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The requested session or event was not found."
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request conflicted with the current session state."
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The Files API rate limit for your user has been exceeded."
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "An internal error occurred."
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The service is temporarily unavailable."
+    }
+  },
+  "summary": "Write an agent environment file",
+  "tags": [
+    "Agents"
+  ],
+  "components": {
+    "schemas": {
+      "HostedEnvironmentFileParam": {
+        "description": "A file materialized in an OpenAI-hosted execution environment.",
+        "discriminator": {
+          "mapping": {
+            "file_id": "#/components/schemas/HostedEnvironmentFileParamFileId",
+            "inline": "#/components/schemas/HostedEnvironmentFileParamInline"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HostedEnvironmentFileParamFileId"
+          },
+          {
+            "$ref": "#/components/schemas/HostedEnvironmentFileParamInline"
+          }
+        ]
+      },
+      "EnvironmentFileResource": {
+        "additionalProperties": false,
+        "description": "A live file in an execution environment.",
+        "properties": {
+          "environment_id": {
+            "description": "The ID of the environment containing this file.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "object": {
+            "default": "agent.environment.file",
+            "description": "The object type. Always `agent.environment.file`.",
+            "enum": [
+              "agent.environment.file"
+            ],
+            "type": "string"
+          },
+          "path": {
+            "description": "The absolute file path inside the environment's workspace.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "size_bytes": {
+            "description": "The file size in bytes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "object",
+          "environment_id",
+          "path",
+          "size_bytes"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse-2": {
+        "additionalProperties": false,
+        "description": "An API error response.",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBodyResource",
+            "description": "The error returned by the API."
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "HostedEnvironmentFileParamFileId": {
+        "additionalProperties": false,
+        "description": "A file previously uploaded through the OpenAI Files API.",
+        "properties": {
+          "file_id": {
+            "description": "The ID of the uploaded file.",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "path": {
+            "description": "The absolute destination path inside `/workspace`.",
+            "maxLength": 4096,
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": {
+            "default": "file_id",
+            "description": "The type of the object. Always `file_id`.",
+            "enum": [
+              "file_id"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "file_id",
+          "path"
+        ],
+        "type": "object"
+      },
+      "HostedEnvironmentFileParamInline": {
+        "additionalProperties": false,
+        "description": "A file supplied directly as standard-base64 data.",
+        "properties": {
+          "data": {
+            "description": "The standard-base64-encoded file contents.",
+            "maxLength": 6990508,
+            "minLength": 0,
+            "type": "string"
+          },
+          "path": {
+            "description": "The absolute destination path inside `/workspace`.",
+            "maxLength": 4096,
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": {
+            "default": "inline",
+            "description": "The type of the object. Always `inline`.",
+            "enum": [
+              "inline"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "data",
+          "path"
+        ],
+        "type": "object"
+      },
+      "ErrorBodyResource": {
+        "additionalProperties": false,
+        "description": "Details about an API error.",
+        "properties": {
+          "code": {
+            "description": "A machine-readable error code.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "message": {
+            "description": "A human-readable error message.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "param": {
+            "description": "The request parameter that caused the error, or null for a request-wide error.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "description": "The error type.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "code",
+          "message",
+          "param"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

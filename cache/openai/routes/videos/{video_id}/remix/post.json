@@ -1,4 +1,6 @@
 {
+  "deprecated": true,
+  "description": "Create a remix of a completed video using a refreshed prompt.",
   "operationId": "CreateVideoRemix",
   "parameters": [
     {
@@ -36,9 +38,45 @@
         }
       },
       "description": "Success"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The request or source video is not supported for remixing, or the organization does not support video generation."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The source video or a referenced character was not found or is not accessible, the source video is not ready, or the Videos API is unavailable."
+    },
+    "429": {
+      "$ref": "#/components/responses/InferenceRateLimited"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The source generation is unavailable or the remix task could not be created."
+    },
+    "503": {
+      "$ref": "#/components/responses/InferenceServiceUnavailable"
     }
   },
-  "summary": "Create a remix of a completed video using a refreshed prompt.",
+  "summary": "Create a video remix",
   "tags": [
     "Videos"
   ],
@@ -176,6 +214,17 @@
         "title": "Video job",
         "type": "object"
       },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
       "Error-2": {
         "description": "An error that occurred while generating the response.",
         "properties": {
@@ -183,9 +232,42 @@
             "description": "A machine-readable error code that was returned.",
             "type": "string"
           },
+          "headers": {
+            "additionalProperties": {
+              "description": "The retry header value.",
+              "type": "string"
+            },
+            "description": "The Retry-After and Retry-After-Ms headers returned with the original error, if any.",
+            "type": "object"
+          },
           "message": {
             "description": "A human-readable description of the error that was returned.",
             "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "description": "The request parameter associated with the error, or null if none was recorded.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "anyOf": [
+              {
+                "description": "The original error type, or null if it was not recorded.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -229,6 +311,175 @@
           "failed"
         ],
         "type": "string"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      }
+    },
+    "responses": {
+      "InferenceRateLimited": {
+        "content": {
+          "application/json": {
+            "examples": {
+              "slowDown": {
+                "summary": "Traffic increased too quickly",
+                "value": {
+                  "error": {
+                    "code": "slow_down",
+                    "message": "Your request rate increased too quickly. Please reduce the request rate and gradually increase it again.",
+                    "param": null,
+                    "type": "rate_limit_error"
+                  }
+                }
+              }
+            },
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The request was rejected because a rate limit was exceeded. A slow_down error means traffic increased too quickly; reduce your request rate, then increase it gradually.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "InferenceServiceUnavailable": {
+        "content": {
+          "application/json": {
+            "examples": {
+              "serverOverloaded": {
+                "summary": "The requested model is temporarily overloaded",
+                "value": {
+                  "error": {
+                    "code": "server_is_overloaded",
+                    "message": "The model is temporarily overloaded. Please retry your request after a brief delay.",
+                    "param": null,
+                    "type": "service_unavailable_error"
+                  }
+                }
+              }
+            },
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The service is temporarily unavailable. A server_is_overloaded error means the requested model is temporarily overloaded; retry after a brief delay.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
       }
     }
   }

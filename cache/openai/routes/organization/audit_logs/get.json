@@ -1,4 +1,5 @@
 {
+  "description": "List user actions and configuration changes within this organization.",
   "operationId": "list-audit-logs",
   "parameters": [
     {
@@ -41,7 +42,7 @@
       }
     },
     {
-      "description": "Return only events with a `type` in one of these values. For example, `project.created`. For all options, see the documentation for the [audit log object](/docs/api-reference/audit-logs/object).",
+      "description": "Return only events with a `type` in one of these values. For example, `project.created`. For all options, see the documentation for the [audit log object](https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/audit_logs).",
       "in": "query",
       "name": "event_types[]",
       "required": false,
@@ -135,6 +136,29 @@
         }
       },
       "description": "Audit logs listed successfully."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The request parameters are invalid or the requested operation cannot be performed."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "No audit log was found with the specified pagination cursor."
+    },
+    "429": {
+      "$ref": "#/components/responses/TooManyRequests"
     }
   },
   "security": [
@@ -142,7 +166,7 @@
       "AdminApiKeyAuth": []
     }
   ],
-  "summary": "List user actions and configuration changes within this organization.",
+  "summary": "List audit logs",
   "tags": [
     "Audit Logs"
   ],
@@ -163,6 +187,8 @@
           "checkpoint.permission.deleted",
           "external_key.registered",
           "external_key.removed",
+          "external_storage.registered",
+          "external_storage.removed",
           "group.created",
           "group.updated",
           "group.deleted",
@@ -221,10 +247,13 @@
           "tenant.workload_identity.mapping.archived",
           "tenant.workload_identity.binding.created",
           "tenant.workload_identity.principal.provisioned",
+          "tenant.workload_identity.access_token.issued",
           "tenant.admin_api_key.created",
           "tenant.admin_api_key.updated",
           "tenant.admin_api_key.deleted",
           "tenant.project_api_key.created",
+          "tenant.trusted_access.business_verification.started",
+          "tenant.trusted_access.application.submitted",
           "tenant.chatgpt_access_token.revoked",
           "tenant.migration.completed",
           "tenant.sso.migrated",
@@ -277,6 +306,7 @@
           "tenant.resource_role_assignment.deleted",
           "tenant.resource_access.updated",
           "tenant.resource_access.deleted",
+          "tenant.ads_account.onboarding.redemption",
           "tenant.session_policy.created",
           "tenant.session_policy.updated",
           "tenant.session_policy.deleted",
@@ -341,6 +371,17 @@
           "object",
           "data",
           "has_more"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
         ],
         "type": "object"
       },
@@ -561,6 +602,40 @@
             "properties": {
               "id": {
                 "description": "The ID of the external key configuration.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "external_storage.registered": {
+            "description": "The details for events with this `type`.",
+            "properties": {
+              "data": {
+                "description": "The configuration for the external storage.",
+                "properties": {
+                  "geography": {
+                    "description": "The OpenAI geography derived from the storage region.",
+                    "type": "string"
+                  },
+                  "provider": {
+                    "$ref": "#/components/schemas/provider",
+                    "description": "The external storage provider configuration."
+                  }
+                },
+                "type": "object"
+              },
+              "id": {
+                "description": "The ID of the external storage configuration.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "external_storage.removed": {
+            "description": "The details for events with this `type`.",
+            "properties": {
+              "id": {
+                "description": "The ID of the external storage configuration.",
                 "type": "string"
               }
             },
@@ -1461,6 +1536,46 @@
         ],
         "type": "object"
       },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
       "AuditLogActor": {
         "description": "The actor who performed the audit logged action.",
         "properties": {
@@ -1479,6 +1594,60 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "provider": {
+        "discriminator": {
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AwsExternalStorageProviderResponse"
+          },
+          {
+            "$ref": "#/components/schemas/AzureExternalStorageProviderResponse"
+          },
+          {
+            "$ref": "#/components/schemas/GcpExternalStorageProviderResponse"
+          },
+          {
+            "$ref": "#/components/schemas/OciExternalStorageProviderResponse"
+          }
+        ]
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
         "type": "object"
       },
       "AuditLogActorApiKey": {
@@ -1518,6 +1687,174 @@
         },
         "type": "object"
       },
+      "AwsExternalStorageProviderResponse": {
+        "properties": {
+          "account_id": {
+            "type": "string"
+          },
+          "bucket": {
+            "type": "string"
+          },
+          "external_id": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "role_arn": {
+            "type": "string"
+          },
+          "type": {
+            "default": "aws",
+            "enum": [
+              "aws"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "account_id",
+          "region",
+          "bucket",
+          "role_arn",
+          "external_id"
+        ],
+        "type": "object"
+      },
+      "AzureExternalStorageProviderResponse": {
+        "properties": {
+          "account_name": {
+            "type": "string"
+          },
+          "container": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "resource_group": {
+            "type": "string"
+          },
+          "subscription_id": {
+            "type": "string"
+          },
+          "tenant_id": {
+            "type": "string"
+          },
+          "type": {
+            "default": "azure",
+            "enum": [
+              "azure"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "tenant_id",
+          "subscription_id",
+          "resource_group",
+          "account_name",
+          "container",
+          "region"
+        ],
+        "type": "object"
+      },
+      "GcpExternalStorageProviderResponse": {
+        "properties": {
+          "audience": {
+            "type": "string"
+          },
+          "bucket": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "type": {
+            "default": "gcp",
+            "enum": [
+              "gcp"
+            ],
+            "type": "string"
+          },
+          "workload_identity_pool_id": {
+            "type": "string"
+          },
+          "workload_identity_project_number": {
+            "type": "string"
+          },
+          "workload_identity_provider_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "bucket",
+          "workload_identity_project_number",
+          "workload_identity_pool_id",
+          "workload_identity_provider_id",
+          "region",
+          "audience"
+        ],
+        "type": "object"
+      },
+      "OciExternalStorageProviderResponse": {
+        "properties": {
+          "bucket": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "tenancy_ocid": {
+            "type": "string"
+          },
+          "type": {
+            "default": "oci",
+            "enum": [
+              "oci"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "tenancy_ocid",
+          "region",
+          "bucket"
+        ],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
       "AuditLogActorServiceAccount": {
         "description": "The service account that performed the audit logged action.",
         "properties": {
@@ -1541,6 +1878,27 @@
           }
         },
         "type": "object"
+      }
+    },
+    "responses": {
+      "TooManyRequests": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The request was rejected because a rate limit was exceeded.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted for 429 responses that require user action.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
       }
     }
   }

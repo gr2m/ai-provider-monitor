@@ -1,4 +1,5 @@
 {
+  "description": "Creates a new service account in the project. By default, this also returns an unredacted API key for the service account.",
   "operationId": "create-project-service-account",
   "parameters": [
     {
@@ -33,6 +34,16 @@
       },
       "description": "Project service account created successfully."
     },
+    "201": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ProjectServiceAccountCreateResponse"
+          }
+        }
+      },
+      "description": "Project service account created successfully."
+    },
     "400": {
       "content": {
         "application/json": {
@@ -42,6 +53,36 @@
         }
       },
       "description": "Error response when project is archived."
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/PermissionErrorResponse"
+          }
+        }
+      },
+      "description": "The caller does not have permission to perform this operation."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "A requested project, user, service account, or API key was not found."
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Too many management requests. Reduce the request rate and try again later."
     }
   },
   "security": [
@@ -49,7 +90,7 @@
       "AdminApiKeyAuth": []
     }
   ],
-  "summary": "Creates a new service account in the project. By default, this also returns an unredacted API key for the service account.",
+  "summary": "Create project service account",
   "tags": [
     "Projects"
   ],
@@ -67,6 +108,19 @@
                 "type": "null"
               }
             ]
+          },
+          "expires_in_seconds": {
+            "anyOf": [
+              {
+                "maximum": 31536000,
+                "minimum": 1,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Number of seconds until the initial API key expires. If omitted or null, the key does not expire unless the effective organization or project policy requires an expiration. When a policy sets a maximum lifetime, this value must be provided and must not exceed that limit. A non-null value cannot be used when `create_service_account_only` is true."
           },
           "name": {
             "description": "The name of the service account being created.",
@@ -136,11 +190,43 @@
         ],
         "type": "object"
       },
+      "PermissionErrorResponse": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Error"
+              },
+              {
+                "description": "An explanation of the missing API permissions.",
+                "type": "string"
+              }
+            ],
+            "description": "Details about the permission error."
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
       "ProjectServiceAccountApiKey": {
         "properties": {
           "created_at": {
             "format": "unixtime",
             "type": "integer"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "format": "unixtime",
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The Unix timestamp (in seconds) when the API key expires, or null if it does not expire."
           },
           "id": {
             "type": "string"
@@ -183,6 +269,9 @@
           "message": {
             "type": "string"
           },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
           "param": {
             "anyOf": [
               {
@@ -202,6 +291,69 @@
           "message",
           "param",
           "code"
+        ],
+        "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
         ],
         "type": "object"
       }

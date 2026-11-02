@@ -1,4 +1,5 @@
 {
+  "description": "Returns a list of run steps belonging to a run.",
   "operationId": "listRunSteps",
   "parameters": [
     {
@@ -59,7 +60,7 @@
       }
     },
     {
-      "description": "A list of additional fields to include in the response. Currently the only supported value is `step_details.tool_calls[*].file_search.results[*].content` to fetch the file search result content.\n\nSee the [file search tool documentation](/docs/assistants/tools/file-search#customizing-file-search-settings) for more information.\n",
+      "description": "A list of additional fields to include in the response. Currently the only supported value is `step_details.tool_calls[*].file_search.results[*].content` to fetch the file search result content.\n\nSee the [file search tool documentation](https://developers.openai.com/api/docs/guides/tools-file-search#retrieval-customization) for more information.\n",
       "in": "query",
       "name": "include[]",
       "schema": {
@@ -83,9 +84,12 @@
         }
       },
       "description": "OK"
+    },
+    "429": {
+      "$ref": "#/components/responses/TooManyRequests"
     }
   },
-  "summary": "Returns a list of run steps belonging to a run.",
+  "summary": "List run steps",
   "tags": [
     "Assistants"
   ],
@@ -128,7 +132,7 @@
         "description": "Represents a step in execution of a run.\n",
         "properties": {
           "assistant_id": {
-            "description": "The ID of the [assistant](/docs/api-reference/assistants) associated with the run step.",
+            "description": "The ID of the [assistant](https://developers.openai.com/api/docs/assistants/migration) associated with the run step.",
             "type": "string"
           },
           "cancelled_at": {
@@ -228,7 +232,7 @@
             "type": "string"
           },
           "run_id": {
-            "description": "The ID of the [run](/docs/api-reference/runs) that this run step is a part of.",
+            "description": "The ID of the [run](https://developers.openai.com/api/docs/assistants/migration) that this run step is a part of.",
             "type": "string"
           },
           "status": {
@@ -255,7 +259,7 @@
             "type": "object"
           },
           "thread_id": {
-            "description": "The ID of the [thread](/docs/api-reference/threads) that was run.",
+            "description": "The ID of the [thread](https://developers.openai.com/api/docs/assistants/migration) that was run.",
             "type": "string"
           },
           "type": {
@@ -289,6 +293,17 @@
           "usage"
         ],
         "title": "Run steps",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
         "type": "object"
       },
       "Metadata": {
@@ -400,6 +415,46 @@
           }
         ]
       },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
       "RunStepDetailsToolCallsCodeObject": {
         "description": "Details of the Code Interpreter tool call the run step was involved in.",
         "properties": {
@@ -506,7 +561,7 @@
               "output": {
                 "anyOf": [
                   {
-                    "description": "The output of the function. This will be `null` if the outputs have not been [submitted](/docs/api-reference/runs/submitToolOutputs) yet.",
+                    "description": "The output of the function. This will be `null` if the outputs have not been [submitted](https://developers.openai.com/api/docs/assistants/migration) yet.",
                     "type": "string"
                   },
                   {
@@ -542,6 +597,41 @@
         "title": "Function tool call",
         "type": "object"
       },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
       "RunStepDetailsToolCallsCodeOutputLogsObject": {
         "description": "Text output from the Code Interpreter tool call as part of a run step.",
         "properties": {
@@ -569,7 +659,7 @@
           "image": {
             "properties": {
               "file_id": {
-                "description": "The [file](/docs/api-reference/files) ID of the image.",
+                "description": "The [file](https://developers.openai.com/api/reference/resources/files) ID of the image.",
                 "type": "string"
               }
             },
@@ -659,6 +749,34 @@
         "title": "File search tool call result",
         "type": "object"
       },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
       "FileSearchRanker": {
         "description": "The ranker to use for the file search. If not specified will use the `auto` ranker.",
         "enum": [
@@ -666,6 +784,27 @@
           "default_2024_08_21"
         ],
         "type": "string"
+      }
+    },
+    "responses": {
+      "TooManyRequests": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The request was rejected because a rate limit was exceeded.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted for 429 responses that require user action.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
       }
     }
   }

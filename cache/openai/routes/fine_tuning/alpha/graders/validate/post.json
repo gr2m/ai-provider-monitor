@@ -1,4 +1,5 @@
 {
+  "description": "Validate a grader.\n",
   "operationId": "validateGrader",
   "requestBody": {
     "content": {
@@ -20,9 +21,29 @@
         }
       },
       "description": "OK"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The grader definition or request is invalid."
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The request rate limit has been exceeded."
     }
   },
-  "summary": "Validate a grader.\n",
+  "summary": "Validate grader",
   "tags": [
     "Fine-tuning"
   ],
@@ -83,6 +104,17 @@
           }
         },
         "title": "ValidateGraderResponse",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
         "type": "object"
       },
       "GraderStringCheck": {
@@ -229,10 +261,8 @@
             "type": "string"
           },
           "range": {
-            "description": "The range of the score. Defaults to `[0, 1]`.",
+            "description": "The service requires two numbers for the score range. Defaults to `[0, 1]`.\n",
             "items": {
-              "max_items": 2,
-              "min_items": 2,
               "type": "number"
             },
             "type": "array"
@@ -318,23 +348,37 @@
             "type": "string"
           },
           "graders": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/GraderStringCheck"
+            "additionalProperties": {
+              "discriminator": {
+                "mapping": {
+                  "label_model": "#/components/schemas/GraderLabelModel",
+                  "python": "#/components/schemas/GraderPython",
+                  "score_model": "#/components/schemas/GraderScoreModel",
+                  "string_check": "#/components/schemas/GraderStringCheck",
+                  "text_similarity": "#/components/schemas/GraderTextSimilarity"
+                },
+                "propertyName": "type"
               },
-              {
-                "$ref": "#/components/schemas/GraderTextSimilarity"
-              },
-              {
-                "$ref": "#/components/schemas/GraderPython"
-              },
-              {
-                "$ref": "#/components/schemas/GraderScoreModel"
-              },
-              {
-                "$ref": "#/components/schemas/GraderLabelModel"
-              }
-            ]
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/GraderStringCheck"
+                },
+                {
+                  "$ref": "#/components/schemas/GraderTextSimilarity"
+                },
+                {
+                  "$ref": "#/components/schemas/GraderPython"
+                },
+                {
+                  "$ref": "#/components/schemas/GraderScoreModel"
+                },
+                {
+                  "$ref": "#/components/schemas/GraderLabelModel"
+                }
+              ]
+            },
+            "minProperties": 1,
+            "type": "object"
           },
           "name": {
             "description": "The name of the grader.",
@@ -356,6 +400,46 @@
           "calculate_output"
         ],
         "title": "MultiGrader",
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
         "type": "object"
       },
       "EvalItem": {
@@ -393,7 +477,7 @@
         "anyOf": [
           {
             "default": "medium",
-            "description": "Constrains effort on reasoning for reasoning models. Currently supported\nvalues are `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`.\nReducing reasoning effort can result in faster responses and fewer tokens\nused on reasoning in a response. Not all reasoning models support every\nvalue. See the\n[reasoning guide](https://platform.openai.com/docs/guides/reasoning)\nfor model-specific support.\n",
+            "description": "Constrains effort on reasoning for reasoning models. Currently supported\nvalues are `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`.\nReducing reasoning effort can result in faster responses and fewer tokens\nused on reasoning in a response. Not all reasoning models support every\nvalue. See the\n[reasoning guide](https://developers.openai.com/api/docs/guides/reasoning)\nfor model-specific support.\n",
             "enum": [
               "none",
               "minimal",
@@ -460,6 +544,41 @@
         "title": "LabelModelGrader",
         "type": "object"
       },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
       "EvalItemContent": {
         "description": "Inputs to the model - can contain template strings. Supports text, output text, input images, and input audio, either as a single item or an array of items.\n",
         "oneOf": [
@@ -471,6 +590,34 @@
           }
         ],
         "title": "Eval content"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
       },
       "EvalItemContentItem": {
         "description": "A single content item: input text, output text, input image, or input audio.\n",
@@ -621,13 +768,21 @@
         "type": "object"
       },
       "PromptCacheBreakpointConfig": {
-        "description": "Marks the exact end of a reusable prompt prefix. The breakpoint inherits its TTL from the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
+        "description": "Marks the exact end of a reusable prompt prefix. When `ttl` is omitted, the breakpoint inherits the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
         "properties": {
           "mode": {
             "default": "explicit",
             "description": "The breakpoint mode. Always `explicit`.",
             "enum": [
               "explicit"
+            ],
+            "type": "string"
+          },
+          "ttl": {
+            "description": "The minimum lifetime of this cache breakpoint. Defaults to the request TTL.",
+            "enum": [
+              "30m",
+              "12h"
             ],
             "type": "string"
           }

@@ -1,4 +1,5 @@
 {
+  "description": "Returns a list of vector stores.",
   "operationId": "listVectorStores",
   "parameters": [
     {
@@ -51,9 +52,22 @@
         }
       },
       "description": "OK"
+    },
+    "429": {
+      "$ref": "#/components/responses/TooManyRequests"
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The vector store list is temporarily unavailable. Retry the request."
     }
   },
-  "summary": "Returns a list of vector stores.",
+  "summary": "List vector stores",
   "tags": [
     "Vector stores"
   ],
@@ -91,6 +105,17 @@
           "last_id",
           "has_more"
         ]
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
       },
       "VectorStoreObject": {
         "description": "A vector store is a collection of processed files can be used by the `file_search` tool.",
@@ -205,6 +230,46 @@
         "title": "Vector store",
         "type": "object"
       },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
       "VectorStoreExpirationAfter": {
         "description": "The expiration policy for a vector store.",
         "properties": {
@@ -242,6 +307,90 @@
             "type": "null"
           }
         ]
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      }
+    },
+    "responses": {
+      "TooManyRequests": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The request was rejected because a rate limit was exceeded.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted for 429 responses that require user action.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
       }
     }
   }

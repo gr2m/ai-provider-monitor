@@ -1,4 +1,5 @@
 {
+  "description": "Modifies a thread.",
   "operationId": "modifyThread",
   "parameters": [
     {
@@ -31,9 +32,12 @@
         }
       },
       "description": "OK"
+    },
+    "429": {
+      "$ref": "#/components/responses/TooManyRequests"
     }
   },
-  "summary": "Modifies a thread.",
+  "summary": "Modify thread",
   "tags": [
     "Assistants"
   ],
@@ -54,7 +58,7 @@
                     "properties": {
                       "file_ids": {
                         "default": [],
-                        "description": "A list of [file](/docs/api-reference/files) IDs made available to the `code_interpreter` tool. There can be a maximum of 20 files associated with the tool.\n",
+                        "description": "A list of [file](https://developers.openai.com/api/reference/resources/files) IDs made available to the `code_interpreter` tool. There can be a maximum of 20 files associated with the tool.\n",
                         "items": {
                           "type": "string"
                         },
@@ -67,7 +71,7 @@
                   "file_search": {
                     "properties": {
                       "vector_store_ids": {
-                        "description": "The [vector store](/docs/api-reference/vector-stores/object) attached to this thread. There can be a maximum of 1 vector store attached to the thread.\n",
+                        "description": "The [vector store](https://developers.openai.com/api/reference/resources/vector_stores) attached to this thread. There can be a maximum of 1 vector store attached to the thread.\n",
                         "items": {
                           "type": "string"
                         },
@@ -89,7 +93,7 @@
         "type": "object"
       },
       "ThreadObject": {
-        "description": "Represents a thread that contains [messages](/docs/api-reference/messages).",
+        "description": "Represents a thread that contains [messages](https://developers.openai.com/api/docs/assistants/migration).",
         "properties": {
           "created_at": {
             "description": "The Unix timestamp (in seconds) for when the thread was created.",
@@ -119,7 +123,7 @@
                     "properties": {
                       "file_ids": {
                         "default": [],
-                        "description": "A list of [file](/docs/api-reference/files) IDs made available to the `code_interpreter` tool. There can be a maximum of 20 files associated with the tool.\n",
+                        "description": "A list of [file](https://developers.openai.com/api/reference/resources/files) IDs made available to the `code_interpreter` tool. There can be a maximum of 20 files associated with the tool.\n",
                         "items": {
                           "type": "string"
                         },
@@ -132,7 +136,7 @@
                   "file_search": {
                     "properties": {
                       "vector_store_ids": {
-                        "description": "The [vector store](/docs/api-reference/vector-stores/object) attached to this thread. There can be a maximum of 1 vector store attached to the thread.\n",
+                        "description": "The [vector store](https://developers.openai.com/api/reference/resources/vector_stores) attached to this thread. There can be a maximum of 1 vector store attached to the thread.\n",
                         "items": {
                           "type": "string"
                         },
@@ -174,6 +178,141 @@
             "type": "null"
           }
         ]
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      }
+    },
+    "responses": {
+      "TooManyRequests": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The request was rejected because a rate limit was exceeded.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted for 429 responses that require user action.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
       }
     }
   }

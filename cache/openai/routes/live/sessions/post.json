@@ -1,0 +1,2594 @@
+{
+  "description": "Create a Live WebRTC session or place an outbound SIP call. Start with the\n[Live prompting guide](https://developers.openai.com/api/docs/guides/live-prompting) for session configuration\nand [Telephony and SIP](https://developers.openai.com/api/docs/guides/voice-sip?api=live#place-an-outbound-call)\nfor trunk setup and call monitoring.\n\nSet transport.type to `webrtc` and supply an SDP offer, or set it to `sip`\nand supply an E.164 destination and trunk credentials. Outbound SIP calling\nmust be enabled for your organization.\nRinging is limited to 3 minutes and connected calls to 2 hours; these limits\nare not configurable in the request.\n\nReturns `201 Created` after session initialization. WebRTC responses include an\nSDP answer. SIP responses do not wait for the callee to answer. Attach a\nsideband connection using session.id to monitor SIP call progress.\n\nEach SIP request creates a new call. If a request times out or the connection\nfails, retry with caution: the original request may have succeeded, and a\nretry can place another call.",
+  "operationId": "create-live",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/LiveSessionCreateRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "201": {
+      "content": {
+        "application/json": {
+          "examples": {
+            "sip": {
+              "summary": "Outbound SIP session initialized (201 Created)",
+              "value": {
+                "session": {
+                  "id": "live_123"
+                },
+                "transport": {
+                  "type": "sip"
+                }
+              }
+            },
+            "webrtc": {
+              "summary": "WebRTC session created (201 Created)",
+              "value": {
+                "session": {
+                  "id": "live_123"
+                },
+                "transport": {
+                  "sdp": "<SDP answer>",
+                  "type": "webrtc"
+                }
+              }
+            }
+          },
+          "schema": {
+            "$ref": "#/components/schemas/LiveSessionCreateResponse"
+          }
+        }
+      },
+      "description": "Returns 201 Created with a WebRTC answer or an initialized outbound SIP session. A SIP response does not mean the callee has answered."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        },
+        "text/plain": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Invalid Live session request."
+    },
+    "413": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        },
+        "text/plain": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "The Live session request exceeds the supported size limit."
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The session could not start because a rate or quota limit was exceeded."
+    },
+    "500": {
+      "content": {
+        "text/plain": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "An internal error occurred. The response body is plain text."
+    },
+    "502": {
+      "content": {
+        "text/plain": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "The SIP gateway could not initialize the outbound call."
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        },
+        "text/plain": {
+          "schema": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "The session is temporarily unavailable."
+    },
+    "504": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "SIP session initialization timed out. The error code is sip_setup_timeout."
+    }
+  },
+  "summary": "Create session",
+  "tags": [
+    "Live"
+  ],
+  "components": {
+    "schemas": {
+      "LiveSessionCreateRequest": {
+        "additionalProperties": false,
+        "description": "Create a Live session with a WebRTC SDP offer or place an outbound SIP call. Follow the [Live prompting guide](https://developers.openai.com/api/docs/guides/live-prompting) before choosing frontend and backend instructions. The request starts the session; do not send session.start again on the data channel or sideband.",
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/LiveMediaSessionCreateParams",
+            "description": "Startup configuration for the Live session."
+          },
+          "transport": {
+            "description": "WebRTC transport with an SDP offer, or SIP transport with a destination and per-call trunk credentials.",
+            "discriminator": {
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LiveWebRTCTransport"
+              },
+              {
+                "$ref": "#/components/schemas/LiveSIPTransport"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session",
+          "transport"
+        ],
+        "type": "object"
+      },
+      "LiveSessionCreateResponse": {
+        "description": "The created Live session and its transport. WebRTC creation returns 201 Created with an SDP answer. Outbound SIP creation returns 201 Created after initialization, before the callee necessarily answers, without SDP or trunk credentials.",
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/session"
+          },
+          "transport": {
+            "description": "WebRTC transport with an SDP answer, or SIP transport without SDP or trunk credentials. For SIP, attach a sideband using session.id to receive transport.ringing, transport.answered, and transport.failed notifications.",
+            "discriminator": {
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LiveWebRTCTransport"
+              },
+              {
+                "description": "The SIP transport. Trunk credentials and SDP are not returned.",
+                "properties": {
+                  "type": {
+                    "description": "The transport used for the Live session. Always `sip`.",
+                    "enum": [
+                      "sip"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "required": [
+          "session",
+          "transport"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "LiveMediaSessionCreateParams": {
+        "additionalProperties": false,
+        "description": "Startup configuration for a Live media session. Follow the [Live prompting guide](https://developers.openai.com/api/docs/guides/live-prompting) when writing frontend instructions and the backend prompt under delegation.responses.instructions.",
+        "properties": {
+          "audio": {
+            "$ref": "#/components/schemas/LiveMediaSessionAudioParam",
+            "description": "Startup audio configuration. WebRTC and SIP negotiate their audio format on the media transport."
+          },
+          "client": {
+            "$ref": "#/components/schemas/LiveClientConfigParam"
+          },
+          "delegation": {
+            "$ref": "#/components/schemas/delegation"
+          },
+          "input": {
+            "$ref": "#/components/schemas/input"
+          },
+          "instructions": {
+            "$ref": "#/components/schemas/instructions"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ModelIdsLive"
+          },
+          "store": {
+            "$ref": "#/components/schemas/store"
+          },
+          "triggers": {
+            "$ref": "#/components/schemas/triggers"
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "type": "object"
+      },
+      "LiveWebRTCTransport": {
+        "additionalProperties": false,
+        "description": "WebRTC transport carrying the offer SDP in a creation request or answer SDP in its response.",
+        "properties": {
+          "sdp": {
+            "description": "Session Description Protocol message for the WebRTC connection.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": {
+            "description": "The transport used for the Live session. Always `webrtc`.",
+            "enum": [
+              "webrtc"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "sdp"
+        ],
+        "type": "object"
+      },
+      "LiveSIPTransport": {
+        "additionalProperties": false,
+        "description": "Place an outbound SIP call using your provider's trunk. Outbound SIP calling must be enabled for your organization. The trunk must support TLS signaling, Opus audio, and SDES-SRTP media. See [Telephony and SIP](https://developers.openai.com/api/docs/guides/voice-sip?api=live#place-an-outbound-call).",
+        "properties": {
+          "destination": {
+            "description": "Phone number to call in E.164 format. SIP URI destinations are not supported.",
+            "example": "+14155550123",
+            "pattern": "^\\+[1-9][0-9]{1,14}$",
+            "type": "string"
+          },
+          "trunk": {
+            "$ref": "#/components/schemas/LiveSIPTrunk"
+          },
+          "type": {
+            "description": "The transport used for the Live session. Always `sip`.",
+            "enum": [
+              "sip"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "destination",
+          "trunk"
+        ],
+        "type": "object"
+      },
+      "session": {
+        "description": "The newly created Live session. Use its ID for session controls and sideband connections.",
+        "properties": {
+          "id": {
+            "description": "Opaque session identifier. Preserve the returned value unchanged, including its prefix.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
+      "LiveMediaSessionAudioParam": {
+        "additionalProperties": false,
+        "description": "Startup audio output configuration. WebRTC and SIP negotiate the media format; audio.format is only accepted for primary WebSockets. Voice cannot change after startup.",
+        "properties": {
+          "output": {
+            "$ref": "#/components/schemas/LiveInitialSessionAudioOutputParam"
+          }
+        },
+        "type": "object"
+      },
+      "LiveClientConfigParam": {
+        "description": "Startup-only capabilities for an untrusted frontend attached to a unified WebRTC session. Trusted sideband connections are unaffected.",
+        "properties": {
+          "data_channel": {
+            "$ref": "#/components/schemas/LiveDataChannelConfigParam",
+            "description": "Client and server event permissions for the WebRTC frontend data channel."
+          }
+        },
+        "required": [
+          "data_channel"
+        ],
+        "type": "object"
+      },
+      "delegation": {
+        "anyOf": [
+          {
+            "description": "Who handles tasks delegated by the Live model. Omitted or null selects your application; use `responses` or `decisions` to delegate to the corresponding API.",
+            "discriminator": {
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LiveClientDelegationParam"
+              },
+              {
+                "$ref": "#/components/schemas/LiveResponsesDelegationParam"
+              },
+              {
+                "$ref": "#/components/schemas/LiveDecisionsDelegationParam"
+              }
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "input": {
+        "description": "Ordered text-only history supplied before startup. Supports developer, user, and assistant messages with one text part each; at most 128 messages and a configured rendered-token limit (8,192 by default).",
+        "items": {
+          "$ref": "#/components/schemas/LiveInitialItem"
+        },
+        "maxItems": 128,
+        "type": "array"
+      },
+      "instructions": {
+        "anyOf": [
+          {
+            "description": "Frontend instructions for voice, conversation, interruptions, and when to delegate. Start with the [Live prompting guide](https://developers.openai.com/api/docs/guides/live-prompting); put business rules and tool workflows in a separate [backend prompt](https://developers.openai.com/api/docs/guides/live-delegation#start-with-your-existing-backend-prompt). Limited to 16,384 client-supplied tokens. Omitted or blank instructions use server defaults. Immutable after startup.",
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "ModelIdsLive": {
+        "anyOf": [
+          {
+            "minLength": 1,
+            "type": "string"
+          },
+          {
+            "enum": [
+              "gpt-live-1"
+            ],
+            "type": "string"
+          }
+        ],
+        "description": "The Live model. Required in the session configuration for every transport; do not pass it as a URL query parameter.",
+        "example": "gpt-live-1"
+      },
+      "store": {
+        "description": "Whether to store the session for later forking and recording download. Defaults to false for new sessions.",
+        "type": "boolean"
+      },
+      "triggers": {
+        "description": "At most one Decisions trigger per transcript event type. Triggers run independently of delegation. On update, omit triggers to keep the current configuration, send a list to replace it, or send an empty list to disable triggers.",
+        "items": {
+          "$ref": "#/components/schemas/LiveDecisionTriggerInputParam"
+        },
+        "maxItems": 2,
+        "type": "array"
+      },
+      "LiveSIPTrunk": {
+        "additionalProperties": false,
+        "description": "SIP trunk configuration supplied for this call. Keep trunk credentials on your server. The creation response does not return this configuration.",
+        "properties": {
+          "auth": {
+            "$ref": "#/components/schemas/LiveSIPTrunkAuth"
+          },
+          "caller_number": {
+            "description": "Caller phone number in E.164 format to use in the SIP From header.",
+            "example": "+14155550100",
+            "pattern": "^\\+[1-9][0-9]{1,14}$",
+            "type": "string"
+          },
+          "provider_url": {
+            "description": "Provider endpoint in the form `sips:host[:port][;transport=tcp]`. The default port is 5061. IPv6 addresses must be bracketed. TLS signaling is required; plaintext SIP is not supported. Do not include userinfo, a path, URI headers, or other URI parameters. Local hostnames and literal private, loopback, link-local, unspecified, multicast, and broadcast IP addresses are rejected.",
+            "example": "sips:sip.example.com:5061",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider_url",
+          "auth",
+          "caller_number"
+        ],
+        "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "LiveInitialSessionAudioOutputParam": {
+        "description": "Settings for speech generated by the Live model. Choose the voice before starting the session.",
+        "properties": {
+          "voice": {
+            "description": "The voice used for Live speech, as a built-in voice name or a custom voice object containing its ID. Defaults to `marin` and cannot change after startup.",
+            "oneOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "enum": [
+                      "alloy",
+                      "ash",
+                      "ballad",
+                      "beacon",
+                      "bossa",
+                      "brise",
+                      "cedar",
+                      "cinder",
+                      "coral",
+                      "delta",
+                      "echo",
+                      "flitz",
+                      "gleam",
+                      "harema",
+                      "juni",
+                      "marin",
+                      "meridian",
+                      "nira",
+                      "noeul",
+                      "nuri",
+                      "quartz",
+                      "ripple",
+                      "sage",
+                      "shida",
+                      "shimmer",
+                      "sillage",
+                      "stone",
+                      "tempo",
+                      "verse",
+                      "vesper",
+                      "willow"
+                    ],
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "$ref": "#/components/schemas/LiveCustomVoiceParam"
+              }
+            ]
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "LiveDataChannelConfigParam": {
+        "description": "Control which Live events an untrusted WebRTC frontend can send and receive over its data channel. These restrictions do not apply to trusted sideband connections.",
+        "properties": {
+          "allowed_client_events": {
+            "description": "Client event types that the frontend data channel may send. Use 'all' to allow every client event; an empty array allows none. Omission preserves the existing allow-all behavior.",
+            "oneOf": [
+              {
+                "default": "all",
+                "enum": [
+                  "all"
+                ],
+                "type": "string"
+              },
+              {
+                "items": {
+                  "description": "A Live client event type allowed on the frontend data channel, such as `session.input_audio.mute`.",
+                  "maxLength": 256,
+                  "minLength": 1,
+                  "pattern": "^(?:error|info|[a-z][a-z0-9_-]*(?:\\.[a-z0-9_-]+)+)$",
+                  "type": "string"
+                },
+                "maxItems": 256,
+                "type": "array"
+              }
+            ]
+          },
+          "allowed_server_events": {
+            "description": "Server events that may be sent to the frontend data channel. Use 'all' to allow every server event; an empty array allows none. Omission preserves the existing allow-all behavior. Responses events use an object with type 'response.event' and a response_event selector.",
+            "oneOf": [
+              {
+                "default": "all",
+                "enum": [
+                  "all"
+                ],
+                "type": "string"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LiveAllowedServerEventParam"
+                },
+                "maxItems": 256,
+                "type": "array"
+              }
+            ]
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "LiveClientDelegationParam": {
+        "description": "Delegate tasks to your application. The Live session emits delegation events that your backend handles.",
+        "properties": {
+          "acknowledgement_delay_ms": {
+            "description": "Milliseconds to wait before requesting an automatic spoken acknowledgement for a delegation. The model may still speak before this delay. Any commentary or thinking appended to the session cancels all pending acknowledgements, including those for other delegations. Defaults to 400 for Decisions sessions and 0 (request immediately) for other sessions. Omission in a session update preserves the current value. Updates apply to subsequent delegations.",
+            "maximum": 800,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": {
+            "default": "client",
+            "description": "The delegation owner. Always `client` for tasks handled by your application.",
+            "enum": [
+              "client"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveResponsesDelegationParam": {
+        "description": "Delegate tasks to a Responses model managed by the Live session.",
+        "properties": {
+          "acknowledgement_delay_ms": {
+            "description": "Milliseconds to wait before requesting an automatic spoken acknowledgement for a delegation. The model may still speak before this delay. Any commentary or thinking appended to the session cancels all pending acknowledgements, including those for other delegations. Defaults to 400 for Decisions sessions and 0 (request immediately) for other sessions. Omission in a session update preserves the current value. Updates apply to subsequent delegations.",
+            "maximum": 800,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "responses": {
+            "$ref": "#/components/schemas/LiveResponsesDelegationSettingsInputParam",
+            "description": "Backend model, prompt, and tools used when the Live session delegates a task to Responses."
+          },
+          "type": {
+            "default": "responses",
+            "description": "The delegation owner. Always `responses` for tasks handled by the Responses API.",
+            "enum": [
+              "responses"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "responses"
+        ],
+        "type": "object"
+      },
+      "LiveDecisionsDelegationParam": {
+        "properties": {
+          "acknowledgement_delay_ms": {
+            "description": "Milliseconds to wait before requesting an automatic spoken acknowledgement for a delegation. The model may still speak before this delay. Any commentary or thinking appended to the session cancels all pending acknowledgements, including those for other delegations. Defaults to 400. Updates apply to subsequent delegations.",
+            "maximum": 800,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "decisions": {
+            "$ref": "#/components/schemas/LiveDecisionsSettingsInputParam"
+          },
+          "type": {
+            "default": "decisions",
+            "enum": [
+              "decisions"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "decisions"
+        ],
+        "type": "object"
+      },
+      "LiveInitialItem": {
+        "description": "A developer, user, or assistant message supplied as text history before the Live session starts.",
+        "discriminator": {
+          "propertyName": "role"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/LiveInitialDeveloperMessageItemParam"
+          },
+          {
+            "$ref": "#/components/schemas/LiveInitialUserMessageItemParam"
+          },
+          {
+            "$ref": "#/components/schemas/LiveInitialAssistantMessageItemParam"
+          }
+        ]
+      },
+      "LiveDecisionTriggerInputParam": {
+        "additionalProperties": false,
+        "properties": {
+          "decisions": {
+            "$ref": "#/components/schemas/LiveDecisionQuestionsInputParam",
+            "description": "Questions evaluated using the current transcript and the session's shared Decision items."
+          },
+          "event_type": {
+            "enum": [
+              "session.input_transcript.delta",
+              "session.output_transcript.delta"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "default": "decisions",
+            "enum": [
+              "decisions"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "event_type",
+          "decisions"
+        ],
+        "type": "object"
+      },
+      "LiveSIPTrunkAuth": {
+        "additionalProperties": false,
+        "description": "Credentials for SIP Digest authentication with your trunk provider.",
+        "properties": {
+          "password": {
+            "description": "Provider password. Must be at most 4096 bytes and contain no CR, LF, or NUL.",
+            "minLength": 1,
+            "type": "string",
+            "writeOnly": true
+          },
+          "type": {
+            "description": "Use `digest` for SIP Digest authentication. Handles 401 and 407 challenges.",
+            "enum": [
+              "digest"
+            ],
+            "type": "string"
+          },
+          "username": {
+            "description": "Provider username. Must contain a non-whitespace character, be at most 256 bytes, and contain no CR, LF, or NUL.",
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "username",
+          "password"
+        ],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
+      "LiveCustomVoiceParam": {
+        "properties": {
+          "id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "LiveAllowedServerEventParam": {
+        "additionalProperties": false,
+        "description": "A Live server event selector for the WebRTC frontend data channel.",
+        "example": {
+          "type": "session.started"
+        },
+        "properties": {
+          "response_event": {
+            "description": "The nested Responses event type. Required when type is 'response.event'; forbidden for other event types.",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": {
+            "description": "The outer Live server event type. Use 'response.event' for Responses events.",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveResponsesDelegationSettingsInputParam": {
+        "description": "Model, prompt, and tool settings for tasks delegated by the Live session to a Responses backend.",
+        "properties": {
+          "instructions": {
+            "anyOf": [
+              {
+                "description": "Instructions for the delegated Responses model, separate from Live instructions. See [backend prompting](https://developers.openai.com/api/docs/guides/live-delegation#start-with-your-existing-backend-prompt).",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "max_output_tokens": {
+            "anyOf": [
+              {
+                "description": "Maximum number of output tokens for each delegated response.",
+                "minimum": 16,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "model": {
+            "description": "The model used for server-owned Responses delegations.",
+            "type": "string"
+          },
+          "parallel_tool_calls": {
+            "anyOf": [
+              {
+                "description": "Whether the delegated Responses model may request multiple tool calls in a single response.",
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveDelegationReasoningInputParam",
+                "description": "Reasoning settings passed to each delegated Responses request."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "service_tier": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveResponsesServiceTier",
+                "description": "Service tier for delegated Responses requests."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveDelegationTextInputParam",
+                "description": "Text generation settings passed to each delegated Responses request."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tool_choice": {
+            "description": "Controls which tool the Responses backend uses when handling a task delegated by the Live model.",
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LiveToolChoiceEnum"
+              },
+              {
+                "discriminator": {
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/LiveFunctionToolChoiceParam"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LiveMCPToolChoiceParam"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LiveSpecificFileSearchParam"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LiveSpecificWebSearchParam"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LiveSpecificWebSearchPreviewParam"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LiveSpecificImageGenParam"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LiveSpecificComputerParam"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LiveSpecificCodeInterpreterParam"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LiveSpecificProgrammaticToolCallingParam"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LiveSpecificFunctionShellParam"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LiveSpecificCustomToolParam"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LiveSpecificApplyPatchParam"
+                  }
+                ]
+              },
+              {
+                "$ref": "#/components/schemas/LiveAllowedToolsChoiceParam"
+              }
+            ]
+          },
+          "tools": {
+            "description": "Tools available to the Responses backend while it handles tasks delegated by the Live model.",
+            "items": {
+              "discriminator": {
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/LiveFunctionToolInputParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveWebSearchToolInputParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveFileSearchToolInputParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveCodeInterpreterToolInputParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveHostedShellToolInputParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveImageGenerationToolInputParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveMCPToolInputParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveCustomToolInputParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveNamespaceToolInputParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveToolSearchToolInputParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveProgrammaticToolInputParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveComputerToolInputParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveApplyPatchToolInputParam"
+                }
+              ]
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "type": "object"
+      },
+      "LiveDecisionsSettingsInputParam": {
+        "properties": {
+          "model": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "questions": {
+            "description": "Native Decision API questions evaluated together, in order.",
+            "items": {
+              "$ref": "#/components/schemas/LiveDecisionQuestion"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "questions",
+          "model"
+        ],
+        "type": "object"
+      },
+      "LiveInitialDeveloperMessageItemParam": {
+        "description": "A developer message included in the initial text history of a Live session.",
+        "properties": {
+          "content": {
+            "description": "The message content. Supply exactly one text part for the initial Live conversation history.",
+            "items": {
+              "$ref": "#/components/schemas/LiveInitialInputTextContentPartParam"
+            },
+            "maxItems": 1,
+            "minItems": 1,
+            "type": "array"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "description": "An optional identifier for the supplied history message. Live uses the message’s role and text to initialize the conversation.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "default": "developer",
+            "description": "The author of this history message. Always `developer`.",
+            "enum": [
+              "developer"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveInitialMessageStatus",
+                "description": "The supplied message’s status. Live uses its text as history and does not resume an incomplete message."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "default": "message",
+            "description": "The history item type. Always `message`.",
+            "enum": [
+              "message"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "type": "object"
+      },
+      "LiveInitialUserMessageItemParam": {
+        "description": "A user message included in the initial text history of a Live session.",
+        "properties": {
+          "content": {
+            "description": "The message content. Supply exactly one text part for the initial Live conversation history.",
+            "items": {
+              "$ref": "#/components/schemas/LiveInitialInputTextContentPartParam"
+            },
+            "maxItems": 1,
+            "minItems": 1,
+            "type": "array"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "description": "An optional identifier for the supplied history message. Live uses the message’s role and text to initialize the conversation.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "default": "user",
+            "description": "The author of this history message. Always `user`.",
+            "enum": [
+              "user"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveInitialMessageStatus",
+                "description": "The supplied message’s status. Live uses its text as history and does not resume an incomplete message."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "default": "message",
+            "description": "The history item type. Always `message`.",
+            "enum": [
+              "message"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "type": "object"
+      },
+      "LiveInitialAssistantMessageItemParam": {
+        "description": "An assistant message included in the initial text history of a Live session.",
+        "properties": {
+          "content": {
+            "description": "The message content. Supply exactly one text part for the initial Live conversation history.",
+            "items": {
+              "discriminator": {
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/LiveInitialTextContentPartParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveInitialOutputTextContentPartParam"
+                }
+              ]
+            },
+            "maxItems": 1,
+            "minItems": 1,
+            "type": "array"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "description": "An optional identifier for the supplied history message. Live uses the message’s role and text to initialize the conversation.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "default": "assistant",
+            "description": "The author of this history message. Always `assistant`.",
+            "enum": [
+              "assistant"
+            ],
+            "type": "string"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveInitialMessageStatus",
+                "description": "The supplied message’s status. Live uses its text as history and does not resume an incomplete message."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "default": "message",
+            "description": "The history item type. Always `message`.",
+            "enum": [
+              "message"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "content"
+        ],
+        "type": "object"
+      },
+      "LiveDecisionQuestionsInputParam": {
+        "description": "Questions evaluated using the current transcript and the session's shared Decision items.",
+        "properties": {
+          "questions": {
+            "description": "Native Decision API questions evaluated together, in order.",
+            "items": {
+              "$ref": "#/components/schemas/LiveDecisionQuestion"
+            },
+            "maxItems": 64,
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "questions"
+        ],
+        "type": "object"
+      },
+      "LiveDelegationReasoningInputParam": {
+        "description": "Reasoning options for Responses requests made on behalf of the Live session.",
+        "properties": {
+          "effort": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveReasoningEffort",
+                "description": "How much reasoning effort the delegated Responses model should use. Supported values depend on the backend model."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveReasoningSummary",
+                "description": "The reasoning summary to request from the delegated Responses model, when supported."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "LiveResponsesServiceTier": {
+        "enum": [
+          "auto",
+          "default",
+          "fast_tier_temp_pilot",
+          "flex",
+          "priority",
+          "ultrafast"
+        ],
+        "type": "string"
+      },
+      "LiveDelegationTextInputParam": {
+        "description": "Text generation options for the Live session’s Responses backend.",
+        "properties": {
+          "verbosity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveTextVerbosity",
+                "description": "The amount of detail in text generated by the Responses backend. This does not configure the Live model’s spoken delivery."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "LiveToolChoiceEnum": {
+        "enum": [
+          "auto",
+          "none",
+          "required"
+        ],
+        "type": "string"
+      },
+      "LiveFunctionToolChoiceParam": {
+        "properties": {
+          "name": {
+            "description": "The name of the function tool to call.",
+            "type": "string"
+          },
+          "type": {
+            "default": "function",
+            "description": "The tool to call. Always `function`.",
+            "enum": [
+              "function"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name"
+        ],
+        "type": "object"
+      },
+      "LiveMCPToolChoiceParam": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "description": "The name of the MCP tool to call. If omitted, the server may choose a default.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "server_label": {
+            "description": "The label of the MCP server to call.",
+            "type": "string"
+          },
+          "type": {
+            "default": "mcp",
+            "description": "The tool to call. Always `mcp`.",
+            "enum": [
+              "mcp"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "server_label"
+        ],
+        "type": "object"
+      },
+      "LiveSpecificFileSearchParam": {
+        "properties": {
+          "type": {
+            "default": "file_search",
+            "description": "The tool to call. Always `file_search`.",
+            "enum": [
+              "file_search"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveSpecificWebSearchParam": {
+        "properties": {
+          "type": {
+            "default": "web_search",
+            "description": "The tool to call. Always `web_search`.",
+            "enum": [
+              "web_search"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveSpecificWebSearchPreviewParam": {
+        "properties": {
+          "type": {
+            "default": "web_search_preview",
+            "description": "The tool to call. Always `web_search_preview`.",
+            "enum": [
+              "web_search_preview"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveSpecificImageGenParam": {
+        "properties": {
+          "type": {
+            "default": "image_generation",
+            "description": "The tool to call. Always `image_generation`.",
+            "enum": [
+              "image_generation"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveSpecificComputerParam": {
+        "properties": {
+          "type": {
+            "default": "computer",
+            "description": "The tool to call. Always `computer`.",
+            "enum": [
+              "computer"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveSpecificCodeInterpreterParam": {
+        "properties": {
+          "type": {
+            "default": "code_interpreter",
+            "description": "The tool to call. Always `code_interpreter`.",
+            "enum": [
+              "code_interpreter"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveSpecificProgrammaticToolCallingParam": {
+        "properties": {
+          "type": {
+            "default": "programmatic_tool_calling",
+            "description": "The tool to call. Always `programmatic_tool_calling`.",
+            "enum": [
+              "programmatic_tool_calling"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveSpecificFunctionShellParam": {
+        "description": "Forces the model to call the shell tool when a tool call is required.",
+        "properties": {
+          "type": {
+            "default": "shell",
+            "description": "The tool to call. Always `shell`.",
+            "enum": [
+              "shell"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "Specific shell tool choice",
+        "type": "object"
+      },
+      "LiveSpecificCustomToolParam": {
+        "properties": {
+          "name": {
+            "description": "The name of the custom tool to call.",
+            "type": "string"
+          },
+          "type": {
+            "default": "custom",
+            "description": "The tool to call. Always `custom`.",
+            "enum": [
+              "custom"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name"
+        ],
+        "type": "object"
+      },
+      "LiveSpecificApplyPatchParam": {
+        "description": "Forces the model to call the apply_patch tool when executing a tool call.",
+        "properties": {
+          "type": {
+            "default": "apply_patch",
+            "description": "The tool to call. Always `apply_patch`.",
+            "enum": [
+              "apply_patch"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "Specific apply patch tool choice",
+        "type": "object"
+      },
+      "LiveAllowedToolsChoiceParam": {
+        "properties": {
+          "mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveToolChoiceValueEnum",
+                "description": "How to select a tool from the allowed set."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tools": {
+            "description": "The tools that the delegated Responses model may call.",
+            "items": {
+              "discriminator": {
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/LiveFunctionToolChoiceParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveMCPToolChoiceParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveSpecificFileSearchParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveSpecificWebSearchParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveSpecificWebSearchPreviewParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveSpecificImageGenParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveSpecificComputerParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveSpecificCodeInterpreterParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveSpecificProgrammaticToolCallingParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveSpecificFunctionShellParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveSpecificCustomToolParam"
+                },
+                {
+                  "$ref": "#/components/schemas/LiveSpecificApplyPatchParam"
+                }
+              ]
+            },
+            "maxItems": 128,
+            "minItems": 1,
+            "type": "array"
+          },
+          "type": {
+            "default": "allowed_tools",
+            "description": "The tool choice type. Always `allowed_tools`.",
+            "enum": [
+              "allowed_tools"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "tools"
+        ],
+        "type": "object"
+      },
+      "LiveFunctionToolInputParam": {
+        "description": "A function tool available to the Responses backend when the Live model delegates a task.",
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "description": "What the function does and when the delegated Responses model should call it.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "description": "The name the delegated Responses model uses when calling this function.",
+            "type": "string"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "additionalProperties": {},
+                "description": "A JSON Schema object describing the arguments accepted by the function.",
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "strict": {
+            "anyOf": [
+              {
+                "description": "Whether the delegated Responses model must follow the function’s parameter schema exactly.",
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "default": "function",
+            "description": "The tool type. Always `function`.",
+            "enum": [
+              "function"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name"
+        ],
+        "type": "object"
+      },
+      "LiveWebSearchToolInputParam": {
+        "description": "A web search tool available to the Live session’s Responses backend.",
+        "properties": {
+          "type": {
+            "default": "web_search",
+            "description": "The tool type. Always `web_search`.",
+            "enum": [
+              "web_search"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveFileSearchToolInputParam": {
+        "properties": {
+          "type": {
+            "default": "file_search",
+            "enum": [
+              "file_search"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveCodeInterpreterToolInputParam": {
+        "properties": {
+          "type": {
+            "default": "code_interpreter",
+            "enum": [
+              "code_interpreter"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveHostedShellToolInputParam": {
+        "description": "A Responses shell tool. Use a hosted container or return local shell results with response.item.create. Domain secrets are not supported.",
+        "properties": {
+          "environment": {
+            "anyOf": [
+              {
+                "discriminator": {
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/LiveHostedShellContainerAutoParam"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LiveContainerReferenceParam"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LiveLocalEnvironmentParam"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "default": "shell",
+            "enum": [
+              "shell"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveImageGenerationToolInputParam": {
+        "properties": {
+          "type": {
+            "default": "image_generation",
+            "enum": [
+              "image_generation"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveMCPToolInputParam": {
+        "properties": {
+          "type": {
+            "default": "mcp",
+            "enum": [
+              "mcp"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveCustomToolInputParam": {
+        "properties": {
+          "type": {
+            "default": "custom",
+            "enum": [
+              "custom"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveNamespaceToolInputParam": {
+        "properties": {
+          "type": {
+            "default": "namespace",
+            "enum": [
+              "namespace"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveToolSearchToolInputParam": {
+        "properties": {
+          "type": {
+            "default": "tool_search",
+            "enum": [
+              "tool_search"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveProgrammaticToolInputParam": {
+        "properties": {
+          "type": {
+            "default": "programmatic_tool_calling",
+            "enum": [
+              "programmatic_tool_calling"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveComputerToolInputParam": {
+        "properties": {
+          "type": {
+            "default": "computer",
+            "enum": [
+              "computer"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveApplyPatchToolInputParam": {
+        "properties": {
+          "type": {
+            "default": "apply_patch",
+            "enum": [
+              "apply_patch"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveDecisionQuestion": {
+        "discriminator": {
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/LiveDecisionChoiceQuestionParam"
+          },
+          {
+            "$ref": "#/components/schemas/LiveDecisionPredicateQuestionParam"
+          },
+          {
+            "$ref": "#/components/schemas/LiveDecisionScoreQuestionParam"
+          }
+        ]
+      },
+      "LiveInitialInputTextContentPartParam": {
+        "description": "Text supplied in a developer or user message when starting a Live session.",
+        "properties": {
+          "text": {
+            "description": "The message text to include in the Live session’s initial conversation history.",
+            "type": "string"
+          },
+          "type": {
+            "default": "input_text",
+            "description": "The text content type. Always `input_text`.",
+            "enum": [
+              "input_text"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "type": "object"
+      },
+      "LiveInitialMessageStatus": {
+        "enum": [
+          "incomplete",
+          "completed"
+        ],
+        "type": "string"
+      },
+      "LiveInitialTextContentPartParam": {
+        "description": "Assistant text supplied as conversation history when starting a Live session.",
+        "properties": {
+          "text": {
+            "description": "The message text to include in the Live session’s initial conversation history.",
+            "type": "string"
+          },
+          "type": {
+            "default": "text",
+            "description": "The text content type. Always `text`.",
+            "enum": [
+              "text"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "type": "object"
+      },
+      "LiveInitialOutputTextContentPartParam": {
+        "description": "Assistant output text supplied as conversation history when starting a Live session.",
+        "properties": {
+          "text": {
+            "description": "The message text to include in the Live session’s initial conversation history.",
+            "type": "string"
+          },
+          "type": {
+            "default": "output_text",
+            "description": "The text content type. Always `output_text`.",
+            "enum": [
+              "output_text"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ],
+        "type": "object"
+      },
+      "LiveReasoningEffort": {
+        "enum": [
+          "none",
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh"
+        ],
+        "type": "string"
+      },
+      "LiveReasoningSummary": {
+        "enum": [
+          "concise",
+          "detailed",
+          "auto"
+        ],
+        "type": "string"
+      },
+      "LiveTextVerbosity": {
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "type": "string"
+      },
+      "LiveToolChoiceValueEnum": {
+        "enum": [
+          "none",
+          "auto",
+          "required"
+        ],
+        "type": "string"
+      },
+      "LiveHostedShellContainerAutoParam": {
+        "properties": {
+          "file_ids": {
+            "anyOf": [
+              {
+                "description": "An optional list of uploaded files to make available to your code.",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "memory_limit": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveContainerMemoryLimit",
+                "description": "The memory limit for the container."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "network_policy": {
+            "anyOf": [
+              {
+                "description": "Network access policy for the container.",
+                "discriminator": {
+                  "propertyName": "type"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/LiveContainerNetworkPolicyDisabledParam"
+                  },
+                  {
+                    "$ref": "#/components/schemas/LiveHostedShellNetworkPolicyAllowlistParam"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "skills": {
+            "anyOf": [
+              {
+                "description": "An optional list of skills referenced by id or inline data.",
+                "items": {
+                  "discriminator": {
+                    "propertyName": "type"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/LiveSkillReferenceParam"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LiveInlineSkillParam"
+                    }
+                  ]
+                },
+                "maxItems": 200,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "default": "container_auto",
+            "description": "Automatically creates a container for this request",
+            "enum": [
+              "container_auto"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveContainerReferenceParam": {
+        "properties": {
+          "container_id": {
+            "description": "The ID of the referenced container.",
+            "type": "string"
+          },
+          "type": {
+            "default": "container_reference",
+            "description": "References a container created with the /v1/containers endpoint",
+            "enum": [
+              "container_reference"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "container_id"
+        ],
+        "type": "object"
+      },
+      "LiveLocalEnvironmentParam": {
+        "properties": {
+          "skills": {
+            "anyOf": [
+              {
+                "description": "An optional list of skills.",
+                "items": {
+                  "$ref": "#/components/schemas/LiveLocalSkillParam"
+                },
+                "maxItems": 200,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "default": "local",
+            "description": "Use a local computer environment.",
+            "enum": [
+              "local"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveDecisionChoiceQuestionParam": {
+        "properties": {
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/LiveDecisionChoiceParam"
+            },
+            "maxItems": 255,
+            "minItems": 2,
+            "type": "array"
+          },
+          "instructions": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "discriminator": {
+                    "propertyName": "type"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/LiveDecisionInputTextParam"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LiveDecisionInputImageParam"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LiveDecisionInputJsonParam"
+                    }
+                  ]
+                },
+                "minItems": 1,
+                "type": "array"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "default": "choice",
+            "enum": [
+              "choice"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "instructions",
+          "choices"
+        ],
+        "type": "object"
+      },
+      "LiveDecisionPredicateQuestionParam": {
+        "properties": {
+          "instructions": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "discriminator": {
+                    "propertyName": "type"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/LiveDecisionInputTextParam"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LiveDecisionInputImageParam"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LiveDecisionInputJsonParam"
+                    }
+                  ]
+                },
+                "minItems": 1,
+                "type": "array"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "default": "predicate",
+            "enum": [
+              "predicate"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "instructions"
+        ],
+        "type": "object"
+      },
+      "LiveDecisionScoreQuestionParam": {
+        "properties": {
+          "instructions": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "discriminator": {
+                    "propertyName": "type"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/LiveDecisionInputTextParam"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LiveDecisionInputImageParam"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LiveDecisionInputJsonParam"
+                    }
+                  ]
+                },
+                "minItems": 1,
+                "type": "array"
+              }
+            ]
+          },
+          "levels": {
+            "items": {
+              "$ref": "#/components/schemas/LiveDecisionScoreLevelParam"
+            },
+            "maxItems": 10,
+            "minItems": 2,
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "default": "score",
+            "enum": [
+              "score"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "instructions",
+          "levels"
+        ],
+        "type": "object"
+      },
+      "LiveContainerMemoryLimit": {
+        "enum": [
+          "1g",
+          "4g",
+          "16g",
+          "64g"
+        ],
+        "type": "string"
+      },
+      "LiveContainerNetworkPolicyDisabledParam": {
+        "properties": {
+          "type": {
+            "default": "disabled",
+            "description": "Disable outbound network access. Always `disabled`.",
+            "enum": [
+              "disabled"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "LiveHostedShellNetworkPolicyAllowlistParam": {
+        "properties": {
+          "allowed_domains": {
+            "description": "A list of allowed domains when type is `allowlist`.",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array"
+          },
+          "type": {
+            "default": "allowlist",
+            "description": "Allow outbound network access only to specified domains. Always `allowlist`.",
+            "enum": [
+              "allowlist"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "allowed_domains"
+        ],
+        "type": "object"
+      },
+      "LiveSkillReferenceParam": {
+        "properties": {
+          "skill_id": {
+            "description": "The ID of the referenced skill.",
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": {
+            "default": "skill_reference",
+            "description": "References a skill created with the /v1/skills endpoint.",
+            "enum": [
+              "skill_reference"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "description": "Optional skill version. Use a positive integer or 'latest'. Omit for default.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "skill_id"
+        ],
+        "type": "object"
+      },
+      "LiveInlineSkillParam": {
+        "properties": {
+          "description": {
+            "description": "The description of the skill.",
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the skill.",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/LiveInlineSkillSourceParam",
+            "description": "Inline skill payload"
+          },
+          "type": {
+            "default": "inline",
+            "description": "Defines an inline skill for this request.",
+            "enum": [
+              "inline"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description",
+          "source"
+        ],
+        "type": "object"
+      },
+      "LiveLocalSkillParam": {
+        "properties": {
+          "description": {
+            "description": "The description of the skill.",
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the skill.",
+            "type": "string"
+          },
+          "path": {
+            "description": "The path to the directory containing the skill.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "path"
+        ],
+        "type": "object"
+      },
+      "LiveDecisionChoiceParam": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "value": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "boolean"
+              }
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "type": "object"
+      },
+      "LiveDecisionInputTextParam": {
+        "properties": {
+          "text": {
+            "description": "The text input to the model.",
+            "maxLength": 10485760,
+            "type": "string"
+          },
+          "type": {
+            "default": "input_text",
+            "enum": [
+              "input_text"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ],
+        "type": "object"
+      },
+      "LiveDecisionInputImageParam": {
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LiveDetailEnum",
+                "description": "The detail level of the image to be sent to the model. One of `high`, `low`, `auto`, or `original`. Defaults to `auto`."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "image_url": {
+            "description": "A base64-encoded image data URL or a publicly accessible HTTP(S) image URL.",
+            "maxLength": 20971520,
+            "pattern": "^(data:|https?://)",
+            "type": "string"
+          },
+          "type": {
+            "default": "input_image",
+            "enum": [
+              "input_image"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "image_url"
+        ],
+        "type": "object"
+      },
+      "LiveDecisionInputJsonParam": {
+        "properties": {
+          "data": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LiveDecisionJsonObject"
+              },
+              {
+                "items": {
+                  "$ref": "#/components/schemas/LiveDecisionJsonObject"
+                },
+                "type": "array"
+              }
+            ]
+          },
+          "type": {
+            "default": "input_json",
+            "enum": [
+              "input_json"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "data"
+        ],
+        "type": "object"
+      },
+      "LiveDecisionScoreLevelParam": {
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "label"
+        ],
+        "type": "object"
+      },
+      "LiveInlineSkillSourceParam": {
+        "description": "Inline skill payload",
+        "properties": {
+          "data": {
+            "description": "Base64-encoded skill zip bundle.",
+            "maxLength": 70254592,
+            "minLength": 1,
+            "type": "string"
+          },
+          "media_type": {
+            "default": "application/zip",
+            "description": "The media type of the inline skill payload. Must be `application/zip`.",
+            "enum": [
+              "application/zip"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "default": "base64",
+            "description": "The type of the inline skill source. Must be `base64`.",
+            "enum": [
+              "base64"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "media_type",
+          "data"
+        ],
+        "type": "object"
+      },
+      "LiveDetailEnum": {
+        "enum": [
+          "low",
+          "high",
+          "auto",
+          "original"
+        ],
+        "type": "string"
+      },
+      "LiveDecisionJsonObject": {
+        "additionalProperties": true,
+        "type": "object"
+      }
+    }
+  }
+}

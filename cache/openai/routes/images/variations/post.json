@@ -1,4 +1,6 @@
 {
+  "deprecated": true,
+  "description": "This endpoint is retired and no longer available. Use the image edits endpoint with a GPT Image model and a prompt to create a variation of an image. The request and response schemas below describe the legacy contract.",
   "operationId": "createImageVariation",
   "requestBody": {
     "content": {
@@ -20,15 +22,88 @@
         }
       },
       "description": "OK"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Invalid image or request, or the request cannot be processed for this account."
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The project does not have access to the requested model."
+    },
+    "410": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The image variations endpoint is no longer available."
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The image rate limit was exceeded.",
+      "headers": {
+        "X-RateLimit-Limit-Images": {
+          "description": "The image limit for the rate-limit window.",
+          "schema": {
+            "type": "number"
+          }
+        },
+        "X-RateLimit-Remaining-Images": {
+          "description": "The number of images remaining in the rate-limit window.",
+          "schema": {
+            "minimum": 0,
+            "type": "number"
+          }
+        },
+        "X-RateLimit-Reset-Images": {
+          "description": "The number of seconds until the rate-limit window resets.",
+          "schema": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The image variation could not be generated or processed."
     }
   },
-  "summary": "Creates a variation of a given image. This endpoint only supports `dall-e-2`.",
+  "summary": "Create image variation",
   "tags": [
     "Images"
   ],
   "components": {
     "schemas": {
       "CreateImageVariationRequest": {
+        "deprecated": true,
+        "description": "Legacy request for the retired image variations endpoint.",
         "properties": {
           "image": {
             "description": "The image to use as the basis for the variation(s). Must be a valid PNG file, less than 4MB, and square.",
@@ -45,12 +120,14 @@
                   "dall-e-2"
                 ],
                 "type": "string"
+              },
+              {
+                "type": "null"
               }
             ],
             "default": "dall-e-2",
-            "description": "The model to use for image generation. Only `dall-e-2` is supported at this time.",
-            "example": "dall-e-2",
-            "nullable": true
+            "description": "The legacy model used by the retired image variations endpoint. This endpoint no longer accepts requests.",
+            "example": "dall-e-2"
           },
           "n": {
             "default": 1,
@@ -58,19 +135,24 @@
             "example": 1,
             "maximum": 10,
             "minimum": 1,
-            "nullable": true,
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "response_format": {
             "default": "url",
             "description": "The format in which the generated images are returned. Must be one of `url` or `b64_json`. URLs are only valid for 60 minutes after the image has been generated.",
             "enum": [
               "url",
-              "b64_json"
+              "b64_json",
+              null
             ],
             "example": "url",
-            "nullable": true,
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "size": {
             "default": "1024x1024",
@@ -78,14 +160,17 @@
             "enum": [
               "256x256",
               "512x512",
-              "1024x1024"
+              "1024x1024",
+              null
             ],
             "example": "1024x1024",
-            "nullable": true,
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "user": {
-            "description": "A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. [Learn more](/docs/guides/safety-best-practices#end-user-ids).\n",
+            "description": "A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. [Learn more](https://developers.openai.com/api/docs/guides/safety-best-practices#implement-safety-identifiers).\n",
             "example": "user-1234",
             "type": "string"
           }
@@ -128,22 +213,38 @@
             "type": "string"
           },
           "quality": {
-            "description": "The quality of the image generated. Either `low`, `medium`, or `high`.",
+            "description": "The quality of the image generated. One of `low`, `medium`, `high`, `xhigh`, or `max`.",
             "enum": [
               "low",
               "medium",
-              "high"
+              "high",
+              "xhigh",
+              "max"
             ],
             "type": "string"
           },
+          "safety_identifier": {
+            "description": "The effective safety identifier used for safety monitoring and abuse detection. This is the non-empty `safety_identifier` from the request, or the deprecated `user` value when `safety_identifier` is omitted, null, or empty.",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "size": {
-            "description": "The size of the image generated. Either `1024x1024`, `1024x1536`, or `1536x1024`.",
-            "enum": [
-              "1024x1024",
-              "1024x1536",
-              "1536x1024"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "enum": [
+                  "1024x1024",
+                  "1024x1536",
+                  "1536x1024"
+                ],
+                "type": "string"
+              }
             ],
-            "type": "string"
+            "description": "The image dimensions as a `WIDTHxHEIGHT` string, for example `1536x864`."
           },
           "usage": {
             "$ref": "#/components/schemas/ImageGenUsage"
@@ -155,19 +256,30 @@
         "title": "Image generation response",
         "type": "object"
       },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
       "Image": {
         "description": "Represents the content or the URL of an image generated by the OpenAI API.",
         "properties": {
           "b64_json": {
-            "description": "The base64-encoded JSON of the generated image. Returned by default for the GPT image models, and only present if `response_format` is set to `b64_json` for `dall-e-2` and `dall-e-3`.",
+            "description": "The base64-encoded JSON of the generated image. Returned by default for GPT image models, or when `response_format` is set to `b64_json` for models that support that parameter.",
             "type": "string"
           },
           "revised_prompt": {
-            "description": "For `dall-e-3` only, the revised prompt that was used to generate the image.",
+            "description": "The revised prompt used to generate the image, for models that support prompt revision. Not returned by GPT image models.",
             "type": "string"
           },
           "url": {
-            "description": "When using `dall-e-2` or `dall-e-3`, the URL of the generated image if `response_format` is set to `url` (default value). Unsupported for the GPT image models.",
+            "description": "The URL of the generated image when `response_format` is set to `url` for models that support that parameter. Unsupported for GPT image models.",
             "format": "uri",
             "type": "string"
           }
@@ -203,6 +315,46 @@
           "input_tokens_details"
         ],
         "title": "Image generation usage",
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
         "type": "object"
       },
       "ImageGenInputUsageDetails": {
@@ -241,6 +393,69 @@
           "text_tokens"
         ],
         "title": "Image generation output token details",
+        "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
         "type": "object"
       }
     }

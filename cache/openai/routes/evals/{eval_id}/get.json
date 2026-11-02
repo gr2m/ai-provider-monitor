@@ -1,4 +1,5 @@
 {
+  "description": "Get an evaluation by ID.\n",
   "operationId": "getEval",
   "parameters": [
     {
@@ -21,16 +22,29 @@
         }
       },
       "description": "The evaluation"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The evaluation was not found."
+    },
+    "429": {
+      "$ref": "#/components/responses/TooManyRequests"
     }
   },
-  "summary": "Get an evaluation by ID.\n",
+  "summary": "Get an eval",
   "tags": [
     "Evals"
   ],
   "components": {
     "schemas": {
       "Eval": {
-        "description": "An Eval object with a data source config and testing criteria.\nAn Eval represents a task to be done for your LLM integration.\nLike:\n - Improve the quality of my chatbot\n - See how well my chatbot handles customer support\n - Check if o4-mini is better at my usecase than gpt-4o\n",
+        "description": "An Eval object with a data source config and testing criteria.\nAn Eval represents a task to be done for your LLM integration.\nLike:\n - Improve the quality of my chatbot\n - See how well my chatbot handles customer support\n - Check if o4-mini is better at my usecase than gpt-6-astra\n",
         "properties": {
           "created_at": {
             "description": "The Unix timestamp (in seconds) for when the eval was created.",
@@ -108,13 +122,42 @@
         "title": "Eval",
         "type": "object"
       },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
       "EvalCustomDataSourceConfig": {
         "description": "A CustomDataSourceConfig which specifies the schema of your `item` and optionally `sample` namespaces.\nThe response schema defines the shape of the data that will be:\n- Used to define your testing criteria and\n- What data is required when creating a run\n",
         "properties": {
           "schema": {
             "additionalProperties": true,
             "description": "The json schema for the run data source items.\nLearn how to build JSON schemas [here](https://json-schema.org/).\n",
-            "example": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"item\": {\n      \"type\": \"object\",\n      \"properties\": {\n        \"label\": {\"type\": \"string\"},\n      },\n      \"required\": [\"label\"]\n    }\n  },\n  \"required\": [\"item\"]\n}\n",
+            "example": {
+              "properties": {
+                "item": {
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "label"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "item"
+              ],
+              "type": "object"
+            },
             "type": "object"
           },
           "type": {
@@ -275,6 +318,46 @@
           }
         ],
         "title": "ScoreModelGrader",
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
         "type": "object"
       },
       "GraderLabelModel": {
@@ -471,10 +554,8 @@
             "type": "string"
           },
           "range": {
-            "description": "The range of the score. Defaults to `[0, 1]`.",
+            "description": "The service requires two numbers for the score range. Defaults to `[0, 1]`.\n",
             "items": {
-              "max_items": 2,
-              "min_items": 2,
               "type": "number"
             },
             "type": "array"
@@ -552,6 +633,41 @@
         "title": "ScoreModelGrader",
         "type": "object"
       },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
       "EvalItem": {
         "description": "A message input to the model with a role indicating instruction following\nhierarchy. Instructions given with the `developer` or `system` role take\nprecedence over instructions given with the `user` role. Messages with the\n`assistant` role are presumed to have been generated by the model in previous\ninteractions.\n",
         "properties": {
@@ -587,7 +703,7 @@
         "anyOf": [
           {
             "default": "medium",
-            "description": "Constrains effort on reasoning for reasoning models. Currently supported\nvalues are `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`.\nReducing reasoning effort can result in faster responses and fewer tokens\nused on reasoning in a response. Not all reasoning models support every\nvalue. See the\n[reasoning guide](https://platform.openai.com/docs/guides/reasoning)\nfor model-specific support.\n",
+            "description": "Constrains effort on reasoning for reasoning models. Currently supported\nvalues are `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`.\nReducing reasoning effort can result in faster responses and fewer tokens\nused on reasoning in a response. Not all reasoning models support every\nvalue. See the\n[reasoning guide](https://developers.openai.com/api/docs/guides/reasoning)\nfor model-specific support.\n",
             "enum": [
               "none",
               "minimal",
@@ -603,6 +719,34 @@
             "type": "null"
           }
         ]
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
       },
       "EvalItemContent": {
         "description": "Inputs to the model - can contain template strings. Supports text, output text, input images, and input audio, either as a single item or an array of items.\n",
@@ -765,13 +909,21 @@
         "type": "object"
       },
       "PromptCacheBreakpointConfig": {
-        "description": "Marks the exact end of a reusable prompt prefix. The breakpoint inherits its TTL from the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
+        "description": "Marks the exact end of a reusable prompt prefix. When `ttl` is omitted, the breakpoint inherits the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
         "properties": {
           "mode": {
             "default": "explicit",
             "description": "The breakpoint mode. Always `explicit`.",
             "enum": [
               "explicit"
+            ],
+            "type": "string"
+          },
+          "ttl": {
+            "description": "The minimum lifetime of this cache breakpoint. Defaults to the request TTL.",
+            "enum": [
+              "30m",
+              "12h"
             ],
             "type": "string"
           }
@@ -781,6 +933,27 @@
         ],
         "title": "Prompt cache breakpoint",
         "type": "object"
+      }
+    },
+    "responses": {
+      "TooManyRequests": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The request was rejected because a rate limit was exceeded.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted for 429 responses that require user action.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
       }
     }
   }

@@ -1,4 +1,5 @@
 {
+  "description": "List your organization's fine-tuning jobs\n",
   "operationId": "listPaginatedFineTuningJobs",
   "parameters": [
     {
@@ -21,7 +22,7 @@
       }
     },
     {
-      "description": "Optional metadata filter. To filter, use the syntax `metadata[k]=v`. Alternatively, set `metadata=null` to indicate no metadata.\n",
+      "description": "Optional metadata filter. To filter, use the syntax `metadata[k]=v`. Omitting the parameter or passing an empty object applies no metadata filter. An empty value, such as `metadata[k]=`, filters for that key with an empty string value.\nTo select jobs with null metadata, send the literal query string `metadata=null`. Nullable caller types do not specify how a client serializes null for a deep-object parameter. Use a raw query parameter if the client omits null. Do not combine the two query forms.\n",
       "explode": true,
       "in": "query",
       "name": "metadata",
@@ -30,8 +31,10 @@
         "additionalProperties": {
           "type": "string"
         },
-        "nullable": true,
-        "type": "object"
+        "type": [
+          "object",
+          "null"
+        ]
       },
       "style": "deepObject"
     }
@@ -46,9 +49,29 @@
         }
       },
       "description": "OK"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The query parameters are invalid."
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The request rate limit has been exceeded."
     }
   },
-  "summary": "List your organization's fine-tuning jobs\n",
+  "summary": "List fine-tuning jobs",
   "tags": [
     "Fine-tuning"
   ],
@@ -79,8 +102,45 @@
         ],
         "type": "object"
       },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
       "FineTuningJob": {
         "description": "The `fine_tuning.job` object represents a fine-tuning job that has been created through the API.\n",
+        "else": {
+          "required": [
+            "hyperparameters"
+          ]
+        },
+        "if": {
+          "properties": {
+            "method": {
+              "properties": {
+                "type": {
+                  "enum": [
+                    "dpo",
+                    "reinforcement"
+                  ]
+                }
+              },
+              "required": [
+                "type"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "method"
+          ]
+        },
         "properties": {
           "created_at": {
             "description": "The Unix timestamp (in seconds) for when the fine-tuning job was created.",
@@ -121,6 +181,10 @@
               },
               {
                 "type": "null"
+              },
+              {
+                "maxProperties": 0,
+                "type": "object"
               }
             ]
           },
@@ -197,8 +261,7 @@
                     "type": "string"
                   },
                   {
-                    "exclusiveMinimum": true,
-                    "minimum": 0,
+                    "exclusiveMinimum": 0,
                     "type": "number"
                   }
                 ]
@@ -221,7 +284,10 @@
                 ]
               }
             },
-            "type": "object"
+            "type": [
+              "object",
+              "null"
+            ]
           },
           "id": {
             "description": "The object identifier, which can be referenced in the API endpoints.",
@@ -250,7 +316,14 @@
             "$ref": "#/components/schemas/Metadata"
           },
           "method": {
-            "$ref": "#/components/schemas/FineTuneMethod"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FineTuneMethod"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "model": {
             "description": "The base model that is being fine-tuned.",
@@ -268,7 +341,7 @@
             "type": "string"
           },
           "result_files": {
-            "description": "The compiled results file ID(s) for the fine-tuning job. You can retrieve the results with the [Files API](/docs/api-reference/files/retrieve-contents).",
+            "description": "The compiled results file ID(s) for the fine-tuning job. You can retrieve the results with the [Files API](https://developers.openai.com/api/reference/resources/files/methods/content).",
             "items": {
               "example": "file-abc123",
               "type": "string"
@@ -277,17 +350,22 @@
           },
           "seed": {
             "description": "The seed used for the fine-tuning job.",
-            "type": "integer"
+            "type": [
+              "integer",
+              "null"
+            ]
           },
           "status": {
-            "description": "The current status of the fine-tuning job, which can be either `validating_files`, `queued`, `running`, `succeeded`, `failed`, or `cancelled`.",
+            "description": "The current status of the fine-tuning job, which can be `validating_files`, `queued`, `running`, `pausing`, `paused`, `succeeded`, `failed`, or `cancelled`.",
             "enum": [
               "validating_files",
               "queued",
               "running",
               "succeeded",
               "failed",
-              "cancelled"
+              "cancelled",
+              "pausing",
+              "paused"
             ],
             "type": "string"
           },
@@ -303,13 +381,13 @@
             ]
           },
           "training_file": {
-            "description": "The file ID used for training. You can retrieve the training data with the [Files API](/docs/api-reference/files/retrieve-contents).",
+            "description": "The file ID used for training. You can retrieve the training data with the [Files API](https://developers.openai.com/api/reference/resources/files/methods/content).",
             "type": "string"
           },
           "validation_file": {
             "anyOf": [
               {
-                "description": "The file ID used for validation. You can retrieve the validation results with the [Files API](/docs/api-reference/files/retrieve-contents).",
+                "description": "The file ID used for validation. You can retrieve the validation results with the [Files API](https://developers.openai.com/api/reference/resources/files/methods/content).",
                 "type": "string"
               },
               {
@@ -323,7 +401,6 @@
           "error",
           "finished_at",
           "fine_tuned_model",
-          "hyperparameters",
           "id",
           "model",
           "object",
@@ -336,6 +413,46 @@
           "seed"
         ],
         "title": "FineTuningJob",
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
         "type": "object"
       },
       "FineTuningIntegration": {
@@ -440,6 +557,41 @@
         ],
         "type": "object"
       },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
       "FineTuneDPOMethod": {
         "description": "Configuration for the DPO fine-tuning method.",
         "properties": {
@@ -491,6 +643,34 @@
         },
         "type": "object"
       },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      },
       "FineTuneDPOHyperparameters": {
         "description": "The hyperparameters used for the DPO fine-tuning job.",
         "properties": {
@@ -522,9 +702,8 @@
                 "type": "string"
               },
               {
-                "exclusiveMinimum": true,
+                "exclusiveMinimum": 0,
                 "maximum": 2,
-                "minimum": 0,
                 "type": "number"
               }
             ]
@@ -540,8 +719,7 @@
                 "type": "string"
               },
               {
-                "exclusiveMinimum": true,
-                "minimum": 0,
+                "exclusiveMinimum": 0,
                 "type": "number"
               }
             ]
@@ -710,10 +888,8 @@
             "type": "string"
           },
           "range": {
-            "description": "The range of the score. Defaults to `[0, 1]`.",
+            "description": "The service requires two numbers for the score range. Defaults to `[0, 1]`.\n",
             "items": {
-              "max_items": 2,
-              "min_items": 2,
               "type": "number"
             },
             "type": "array"
@@ -799,23 +975,37 @@
             "type": "string"
           },
           "graders": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/GraderStringCheck"
+            "additionalProperties": {
+              "discriminator": {
+                "mapping": {
+                  "label_model": "#/components/schemas/GraderLabelModel",
+                  "python": "#/components/schemas/GraderPython",
+                  "score_model": "#/components/schemas/GraderScoreModel",
+                  "string_check": "#/components/schemas/GraderStringCheck",
+                  "text_similarity": "#/components/schemas/GraderTextSimilarity"
+                },
+                "propertyName": "type"
               },
-              {
-                "$ref": "#/components/schemas/GraderTextSimilarity"
-              },
-              {
-                "$ref": "#/components/schemas/GraderPython"
-              },
-              {
-                "$ref": "#/components/schemas/GraderScoreModel"
-              },
-              {
-                "$ref": "#/components/schemas/GraderLabelModel"
-              }
-            ]
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/GraderStringCheck"
+                },
+                {
+                  "$ref": "#/components/schemas/GraderTextSimilarity"
+                },
+                {
+                  "$ref": "#/components/schemas/GraderPython"
+                },
+                {
+                  "$ref": "#/components/schemas/GraderScoreModel"
+                },
+                {
+                  "$ref": "#/components/schemas/GraderLabelModel"
+                }
+              ]
+            },
+            "minProperties": 1,
+            "type": "object"
           },
           "name": {
             "description": "The name of the grader.",
@@ -870,9 +1060,8 @@
                 "type": "string"
               },
               {
-                "exclusiveMinimum": true,
+                "exclusiveMinimum": 0.00001,
                 "maximum": 10,
-                "minimum": 0.00001,
                 "type": "number"
               }
             ]
@@ -920,8 +1109,7 @@
                 "type": "string"
               },
               {
-                "exclusiveMinimum": true,
-                "minimum": 0,
+                "exclusiveMinimum": 0,
                 "type": "number"
               }
             ]
@@ -988,8 +1176,7 @@
                 "type": "string"
               },
               {
-                "exclusiveMinimum": true,
-                "minimum": 0,
+                "exclusiveMinimum": 0,
                 "type": "number"
               }
             ]
@@ -1049,7 +1236,7 @@
         "anyOf": [
           {
             "default": "medium",
-            "description": "Constrains effort on reasoning for reasoning models. Currently supported\nvalues are `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`.\nReducing reasoning effort can result in faster responses and fewer tokens\nused on reasoning in a response. Not all reasoning models support every\nvalue. See the\n[reasoning guide](https://platform.openai.com/docs/guides/reasoning)\nfor model-specific support.\n",
+            "description": "Constrains effort on reasoning for reasoning models. Currently supported\nvalues are `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`.\nReducing reasoning effort can result in faster responses and fewer tokens\nused on reasoning in a response. Not all reasoning models support every\nvalue. See the\n[reasoning guide](https://developers.openai.com/api/docs/guides/reasoning)\nfor model-specific support.\n",
             "enum": [
               "none",
               "minimal",
@@ -1277,13 +1464,21 @@
         "type": "object"
       },
       "PromptCacheBreakpointConfig": {
-        "description": "Marks the exact end of a reusable prompt prefix. The breakpoint inherits its TTL from the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
+        "description": "Marks the exact end of a reusable prompt prefix. When `ttl` is omitted, the breakpoint inherits the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
         "properties": {
           "mode": {
             "default": "explicit",
             "description": "The breakpoint mode. Always `explicit`.",
             "enum": [
               "explicit"
+            ],
+            "type": "string"
+          },
+          "ttl": {
+            "description": "The minimum lifetime of this cache breakpoint. Defaults to the request TTL.",
+            "enum": [
+              "30m",
+              "12h"
             ],
             "type": "string"
           }

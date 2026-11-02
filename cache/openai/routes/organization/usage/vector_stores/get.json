@@ -1,4 +1,5 @@
 {
+  "description": "Get vector stores usage details for the organization.",
   "operationId": "usage-vector-stores",
   "parameters": [
     {
@@ -89,6 +90,29 @@
         }
       },
       "description": "Usage data retrieved successfully."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The request parameters are invalid or the requested operation cannot be performed."
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/PermissionErrorResponse"
+          }
+        }
+      },
+      "description": "The caller does not have permission to perform this operation."
+    },
+    "429": {
+      "$ref": "#/components/responses/TooManyRequests"
     }
   },
   "security": [
@@ -96,7 +120,7 @@
       "AdminApiKeyAuth": []
     }
   ],
-  "summary": "Get vector stores usage details for the organization.",
+  "summary": "Vector stores",
   "tags": [
     "Usage"
   ],
@@ -135,6 +159,37 @@
           "data",
           "has_more",
           "next_page"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "PermissionErrorResponse": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Error"
+              },
+              {
+                "description": "An explanation of the missing API permissions.",
+                "type": "string"
+              }
+            ],
+            "description": "Details about the permission error."
+          }
+        },
+        "required": [
+          "error"
         ],
         "type": "object"
       },
@@ -204,6 +259,46 @@
         ],
         "type": "object"
       },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
       "UsageCompletionsResult": {
         "description": "The aggregated completions usage details of the specific time bucket.",
         "properties": {
@@ -217,6 +312,21 @@
                 "type": "null"
               }
             ]
+          },
+          "api_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "agents_api",
+                  "unlabeled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When grouped by `api_source`, `agents_api` identifies attributed Agents API activity and `unlabeled` includes all records without published source attribution, including historical and unknown origins. Unlabeled does not imply direct API usage. Without source grouping, this field is null."
           },
           "batch": {
             "anyOf": [
@@ -233,8 +343,23 @@
             "description": "The aggregated number of uncached audio input tokens used.",
             "type": "integer"
           },
+          "input_cache_write_12h_tokens": {
+            "description": "The aggregated number of input tokens written to the cache with a 12-hour retention period.",
+            "type": "integer"
+          },
+          "input_cache_write_30m_tokens": {
+            "anyOf": [
+              {
+                "description": "The aggregated number of input tokens written to the cache with a 30-minute retention period. May be absent or null for older responses.",
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "input_cache_write_tokens": {
-            "description": "The aggregated number of input tokens written to the cache.",
+            "description": "The aggregated number of input tokens written to the cache across 30-minute and 12-hour retention periods.",
             "type": "integer"
           },
           "input_cached_audio_tokens": {
@@ -856,6 +981,21 @@
               }
             ]
           },
+          "api_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "agents_api",
+                  "unlabeled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When grouped by `api_source`, `agents_api` identifies attributed Agents API activity and `unlabeled` includes all records without published source attribution, including historical and unknown origins. Unlabeled does not imply direct API usage. Without source grouping, this field is null."
+          },
           "context_level": {
             "anyOf": [
               {
@@ -950,6 +1090,21 @@
               }
             ]
           },
+          "api_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "agents_api",
+                  "unlabeled"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "When grouped by `api_source`, `agents_api` identifies attributed Agents API activity and `unlabeled` includes all records without published source attribution, including historical and unknown origins. Unlabeled does not imply direct API usage. Without source grouping, this field is null."
+          },
           "line_item": {
             "anyOf": [
               {
@@ -988,12 +1143,131 @@
                 "type": "null"
               }
             ]
+          },
+          "quantity_unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "enum": [
+                  "tokens",
+                  "1000_tokens",
+                  "duration_seconds",
+                  "duration_minutes",
+                  "duration_hours",
+                  "gibibyte_hours",
+                  "images",
+                  "characters"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The unit of the `quantity` value. If no single supported unit applies to the result, this field is `null`."
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "description": "When `group_by=user_id`, this field provides the user ID of the grouped costs result.",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "object"
         ],
         "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      }
+    },
+    "responses": {
+      "TooManyRequests": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The request was rejected because a rate limit was exceeded.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted for 429 responses that require user action.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
       }
     }
   }

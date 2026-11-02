@@ -1,8 +1,13 @@
 {
-  "description": "Create a custom voice you can use for audio output (for example, in Text-to-Speech and the Realtime API). This requires an audio sample and a previously uploaded consent recording.\n\nSee the [custom voices guide](/docs/guides/text-to-speech#custom-voices) for requirements and best practices. Custom voices are limited to eligible customers.\n",
+  "description": "Creates a voice from a text prompt or from a consent recording and an audio sample.\n\nFor prompt-based creation, send `type: \"prompt\"` with a `name` and `prompt` as JSON or multipart form data. For creation from an audio sample, send `type: \"audio_sample\"` with a `name`, `audio_sample`, and `consent` recording ID as multipart form data. The type defaults to `audio_sample` when omitted.\n\nReturns the saved voice's metadata. Voices created from text prompts are supported only in Live, not in Realtime or the speech endpoint. The response does not include preview audio.\n",
   "operationId": "createVoice",
   "requestBody": {
     "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/CreateVoicePromptRequest"
+        }
+      },
       "multipart/form-data": {
         "schema": {
           "$ref": "#/components/schemas/CreateVoiceRequest"
@@ -21,41 +26,118 @@
         }
       },
       "description": "OK"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Invalid voice request, prompt, script hint, model, consent recording, or audio sample."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The endpoint is unavailable or the consent recording was not found."
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The audio sample could not be processed or the voice could not be created."
     }
   },
-  "summary": "Creates a custom voice.",
+  "summary": "Create voice",
   "tags": [
     "Audio"
   ],
   "components": {
     "schemas": {
-      "CreateVoiceRequest": {
+      "CreateVoicePromptRequest": {
         "additionalProperties": false,
+        "description": "Creates a synthetic voice from a text description. Supports application/json or multipart/form-data.",
         "properties": {
-          "audio_sample": {
-            "description": "The sample audio recording file. Maximum size is 10 MiB.\n\nSupported MIME types:\n`audio/mpeg`, `audio/wav`, `audio/x-wav`, `audio/ogg`, `audio/aac`, `audio/flac`, `audio/webm`, `audio/mp4`.\n",
-            "format": "binary",
-            "type": "string"
-          },
-          "consent": {
-            "description": "The consent recording ID (for example, `cons_1234`).",
-            "type": "string"
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "enum": [
+                  "auto",
+                  "2026-10-08T00:00:00.000Z"
+                ],
+                "type": "string"
+              }
+            ],
+            "default": "auto",
+            "description": "The voice creation model to use. Defaults to `auto`."
           },
           "name": {
             "description": "The name of the new voice.",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "prompt": {
+            "description": "A description of the desired voice. Must not contain only whitespace.",
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "script_hint": {
+            "description": "Optional text for the voice to speak during creation. If omitted, a script is generated from the prompt. Must not be blank after trimming whitespace; scripts that are too short are rejected.",
+            "maxLength": 2000,
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": {
+            "description": "Set to `prompt` to create a voice from a text description.",
+            "enum": [
+              "prompt"
+            ],
             "type": "string"
           }
         },
         "required": [
+          "type",
           "name",
-          "audio_sample",
-          "consent"
+          "prompt"
         ],
+        "title": "Prompt",
         "type": "object"
+      },
+      "CreateVoiceRequest": {
+        "discriminator": {
+          "mapping": {
+            "audio_sample": "#/components/schemas/CreateVoiceFromConsentRequest",
+            "prompt": "#/components/schemas/CreateVoicePromptRequest"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CreateVoiceFromConsentRequest"
+          },
+          {
+            "$ref": "#/components/schemas/CreateVoicePromptRequest"
+          }
+        ]
       },
       "VoiceResource": {
         "additionalProperties": false,
-        "description": "A custom voice that can be used for audio output.",
+        "description": "A custom voice that can be used for audio output. Voices created from text prompts are supported only in Live.",
         "properties": {
           "created_at": {
             "description": "The Unix timestamp (in seconds) for when the voice was created.",
@@ -76,15 +158,178 @@
               "audio.voice"
             ],
             "type": "string"
+          },
+          "prompt": {
+            "description": "The original text prompt used to create the voice. Present for prompt-generated voices with a stored prompt; omitted for audio-sample voices and older voices without a stored prompt.",
+            "type": "string"
+          },
+          "type": {
+            "description": "How the voice was created.",
+            "enum": [
+              "audio_sample",
+              "prompt"
+            ],
+            "type": "string"
           }
         },
         "required": [
           "object",
           "id",
           "name",
+          "type",
           "created_at"
         ],
         "title": "Voice",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "CreateVoiceFromConsentRequest": {
+        "additionalProperties": false,
+        "description": "Creates a voice from a consent recording and an audio sample. Requires multipart/form-data.",
+        "properties": {
+          "audio_sample": {
+            "description": "The sample audio recording file. Maximum size is 10 MiB.\n\nSupported MIME types:\n`audio/mpeg`, `audio/wav`, `audio/x-wav`, `audio/ogg`, `audio/aac`, `audio/flac`, `audio/webm`, `audio/mp4`.\n",
+            "format": "binary",
+            "type": "string"
+          },
+          "consent": {
+            "description": "The consent recording ID (for example, `cons_1234`).",
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the new voice.",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": {
+            "default": "audio_sample",
+            "description": "The voice creation method. Defaults to `audio_sample` when omitted.",
+            "enum": [
+              "audio_sample"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "audio_sample",
+          "consent"
+        ],
+        "title": "Consent",
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
         "type": "object"
       }
     }

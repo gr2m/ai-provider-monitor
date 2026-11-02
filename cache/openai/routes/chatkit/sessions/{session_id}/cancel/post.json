@@ -1,4 +1,5 @@
 {
+  "description": "Cancel an active ChatKit session and return its most recent metadata.\n\nCancelling prevents new requests from using the issued client secret.",
   "operationId": "CancelChatSessionMethod",
   "parameters": [
     {
@@ -16,15 +17,85 @@
     "200": {
       "content": {
         "application/json": {
+          "examples": {
+            "Example": {
+              "value": {
+                "chatkit_configuration": {
+                  "automatic_thread_titling": {
+                    "enabled": true
+                  },
+                  "file_upload": {
+                    "enabled": true,
+                    "max_file_size": 16,
+                    "max_files": 20
+                  },
+                  "history": {
+                    "enabled": true,
+                    "recent_threads": 10
+                  }
+                },
+                "client_secret": "",
+                "expires_at": 1712349876,
+                "id": "cksess_123",
+                "max_requests_per_1_minute": 60,
+                "object": "chatkit.session",
+                "rate_limits": {
+                  "max_requests_per_1_minute": 60
+                },
+                "status": "cancelled",
+                "user": "user_789",
+                "workflow": {
+                  "id": "workflow_alpha",
+                  "state_variables": {
+                    "message": "hello"
+                  },
+                  "tracing": {
+                    "enabled": true
+                  },
+                  "version": "2024-10-01T00:00:00.000Z"
+                }
+              }
+            }
+          },
           "schema": {
             "$ref": "#/components/schemas/ChatSessionResource"
           }
         }
       },
       "description": "Success"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The request is invalid or the required ChatKit beta header is missing or invalid."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The session was not found or is not accessible."
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The request rate limit has been exceeded."
     }
   },
-  "summary": "Cancel an active ChatKit session and return its most recent metadata.\n\nCancelling prevents new requests from using the issued client secret.",
+  "summary": "Cancel a ChatKit session",
   "components": {
     "schemas": {
       "ChatSessionResource": {
@@ -52,10 +123,16 @@
           "rate_limits": {
             "max_requests_per_1_minute": 60
           },
-          "status": "cancelled",
+          "status": "active",
           "user": "user_789",
           "workflow": {
             "id": "workflow_alpha",
+            "state_variables": {
+              "message": "hello"
+            },
+            "tracing": {
+              "enabled": true
+            },
             "version": "2024-10-01T00:00:00.000Z"
           }
         },
@@ -121,6 +198,17 @@
         "title": "The chat session object",
         "type": "object"
       },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
       "ChatSessionChatkitConfiguration": {
         "description": "ChatKit configuration for the session.",
         "properties": {
@@ -178,7 +266,7 @@
             "anyOf": [
               {
                 "additionalProperties": {
-                  "oneOf": [
+                  "anyOf": [
                     {
                       "type": "string"
                     },
@@ -190,6 +278,9 @@
                     },
                     {
                       "type": "number"
+                    },
+                    {
+                      "type": "null"
                     }
                   ]
                 },
@@ -224,6 +315,46 @@
           "tracing"
         ],
         "title": "Workflow",
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
         "type": "object"
       },
       "ChatSessionAutomaticThreadTitling": {
@@ -316,6 +447,69 @@
           "enabled"
         ],
         "title": "Tracing Configuration",
+        "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
         "type": "object"
       }
     }

@@ -1,0 +1,1882 @@
+{
+  "description": "Retrieves the current state of a managed agent session. See [managing sessions](https://developers.openai.com/api/docs/guides/agents-api/sessions/manage).",
+  "operationId": "retrieveAgentSession",
+  "parameters": [
+    {
+      "description": "The ID of the session.",
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+        "maxLength": 1048576,
+        "minLength": 0,
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/SessionResource"
+          }
+        }
+      },
+      "description": "The requested session."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request was invalid."
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "Authentication or project context was missing."
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The API key lacks the required permission."
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The requested session or event was not found."
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The request conflicted with the current session state."
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "An internal error occurred."
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse-2"
+          }
+        }
+      },
+      "description": "The service is temporarily unavailable."
+    }
+  },
+  "summary": "Retrieve an agent session",
+  "tags": [
+    "Agents"
+  ],
+  "components": {
+    "schemas": {
+      "SessionResource": {
+        "additionalProperties": false,
+        "description": "A Managed Agents session.",
+        "properties": {
+          "agent": {
+            "$ref": "#/components/schemas/SessionAgentResource",
+            "description": "The agent running in the session."
+          },
+          "created_at": {
+            "description": "The Unix timestamp, in seconds, when the session was created.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "environment": {
+            "$ref": "#/components/schemas/EnvironmentResource",
+            "description": "The execution environment for the session."
+          },
+          "error": {
+            "description": "The error that caused the session to fail, if any.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "id": {
+            "description": "The ID of the session.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "last_active_at": {
+            "description": "The Unix timestamp, in seconds, when the session was last active.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "metadata": {
+            "additionalProperties": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "description": "Custom string key-value pairs attached to the session.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "object": {
+            "default": "agent.session",
+            "description": "The object type. Always `agent.session`.",
+            "enum": [
+              "agent.session"
+            ],
+            "type": "string"
+          },
+          "required_actions": {
+            "description": "Actions that must be completed before the session can continue.",
+            "items": {
+              "$ref": "#/components/schemas/SessionRequiredActionResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "review": {
+            "$ref": "#/components/schemas/SessionReviewResource",
+            "description": "Review applied to eligible actions in this session. Omitted when review is none and automatic review is not enabled. Omission means none."
+          },
+          "status": {
+            "$ref": "#/components/schemas/SessionStatusResource",
+            "description": "The current status of the session."
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TokenUsageResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Best-effort token usage for the session, or null if unknown. Recorded usage may change."
+          },
+          "vault_ids": {
+            "description": "The IDs of vaults made available to the session.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": [
+          "metadata",
+          "id",
+          "object",
+          "created_at",
+          "last_active_at",
+          "status",
+          "required_actions",
+          "error",
+          "agent",
+          "environment",
+          "vault_ids",
+          "usage"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse-2": {
+        "additionalProperties": false,
+        "description": "An API error response.",
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBodyResource",
+            "description": "The error returned by the API."
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "SessionAgentResource": {
+        "additionalProperties": false,
+        "description": "The effective agent configuration for a session.",
+        "properties": {
+          "compaction": {
+            "$ref": "#/components/schemas/CompactionResource",
+            "description": "The effective context compaction settings."
+          },
+          "experimental": {
+            "$ref": "#/components/schemas/ExperimentalConfigResource",
+            "description": "The effective experimental settings for the agent."
+          },
+          "id": {
+            "description": "The ID of the agent.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "instructions": {
+            "description": "Custom instructions appended to the agent's default base instructions.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "description": "The model used by the agent.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "multi_agent": {
+            "$ref": "#/components/schemas/MultiAgentConfigResource",
+            "description": "Configuration for creating and coordinating subagents."
+          },
+          "name": {
+            "description": "The reusable agent's name when the session was created, or null if no name was saved. Later changes to the agent's name do not affect this value.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reasoning": {
+            "$ref": "#/components/schemas/ReasoningResource",
+            "description": "The agent's reasoning configuration."
+          },
+          "service_tier": {
+            "$ref": "#/components/schemas/ServiceTierResource",
+            "description": "The effective service-tier policy for model requests. Defaults to `auto`."
+          },
+          "text": {
+            "$ref": "#/components/schemas/TextResource",
+            "description": "Configuration for text generated by the agent."
+          },
+          "tools": {
+            "description": "Tools available to the agent.",
+            "items": {
+              "$ref": "#/components/schemas/AgentToolResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "model",
+          "reasoning",
+          "text",
+          "service_tier",
+          "instructions",
+          "tools",
+          "multi_agent"
+        ],
+        "type": "object"
+      },
+      "EnvironmentResource": {
+        "description": "The execution environment for a session.",
+        "discriminator": {
+          "mapping": {
+            "none": "#/components/schemas/EnvironmentResourceNone",
+            "openai_hosted": "#/components/schemas/EnvironmentResourceOpenaiHosted",
+            "self_hosted": "#/components/schemas/EnvironmentResourceSelfHosted"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/EnvironmentResourceNone"
+          },
+          {
+            "$ref": "#/components/schemas/EnvironmentResourceOpenaiHosted"
+          },
+          {
+            "$ref": "#/components/schemas/EnvironmentResourceSelfHosted"
+          }
+        ]
+      },
+      "SessionRequiredActionResource": {
+        "description": "An action that must be completed before a session can continue.",
+        "discriminator": {
+          "mapping": {
+            "computer_use_approval_request": "#/components/schemas/SessionRequiredActionResourceComputerUseApprovalRequest",
+            "environment_connection": "#/components/schemas/SessionRequiredActionResourceEnvironmentConnection",
+            "function_call": "#/components/schemas/SessionRequiredActionResourceFunctionCall"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/SessionRequiredActionResourceComputerUseApprovalRequest"
+          },
+          {
+            "$ref": "#/components/schemas/SessionRequiredActionResourceFunctionCall"
+          },
+          {
+            "$ref": "#/components/schemas/SessionRequiredActionResourceEnvironmentConnection"
+          }
+        ]
+      },
+      "SessionReviewResource": {
+        "description": "The configured action review mode.",
+        "enum": [
+          "none",
+          "auto_review"
+        ],
+        "type": "string"
+      },
+      "SessionStatusResource": {
+        "description": "The current status of a session.",
+        "enum": [
+          "idle",
+          "in_progress",
+          "requires_action",
+          "failed"
+        ],
+        "type": "string"
+      },
+      "TokenUsageResource": {
+        "additionalProperties": false,
+        "description": "Recorded token usage for a session or turn. Usage is best effort and may change.",
+        "properties": {
+          "input_tokens": {
+            "description": "The number of input tokens used by the agent.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "input_tokens_details": {
+            "$ref": "#/components/schemas/InputTokensDetailsResource-2",
+            "description": "A breakdown of the agent's input token usage."
+          },
+          "output_tokens": {
+            "description": "The number of output tokens generated by the agent.",
+            "format": "int64",
+            "type": "integer"
+          },
+          "output_tokens_details": {
+            "$ref": "#/components/schemas/OutputTokensDetailsResource-2",
+            "description": "A breakdown of the agent's output token usage."
+          },
+          "total_tokens": {
+            "description": "The total number of input and output tokens used by the agent.",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "input_tokens",
+          "input_tokens_details",
+          "output_tokens",
+          "output_tokens_details",
+          "total_tokens"
+        ],
+        "type": "object"
+      },
+      "ErrorBodyResource": {
+        "additionalProperties": false,
+        "description": "Details about an API error.",
+        "properties": {
+          "code": {
+            "description": "A machine-readable error code.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "message": {
+            "description": "A human-readable error message.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "param": {
+            "description": "The request parameter that caused the error, or null for a request-wide error.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "description": "The error type.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "code",
+          "message",
+          "param"
+        ],
+        "type": "object"
+      },
+      "CompactionResource": {
+        "additionalProperties": false,
+        "description": "The effective settings for compacting the agent's context.",
+        "properties": {
+          "async": {
+            "description": "Whether context is compacted in the background. Defaults to true.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "async"
+        ],
+        "type": "object"
+      },
+      "ExperimentalConfigResource": {
+        "additionalProperties": false,
+        "description": "The effective experimental settings for an agent.",
+        "properties": {
+          "time_awareness": {
+            "description": "Whether the model receives periodic current-time reminders.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "time_awareness"
+        ],
+        "type": "object"
+      },
+      "MultiAgentConfigResource": {
+        "additionalProperties": false,
+        "description": "The resolved configuration for creating and coordinating subagents.",
+        "properties": {
+          "enabled": {
+            "description": "Whether subagent tools are enabled. Defaults to false.",
+            "type": "boolean"
+          },
+          "max_concurrent_subagents": {
+            "description": "Maximum number of subagents that may run concurrently, or null when disabled. Defaults to 6 when enabled.",
+            "format": "int64",
+            "maximum": 4294967295,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "enabled",
+          "max_concurrent_subagents"
+        ],
+        "type": "object"
+      },
+      "ReasoningResource": {
+        "additionalProperties": false,
+        "description": "The reasoning configuration used by an agent.",
+        "properties": {
+          "effort": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningEffortResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The requested reasoning effort, or `null` when the model selects its own default."
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningSummaryResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The requested reasoning summary format, or `null` when summaries are disabled."
+          }
+        },
+        "required": [
+          "effort",
+          "summary"
+        ],
+        "type": "object"
+      },
+      "ServiceTierResource": {
+        "description": "The service-tier policy configured for an agent.",
+        "enum": [
+          "auto",
+          "default",
+          "flex",
+          "priority",
+          "fast",
+          "ultrafast"
+        ],
+        "type": "string"
+      },
+      "TextResource": {
+        "additionalProperties": false,
+        "description": "The text configuration used by an agent.",
+        "properties": {
+          "format": {
+            "$ref": "#/components/schemas/TextFormatResource",
+            "description": "The effective output format. Defaults to ordinary text."
+          },
+          "verbosity": {
+            "$ref": "#/components/schemas/VerbosityResource",
+            "description": "The amount of text produced by the agent. Defaults to `medium`."
+          }
+        },
+        "required": [
+          "format",
+          "verbosity"
+        ],
+        "type": "object"
+      },
+      "AgentToolResource": {
+        "description": "A tool available to the agent.",
+        "discriminator": {
+          "mapping": {
+            "automations": "#/components/schemas/AgentToolResourceAutomations",
+            "computer_use": "#/components/schemas/AgentToolResourceComputerUse",
+            "function": "#/components/schemas/AgentToolResourceFunction",
+            "mcp": "#/components/schemas/AgentToolResourceMcp",
+            "programmatic_tool_calling": "#/components/schemas/AgentToolResourceProgrammaticToolCalling",
+            "web_search": "#/components/schemas/AgentToolResourceWebSearch"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AgentToolResourceFunction"
+          },
+          {
+            "$ref": "#/components/schemas/AgentToolResourceProgrammaticToolCalling"
+          },
+          {
+            "$ref": "#/components/schemas/AgentToolResourceMcp"
+          },
+          {
+            "$ref": "#/components/schemas/AgentToolResourceWebSearch"
+          },
+          {
+            "$ref": "#/components/schemas/AgentToolResourceComputerUse"
+          },
+          {
+            "$ref": "#/components/schemas/AgentToolResourceAutomations"
+          }
+        ]
+      },
+      "EnvironmentResourceNone": {
+        "additionalProperties": false,
+        "description": "The session talks to CCA without selecting or provisioning an execution environment.",
+        "properties": {
+          "type": {
+            "default": "none",
+            "description": "The type of the object. Always `none`.",
+            "enum": [
+              "none"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "EnvironmentResourceOpenaiHosted": {
+        "additionalProperties": false,
+        "description": "An environment hosted by OpenAI.",
+        "properties": {
+          "capability_directories": {
+            "description": "Directories that contain capabilities exposed to the agent.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "container_size": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContainerSizeResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The effective CPU and memory tier, or null when unknown or outside the public tiers."
+          },
+          "desktop": {
+            "$ref": "#/components/schemas/DesktopResource",
+            "description": "The effective desktop configuration."
+          },
+          "files": {
+            "description": "Files available in the environment, excluding their contents.",
+            "items": {
+              "$ref": "#/components/schemas/HostedEnvironmentFileResource"
+            },
+            "maxItems": 50,
+            "minItems": 0,
+            "type": "array"
+          },
+          "id": {
+            "description": "The public ID of the environment.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "network": {
+            "$ref": "#/components/schemas/NetworkPolicyResource",
+            "description": "The effective network access policy for the environment."
+          },
+          "packages": {
+            "$ref": "#/components/schemas/EnvironmentPackagesResource",
+            "description": "Packages installed in the environment."
+          },
+          "plugins": {
+            "description": "Plugins installed in the environment, excluding their archive contents.",
+            "items": {
+              "$ref": "#/components/schemas/HostedPluginResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "skills": {
+            "description": "Skills installed in the environment, excluding their archive contents.",
+            "items": {
+              "$ref": "#/components/schemas/HostedSkillResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "type": {
+            "default": "openai_hosted",
+            "description": "The type of the object. Always `openai_hosted`.",
+            "enum": [
+              "openai_hosted"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "packages",
+          "network",
+          "desktop",
+          "capability_directories",
+          "skills",
+          "plugins",
+          "files"
+        ],
+        "type": "object"
+      },
+      "EnvironmentResourceSelfHosted": {
+        "additionalProperties": false,
+        "description": "An environment hosted by the application.",
+        "properties": {
+          "capability_directories": {
+            "description": "Directories that contain capabilities exposed to the agent.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "id": {
+            "description": "The public ID of the environment.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "remote_url": {
+            "description": "Pass this URL unchanged to `codex exec-server --remote` when connecting this environment.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "self_hosted",
+            "description": "The type of the object. Always `self_hosted`.",
+            "enum": [
+              "self_hosted"
+            ],
+            "type": "string"
+          },
+          "workspace_directory": {
+            "description": "The absolute project directory inside the environment. Defaults to `/workspace`.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "remote_url",
+          "id",
+          "workspace_directory",
+          "capability_directories"
+        ],
+        "type": "object"
+      },
+      "SessionRequiredActionResourceComputerUseApprovalRequest": {
+        "additionalProperties": false,
+        "description": "Respond to a computer-use request.",
+        "properties": {
+          "request": {
+            "$ref": "#/components/schemas/ComputerUseApprovalRequestKindResource",
+            "description": "The information needed to render the request."
+          },
+          "request_id": {
+            "description": "The registered request ID to echo when responding.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "turn_id": {
+            "description": "The turn that requested approval.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "computer_use_approval_request",
+            "description": "The type of the object. Always `computer_use_approval_request`.",
+            "enum": [
+              "computer_use_approval_request"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "turn_id",
+          "request_id",
+          "request"
+        ],
+        "type": "object"
+      },
+      "SessionRequiredActionResourceFunctionCall": {
+        "additionalProperties": false,
+        "description": "Run a function tool and submit its result.",
+        "properties": {
+          "arguments": {
+            "description": "The arguments supplied by the model."
+          },
+          "call_id": {
+            "description": "The ID to include when submitting the function result.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "name": {
+            "description": "The function name.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "turn_id": {
+            "description": "The ID of the turn that requested the function call.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "function_call",
+            "description": "The type of the object. Always `function_call`.",
+            "enum": [
+              "function_call"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "turn_id",
+          "call_id",
+          "name",
+          "arguments"
+        ],
+        "type": "object"
+      },
+      "SessionRequiredActionResourceEnvironmentConnection": {
+        "additionalProperties": false,
+        "description": "Reconnect a session environment.",
+        "properties": {
+          "environment_id": {
+            "description": "The ID of the environment to reconnect.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "environment_connection",
+            "description": "The type of the object. Always `environment_connection`.",
+            "enum": [
+              "environment_connection"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "environment_id"
+        ],
+        "type": "object"
+      },
+      "InputTokensDetailsResource-2": {
+        "additionalProperties": false,
+        "description": "A breakdown of input token usage for a session or turn.",
+        "properties": {
+          "cached_tokens": {
+            "description": "The number of input tokens retrieved from the prompt cache.",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "cached_tokens"
+        ],
+        "type": "object"
+      },
+      "OutputTokensDetailsResource-2": {
+        "additionalProperties": false,
+        "description": "A breakdown of output token usage for a session or turn.",
+        "properties": {
+          "reasoning_tokens": {
+            "description": "The number of output tokens used for reasoning.",
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "reasoning_tokens"
+        ],
+        "type": "object"
+      },
+      "ReasoningEffortResource": {
+        "description": "The amount of reasoning effort used by an agent.",
+        "enum": [
+          "none",
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ],
+        "type": "string"
+      },
+      "ReasoningSummaryResource": {
+        "description": "The reasoning summary format requested from an agent.",
+        "enum": [
+          "concise",
+          "detailed",
+          "auto"
+        ],
+        "type": "string"
+      },
+      "TextFormatResource": {
+        "description": "The effective output format for generated text.",
+        "discriminator": {
+          "mapping": {
+            "json_schema": "#/components/schemas/TextFormatResourceJsonSchema",
+            "text": "#/components/schemas/TextFormatResourceText"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TextFormatResourceText"
+          },
+          {
+            "$ref": "#/components/schemas/TextFormatResourceJsonSchema"
+          }
+        ]
+      },
+      "VerbosityResource": {
+        "description": "The amount of text produced by an agent.",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "type": "string"
+      },
+      "AgentToolResourceFunction": {
+        "additionalProperties": false,
+        "description": "A function defined by the application.",
+        "properties": {
+          "defer_loading": {
+            "description": "Whether the function is deferred and discovered through tool search.",
+            "type": "boolean"
+          },
+          "description": {
+            "description": "A description of what the function does.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "name": {
+            "description": "The name of the function.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "parameters": {
+            "additionalProperties": {},
+            "description": "A JSON Schema object describing the function's arguments.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "type": {
+            "default": "function",
+            "description": "The type of the object. Always `function`.",
+            "enum": [
+              "function"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description",
+          "parameters",
+          "defer_loading"
+        ],
+        "type": "object"
+      },
+      "AgentToolResourceProgrammaticToolCalling": {
+        "additionalProperties": false,
+        "description": "Enables calling tools from model-generated code.",
+        "properties": {
+          "enabled": {
+            "description": "Whether tools can be called from model-generated code.",
+            "type": "boolean"
+          },
+          "type": {
+            "default": "programmatic_tool_calling",
+            "description": "The type of the object. Always `programmatic_tool_calling`.",
+            "enum": [
+              "programmatic_tool_calling"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "enabled"
+        ],
+        "type": "object"
+      },
+      "AgentToolResourceMcp": {
+        "additionalProperties": false,
+        "description": "Tools provided by a remote MCP server.",
+        "properties": {
+          "allowed_tools": {
+            "description": "The MCP tools the agent may call.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "connection_origin": {
+            "$ref": "#/components/schemas/McpConnectionOriginResource",
+            "description": "Where outbound MCP HTTP connections originate."
+          },
+          "credential_id": {
+            "description": "The attached vault credential selected for this MCP server, if any. Optional when exactly one attached credential matches the server URL.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "request_metadata": {
+            "additionalProperties": {},
+            "description": "Metadata included with requests to this MCP server.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "required": {
+            "description": "Whether this MCP server must initialize before the first turn.",
+            "type": "boolean"
+          },
+          "server_label": {
+            "description": "A label used to identify the MCP server in tool calls.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "transport": {
+            "$ref": "#/components/schemas/McpTransportResource",
+            "description": "The transport used to connect to the MCP server."
+          },
+          "type": {
+            "default": "mcp",
+            "description": "The type of the object. Always `mcp`.",
+            "enum": [
+              "mcp"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "server_label",
+          "credential_id",
+          "transport",
+          "request_metadata",
+          "allowed_tools",
+          "required",
+          "connection_origin"
+        ],
+        "type": "object"
+      },
+      "AgentToolResourceWebSearch": {
+        "additionalProperties": false,
+        "description": "Web search.",
+        "properties": {
+          "allowed_domains": {
+            "description": "Allowed search domains, or `null` when the search is unrestricted.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "context_size": {
+            "$ref": "#/components/schemas/WebSearchContextSizeResource",
+            "description": "The amount of search context made available to the model. Defaults to `medium`."
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/WebSearchLocationResource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Approximate location used to localize search results, if provided."
+          },
+          "mode": {
+            "$ref": "#/components/schemas/WebSearchModeResource",
+            "description": "The source used for web search results."
+          },
+          "type": {
+            "default": "web_search",
+            "description": "The type of the object. Always `web_search`.",
+            "enum": [
+              "web_search"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "mode",
+          "context_size",
+          "allowed_domains",
+          "location"
+        ],
+        "type": "object"
+      },
+      "AgentToolResourceComputerUse": {
+        "additionalProperties": false,
+        "description": "Browser use in an OpenAI-hosted session.",
+        "properties": {
+          "include_screenshots": {
+            "description": "Whether computer tool outputs include screenshots.",
+            "type": "boolean"
+          },
+          "type": {
+            "default": "computer_use",
+            "description": "The type of the object. Always `computer_use`.",
+            "enum": [
+              "computer_use"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "include_screenshots"
+        ],
+        "type": "object"
+      },
+      "AgentToolResourceAutomations": {
+        "additionalProperties": false,
+        "description": "Lets the agent manage its own scheduled wakeups.",
+        "properties": {
+          "type": {
+            "default": "automations",
+            "description": "The type of the object. Always `automations`.",
+            "enum": [
+              "automations"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "ContainerSizeResource": {
+        "description": "The effective CPU and memory tier of an OpenAI-hosted environment.",
+        "enum": [
+          "small",
+          "medium",
+          "large"
+        ],
+        "type": "string"
+      },
+      "DesktopResource": {
+        "additionalProperties": false,
+        "description": "The effective desktop configuration for an OpenAI-hosted environment.",
+        "properties": {
+          "enabled": {
+            "description": "Whether the environment provisions a desktop and browser proxy.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "type": "object"
+      },
+      "HostedEnvironmentFileResource": {
+        "description": "Metadata for a file materialized in an OpenAI-hosted execution environment.",
+        "discriminator": {
+          "mapping": {
+            "file_id": "#/components/schemas/HostedEnvironmentFileResourceFileId",
+            "inline": "#/components/schemas/HostedEnvironmentFileResourceInline"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HostedEnvironmentFileResourceFileId"
+          },
+          {
+            "$ref": "#/components/schemas/HostedEnvironmentFileResourceInline"
+          }
+        ]
+      },
+      "NetworkPolicyResource": {
+        "additionalProperties": false,
+        "description": "Network access for an OpenAI-hosted environment.",
+        "properties": {
+          "access": {
+            "$ref": "#/components/schemas/NetworkAccessResource",
+            "description": "The environment's network access mode."
+          },
+          "allowed_domains": {
+            "description": "Domains the environment may access when network access is restricted.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": [
+          "access",
+          "allowed_domains"
+        ],
+        "type": "object"
+      },
+      "EnvironmentPackagesResource": {
+        "additionalProperties": false,
+        "description": "Packages installed in an OpenAI-hosted environment.",
+        "properties": {
+          "npm": {
+            "description": "npm packages installed globally in the environment.",
+            "items": {
+              "maxLength": 1048576,
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 16384,
+            "minItems": 0,
+            "type": "array"
+          },
+          "python": {
+            "description": "Python packages installed in the environment.",
+            "items": {
+              "maxLength": 1048576,
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 16384,
+            "minItems": 0,
+            "type": "array"
+          },
+          "system": {
+            "description": "System packages installed in the environment.",
+            "items": {
+              "maxLength": 1048576,
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 16384,
+            "minItems": 0,
+            "type": "array"
+          }
+        },
+        "required": [
+          "python",
+          "system",
+          "npm"
+        ],
+        "type": "object"
+      },
+      "HostedPluginResource": {
+        "description": "A plugin installed in an OpenAI-hosted environment.",
+        "discriminator": {
+          "mapping": {
+            "inline": "#/components/schemas/HostedPluginResourceInline"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HostedPluginResourceInline"
+          }
+        ]
+      },
+      "HostedSkillResource": {
+        "description": "A skill installed in an OpenAI-hosted environment.",
+        "discriminator": {
+          "mapping": {
+            "inline": "#/components/schemas/HostedSkillResourceInline",
+            "skill_reference": "#/components/schemas/HostedSkillResourceSkillReference"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/HostedSkillResourceSkillReference"
+          },
+          {
+            "$ref": "#/components/schemas/HostedSkillResourceInline"
+          }
+        ]
+      },
+      "ComputerUseApprovalRequestKindResource": {
+        "discriminator": {
+          "mapping": {
+            "browser_authentication": "#/components/schemas/ComputerUseApprovalRequestKindResourceBrowserAuthentication",
+            "browser_origin_access": "#/components/schemas/ComputerUseApprovalRequestKindResourceBrowserOriginAccess"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ComputerUseApprovalRequestKindResourceBrowserAuthentication"
+          },
+          {
+            "$ref": "#/components/schemas/ComputerUseApprovalRequestKindResourceBrowserOriginAccess"
+          }
+        ]
+      },
+      "TextFormatResourceText": {
+        "additionalProperties": false,
+        "description": "Generates ordinary text without a structured-output constraint.",
+        "properties": {
+          "type": {
+            "default": "text",
+            "description": "The type of the object. Always `text`.",
+            "enum": [
+              "text"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "TextFormatResourceJsonSchema": {
+        "additionalProperties": false,
+        "description": "Constrains generated text to a JSON Schema.",
+        "properties": {
+          "schema": {
+            "additionalProperties": {},
+            "description": "The JSON Schema that generated text must match.",
+            "minProperties": 0,
+            "propertyNames": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "type": {
+            "default": "json_schema",
+            "description": "The type of the object. Always `json_schema`.",
+            "enum": [
+              "json_schema"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "schema"
+        ],
+        "type": "object"
+      },
+      "McpConnectionOriginResource": {
+        "description": "Where outbound MCP HTTP connections originate.",
+        "enum": [
+          "service",
+          "environment"
+        ],
+        "type": "string"
+      },
+      "McpTransportResource": {
+        "description": "The transport used to connect to an MCP server.",
+        "discriminator": {
+          "mapping": {
+            "http": "#/components/schemas/McpTransportResourceHttp",
+            "stdio": "#/components/schemas/McpTransportResourceStdio"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/McpTransportResourceHttp"
+          },
+          {
+            "$ref": "#/components/schemas/McpTransportResourceStdio"
+          }
+        ]
+      },
+      "WebSearchContextSizeResource": {
+        "description": "The amount of web search context made available to the model.",
+        "enum": [
+          "low",
+          "medium",
+          "high"
+        ],
+        "type": "string"
+      },
+      "WebSearchLocationResource": {
+        "additionalProperties": false,
+        "description": "Approximate user location used to localize web search results.",
+        "properties": {
+          "city": {
+            "description": "The city name.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "country": {
+            "description": "The two-letter ISO country code, such as `US`.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "region": {
+            "description": "The region or state name.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "timezone": {
+            "description": "The IANA timezone, such as `America/Los_Angeles`.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "country",
+          "region",
+          "city",
+          "timezone"
+        ],
+        "type": "object"
+      },
+      "WebSearchModeResource": {
+        "description": "The source used for web search results.",
+        "enum": [
+          "disabled",
+          "cached",
+          "live"
+        ],
+        "type": "string"
+      },
+      "HostedEnvironmentFileResourceFileId": {
+        "additionalProperties": false,
+        "description": "A file copied from the OpenAI Files API.",
+        "properties": {
+          "file_id": {
+            "description": "The ID of the uploaded file.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "id": {
+            "description": "The session-scoped ID of the file in the execution environment.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "path": {
+            "description": "The file's absolute path inside the environment.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "size_bytes": {
+            "description": "The decoded file size in bytes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": {
+            "default": "file_id",
+            "description": "The type of the object. Always `file_id`.",
+            "enum": [
+              "file_id"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "file_id",
+          "path",
+          "size_bytes"
+        ],
+        "type": "object"
+      },
+      "HostedEnvironmentFileResourceInline": {
+        "additionalProperties": false,
+        "description": "A file supplied inline when the session was created.",
+        "properties": {
+          "id": {
+            "description": "The session-scoped ID of the file in the execution environment.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "path": {
+            "description": "The file's absolute path inside the environment.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "size_bytes": {
+            "description": "The decoded file size in bytes.",
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": {
+            "default": "inline",
+            "description": "The type of the object. Always `inline`.",
+            "enum": [
+              "inline"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id",
+          "path",
+          "size_bytes"
+        ],
+        "type": "object"
+      },
+      "NetworkAccessResource": {
+        "description": "The network access mode for an OpenAI-hosted environment.",
+        "enum": [
+          "enabled",
+          "disabled",
+          "restricted"
+        ],
+        "type": "string"
+      },
+      "HostedPluginResourceInline": {
+        "additionalProperties": false,
+        "description": "A plugin installed from an inline ZIP archive.",
+        "properties": {
+          "description": {
+            "description": "The installed plugin description.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "name": {
+            "description": "The installed plugin name.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "inline",
+            "description": "The type of the object. Always `inline`.",
+            "enum": [
+              "inline"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description"
+        ],
+        "type": "object"
+      },
+      "HostedSkillResourceSkillReference": {
+        "additionalProperties": false,
+        "description": "A skill installed from the Skills API.",
+        "properties": {
+          "description": {
+            "description": "The installed skill description.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "name": {
+            "description": "The installed skill name.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "skill_id": {
+            "description": "The referenced skill ID.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "skill_reference",
+            "description": "The type of the object. Always `skill_reference`.",
+            "enum": [
+              "skill_reference"
+            ],
+            "type": "string"
+          },
+          "version": {
+            "description": "The concrete skill version installed for this session.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "skill_id",
+          "version",
+          "name",
+          "description"
+        ],
+        "type": "object"
+      },
+      "HostedSkillResourceInline": {
+        "additionalProperties": false,
+        "description": "A skill installed from an inline ZIP archive.",
+        "properties": {
+          "description": {
+            "description": "The installed skill description.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "name": {
+            "description": "The installed skill name.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "inline",
+            "description": "The type of the object. Always `inline`.",
+            "enum": [
+              "inline"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "name",
+          "description"
+        ],
+        "type": "object"
+      },
+      "ComputerUseApprovalRequestKindResourceBrowserAuthentication": {
+        "additionalProperties": false,
+        "description": "A registered form awaiting the application's response.",
+        "properties": {
+          "credential_origin": {
+            "description": "The registered form or frame origin where values will be entered.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fields": {
+            "description": "Controls to render. All submitted values are sensitive.",
+            "items": {
+              "$ref": "#/components/schemas/BrowserAuthenticationFieldResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "options": {
+            "description": "Sign-in methods. Empty for a plain form.",
+            "items": {
+              "$ref": "#/components/schemas/BrowserAuthenticationOptionResource"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "reason": {
+            "description": "Why the agent needs the user to sign in.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "default": "browser_authentication",
+            "description": "The type of the object. Always `browser_authentication`.",
+            "enum": [
+              "browser_authentication"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "reason",
+          "credential_origin",
+          "fields",
+          "options"
+        ],
+        "type": "object"
+      },
+      "ComputerUseApprovalRequestKindResourceBrowserOriginAccess": {
+        "additionalProperties": false,
+        "description": "A browser origin awaiting the application's approval decision.",
+        "properties": {
+          "origin": {
+            "description": "The origin the browser needs permission to access.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "reason": {
+            "description": "The browser's explanation for this request, or null when unavailable.",
+            "minLength": 0,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": {
+            "default": "browser_origin_access",
+            "description": "The type of the object. Always `browser_origin_access`.",
+            "enum": [
+              "browser_origin_access"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "reason",
+          "origin"
+        ],
+        "type": "object"
+      },
+      "McpTransportResourceHttp": {
+        "additionalProperties": false,
+        "description": "Connects to an MCP server over HTTP.",
+        "properties": {
+          "server_url": {
+            "description": "The URL of the MCP server.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "type": {
+            "default": "http",
+            "description": "The type of the object. Always `http`.",
+            "enum": [
+              "http"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "server_url"
+        ],
+        "type": "object"
+      },
+      "McpTransportResourceStdio": {
+        "additionalProperties": false,
+        "description": "Starts an MCP server as a local process.",
+        "properties": {
+          "args": {
+            "description": "Arguments passed to the MCP server command.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "command": {
+            "description": "The command used to start the MCP server.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "cwd": {
+            "description": "The working directory used to start the MCP server.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "env_vars": {
+            "description": "Environment variable names inherited from the execution environment.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "type": {
+            "default": "stdio",
+            "description": "The type of the object. Always `stdio`.",
+            "enum": [
+              "stdio"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "command",
+          "args",
+          "cwd",
+          "env_vars"
+        ],
+        "type": "object"
+      },
+      "BrowserAuthenticationFieldResource": {
+        "additionalProperties": false,
+        "description": "A control in a registered browser-login form.",
+        "properties": {
+          "id": {
+            "description": "The field ID to submit as field_id in a fields entry.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "label": {
+            "description": "The label to display beside the control.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "required": {
+            "description": "Whether this control requires a nonempty value.",
+            "type": "boolean"
+          },
+          "type": {
+            "description": "The rendering type, such as email, password, or text.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "type",
+          "required"
+        ],
+        "type": "object"
+      },
+      "BrowserAuthenticationOptionResource": {
+        "additionalProperties": false,
+        "description": "A sign-in method and the fields that belong to it.",
+        "properties": {
+          "field_ids": {
+            "description": "IDs from the registered fields that this method accepts.",
+            "items": {
+              "minLength": 0,
+              "type": "string"
+            },
+            "maxItems": 2000,
+            "minItems": 0,
+            "type": "array"
+          },
+          "id": {
+            "description": "The option ID to submit as selected_option.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "label": {
+            "description": "The method label to display.",
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "field_ids"
+        ],
+        "type": "object"
+      }
+    }
+  }
+}

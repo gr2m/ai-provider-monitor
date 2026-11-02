@@ -1,4 +1,5 @@
 {
+  "description": "Classifies if text and/or image inputs are potentially harmful. Learn\nmore in the [moderation guide](https://developers.openai.com/api/docs/guides/moderation).\n",
   "operationId": "createModeration",
   "requestBody": {
     "content": {
@@ -20,9 +21,45 @@
         }
       },
       "description": "OK"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Invalid moderation input or unsupported request parameters."
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Access to the requested moderation model was denied."
+    },
+    "429": {
+      "$ref": "#/components/responses/InferenceRateLimited"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The moderation request could not be processed due to an internal error."
+    },
+    "503": {
+      "$ref": "#/components/responses/InferenceServiceUnavailable"
     }
   },
-  "summary": "Classifies if text and/or image inputs are potentially harmful. Learn\nmore in the [moderation guide](/docs/guides/moderation).\n",
+  "summary": "Create moderation",
   "tags": [
     "Moderations"
   ],
@@ -36,14 +73,14 @@
               {
                 "default": "",
                 "description": "A string of text to classify for moderation.",
-                "example": "I want to kill them.",
+                "example": "...text to classify goes here...",
                 "type": "string"
               },
               {
                 "description": "An array of strings to classify for moderation.",
                 "items": {
                   "default": "",
-                  "example": "I want to kill them.",
+                  "example": "...text to classify goes here...",
                   "type": "string"
                 },
                 "type": "array"
@@ -89,7 +126,7 @@
                       "properties": {
                         "text": {
                           "description": "A string of text to classify.",
-                          "example": "I want to kill them",
+                          "example": "...text to classify goes here...",
                           "type": "string"
                         },
                         "type": {
@@ -128,9 +165,8 @@
               }
             ],
             "default": "omni-moderation-latest",
-            "description": "The content moderation model you would like to use. Learn more in\n[the moderation guide](/docs/guides/moderation), and learn about\navailable models [here](/docs/models#moderation).\n",
-            "example": "omni-moderation-2024-09-26",
-            "nullable": false
+            "description": "The content moderation model you would like to use. Learn more in\n[the moderation guide](https://developers.openai.com/api/docs/guides/moderation), and learn about\navailable models [here](https://developers.openai.com/api/docs/guides/moderation).\n",
+            "example": "omni-moderation-2024-09-26"
           }
         },
         "required": [
@@ -492,6 +528,186 @@
           "results"
         ],
         "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "type": "object"
+      }
+    },
+    "responses": {
+      "InferenceRateLimited": {
+        "content": {
+          "application/json": {
+            "examples": {
+              "slowDown": {
+                "summary": "Traffic increased too quickly",
+                "value": {
+                  "error": {
+                    "code": "slow_down",
+                    "message": "Your request rate increased too quickly. Please reduce the request rate and gradually increase it again.",
+                    "param": null,
+                    "type": "rate_limit_error"
+                  }
+                }
+              }
+            },
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The request was rejected because a rate limit was exceeded. A slow_down error means traffic increased too quickly; reduce your request rate, then increase it gradually.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
+      },
+      "InferenceServiceUnavailable": {
+        "content": {
+          "application/json": {
+            "examples": {
+              "serverOverloaded": {
+                "summary": "The requested model is temporarily overloaded",
+                "value": {
+                  "error": {
+                    "code": "server_is_overloaded",
+                    "message": "The model is temporarily overloaded. Please retry your request after a brief delay.",
+                    "param": null,
+                    "type": "service_unavailable_error"
+                  }
+                }
+              }
+            },
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The service is temporarily unavailable. A server_is_overloaded error means the requested model is temporarily overloaded; retry after a brief delay.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
       }
     }
   }

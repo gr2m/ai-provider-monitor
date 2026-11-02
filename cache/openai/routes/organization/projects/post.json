@@ -1,4 +1,5 @@
 {
+  "description": "Create a new project in the organization. Projects can be created and archived, but cannot be deleted.",
   "operationId": "create-project",
   "requestBody": {
     "content": {
@@ -21,6 +22,46 @@
         }
       },
       "description": "Project created successfully."
+    },
+    "201": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/Project"
+          }
+        }
+      },
+      "description": "Project created successfully."
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The project creation request is invalid or contains incompatible settings."
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/PermissionErrorResponse"
+          }
+        }
+      },
+      "description": "The caller does not have permission to perform this operation."
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "Too many management requests. Reduce the request rate and try again later."
     }
   },
   "security": [
@@ -28,7 +69,7 @@
       "AdminApiKeyAuth": []
     }
   ],
-  "summary": "Create a new project in the organization. Projects can be created and archived, but cannot be deleted.",
+  "summary": "Create project",
   "tags": [
     "Projects"
   ],
@@ -56,11 +97,23 @@
                 "type": "null"
               }
             ],
-            "description": "Create the project with the specified data residency region. Your organization must have access to Data residency functionality in order to use. See [data residency controls](/docs/guides/your-data#data-residency-controls) to review the functionality and limitations of setting this field."
+            "deprecated": true,
+            "description": "Create the project with the specified data residency region. Your organization must have access to Data residency functionality in order to use. See [data residency controls](https://developers.openai.com/api/docs/guides/your-data#data-residency-controls) to review the functionality and limitations of setting this field.\nDeprecated: use `residency` instead. Do not provide both `geography` and `residency`."
           },
           "name": {
             "description": "The friendly name of the project, this name appears in reports.",
             "type": "string"
+          },
+          "residency": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PublicProjectResidency"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Create the project with the specified residency configuration. Your organization must have access to the requested residency configuration in order to use it. See [data residency controls](https://developers.openai.com/api/docs/guides/your-data#data-residency-controls) to review the functionality and limitations of setting this field."
           }
         },
         "required": [
@@ -121,6 +174,10 @@
             ],
             "type": "string"
           },
+          "residency": {
+            "$ref": "#/components/schemas/PublicProjectResidency",
+            "description": "The residency configuration for the project."
+          },
           "status": {
             "anyOf": [
               {
@@ -137,6 +194,160 @@
           "id",
           "object",
           "created_at"
+        ],
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/Error"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "PermissionErrorResponse": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Error"
+              },
+              {
+                "description": "An explanation of the missing API permissions.",
+                "type": "string"
+              }
+            ],
+            "description": "Details about the permission error."
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "PublicProjectResidency": {
+        "enum": [
+          "GLOBAL",
+          "US_STORAGE_PROCESSING",
+          "EU_STORAGE_PROCESSING",
+          "JP_STORAGE",
+          "JP_STORAGE_PROCESSING",
+          "KR_STORAGE",
+          "CA_STORAGE",
+          "SG_STORAGE",
+          "IN_STORAGE",
+          "IN_STORAGE_PROCESSING",
+          "AU_STORAGE",
+          "AU_STORAGE_PROCESSING",
+          "GB_STORAGE",
+          "AE_STORAGE",
+          "AE_STORAGE_PROCESSING"
+        ],
+        "type": "string"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
+        "type": "object"
+      },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
         ],
         "type": "object"
       }

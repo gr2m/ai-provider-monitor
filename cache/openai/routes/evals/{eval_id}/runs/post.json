@@ -1,4 +1,5 @@
 {
+  "description": "Kicks off a new run for a given evaluation, specifying the data source, and what model configuration to use to test. The datasource will be validated against the schema specified in the config of the evaluation.\n",
   "operationId": "createEvalRun",
   "parameters": [
     {
@@ -36,14 +37,37 @@
       "content": {
         "application/json": {
           "schema": {
-            "$ref": "#/components/schemas/Error"
+            "$ref": "#/components/schemas/ErrorResponse"
           }
         }
       },
       "description": "Bad request (for example, missing eval object)"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The evaluation or a referenced resource was not found."
+    },
+    "429": {
+      "$ref": "#/components/responses/TooManyRequests"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorResponse"
+          }
+        }
+      },
+      "description": "The evaluation run could not be created."
     }
   },
-  "summary": "Kicks off a new run for a given evaluation, specifying the data source, and what model configuration to use to test. The datasource will be validated against the schema specified in the config of the evaluation.\n",
+  "summary": "Create eval run",
   "tags": [
     "Evals"
   ],
@@ -104,7 +128,14 @@
             "type": "object"
           },
           "error": {
-            "$ref": "#/components/schemas/EvalApiError"
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvalApiError"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "eval_id": {
             "description": "The identifier of the associated evaluation.",
@@ -119,11 +150,17 @@
           },
           "model": {
             "description": "The model that is evaluated, if applicable.",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "name": {
             "description": "The name of the evaluation run.",
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "object": {
             "default": "eval.run",
@@ -172,7 +209,10 @@
               ],
               "type": "object"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "per_testing_criteria_results": {
             "description": "Results per testing criteria applied during the evaluation run.",
@@ -198,7 +238,10 @@
               ],
               "type": "object"
             },
-            "type": "array"
+            "type": [
+              "array",
+              "null"
+            ]
           },
           "report_url": {
             "description": "The URL to the rendered evaluation run report on the UI dashboard.",
@@ -257,40 +300,14 @@
         "title": "EvalRun",
         "type": "object"
       },
-      "Error": {
+      "ErrorResponse": {
         "properties": {
-          "code": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "message": {
-            "type": "string"
-          },
-          "param": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "type": {
-            "type": "string"
+          "error": {
+            "$ref": "#/components/schemas/Error"
           }
         },
         "required": [
-          "type",
-          "message",
-          "param",
-          "code"
+          "error"
         ],
         "type": "object"
       },
@@ -398,7 +415,7 @@
                 "$ref": "#/components/schemas/ReasoningEffort"
               },
               "response_format": {
-                "description": "An object specifying the format that the model must output.\n\nSetting to `{ \"type\": \"json_schema\", \"json_schema\": {...} }` enables\nStructured Outputs which ensures the model will match your supplied JSON\nschema. Learn more in the [Structured Outputs\nguide](/docs/guides/structured-outputs).\n\nSetting to `{ \"type\": \"json_object\" }` enables the older JSON mode, which\nensures the message the model generates is valid JSON. Using `json_schema`\nis preferred for models that support it.\n",
+                "description": "An object specifying the format that the model must output.\n\nSetting to `{ \"type\": \"json_schema\", \"json_schema\": {...} }` enables\nStructured Outputs which ensures the model will match your supplied JSON\nschema. Learn more in the [Structured Outputs\nguide](https://developers.openai.com/api/docs/guides/structured-outputs).\n\nSetting to `{ \"type\": \"json_object\" }` enables the older JSON mode, which\nensures the message the model generates is valid JSON. Using `json_schema`\nis preferred for models that support it.\n",
                 "oneOf": [
                   {
                     "$ref": "#/components/schemas/ResponseFormatText"
@@ -565,7 +582,7 @@
                 "type": "number"
               },
               "text": {
-                "description": "Configuration options for a text response from the model. Can be plain\ntext or structured JSON data. Learn more:\n- [Text inputs and outputs](/docs/guides/text)\n- [Structured Outputs](/docs/guides/structured-outputs)\n",
+                "description": "Configuration options for a text response from the model. Can be plain\ntext or structured JSON data. Learn more:\n- [Text inputs and outputs](https://developers.openai.com/api/docs/guides/text)\n- [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs)\n",
                 "properties": {
                   "format": {
                     "$ref": "#/components/schemas/TextResponseFormatConfiguration"
@@ -574,7 +591,7 @@
                 "type": "object"
               },
               "tools": {
-                "description": "An array of tools the model may call while generating a response. You\ncan specify which tool to use by setting the `tool_choice` parameter.\n\nThe two categories of tools you can provide the model are:\n\n- **Built-in tools**: Tools that are provided by OpenAI that extend the\n  model's capabilities, like [web search](/docs/guides/tools-web-search)\n  or [file search](/docs/guides/tools-file-search). Learn more about\n  [built-in tools](/docs/guides/tools).\n- **Function calls (custom tools)**: Functions that are defined by you,\n  enabling the model to call your own code. Learn more about\n  [function calling](/docs/guides/function-calling).\n",
+                "description": "An array of tools the model may call while generating a response. You\ncan specify which tool to use by setting the `tool_choice` parameter.\n\nThe two categories of tools you can provide the model are:\n\n- **Built-in tools**: Tools that are provided by OpenAI that extend the\n  model's capabilities, like [web search](https://developers.openai.com/api/docs/guides/tools-web-search)\n  or [file search](https://developers.openai.com/api/docs/guides/tools-file-search). Learn more about\n  [built-in tools](https://developers.openai.com/api/docs/guides/tools).\n- **Function calls (custom tools)**: Functions that are defined by you,\n  enabling the model to call your own code. Learn more about\n  [function calling](https://developers.openai.com/api/docs/guides/function-calling).\n",
                 "items": {
                   "$ref": "#/components/schemas/Tool"
                 },
@@ -649,6 +666,46 @@
           "message"
         ],
         "title": "EvalApiError",
+        "type": "object"
+      },
+      "Error": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "misalignment": {
+            "$ref": "#/components/schemas/MisalignmentErrorDetailsResource"
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message",
+          "param",
+          "code"
+        ],
         "type": "object"
       },
       "EvalJsonlFileContentSource": {
@@ -797,7 +854,7 @@
         "anyOf": [
           {
             "default": "medium",
-            "description": "Constrains effort on reasoning for reasoning models. Currently supported\nvalues are `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`.\nReducing reasoning effort can result in faster responses and fewer tokens\nused on reasoning in a response. Not all reasoning models support every\nvalue. See the\n[reasoning guide](https://platform.openai.com/docs/guides/reasoning)\nfor model-specific support.\n",
+            "description": "Constrains effort on reasoning for reasoning models. Currently supported\nvalues are `none`, `minimal`, `low`, `medium`, `high`, `xhigh`, and `max`.\nReducing reasoning effort can result in faster responses and fewer tokens\nused on reasoning in a response. Not all reasoning models support every\nvalue. See the\n[reasoning guide](https://developers.openai.com/api/docs/guides/reasoning)\nfor model-specific support.\n",
             "enum": [
               "none",
               "minimal",
@@ -832,7 +889,7 @@
         "type": "object"
       },
       "ResponseFormatJsonSchema": {
-        "description": "JSON Schema response format. Used to generate structured JSON responses.\nLearn more about [Structured Outputs](/docs/guides/structured-outputs).\n",
+        "description": "JSON Schema response format. Used to generate structured JSON responses.\nLearn more about [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs).\n",
         "properties": {
           "json_schema": {
             "description": "Structured Outputs configuration options, including a JSON Schema.\n",
@@ -852,7 +909,7 @@
                 "anyOf": [
                   {
                     "default": false,
-                    "description": "Whether to enable strict schema adherence when generating the output.\nIf set to true, the model will always follow the exact schema defined\nin the `schema` field. Only a subset of JSON Schema is supported when\n`strict` is `true`. To learn more, read the [Structured Outputs\nguide](/docs/guides/structured-outputs).\n",
+                    "description": "Whether to enable strict schema adherence when generating the output.\nIf set to true, the model will always follow the exact schema defined\nin the `schema` field. Only a subset of JSON Schema is supported when\n`strict` is `true`. To learn more, read the [Structured Outputs\nguide](https://developers.openai.com/api/docs/guides/structured-outputs).\n",
                     "type": "boolean"
                   },
                   {
@@ -962,7 +1019,7 @@
           "model": {
             "anyOf": [
               {
-                "description": "An optional model to filter by (e.g., 'gpt-4o').",
+                "description": "An optional model to filter by (e.g., 'gpt-6-astra').",
                 "type": "string"
               },
               {
@@ -986,7 +1043,10 @@
         "type": "object"
       },
       "TextResponseFormatConfiguration": {
-        "description": "An object specifying the format that the model must output.\n\nConfiguring `{ \"type\": \"json_schema\" }` enables Structured Outputs, \nwhich ensures the model will match your supplied JSON schema. Learn more in the \n[Structured Outputs guide](/docs/guides/structured-outputs).\n\nThe default format is `{ \"type\": \"text\" }` with no additional options.\n\n**Not recommended for gpt-4o and newer models:**\n\nSetting to `{ \"type\": \"json_object\" }` enables the older JSON mode, which\nensures the message the model generates is valid JSON. Using `json_schema`\nis preferred for models that support it.\n",
+        "description": "An object specifying the format that the model must output.\n\nConfiguring `{ \"type\": \"json_schema\" }` enables Structured Outputs,\nwhich ensures the model will match your supplied JSON schema. Learn more in the\n[Structured Outputs guide](https://developers.openai.com/api/docs/guides/structured-outputs).\n\nThe default format is `{ \"type\": \"text\" }` with no additional options.\n\n**Not recommended for gpt-4o and newer models:**\n\nSetting to `{ \"type\": \"json_object\" }` enables the older JSON mode, which\nensures the message the model generates is valid JSON. Using `json_schema`\nis preferred for models that support it.\n",
+        "discriminator": {
+          "propertyName": "type"
+        },
         "oneOf": [
           {
             "$ref": "#/components/schemas/ResponseFormatText"
@@ -1190,6 +1250,41 @@
         "title": "EvalResponsesSource",
         "type": "object"
       },
+      "MisalignmentErrorDetailsResource": {
+        "properties": {
+          "detailed_explanation": {
+            "description": "The public explanation for this block.",
+            "type": "string"
+          },
+          "error_type": {
+            "$ref": "#/components/schemas/_MisalignmentErrorType",
+            "description": "An optional classification; clients must accept additional values."
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "description": "An opaque target for explicitly continuing this review, or null when unavailable.",
+                "maxLength": 96,
+                "minLength": 1,
+                "not": {
+                  "pattern": "[^A-Za-z0-9._~:-]"
+                },
+                "pattern": "^[A-Za-z0-9._~:-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "steer": {
+            "$ref": "#/components/schemas/_MisalignmentSteer",
+            "description": "An optional public continuation instruction."
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
       "InputMessageContentList": {
         "description": "A list of one or many input items to the model, containing different content \ntypes.\n",
         "items": {
@@ -1241,7 +1336,7 @@
             "anyOf": [
               {
                 "default": false,
-                "description": "Whether to enable strict schema adherence when generating the function call. If set to true, the model will follow the exact schema defined in the `parameters` field. Only a subset of JSON Schema is supported when `strict` is `true`. Learn more about Structured Outputs in the [function calling guide](/docs/guides/function-calling).",
+                "description": "Whether to enable strict schema adherence when generating the function call. If set to true, the model will follow the exact schema defined in the `parameters` field. Only a subset of JSON Schema is supported when `strict` is `true`. Learn more about Structured Outputs in the [function calling guide](https://developers.openai.com/api/docs/guides/function-calling).",
                 "type": "boolean"
               },
               {
@@ -1256,7 +1351,7 @@
         "type": "object"
       },
       "TextResponseFormatJsonSchema": {
-        "description": "JSON Schema response format. Used to generate structured JSON responses.\nLearn more about [Structured Outputs](/docs/guides/structured-outputs).\n",
+        "description": "JSON Schema response format. Used to generate structured JSON responses.\nLearn more about [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs).\n",
         "properties": {
           "description": {
             "description": "A description of what the response format is for, used by the model to\ndetermine how to respond in the format.\n",
@@ -1273,7 +1368,7 @@
             "anyOf": [
               {
                 "default": false,
-                "description": "Whether to enable strict schema adherence when generating the output.\nIf set to true, the model will always follow the exact schema defined\nin the `schema` field. Only a subset of JSON Schema is supported when\n`strict` is `true`. To learn more, read the [Structured Outputs\nguide](/docs/guides/structured-outputs).\n",
+                "description": "Whether to enable strict schema adherence when generating the output.\nIf set to true, the model will always follow the exact schema defined\nin the `schema` field. Only a subset of JSON Schema is supported when\n`strict` is `true`. To learn more, read the [Structured Outputs\nguide](https://developers.openai.com/api/docs/guides/structured-outputs).\n",
                 "type": "boolean"
               },
               {
@@ -1298,7 +1393,7 @@
         "type": "object"
       },
       "FunctionTool": {
-        "description": "Defines a function in your own code the model can choose to call. Learn more about [function calling](https://platform.openai.com/docs/guides/function-calling).",
+        "description": "Defines a function in your own code the model can choose to call. Learn more about [function calling](https://developers.openai.com/api/docs/guides/function-calling).",
         "properties": {
           "allowed_callers": {
             "anyOf": [
@@ -1313,6 +1408,9 @@
                 "type": "null"
               }
             ]
+          },
+          "async": {
+            "type": "boolean"
           },
           "defer_loading": {
             "description": "Whether this function is deferred and loaded via tool search.",
@@ -1387,7 +1485,7 @@
         "type": "object"
       },
       "FileSearchTool": {
-        "description": "A tool that searches for relevant content from uploaded files. Learn more about the [file search tool](https://platform.openai.com/docs/guides/tools-file-search).",
+        "description": "A tool that searches for relevant content from uploaded files. Learn more about the [file search tool](https://developers.openai.com/api/docs/guides/tools-file-search).",
         "properties": {
           "filters": {
             "anyOf": [
@@ -1432,7 +1530,7 @@
         "type": "object"
       },
       "ComputerTool": {
-        "description": "A tool that controls a virtual computer. Learn more about the [computer tool](https://platform.openai.com/docs/guides/tools-computer-use).",
+        "description": "A tool that controls a virtual computer. Learn more about the [computer tool](https://developers.openai.com/api/docs/guides/tools-computer-use).",
         "properties": {
           "type": {
             "default": "computer",
@@ -1450,7 +1548,7 @@
         "type": "object"
       },
       "ComputerUsePreviewTool": {
-        "description": "A tool that controls a virtual computer. Learn more about the [computer tool](https://platform.openai.com/docs/guides/tools-computer-use).",
+        "description": "A tool that controls a virtual computer. Learn more about the [computer tool](https://developers.openai.com/api/docs/guides/tools-computer-use).",
         "properties": {
           "display_height": {
             "description": "The height of the computer display.",
@@ -1483,8 +1581,13 @@
         "type": "object"
       },
       "WebSearchTool": {
-        "description": "Search the Internet for sources related to the prompt. Learn more about the\n[web search tool](/docs/guides/tools-web-search).\n",
+        "description": "Search the Internet for sources related to the prompt. Learn more about the\n[web search tool](https://developers.openai.com/api/docs/guides/tools-web-search).\n",
         "properties": {
+          "external_web_access": {
+            "default": true,
+            "description": "Allow live internet access for web search. Defaults to true when omitted. When false, the web search tool runs in offline/cache-only mode and will not fetch new external content.",
+            "type": "boolean"
+          },
           "filters": {
             "anyOf": [
               {
@@ -1535,7 +1638,8 @@
             "type": "string"
           },
           "user_location": {
-            "$ref": "#/components/schemas/WebSearchApproximateLocation"
+            "$ref": "#/components/schemas/WebSearchApproximateLocation",
+            "description": "The approximate location of the user. If omitted or null, defaults to the\nUnited States. To avoid this fallback, pass `{\"type\": \"approximate\"}` without\nlocation fields. To localize results, provide the relevant location fields.\n"
           }
         },
         "required": [
@@ -1545,7 +1649,7 @@
         "type": "object"
       },
       "MCPTool": {
-        "description": "Give the model access to additional tools via remote Model Context Protocol\n(MCP) servers. [Learn more about MCP](/docs/guides/tools-remote-mcp).\n",
+        "description": "Give the model access to additional tools via remote Model Context Protocol\n(MCP) servers. [Learn more about MCP](https://developers.openai.com/api/docs/guides/tools-connectors-mcp).\n",
         "properties": {
           "allowed_callers": {
             "anyOf": [
@@ -1590,7 +1694,8 @@
             "type": "string"
           },
           "connector_id": {
-            "description": "Identifier for service connectors, like those available in ChatGPT. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided. Learn more\nabout service connectors [here](/docs/guides/tools-remote-mcp#connectors).\n\nCurrently supported `connector_id` values are:\n\n- Dropbox: `connector_dropbox`\n- Gmail: `connector_gmail`\n- Google Calendar: `connector_googlecalendar`\n- Google Drive: `connector_googledrive`\n- Microsoft Teams: `connector_microsoftteams`\n- Outlook Calendar: `connector_outlookcalendar`\n- Outlook Email: `connector_outlookemail`\n- SharePoint: `connector_sharepoint`\n",
+            "deprecated": true,
+            "description": "Identifier for service connectors, like those available in ChatGPT. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided. Learn more\nabout service connectors [here](https://developers.openai.com/api/docs/guides/tools-connectors-mcp#connectors).\n\nThis field is deprecated for models released after September 1, 2026.\nUse `server_url` to connect to a remote MCP server, or `tunnel_id` to\nconnect through a Secure MCP Tunnel.\n\nCurrently supported `connector_id` values are:\n\n- Dropbox: `connector_dropbox`\n- Gmail: `connector_gmail`\n- Google Calendar: `connector_googlecalendar`\n- Google Drive: `connector_googledrive`\n- Microsoft Teams: `connector_microsoftteams`\n- Outlook Calendar: `connector_outlookcalendar`\n- Outlook Email: `connector_outlookemail`\n- SharePoint: `connector_sharepoint`\n",
             "enum": [
               "connector_dropbox",
               "connector_gmail",
@@ -1760,7 +1865,7 @@
           },
           "background": {
             "default": "auto",
-            "description": "Background type for the generated image. One of `transparent`,\n`opaque`, or `auto`. Default: `auto`.\n",
+            "description": "Set the background of the generated image. One of `transparent`, `opaque`,\nor `auto`. `gpt-image-2.5-sunburst` and `gpt-image-2.5-flare`, including\ntheir `2026-09-08` snapshots, support `opaque` and `transparent`\nbackgrounds. Transparent backgrounds are available for supported GPT Image\nmodels. For `gpt-image-2` and `gpt-image-2-2026-04-21`, this support is in\npreview. When using `transparent`, set the output format to `png` or `webp`.\nDefault: `auto`.\n",
             "enum": [
               "transparent",
               "opaque",
@@ -1800,12 +1905,18 @@
                 "type": "string"
               },
               {
-                "default": "gpt-image-1",
-                "description": "The image generation model to use. Default: `gpt-image-1`.\n",
+                "default": "gpt-image-2",
+                "description": "The image generation model to use. One of `gpt-image-1-mini`,\n`gpt-image-1.5`, `gpt-image-2`,\n`gpt-image-2-2026-04-21`, `gpt-image-2.5-sunburst`,\n`gpt-image-2.5-sunburst-2026-09-08`, `gpt-image-2.5-flare`,\n`gpt-image-2.5-flare-2026-09-08`, or `chatgpt-image-latest`. Default:\n`gpt-image-2`.\n\n`gpt-image-1` was shut down on October 23, 2026. Use\n`gpt-image-2.5-sunburst` or `gpt-image-2.5-flare` instead.\n",
                 "enum": [
                   "gpt-image-1",
                   "gpt-image-1-mini",
-                  "gpt-image-1.5"
+                  "gpt-image-1.5",
+                  "gpt-image-2",
+                  "gpt-image-2-2026-04-21",
+                  "gpt-image-2.5-sunburst",
+                  "gpt-image-2.5-sunburst-2026-09-08",
+                  "gpt-image-2.5-flare",
+                  "gpt-image-2.5-flare-2026-09-08"
                 ],
                 "type": "string"
               }
@@ -1846,11 +1957,13 @@
           },
           "quality": {
             "default": "auto",
-            "description": "The quality of the generated image. One of `low`, `medium`, `high`,\nor `auto`. Default: `auto`.\n",
+            "description": "The quality of the generated image. The GPT image models support `low`,\n`medium`, and `high`. `gpt-image-2.5-sunburst` and `gpt-image-2.5-flare`,\nincluding their `2026-09-08` snapshots, also support `xhigh` and `max`.\nDefault: `auto`.\n",
             "enum": [
               "low",
               "medium",
               "high",
+              "xhigh",
+              "max",
               "auto"
             ],
             "type": "string"
@@ -1871,7 +1984,7 @@
               }
             ],
             "default": "auto",
-            "description": "The size of the generated images. For `gpt-image-2` and `gpt-image-2-2026-04-21`, arbitrary resolutions are supported as `WIDTHxHEIGHT` strings, for example `1536x864`. Width and height must both be divisible by 16 and the requested aspect ratio must be between 1:3 and 3:1. Resolutions above `2560x1440` are experimental, and the maximum supported resolution is `3840x2160`. The requested size must also satisfy the model's current pixel and edge limits. The standard sizes `1024x1024`, `1536x1024`, and `1024x1536` are supported by the GPT image models; `auto` is supported for models that allow automatic sizing. For `dall-e-2`, use one of `256x256`, `512x512`, or `1024x1024`. For `dall-e-3`, use one of `1024x1024`, `1792x1024`, or `1024x1792`."
+            "description": "The size of the generated images. For `gpt-image-2`, `gpt-image-2-2026-04-21`, `gpt-image-2.5-sunburst`, `gpt-image-2.5-sunburst-2026-09-08`, `gpt-image-2.5-flare`, and `gpt-image-2.5-flare-2026-09-08`, arbitrary resolutions are supported as `WIDTHxHEIGHT` strings, for example `1536x864`. Width and height must both be divisible by 16 and the requested aspect ratio must be between 1:3 and 3:1. Resolutions above `2560x1440` are experimental, and the maximum supported resolution is `3840x2160`. The requested size must also satisfy the model's current pixel and edge limits. The standard sizes `1024x1024`, `1536x1024`, and `1024x1536` are supported by the GPT image models; `auto` is supported for models that allow automatic sizing."
           },
           "type": {
             "description": "The type of the image generation tool. Always `image_generation`.\n",
@@ -1962,7 +2075,7 @@
         "type": "object"
       },
       "CustomToolParam": {
-        "description": "A custom tool that processes input using a specified format. Learn more about   [custom tools](/docs/guides/function-calling#custom-tools)",
+        "description": "A custom tool that processes input using a specified format. Learn more about   [custom tools](https://developers.openai.com/api/docs/guides/function-calling#custom-tools)",
         "properties": {
           "allowed_callers": {
             "anyOf": [
@@ -1978,6 +2091,10 @@
                 "type": "null"
               }
             ]
+          },
+          "async": {
+            "description": "Whether the tool response can be returned asynchronously versus immediately returned on next response creation.",
+            "type": "boolean"
           },
           "defer_loading": {
             "description": "Whether this tool should be deferred and discovered via tool search.",
@@ -2026,7 +2143,6 @@
         "properties": {
           "description": {
             "description": "A description of the namespace shown to the model.",
-            "minLength": 1,
             "type": "string"
           },
           "name": {
@@ -2116,7 +2232,7 @@
         "type": "object"
       },
       "WebSearchPreviewTool": {
-        "description": "This tool searches the web for relevant results to use in a response. Learn more about the [web search tool](https://platform.openai.com/docs/guides/tools-web-search).",
+        "description": "This tool searches the web for relevant results to use in a response. Learn more about the [web search tool](https://developers.openai.com/api/docs/guides/tools-web-search).",
         "properties": {
           "search_content_types": {
             "items": {
@@ -2141,7 +2257,7 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ApproximateLocation",
-                "description": "The user's location."
+                "description": "The approximate location of the user. If omitted or null, defaults to the United States. To avoid this fallback, pass `{\"type\": \"approximate\"}` without location fields. To localize results, provide the relevant location fields."
               },
               {
                 "type": "null"
@@ -2186,6 +2302,34 @@
           "type"
         ],
         "title": "Apply patch tool",
+        "type": "object"
+      },
+      "_MisalignmentErrorType": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "potentially_unintended_data_transfer",
+              "potentially_unintended_data_access",
+              "potentially_unintended_destructive_activity",
+              "other"
+            ],
+            "type": "string"
+          }
+        ]
+      },
+      "_MisalignmentSteer": {
+        "properties": {
+          "message": {
+            "description": "The public continuation instruction.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
         "type": "object"
       },
       "InputContent": {
@@ -2235,7 +2379,7 @@
       },
       "FunctionParameters": {
         "additionalProperties": true,
-        "description": "The parameters the functions accepts, described as a JSON Schema object. See the [guide](/docs/guides/function-calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for documentation about the format. \n\nOmitting `parameters` defines a function with an empty parameter list.",
+        "description": "The parameters the functions accepts, described as a JSON Schema object. See the [guide](https://developers.openai.com/api/docs/guides/function-calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for documentation about the format.\n\nOmitting `parameters` defines a function with an empty parameter list.",
         "type": "object"
       },
       "CallableToolAllowedCaller": {
@@ -2431,7 +2575,7 @@
         "type": "string"
       },
       "InputFidelity": {
-        "description": "Control how much effort the model will exert to match the style and features, especially facial features, of input images. This parameter is only supported for `gpt-image-1` and `gpt-image-1.5` and later models, unsupported for `gpt-image-1-mini`. Supports `high` and `low`. Defaults to `low`.",
+        "description": "Control how much effort the model will exert to match the style and features, especially facial features, of input images. Supports `high` and `low` on `gpt-image-1.5`; `gpt-image-1-mini` supports only `low`. For `gpt-image-2`, omit this parameter. Defaults to `low` on supported models.",
         "enum": [
           "high",
           "low"
@@ -2615,6 +2759,10 @@
               }
             ]
           },
+          "async": {
+            "description": "Whether the tool response can be returned asynchronously versus immediately returned on next response creation.",
+            "type": "boolean"
+          },
           "defer_loading": {
             "description": "Whether this function should be deferred and discovered via tool search.",
             "type": "boolean"
@@ -2796,7 +2944,7 @@
         "type": "object"
       },
       "InputImageContent": {
-        "description": "An image input to the model. Learn about [image inputs](/docs/guides/vision).",
+        "description": "An image input to the model. Learn about [image inputs](https://developers.openai.com/api/docs/guides/images-vision).",
         "properties": {
           "detail": {
             "$ref": "#/components/schemas/ImageDetail",
@@ -3046,7 +3194,6 @@
         "type": "object"
       },
       "CompoundFilter": {
-        "$recursiveAnchor": true,
         "additionalProperties": false,
         "description": "Combine multiple filters using `and` or `or`.",
         "properties": {
@@ -3061,7 +3208,7 @@
                   "$ref": "#/components/schemas/ComparisonFilter"
                 },
                 {
-                  "$recursiveRef": "#"
+                  "$ref": "#/components/schemas/CompoundFilter"
                 }
               ]
             },
@@ -3253,13 +3400,21 @@
         "type": "string"
       },
       "PromptCacheBreakpointConfig": {
-        "description": "Marks the exact end of a reusable prompt prefix. The breakpoint inherits its TTL from the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
+        "description": "Marks the exact end of a reusable prompt prefix. When `ttl` is omitted, the breakpoint inherits the request's `prompt_cache_options.ttl`; the boundary is not rounded to a token block.",
         "properties": {
           "mode": {
             "default": "explicit",
             "description": "The breakpoint mode. Always `explicit`.",
             "enum": [
               "explicit"
+            ],
+            "type": "string"
+          },
+          "ttl": {
+            "description": "The minimum lifetime of this cache breakpoint. Defaults to the request TTL.",
+            "enum": [
+              "30m",
+              "12h"
             ],
             "type": "string"
           }
@@ -3345,6 +3500,27 @@
           "data"
         ],
         "type": "object"
+      }
+    },
+    "responses": {
+      "TooManyRequests": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "The request was rejected because a rate limit was exceeded.",
+        "headers": {
+          "Retry-After": {
+            "description": "The minimum number of seconds to wait before retrying. This header is returned when the server has computed a retry delay and may be omitted for 429 responses that require user action.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        }
       }
     }
   }
