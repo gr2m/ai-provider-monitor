@@ -27,7 +27,7 @@ import { basename } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 
 import { analyzeRouteChange } from "./lib/analyze-route-change.js";
 import { appendChanges } from "./lib/append-changes.js";

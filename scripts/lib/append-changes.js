@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 
 /**
  * Appends change records to YAML files grouped by route.

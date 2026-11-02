@@ -1,7 +1,7 @@
 import { promisify } from "node:util";
 import { gunzip } from "node:zlib";
 
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 
 const decompressGzip = promisify(gunzip);
 const DEFAULT_RETRY_DELAYS_MS = [5_000, 30_000];

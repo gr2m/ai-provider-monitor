@@ -5,7 +5,7 @@ import { glob } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 
 const exec = promisify(execFile);
 const DRY_RUN = process.argv.includes("--dry-run");
