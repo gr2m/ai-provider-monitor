@@ -5412,6 +5412,8 @@ components:
       example:
         created_at: 1731459200
         id: resp_001
+        image:
+          context_compression: disabled
         object: response.compaction
         output:
           - content:
@@ -5448,6 +5450,8 @@ components:
         id:
           description: The unique identifier for the compacted response.
           type: string
+        image:
+          $ref: "#/components/schemas/BetaResolvedImageOptions"
         object:
           default: response.compaction
           description: The object type. Always `response.compaction`.
@@ -5473,6 +5477,9 @@ components:
       type: object
     BetaCompactResponseMethodPublicBody:
       properties:
+        image:
+          $ref: "#/components/schemas/BetaImageOptionsParam"
+          description: Request level image options.
         input:
           anyOf:
             - description: Text, image, or file inputs to the model, used to generate a response
@@ -6301,6 +6308,8 @@ components:
               anyOf:
                 - $ref: "#/components/schemas/BetaConversationParam"
                 - type: "null"
+            image:
+              $ref: "#/components/schemas/BetaImageOptionsParam"
             include:
               anyOf:
                 - description: |-
@@ -7907,6 +7916,12 @@ components:
         - opaque
         - auto
       type: string
+    BetaImageContextCompression:
+      enum:
+        - auto
+        - enabled
+        - disabled
+      type: string
     BetaImageDetail:
       enum:
         - low
@@ -8245,6 +8260,15 @@ components:
         - output_tokens
         - input_tokens_details
       title: Image generation tool usage
+      type: object
+    BetaImageOptionsParam:
+      additionalProperties: false
+      description: Request level image options.
+      properties:
+        context_compression:
+          $ref: "#/components/schemas/BetaImageContextCompression"
+          description: Controls image context optimization. Defaults to `auto`, which uses the model, transport, and input to select a policy. Use `enabled` to require compression support or `disabled` to turn it off.
+      required: []
       type: object
     BetaImageOutputFormat:
       enum:
@@ -11134,6 +11158,19 @@ components:
         - refusal
       title: Refusal
       type: object
+    BetaResolvedImageContextCompressionEnum:
+      enum:
+        - enabled
+        - disabled
+      type: string
+    BetaResolvedImageOptions:
+      properties:
+        context_compression:
+          $ref: "#/components/schemas/BetaResolvedImageContextCompressionEnum"
+          description: Effective image context optimization policy.
+      required:
+        - context_compression
+      type: object
     BetaResponse:
       allOf:
         - $ref: "#/components/schemas/BetaModelResponseProperties"
@@ -11167,6 +11204,8 @@ components:
               description: |
                 Unique identifier for this Response.
               type: string
+            image:
+              $ref: "#/components/schemas/BetaResolvedImageOptions"
             incomplete_details:
               anyOf:
                 - description: |
@@ -19969,6 +20008,8 @@ components:
       example:
         created_at: 1731459200
         id: resp_001
+        image:
+          context_compression: disabled
         object: response.compaction
         output:
           - content:
@@ -20005,6 +20046,8 @@ components:
         id:
           description: The unique identifier for the compacted response.
           type: string
+        image:
+          $ref: "#/components/schemas/ResolvedImageOptions"
         object:
           default: response.compaction
           description: The object type. Always `response.compaction`.
@@ -20030,6 +20073,9 @@ components:
       type: object
     CompactResponseMethodPublicBody:
       properties:
+        image:
+          $ref: "#/components/schemas/ImageOptionsParam"
+          description: Request level image options.
         input:
           anyOf:
             - description: Text, image, or file inputs to the model, used to generate a response
@@ -25376,6 +25422,8 @@ components:
               anyOf:
                 - $ref: "#/components/schemas/ConversationParam"
                 - type: "null"
+            image:
+              $ref: "#/components/schemas/ImageOptionsParam"
             include:
               anyOf:
                 - description: |-
@@ -34872,6 +34920,12 @@ components:
         - opaque
         - auto
       type: string
+    ImageContextCompression:
+      enum:
+        - auto
+        - enabled
+        - disabled
+      type: string
     ImageDetail:
       enum:
         - low
@@ -35609,6 +35663,15 @@ components:
         - output_tokens
         - input_tokens_details
       title: Image generation usage
+      type: object
+    ImageOptionsParam:
+      additionalProperties: false
+      description: Request level image options.
+      properties:
+        context_compression:
+          $ref: "#/components/schemas/ImageContextCompression"
+          description: Controls image context optimization. Defaults to `auto`, which uses the model, transport, and input to select a policy. Use `enabled` to require compression support or `disabled` to turn it off.
+      required: []
       type: object
     ImageOutputFormat:
       enum:
@@ -46912,6 +46975,12 @@ components:
               "type": "organization_default"
           }
         name: The project data retention object
+    ProjectDefaultServiceTier:
+      enum:
+        - standard
+        - fast
+        - scale
+      type: string
     ProjectEventTypeEnum:
       enum:
         - batch.completed
@@ -47228,6 +47297,12 @@ components:
         - mode
         - model_ids
       type: object
+    ProjectOptionalServiceTier:
+      enum:
+        - flex
+        - fast
+        - ultrafast
+      type: string
     ProjectRateLimit:
       description: Represents a project rate limit config.
       properties:
@@ -47493,6 +47568,33 @@ components:
         - object
         - data
         - has_more
+      type: object
+    ProjectServiceTierSettingsResource:
+      properties:
+        default:
+          $ref: "#/components/schemas/ProjectDefaultServiceTier"
+          description: Default tier for requests that omit service_tier or use auto.
+        enabled_tiers:
+          description: Additional service tiers enabled for this project. "all" includes future tiers. An empty array allows only Standard. Organization policy and eligibility still apply.
+          oneOf:
+            - default: all
+              enum:
+                - all
+              type: string
+              x-stainless-const: true
+            - items:
+                $ref: "#/components/schemas/ProjectOptionalServiceTier"
+              type: array
+        object:
+          default: project.service_tier_settings
+          enum:
+            - project.service_tier_settings
+          type: string
+          x-stainless-const: true
+      required:
+        - object
+        - default
+        - enabled_tiers
       type: object
     ProjectSpendAlert:
       description: Represents a spend alert configured at the project level.
@@ -57908,6 +58010,19 @@ components:
         - refusal
       title: Refusal
       type: object
+    ResolvedImageContextCompressionEnum:
+      enum:
+        - enabled
+        - disabled
+      type: string
+    ResolvedImageOptions:
+      properties:
+        context_compression:
+          $ref: "#/components/schemas/ResolvedImageContextCompressionEnum"
+          description: Effective image context optimization policy.
+      required:
+        - context_compression
+      type: object
     Response:
       allOf:
         - $ref: "#/components/schemas/ModelResponseProperties"
@@ -57941,6 +58056,8 @@ components:
               description: |
                 Unique identifier for this Response.
               type: string
+            image:
+              $ref: "#/components/schemas/ResolvedImageOptions"
             incomplete_details:
               anyOf:
                 - description: |
@@ -69984,6 +70101,29 @@ components:
             - member
             - owner
           type: string
+      type: object
+    UpdateProjectServiceTierSettingsBody:
+      anyOf:
+        - required:
+            - default
+        - required:
+            - enabled_tiers
+      properties:
+        default:
+          $ref: "#/components/schemas/ProjectDefaultServiceTier"
+          description: Default tier for requests that omit service_tier or use auto.
+        enabled_tiers:
+          description: Additional service tiers enabled for this project. "all" includes future tiers. An empty array allows only Standard. Organization policy and eligibility still apply.
+          oneOf:
+            - default: all
+              enum:
+                - all
+              type: string
+              x-stainless-const: true
+            - items:
+                $ref: "#/components/schemas/ProjectOptionalServiceTier"
+              type: array
+      required: []
       type: object
     UpdateProjectSpendLimitBody:
       description: Parameters for the hard spend limit you want to create or replace.
@@ -96432,6 +96572,83 @@ paths:
                 "name": "Production App",
                 "created_at": 1711471533,
                 "id": "key_abc"
+            }
+        group: administration
+  /organization/projects/{project_id}/service_tier_settings:
+    get:
+      description: Retrieve the configured default and enabled service tiers for a project.
+      operationId: Retrieveprojectservicetiersettings
+      parameters:
+        - description: The ID of the project
+          in: path
+          name: project_id
+          required: true
+          schema:
+            description: The ID of the project
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectServiceTierSettingsResource"
+          description: Success
+      security:
+        - AdminApiKeyAuth: []
+      summary: Retrieve project service tier settings
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl https://api.openai.com/v1/organization/projects/proj_abc/service_tier_settings \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY"
+          response: |
+            {
+              "object": "project.service_tier_settings",
+              "default": "standard",
+              "enabled_tiers": "all"
+            }
+        group: administration
+    post:
+      description: Update the default or enabled service tiers atomically. Supply at least one field. Omitted fields keep their current values.
+      operationId: Updateprojectservicetiersettings
+      parameters:
+        - description: The ID of the project
+          in: path
+          name: project_id
+          required: true
+          schema:
+            description: The ID of the project
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectServiceTierSettingsBody"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectServiceTierSettingsResource"
+          description: Success
+      security:
+        - AdminApiKeyAuth: []
+      summary: Update project service tier settings
+      x-oaiMeta:
+        examples:
+          request:
+            curl: |
+              curl https://api.openai.com/v1/organization/projects/proj_abc/service_tier_settings \
+                -H "Authorization: Bearer $OPENAI_ADMIN_KEY" \
+                -H "Content-Type: application/json" \
+                -d '{"default":"standard","enabled_tiers":[]}'
+          response: |
+            {
+              "object": "project.service_tier_settings",
+              "default": "standard",
+              "enabled_tiers": []
             }
         group: administration
   /organization/projects/{project_id}/spend_alerts:
