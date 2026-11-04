@@ -36,12 +36,18 @@
             "$defs": {
               "CompletionTokensDetails": {
                 "additionalProperties": false,
-                "description": "Token usage details for the completion.",
+                "description": "Token usage details for the completion.\n\n``reasoning_tokens`` is ``None`` when the provider did not report a count.\nPreserve that distinction instead of inventing a measured zero: ``0`` means\n\"reasoning off, confirmed by the provider\", ``None`` means \"unknown\".",
                 "properties": {
                   "reasoning_tokens": {
-                    "default": 0,
-                    "title": "Reasoning Tokens",
-                    "type": "integer"
+                    "anyOf": [
+                      {
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "title": "Reasoning Tokens"
                   }
                 },
                 "title": "CompletionTokensDetails",
@@ -127,45 +133,6 @@
                 ],
                 "title": "Roles",
                 "type": "string"
-              },
-              "SpeechStreamAudioDelta": {
-                "additionalProperties": false,
-                "properties": {
-                  "audio_data": {
-                    "title": "Audio Data",
-                    "type": "string"
-                  },
-                  "type": {
-                    "const": "speech.audio.delta",
-                    "default": "speech.audio.delta",
-                    "title": "Type",
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "audio_data"
-                ],
-                "title": "SpeechStreamAudioDelta",
-                "type": "object"
-              },
-              "SpeechStreamDone": {
-                "additionalProperties": false,
-                "properties": {
-                  "type": {
-                    "const": "speech.audio.done",
-                    "default": "speech.audio.done",
-                    "title": "Type",
-                    "type": "string"
-                  },
-                  "usage": {
-                    "$ref": "#/$defs/UsageInfo"
-                  }
-                },
-                "required": [
-                  "usage"
-                ],
-                "title": "SpeechStreamDone",
-                "type": "object"
               },
               "SpeechStreamEventTypes": {
                 "enum": [
@@ -285,17 +252,17 @@
               "data": {
                 "discriminator": {
                   "mapping": {
-                    "speech.audio.delta": "#/$defs/SpeechStreamAudioDelta",
-                    "speech.audio.done": "#/$defs/SpeechStreamDone"
+                    "speech.audio.delta": "#/components/schemas/SpeechStreamAudioDelta",
+                    "speech.audio.done": "#/components/schemas/SpeechStreamDone"
                   },
                   "propertyName": "type"
                 },
                 "oneOf": [
                   {
-                    "$ref": "#/$defs/SpeechStreamAudioDelta"
+                    "$ref": "#/components/schemas/SpeechStreamAudioDelta"
                   },
                   {
-                    "$ref": "#/$defs/SpeechStreamDone"
+                    "$ref": "#/components/schemas/SpeechStreamDone"
                   }
                 ],
                 "title": "Data"
@@ -335,6 +302,49 @@
       "SpeechRequest": {
         "additionalProperties": true,
         "properties": {
+          "conversation_history": {
+            "anyOf": [
+              {
+                "items": {
+                  "discriminator": {
+                    "mapping": {
+                      "assistant": "#/components/schemas/SpeechAssistantTurn",
+                      "user": "#/components/schemas/SpeechUserTurn"
+                    },
+                    "propertyName": "role"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SpeechUserTurn"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SpeechAssistantTurn"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Prior turns, oldest first, alternating and ending on a user turn: `input` is the assistant reply to it. Conditions delivery, not speaker: set `voice_id` to choose the speaker. Requires `voice_id` to be a preset voice whose `kind` is `pvc`. Cannot be combined with `ref_audio`.",
+            "title": "Conversation History"
+          },
+          "expressiveness": {
+            "anyOf": [
+              {
+                "maximum": 5,
+                "minimum": 1,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Speaker flow-matching classifier-free guidance scale. Must be finite and at least 1.0.",
+            "title": "Expressiveness"
+          },
           "input": {
             "description": "Text to generate a speech from",
             "title": "Input",
@@ -435,6 +445,45 @@
         "title": "SpeechRequest",
         "type": "object"
       },
+      "SpeechStreamAudioDelta": {
+        "additionalProperties": false,
+        "properties": {
+          "audio_data": {
+            "title": "Audio Data",
+            "type": "string"
+          },
+          "type": {
+            "const": "speech.audio.delta",
+            "default": "speech.audio.delta",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "audio_data"
+        ],
+        "title": "SpeechStreamAudioDelta",
+        "type": "object"
+      },
+      "SpeechStreamDone": {
+        "additionalProperties": false,
+        "properties": {
+          "type": {
+            "const": "speech.audio.done",
+            "default": "speech.audio.done",
+            "title": "Type",
+            "type": "string"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/UsageInfo"
+          }
+        },
+        "required": [
+          "usage"
+        ],
+        "title": "SpeechStreamDone",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -446,6 +495,52 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "SpeechUserTurn": {
+        "additionalProperties": false,
+        "properties": {
+          "audio": {
+            "$ref": "#/components/schemas/RawAudio",
+            "description": "User audio for this turn, as a base64-encoded string or raw bytes."
+          },
+          "role": {
+            "const": "user",
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "audio"
+        ],
+        "title": "SpeechUserTurn",
+        "type": "object"
+      },
+      "SpeechAssistantTurn": {
+        "additionalProperties": false,
+        "properties": {
+          "audio": {
+            "$ref": "#/components/schemas/RawAudio",
+            "description": "Audio the assistant produced for this turn, as a base64-encoded string or raw bytes."
+          },
+          "role": {
+            "const": "assistant",
+            "title": "Role",
+            "type": "string"
+          },
+          "text": {
+            "description": "Text the assistant spoke on this turn.",
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "text",
+          "audio"
+        ],
+        "title": "SpeechAssistantTurn",
         "type": "object"
       },
       "MetadataDict": {
@@ -507,7 +602,34 @@
           "ʌ",
           "ʒ",
           "ʔ",
-          "θ"
+          "θ",
+          "ʁ",
+          "r",
+          "ɑ̃",
+          "ʀ",
+          "x",
+          "y",
+          "ɔ̃",
+          "ɐ",
+          "œ",
+          "ɛ̃",
+          "ʝ",
+          "ɲ",
+          "ts",
+          "ɥ",
+          "ʏ",
+          "ø",
+          "β",
+          "ɦ",
+          "pf",
+          "ʎ",
+          "ɣ",
+          "ɳ",
+          "ɔʏ",
+          "œ̃",
+          "ɟʝ",
+          "ɬ",
+          "q"
         ],
         "title": "IPAPhoneme",
         "type": "string"
@@ -522,6 +644,56 @@
         ],
         "title": "SpeechOutputFormat",
         "type": "string"
+      },
+      "UsageInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "completion_tokens": {
+            "default": 0,
+            "title": "Completion Tokens",
+            "type": "integer"
+          },
+          "prompt_audio_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Audio Seconds"
+          },
+          "prompt_tokens": {
+            "default": 0,
+            "title": "Prompt Tokens",
+            "type": "integer"
+          },
+          "service_tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The service tier at which the request was processed: standard or priority.",
+            "title": "Service Tier"
+          },
+          "total_tokens": {
+            "default": 0,
+            "title": "Total Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "prompt_tokens",
+          "completion_tokens",
+          "total_tokens"
+        ],
+        "title": "UsageInfo",
+        "type": "object"
       },
       "ValidationError": {
         "properties": {
@@ -561,6 +733,28 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "RawAudio": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "contentMediaType": "application/octet-stream",
+                "type": "string"
+              }
+            ],
+            "title": "Data"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "title": "RawAudio",
         "type": "object"
       }
     }
