@@ -51,14 +51,11 @@ components:
         slurm_web:
           $ref: "#/components/schemas/SlurmWebConfig"
           description: Configuration for the Slurm Web add-on.
-        torchpass:
-          $ref: "#/components/schemas/TorchpassConfig"
-          description: Configuration for the Model Aware TorchPass add-on.
       type: object
     AddOnCreateRequest:
       properties:
         add_on_type:
-          description: "Type of add-on. Valid values: 'dashboard', 'ingress', 'torchpass'."
+          description: "Type of add-on. Valid values: 'dashboard', 'ingress'"
           type: string
         config:
           $ref: "#/components/schemas/AddOnConfig"
@@ -99,9 +96,6 @@ components:
         slurm_web:
           $ref: "#/components/schemas/SlurmWebState"
           description: State for the Slurm Web add-on.
-        torchpass:
-          $ref: "#/components/schemas/TorchpassState"
-          description: State for the Model Aware TorchPass add-on.
       type: object
     AddOnUpdateRequest:
       properties:
@@ -1382,7 +1376,7 @@ components:
     ClusterAddOnCreateRequest:
       properties:
         add_on_type:
-          description: "Type of add-on. Valid values: 'dashboard', 'ingress', 'torchpass', 'headlamp'."
+          description: "Type of add-on. Valid values: 'dashboard', 'ingress', 'headlamp'."
           type: string
         config:
           $ref: "#/components/schemas/AddOnConfig"
@@ -7883,7 +7877,7 @@ components:
           type: integer
         lora_trainable_modules:
           default: all-linear
-          description: Comma-separated LoRA target modules. Use `all-linear` for model defaults; MoE expert modules (`w_up`, `w_gate`, `w_down`) can be combined with attention modules on compatible models. Fine-tuning jobs that target expert modules produce adapter-only output unless the selected model supports merged expert LoRA output.
+          description: Comma-separated LoRA target modules. Use `all-linear` for model defaults; MoE expert modules (`w_up`, `w_gate`, `w_down`) can be combined with attention modules on compatible models.
           type: string
         type:
           description: Identifies this request as a LoRA fine-tune.
@@ -11032,19 +11026,6 @@ components:
         type: number
       description: Top log probabilities for the tokens.
       type: object
-    TorchpassConfig:
-      description: Configuration for the Model Aware TorchPass cluster add-on.
-      properties:
-        enabled:
-          description: Whether to enable the Model Aware TorchPass add-on.
-          type: boolean
-      type: object
-    TorchpassState:
-      additionalProperties: false
-      description: Runtime state for the Model Aware TorchPass cluster add-on.
-      properties: {}
-      type: object
-      x-stainless-empty-object: true
     TrainingMethodDPO:
       properties:
         dpo_beta:
@@ -12084,6 +12065,85 @@ paths:
                     await asyncio.gather(send_text(), receive_audio())
 
             asyncio.run(generate_speech())
+        - label: TypeScript WebSocket Client
+          lang: TypeScript
+          source: |
+            import WebSocket from 'ws';
+            import fs from 'fs';
+
+            const apiKey = process.env.TOGETHER_API_KEY;
+            const url = 'wss://api.together.ai/v1/audio/speech/websocket?model=hexgrad/Kokoro-82M&voice=af_heart';
+
+            const ws = new WebSocket(url, {
+              headers: {
+                'Authorization': `Bearer ${apiKey}`
+              }
+            });
+
+            const audioData: Buffer[] = [];
+
+            ws.on('open', () => {
+              console.log('WebSocket connection established!');
+            });
+
+            ws.on('message', (data) => {
+              const message = JSON.parse(data.toString());
+
+              if (message.type === 'session.created') {
+                console.log(`Session created: ${message.session.id}`);
+
+                // Send text chunks
+                const textChunks = [
+                  "Hello, this is a test.",
+                  "This is the second sentence.",
+                  "And this is the final one."
+                ];
+
+                textChunks.forEach((text, index) => {
+                  setTimeout(() => {
+                    ws.send(JSON.stringify({
+                      type: 'input_text_buffer.append',
+                      text: text
+                    }));
+                  }, index * 500);
+                });
+
+                // Commit after all chunks
+                setTimeout(() => {
+                  ws.send(JSON.stringify({
+                    type: 'input_text_buffer.commit'
+                  }));
+                }, textChunks.length * 500 + 100);
+
+              } else if (message.type === 'conversation.item.input_text.received') {
+                console.log(`Text received: ${message.text}`);
+              } else if (message.type === 'conversation.item.audio_output.delta') {
+                // Decode base64 audio chunk
+                const audioChunk = Buffer.from(message.delta, 'base64');
+                audioData.push(audioChunk);
+                console.log(`Received audio chunk for item ${message.item_id}`);
+              } else if (message.type === 'conversation.item.audio_output.done') {
+                console.log(`Audio generation complete for item ${message.item_id}`);
+                ws.close();
+              } else if (message.type === 'conversation.item.tts.failed') {
+                const errorMessage = message.error?.message ?? 'Unknown error';
+                console.error(`Error: ${errorMessage}`);
+                ws.close();
+              }
+            });
+
+            ws.on('close', () => {
+              // Save the raw PCM samples to a file
+              if (audioData.length > 0) {
+                const completeAudio = Buffer.concat(audioData);
+                fs.writeFileSync('output.pcm', completeAudio);
+                console.log('Audio saved to output.pcm');
+              }
+            });
+
+            ws.on('error', (error) => {
+              console.error('WebSocket error:', error);
+            });
         - label: Node.js WebSocket Client
           lang: JavaScript
           source: |
@@ -12881,7 +12941,7 @@ paths:
             # The SDK has no dedicated method for this endpoint yet, so call it with
             # the client's generic GET helper.
             usage = client.get(
-                "/billing/usage",
+                "/v1/billing/usage",
                 cast_to=object,
                 options={"params": {"month": "2026-06", "granularity": "day"}},
             )
@@ -12895,7 +12955,7 @@ paths:
 
             // The SDK has no dedicated method for this endpoint yet, so call it with
             // the client's generic GET helper.
-            const usage = await client.get("/billing/usage", {
+            const usage = await client.get("/v1/billing/usage", {
               query: { month: "2026-06", granularity: "day" },
             });
             console.log(usage);
@@ -12908,7 +12968,7 @@ paths:
 
             // The SDK has no dedicated method for this endpoint yet, so call it with
             // the client's generic GET helper.
-            const usage = await client.get("/billing/usage", {
+            const usage = await client.get("/v1/billing/usage", {
               query: { month: "2026-06", granularity: "day" },
             });
             console.log(usage);
@@ -15446,7 +15506,7 @@ paths:
 
             # The SDK has no dedicated method for this endpoint yet, so call it with
             # the client's generic GET helper.
-            signed = client.get("/deployments/storage/model.tar.gz/url", cast_to=object)
+            signed = client.get("/v1/deployments/storage/model.tar.gz/url", cast_to=object)
             print(signed)
         - label: Together AI SDK (TypeScript)
           lang: TypeScript
@@ -15457,7 +15517,7 @@ paths:
 
             // The SDK has no dedicated method for this endpoint yet, so call it with
             // the client's generic GET helper.
-            const signed = await client.get("/deployments/storage/model.tar.gz/url");
+            const signed = await client.get("/v1/deployments/storage/model.tar.gz/url");
             console.log(signed);
         - label: Together AI SDK (JavaScript)
           lang: JavaScript
@@ -15468,7 +15528,7 @@ paths:
 
             // The SDK has no dedicated method for this endpoint yet, so call it with
             // the client's generic GET helper.
-            const signed = await client.get("/deployments/storage/model.tar.gz/url");
+            const signed = await client.get("/v1/deployments/storage/model.tar.gz/url");
             console.log(signed);
   /v1/deployments/{id}:
     delete:
@@ -16351,7 +16411,7 @@ paths:
             # The SDK has no dedicated method for this endpoint yet, so call it with
             # the client's generic GET helper.
             models = client.get(
-                "/evaluation/model-list",
+                "/v1/evaluation/model-list",
                 cast_to=object,
                 options={"params": {"model_source": "serverless"}},
             )
@@ -16365,7 +16425,7 @@ paths:
 
             // The SDK has no dedicated method for this endpoint yet, so call it with
             // the client's generic GET helper.
-            const models = await client.get("/evaluation/model-list", {
+            const models = await client.get("/v1/evaluation/model-list", {
               query: { model_source: "serverless" },
             });
             console.log(models);
@@ -16378,7 +16438,7 @@ paths:
 
             // The SDK has no dedicated method for this endpoint yet, so call it with
             // the client's generic GET helper.
-            const models = await client.get("/evaluation/model-list", {
+            const models = await client.get("/v1/evaluation/model-list", {
               query: { model_source: "serverless" },
             });
             console.log(models);
@@ -17462,7 +17522,7 @@ paths:
 
             # The SDK has no dedicated method for this endpoint yet, so call it with
             # the client's generic GET helper.
-            models = client.get("/fine-tunes/models/supported", cast_to=object)
+            models = client.get("/v1/fine-tunes/models/supported", cast_to=object)
             print(models)
         - label: Together AI SDK (TypeScript)
           lang: TypeScript
@@ -17473,7 +17533,7 @@ paths:
 
             // The SDK has no dedicated method for this endpoint yet, so call it with
             // the client's generic GET helper.
-            const models = await client.get("/fine-tunes/models/supported");
+            const models = await client.get("/v1/fine-tunes/models/supported");
             console.log(models);
         - label: Together AI SDK (JavaScript)
           lang: JavaScript
@@ -17484,7 +17544,7 @@ paths:
 
             // The SDK has no dedicated method for this endpoint yet, so call it with
             // the client's generic GET helper.
-            const models = await client.get("/fine-tunes/models/supported");
+            const models = await client.get("/v1/fine-tunes/models/supported");
             console.log(models);
         - label: cURL (list all)
           lang: Shell
@@ -19098,6 +19158,70 @@ paths:
                             break
 
             asyncio.run(transcribe_audio())
+        - label: TypeScript WebSocket Client
+          lang: TypeScript
+          source: |
+            import WebSocket from 'ws';
+            import fs from 'fs';
+
+            const apiKey = process.env.TOGETHER_API_KEY;
+            const url = 'wss://api.together.ai/v1/realtime?model=openai/whisper-large-v3&input_audio_format=pcm_s16le_16000';
+
+            const ws = new WebSocket(url, {
+              headers: {
+                'Authorization': `Bearer ${apiKey}`
+              }
+            });
+
+            ws.on('open', async () => {
+              console.log('WebSocket connection established!');
+
+              // audio.wav must be 16 kHz, 16-bit mono PCM to match input_audio_format
+              const audioData = fs.readFileSync('audio.wav');
+
+              // Send audio in chunks with delay to simulate real-time
+              const chunkSize = 8192;
+              const bytesPerSecond = 16000 * 2;  // 16kHz * 2 bytes (16-bit)
+              const delayPerChunk = (chunkSize / bytesPerSecond) * 1000;  // Convert to ms
+
+              for (let i = 0; i < audioData.length; i += chunkSize) {
+                const chunk = audioData.slice(i, i + chunkSize);
+                const base64Chunk = chunk.toString('base64');
+                ws.send(JSON.stringify({
+                  type: 'input_audio_buffer.append',
+                  audio: base64Chunk
+                }));
+
+                // Simulate real-time streaming
+                if (i + chunkSize < audioData.length) {
+                  await new Promise(resolve => setTimeout(resolve, delayPerChunk));
+                }
+              }
+
+              // Commit audio buffer
+              ws.send(JSON.stringify({
+                type: 'input_audio_buffer.commit'
+              }));
+            });
+
+            ws.on('message', (data) => {
+              const message = JSON.parse(data.toString());
+
+              if (message.type === 'conversation.item.input_audio_transcription.delta') {
+                console.log(`Partial: ${message.delta}`);
+              } else if (message.type === 'conversation.item.input_audio_transcription.completed') {
+                console.log(`Final: ${message.transcript}`);
+                ws.close();
+              } else if (message.type === 'conversation.item.input_audio_transcription.failed') {
+                const errorMessage = message.error?.message ?? message.message ?? 'Unknown error';
+                console.error(`Error: ${errorMessage}`);
+                ws.close();
+              }
+            });
+
+            ws.on('error', (error) => {
+              console.error('WebSocket error:', error);
+            });
         - label: Node.js WebSocket Client
           lang: JavaScript
           source: |
@@ -20902,6 +21026,18 @@ paths:
                 },
             )
             print(job.id, job.status)
+        - label: cURL
+          lang: Shell
+          source: |
+            curl -X POST "https://api.together.ai/v1/shaping/prepare-for-fp4-inference" \
+                 -H "Authorization: Bearer $TOGETHER_API_KEY" \
+                 -H "Content-Type: application/json" \
+                 -d '{
+                   "inputs": {
+                     "model_object_id": "ml_abc123",
+                     "model_revision_id": "rv_abc123"
+                   }
+                 }'
   /v1/shaping/prepare-for-fp4-inference/estimate:
     post:
       description: |
@@ -20962,6 +21098,18 @@ paths:
                 },
             )
             print(estimate.price_usd, estimate.time_hours, estimate.allowed_to_proceed)
+        - label: cURL
+          lang: Shell
+          source: |
+            curl -X POST "https://api.together.ai/v1/shaping/prepare-for-fp4-inference/estimate" \
+                 -H "Authorization: Bearer $TOGETHER_API_KEY" \
+                 -H "Content-Type: application/json" \
+                 -d '{
+                   "inputs": {
+                     "model_object_id": "ml_abc123",
+                     "model_revision_id": "rv_abc123"
+                   }
+                 }'
   /v1/shaping/{id}:
     get:
       description: Retrieve a shaping job owned by the caller's project.
@@ -27107,11 +27255,10 @@ paths:
 
             # The SDK has no dedicated method for this endpoint yet, so call it with
             # the client's generic GET helper.
-            url = (
-                f"https://api.together.ai/v2/projects/{project_id}"
-                "/models/ml_abc123/revisions/rv_abc123"
+            revision = client.get(
+                f"/v2/projects/{project_id}/models/ml_abc123/revisions/rv_abc123",
+                cast_to=object,
             )
-            revision = client.get(url, cast_to=object)
             print(revision)
         - label: Together AI SDK (TypeScript)
           lang: TypeScript
@@ -27128,7 +27275,7 @@ paths:
             // The SDK has no dedicated method for this endpoint yet, so call it with
             // the client's generic GET helper.
             const revision = await client.get(
-              `https://api.together.ai/v2/projects/${projectId}/models/ml_abc123/revisions/rv_abc123`,
+              `/v2/projects/${projectId}/models/ml_abc123/revisions/rv_abc123`,
             );
             console.log(revision);
         - label: Together AI SDK (JavaScript)
@@ -27146,7 +27293,7 @@ paths:
             // The SDK has no dedicated method for this endpoint yet, so call it with
             // the client's generic GET helper.
             const revision = await client.get(
-              `https://api.together.ai/v2/projects/${projectId}/models/ml_abc123/revisions/rv_abc123`,
+              `/v2/projects/${projectId}/models/ml_abc123/revisions/rv_abc123`,
             );
             console.log(revision);
   /v2/projects/{projectId}/placement-profiles:
