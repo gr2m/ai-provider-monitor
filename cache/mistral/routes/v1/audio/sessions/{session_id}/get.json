@@ -1,0 +1,518 @@
+{
+  "description": "Retrieve an audio agent session with the transcript of its conversation.",
+  "operationId": "get_session_v1_audio_sessions__session_id__get",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "session_id",
+      "required": true,
+      "schema": {
+        "format": "uuid",
+        "title": "Session Id",
+        "type": "string"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/AudioSessionResponse"
+          }
+        }
+      },
+      "description": "Successful Response"
+    },
+    "422": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/HTTPValidationError"
+          }
+        }
+      },
+      "description": "Validation Error"
+    }
+  },
+  "summary": "Get session status",
+  "tags": [
+    "audio.sessions"
+  ],
+  "components": {
+    "schemas": {
+      "AudioSessionResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "num_participants": {
+            "title": "Num Participants",
+            "type": "integer"
+          },
+          "phone_call": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AudioSessionPhoneCall"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "enum": [
+              "active",
+              "ended"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "transcripts": {
+            "anyOf": [
+              {
+                "items": {
+                  "discriminator": {
+                    "mapping": {
+                      "assistant": "#/components/schemas/AudioAssistantTranscriptTurn",
+                      "tool": "#/components/schemas/AudioToolTranscriptTurn",
+                      "user": "#/components/schemas/AudioUserTranscriptTurn"
+                    },
+                    "propertyName": "role"
+                  },
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AudioUserTranscriptTurn"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AudioAssistantTranscriptTurn"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AudioToolTranscriptTurn"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The turns of the conversation, or null while no transcript has been recorded for this session yet.",
+            "title": "Transcripts"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "num_participants",
+          "created_at"
+        ],
+        "title": "AudioSessionResponse",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "AudioSessionPhoneCall": {
+        "description": "The phone line a session is attached to.\n\nPresent only when the caller reached the agent over telephony, `null` for a\nsession started from a browser or the API.",
+        "properties": {
+          "phone_number": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AudioSessionPhoneNumber"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The number as it stands now, or null once it has been released or when you cannot read it."
+          },
+          "phone_number_id": {
+            "format": "uuid",
+            "title": "Phone Number Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "phone_number_id"
+        ],
+        "title": "AudioSessionPhoneCall",
+        "type": "object"
+      },
+      "AudioUserTranscriptTurn": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Text as delivered in the conversation: the recognized transcript for user turns, and the audio actually played to the caller for assistant turns. Null only as a fallback for incomplete data.",
+            "title": "Content"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "latency": {
+            "$ref": "#/components/schemas/AudioLatencyBreakdownUser"
+          },
+          "role": {
+            "const": "user",
+            "title": "Role",
+            "type": "string"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          }
+        },
+        "required": [
+          "timestamp",
+          "role",
+          "latency"
+        ],
+        "title": "AudioUserTranscriptTurn",
+        "type": "object"
+      },
+      "AudioAssistantTranscriptTurn": {
+        "properties": {
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Text as delivered in the conversation: the recognized transcript for user turns, and the audio actually played to the caller for assistant turns. Null only as a fallback for incomplete data.",
+            "title": "Content"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "is_interruption": {
+            "default": false,
+            "title": "Is Interruption",
+            "type": "boolean"
+          },
+          "latency": {
+            "$ref": "#/components/schemas/AudioLatencyBreakdownAssistant"
+          },
+          "role": {
+            "const": "assistant",
+            "title": "Role",
+            "type": "string"
+          },
+          "timestamp": {
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          },
+          "tool_calls": {
+            "description": "Tools the model requested in this step. Each result follows as a `tool` turn with the same id.",
+            "items": {
+              "$ref": "#/components/schemas/AudioToolCall"
+            },
+            "title": "Tool Calls",
+            "type": "array"
+          }
+        },
+        "required": [
+          "timestamp",
+          "role",
+          "latency"
+        ],
+        "title": "AudioAssistantTranscriptTurn",
+        "type": "object"
+      },
+      "AudioToolTranscriptTurn": {
+        "properties": {
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "result": {
+            "description": "Decoded JSON or plain text; null when unavailable or withheld.",
+            "title": "Result"
+          },
+          "role": {
+            "const": "tool",
+            "title": "Role",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AudioToolTranscriptTurnStatus"
+          },
+          "timestamp": {
+            "description": "When the tool started executing.",
+            "format": "date-time",
+            "title": "Timestamp",
+            "type": "string"
+          },
+          "tool_call_id": {
+            "title": "Tool Call Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "tool_call_id",
+          "name",
+          "status",
+          "timestamp"
+        ],
+        "title": "AudioToolTranscriptTurn",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "AudioSessionPhoneNumber": {
+        "description": "The line the call came in on, as it stands now.",
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "identifier": {
+            "description": "What the caller dialed to reach this number.",
+            "title": "Identifier",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "required": [
+          "id",
+          "identifier"
+        ],
+        "title": "AudioSessionPhoneNumber",
+        "type": "object"
+      },
+      "AudioLatencyBreakdownUser": {
+        "properties": {
+          "end_of_turn_delay_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Of Turn Delay Ms"
+          },
+          "transcription_delay_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcription Delay Ms"
+          }
+        },
+        "title": "AudioLatencyBreakdownUser",
+        "type": "object"
+      },
+      "AudioLatencyBreakdownAssistant": {
+        "properties": {
+          "e2e_latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "E2E Latency Ms"
+          },
+          "llm_duration_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Duration Ms"
+          },
+          "llm_ttft_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Ttft Ms"
+          },
+          "tts_duration_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tts Duration Ms"
+          },
+          "tts_ttfb_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tts Ttfb Ms"
+          }
+        },
+        "title": "AudioLatencyBreakdownAssistant",
+        "type": "object"
+      },
+      "AudioToolCall": {
+        "properties": {
+          "arguments": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "JSON text, or null when unavailable or withheld.",
+            "title": "Arguments"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "AudioToolCall",
+        "type": "object"
+      },
+      "AudioToolTranscriptTurnStatus": {
+        "enum": [
+          "success",
+          "error",
+          "unknown"
+        ],
+        "type": "string"
+      }
+    }
+  }
+}

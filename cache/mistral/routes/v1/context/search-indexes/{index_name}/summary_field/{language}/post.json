@@ -1,0 +1,210 @@
+{
+  "description": "Streams a summary for the managed index in chunks of json.\n\nThe first chunk contains metadata for the summary, the following contain\nchunks of 'content' that should be joined together to form a full summary.\n\nIf force is true, regenerate the requested language even if a summary\nalready exists.",
+  "operationId": "generate_managed_index_summary_post_v1_context_search_indexes__index_name__summary_field__language__post",
+  "parameters": [
+    {
+      "in": "path",
+      "name": "language",
+      "required": true,
+      "schema": {
+        "enum": [
+          "en",
+          "fr",
+          "es",
+          "de",
+          "it",
+          "pt_br",
+          "pl",
+          "ar",
+          "nl"
+        ],
+        "title": "Language",
+        "type": "string"
+      }
+    },
+    {
+      "in": "path",
+      "name": "index_name",
+      "required": true,
+      "schema": {
+        "title": "Index Name",
+        "type": "string"
+      }
+    },
+    {
+      "description": "Regenerate the summary even if one already exists for this language",
+      "in": "query",
+      "name": "force",
+      "required": false,
+      "schema": {
+        "default": false,
+        "description": "Regenerate the summary even if one already exists for this language",
+        "title": "Force",
+        "type": "boolean"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/x-ndjson": {
+          "schema": {
+            "$defs": {
+              "SummaryChunk": {
+                "description": "Regular content.",
+                "properties": {
+                  "content": {
+                    "title": "Content",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "content"
+                ],
+                "title": "SummaryChunk",
+                "type": "object"
+              },
+              "SummaryError": {
+                "description": "If an error is encountered while streaming responses this is returned.",
+                "properties": {
+                  "error": {
+                    "title": "Error",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "error"
+                ],
+                "title": "SummaryError",
+                "type": "object"
+              },
+              "SummaryMetadata": {
+                "description": "Summary content. Expected to be the first value returned.",
+                "properties": {
+                  "status": {
+                    "$ref": "#/$defs/SummaryStatus"
+                  },
+                  "translated": {
+                    "title": "Translated",
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "status",
+                  "translated"
+                ],
+                "title": "SummaryMetadata",
+                "type": "object"
+              },
+              "SummaryStatus": {
+                "enum": [
+                  "handwritten",
+                  "generated",
+                  "generated_confirmed"
+                ],
+                "title": "SummaryStatus",
+                "type": "string"
+              }
+            },
+            "anyOf": [
+              {
+                "$ref": "#/$defs/SummaryMetadata"
+              },
+              {
+                "$ref": "#/$defs/SummaryChunk"
+              },
+              {
+                "$ref": "#/$defs/SummaryError"
+              }
+            ],
+            "title": "SummaryStreamTypes"
+          }
+        }
+      },
+      "description": "Successful Response"
+    },
+    "400": {
+      "description": "Invalid request"
+    },
+    "403": {
+      "description": "Unauthorized"
+    },
+    "404": {
+      "description": "Index not found"
+    },
+    "422": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/HTTPValidationError"
+          }
+        }
+      },
+      "description": "Validation Error"
+    },
+    "500": {
+      "description": "Internal server error"
+    }
+  },
+  "summary": "Generate a summary field for a managed index",
+  "tags": [
+    "beta.context.search_indexes"
+  ],
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  }
+}
