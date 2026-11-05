@@ -1386,6 +1386,9 @@
             ],
             "type": "string"
           },
+          "svg_usage": {
+            "$ref": "#/components/schemas/BetaSvgUsage"
+          },
           "type": {
             "description": "The type of the image generation call. Always `image_generation_call`.",
             "enum": [
@@ -3388,9 +3391,38 @@
         "enum": [
           "png",
           "webp",
-          "jpeg"
+          "jpeg",
+          "gif",
+          "svg"
         ],
         "type": "string"
+      },
+      "BetaSvgUsage": {
+        "properties": {
+          "input_tokens": {
+            "type": "integer"
+          },
+          "model": {
+            "type": "string"
+          },
+          "output_tokens": {
+            "type": "integer"
+          },
+          "reasoning_tokens": {
+            "type": "integer"
+          },
+          "total_tokens": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "model",
+          "input_tokens",
+          "output_tokens",
+          "total_tokens",
+          "reasoning_tokens"
+        ],
+        "type": "object"
       },
       "BetaCodeInterpreterOutputLogs": {
         "description": "The logs output from the code interpreter.",
@@ -4959,6 +4991,29 @@
             ],
             "type": "string"
           },
+          "complexity": {
+            "description": "Computation spent planning the image, independently of rendering quality.\nOverrides the outer response's `reasoning.effort` for image generation.\nWhen omitted, inherits a supported outer reasoning effort or uses the\nimage model's configured default.\nFor SVG output, controls the reference image, not the SVG author's\nreasoning.\n",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "type": "string"
+          },
+          "frame_count": {
+            "default": 9,
+            "description": "Number of GIF frames. Requires `output_format` to be `gif`. Default: 9.\n",
+            "maximum": 16,
+            "minimum": 2,
+            "type": "integer"
+          },
+          "frame_duration_ms": {
+            "default": 200,
+            "description": "Duration of each GIF frame in milliseconds, rounded to 10 ms.\nRequires `output_format` to be `gif`. Default: 200.\n",
+            "maximum": 2000,
+            "minimum": 20,
+            "type": "integer"
+          },
           "input_fidelity": {
             "anyOf": [
               {
@@ -4992,7 +5047,7 @@
               },
               {
                 "default": "gpt-image-2",
-                "description": "The image generation model to use. One of `gpt-image-1-mini`,\n`gpt-image-1.5`, `gpt-image-2`,\n`gpt-image-2-2026-04-21`, `gpt-image-2.5-sunburst`,\n`gpt-image-2.5-sunburst-2026-09-08`, `gpt-image-2.5-flare`,\n`gpt-image-2.5-flare-2026-09-08`, or `chatgpt-image-latest`. Default:\n`gpt-image-2`.\n\n`gpt-image-1` was shut down on October 23, 2026. Use\n`gpt-image-2.5-sunburst` or `gpt-image-2.5-flare` instead.\n",
+                "description": "The image generation model to use. One of `gpt-image-1-mini`,\n`gpt-image-1.5`, `gpt-image-2`,\n`gpt-image-2-2026-04-21`, `gpt-image-2.5-sunburst`,\n`gpt-image-2.5-sunburst-2026-09-08`, `gpt-image-2.5-flare`,\n`gpt-image-2.5-flare-2026-09-08`, `gpt-image-2.6-sunburst`,\n`gpt-image-2.6-flare`, or `chatgpt-image-latest`. Default:\n`gpt-image-2`.\n\n`gpt-image-1` was shut down on October 23, 2026. Use\n`gpt-image-2.5-sunburst` or `gpt-image-2.5-flare` instead.\n",
                 "enum": [
                   "gpt-image-1",
                   "gpt-image-1-mini",
@@ -5002,7 +5057,9 @@
                   "gpt-image-2.5-sunburst",
                   "gpt-image-2.5-sunburst-2026-09-08",
                   "gpt-image-2.5-flare",
-                  "gpt-image-2.5-flare-2026-09-08"
+                  "gpt-image-2.5-flare-2026-09-08",
+                  "gpt-image-2.6-sunburst",
+                  "gpt-image-2.6-flare"
                 ],
                 "type": "string"
               }
@@ -5026,11 +5083,13 @@
           },
           "output_format": {
             "default": "png",
-            "description": "The output format of the generated image. One of `png`, `webp`, or\n`jpeg`. Default: `png`.\n",
+            "description": "The output format of the generated image. One of `png`, `webp`, `jpeg`,\n`gif`, or `svg`. Default: `png`. GIF and SVG output require a model\nthat supports the selected format. GIF output does not support\npartial image streaming (`partial_images` greater than `0`),\n`input_image_mask`, or custom `output_compression`.\nResponses lifecycle events can still be streamed for GIF output.\n",
             "enum": [
               "png",
               "webp",
-              "jpeg"
+              "jpeg",
+              "gif",
+              "svg"
             ],
             "type": "string"
           },
@@ -5071,6 +5130,10 @@
             ],
             "default": "auto",
             "description": "The size of the generated images. For `gpt-image-2`, `gpt-image-2-2026-04-21`, `gpt-image-2.5-sunburst`, `gpt-image-2.5-sunburst-2026-09-08`, `gpt-image-2.5-flare`, and `gpt-image-2.5-flare-2026-09-08`, arbitrary resolutions are supported as `WIDTHxHEIGHT` strings, for example `1536x864`. Width and height must both be divisible by 16 and the requested aspect ratio must be between 1:3 and 3:1. Resolutions above `2560x1440` are experimental, and the maximum supported resolution is `3840x2160`. The requested size must also satisfy the model's current pixel and edge limits. The standard sizes `1024x1024`, `1536x1024`, and `1024x1536` are supported by the GPT image models; `auto` is supported for models that allow automatic sizing."
+          },
+          "svg": {
+            "$ref": "#/components/schemas/BetaSvgParam",
+            "description": "SVG author model settings. Requires `output_format` to be `svg`.\nWhen SVG model selection is enabled, omitting this object uses the\nouter response model. Otherwise, the default SVG author is used and\nexplicit model overrides are unavailable.\n"
           },
           "type": {
             "description": "The type of the image generation tool. Always `image_generation`.\n",
@@ -6030,6 +6093,27 @@
         ],
         "type": "string"
       },
+      "BetaSvgParam": {
+        "properties": {
+          "model": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaSvgReasoningParam",
+                "description": "Reasoning effort for SVG authoring. When omitted, uses the author model's default in both Images and Responses."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
       "BetaContainerAutoParam": {
         "properties": {
           "file_ids": {
@@ -6536,6 +6620,21 @@
         ],
         "type": "object"
       },
+      "BetaSvgReasoningParam": {
+        "description": "Reasoning effort for SVG authoring. When omitted, uses the author model's default in both Images and Responses.",
+        "properties": {
+          "effort": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaReasoningEffortEnum",
+                "description": "Controls how much effort the model should spend on reasoning for this request."
+              }
+            ]
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
       "BetaSkillReferenceParam": {
         "properties": {
           "skill_id": {
@@ -6648,6 +6747,18 @@
           "value"
         ],
         "type": "object"
+      },
+      "BetaReasoningEffortEnum": {
+        "enum": [
+          "none",
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ],
+        "type": "string"
       },
       "BetaInlineSkillSourceParam": {
         "description": "Inline skill payload",

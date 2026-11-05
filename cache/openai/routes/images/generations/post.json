@@ -100,6 +100,15 @@
             "description": "Set the background of the generated image(s). This parameter is only supported for\nthe GPT image models. Must be one of `transparent`, `opaque`, or `auto` (default\nvalue). When `auto` is used, the model will automatically determine the best\nbackground for the image.\n\n`gpt-image-2.5-sunburst` and `gpt-image-2.5-flare`, including their `2026-09-08`\nsnapshots, support `opaque` and `transparent` backgrounds. Transparent backgrounds\nare available for supported GPT Image models. For `gpt-image-2` and\n`gpt-image-2-2026-04-21`, this support is in preview. When using `transparent`,\nset the output format to `png` or `webp`.\n",
             "example": "transparent"
           },
+          "complexity": {
+            "$ref": "#/components/schemas/complexity"
+          },
+          "frame_count": {
+            "$ref": "#/components/schemas/frame_count"
+          },
+          "frame_duration_ms": {
+            "$ref": "#/components/schemas/frame_duration_ms"
+          },
           "model": {
             "anyOf": [
               {
@@ -114,6 +123,8 @@
                   "gpt-image-2.5-sunburst-2026-09-08",
                   "gpt-image-2.5-flare",
                   "gpt-image-2.5-flare-2026-09-08",
+                  "gpt-image-2.6-sunburst",
+                  "gpt-image-2.6-flare",
                   "gpt-image-1",
                   "gpt-image-1-mini",
                   "chatgpt-image-latest",
@@ -123,7 +134,7 @@
                 "type": "string"
               }
             ],
-            "description": "The GPT image model to use for image generation. Specify a model explicitly.\nSupported models include `gpt-image-1-mini`, `gpt-image-1.5`, `gpt-image-2`,\n`gpt-image-2-2026-04-21`, `gpt-image-2.5-sunburst`,\n`gpt-image-2.5-sunburst-2026-09-08`, `gpt-image-2.5-flare`,\n`gpt-image-2.5-flare-2026-09-08`, and `chatgpt-image-latest`.\n\n`gpt-image-1` was shut down on October 23, 2026. Use\n`gpt-image-2.5-sunburst` or `gpt-image-2.5-flare` instead.\n",
+            "description": "The GPT image model to use for image generation. Specify a model explicitly.\nSupported models include `gpt-image-1-mini`, `gpt-image-1.5`, `gpt-image-2`,\n`gpt-image-2-2026-04-21`, `gpt-image-2.5-sunburst`,\n`gpt-image-2.5-sunburst-2026-09-08`, `gpt-image-2.5-flare`,\n`gpt-image-2.5-flare-2026-09-08`, `gpt-image-2.6-sunburst`, `gpt-image-2.6-flare`,\nand `chatgpt-image-latest`.\n\n`gpt-image-1` was shut down on October 23, 2026. Use\n`gpt-image-2.5-sunburst` or `gpt-image-2.5-flare` instead.\n",
             "example": "gpt-image-2.5-flare"
           },
           "moderation": {
@@ -169,7 +180,9 @@
                 "enum": [
                   "png",
                   "jpeg",
-                  "webp"
+                  "webp",
+                  "gif",
+                  "svg"
                 ],
                 "type": "string"
               },
@@ -178,7 +191,7 @@
               }
             ],
             "default": "png",
-            "description": "The format in which the generated images are returned. This parameter is only supported for the GPT image models. Must be one of `png`, `jpeg`, or `webp`.",
+            "description": "The format in which the generated images are returned. This parameter is only supported for the GPT image models.",
             "example": "png"
           },
           "partial_images": {
@@ -283,6 +296,9 @@
               "null"
             ]
           },
+          "svg": {
+            "$ref": "#/components/schemas/svg"
+          },
           "user": {
             "deprecated": true,
             "description": "Deprecated: use `safety_identifier` instead. This parameter remains accepted for backward compatibility and is used when `safety_identifier` is omitted, null, or empty. [Learn more](https://developers.openai.com/api/docs/guides/safety-best-practices#implement-safety-identifiers).",
@@ -320,11 +336,13 @@
             "type": "array"
           },
           "output_format": {
-            "description": "The output format of the image generation. Either `png`, `webp`, or `jpeg`.",
+            "description": "The output format of the generated image.",
             "enum": [
               "png",
               "webp",
-              "jpeg"
+              "jpeg",
+              "gif",
+              "svg"
             ],
             "type": "string"
           },
@@ -362,6 +380,34 @@
             ],
             "description": "The image dimensions as a `WIDTHxHEIGHT` string, for example `1536x864`."
           },
+          "svg_usage": {
+            "description": "Token usage for the model that authored the SVG, separate from image rendering usage.",
+            "properties": {
+              "input_tokens": {
+                "type": "integer"
+              },
+              "model": {
+                "type": "string"
+              },
+              "output_tokens": {
+                "type": "integer"
+              },
+              "reasoning_tokens": {
+                "type": "integer"
+              },
+              "total_tokens": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "model",
+              "input_tokens",
+              "output_tokens",
+              "total_tokens",
+              "reasoning_tokens"
+            ],
+            "type": "object"
+          },
           "usage": {
             "$ref": "#/components/schemas/ImageGenUsage"
           }
@@ -396,6 +442,36 @@
         ],
         "type": "object"
       },
+      "complexity": {
+        "description": "Computation spent planning the image, independently of rendering quality. Uses the image model's configured default when omitted. For SVG output, controls the reference image, independently of the SVG author's reasoning.",
+        "enum": [
+          "low",
+          "medium",
+          "high",
+          null
+        ],
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "frame_count": {
+        "description": "Number of frames for GIF output. Accepts integers from 2 through 16. Defaults to 9 when omitted. Only supported with output_format=gif. The requested size must satisfy the selected model's GIF size limits. GIF output does not support streaming, partial images, masks, or custom output compression. Requires access to the GIF preview for the selected model.",
+        "maximum": 16,
+        "minimum": 2,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "frame_duration_ms": {
+        "description": "Requested delay per GIF frame, in milliseconds. Defaults to 200 when omitted. GIF output rounds to the nearest 10 ms and caps the encoded delay at 655,350 ms per frame. Only supported with output_format=gif.",
+        "minimum": 20,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
       "PartialImages": {
         "anyOf": [
           {
@@ -409,6 +485,43 @@
           {
             "type": "null"
           }
+        ]
+      },
+      "svg": {
+        "description": "Selects the model and reasoning effort used to author SVG output. Requires output_format=svg and access to SVG model selection. When model selection is enabled, supply svg.model. When model selection is disabled, omit this object. The top-level model selects the image model that creates the reference image. SVG generation requires n=1 and does not support streaming, partial images, prompt_rewriter, or output_compression. SVG edits are not supported.",
+        "properties": {
+          "model": {
+            "description": "Model used to author the SVG. Required when SVG model selection is enabled.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "reasoning": {
+            "description": "Reasoning settings for the SVG author, independent of image complexity. Omitted or null effort uses the author model's default. Supported efforts depend on the selected author model.",
+            "properties": {
+              "effort": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/ReasoningEffortEnum"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Controls how much effort the SVG author spends on reasoning. Uses the author model's default when omitted or null."
+              }
+            },
+            "type": [
+              "object",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "type": [
+          "object",
+          "null"
         ]
       },
       "Image": {
@@ -672,6 +785,18 @@
           "code"
         ],
         "type": "object"
+      },
+      "ReasoningEffortEnum": {
+        "enum": [
+          "none",
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ],
+        "type": "string"
       },
       "ImageGenInputUsageDetails": {
         "description": "The input tokens detailed information for the image generation.",
