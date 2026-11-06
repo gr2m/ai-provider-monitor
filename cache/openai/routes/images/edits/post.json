@@ -270,20 +270,14 @@
           "output_format": {
             "anyOf": [
               {
-                "enum": [
-                  "png",
-                  "jpeg",
-                  "webp",
-                  "gif"
-                ],
-                "type": "string"
+                "$ref": "#/components/schemas/ImagesApiOutputFormat"
               },
               {
                 "type": "null"
               }
             ],
             "default": "png",
-            "description": "Output image format. Supported for GPT image models.",
+            "description": "Output image format. Supported for GPT image models. SVG output requires a supported image model and project access.",
             "example": "png"
           },
           "partial_images": {
@@ -360,6 +354,17 @@
             "default": false,
             "description": "Stream partial image results as events.",
             "example": false
+          },
+          "svg": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SvgParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Selects the author model and reasoning effort for `output_format=svg`. Supply `svg.model` when SVG model selection is enabled. Otherwise, omit this object. SVG output requires `n=1` and cannot use streaming, partial images, or output compression."
           },
           "user": {
             "deprecated": true,
@@ -489,20 +494,14 @@
           "output_format": {
             "anyOf": [
               {
-                "enum": [
-                  "png",
-                  "jpeg",
-                  "webp",
-                  "gif"
-                ],
-                "type": "string"
+                "$ref": "#/components/schemas/ImagesApiOutputFormat"
               },
               {
                 "type": "null"
               }
             ],
             "default": "png",
-            "description": "The format in which the generated images are returned. This parameter is\nonly supported for the GPT image models.\nThe default value is `png`.\n",
+            "description": "The format in which the generated images are returned. This parameter is\nonly supported for the GPT image models.\nThe default value is `png`.\nSVG output requires a supported image model and project access.\n",
             "example": "png"
           },
           "partial_images": {
@@ -590,6 +589,17 @@
               "null"
             ]
           },
+          "svg": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SvgParam"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Selects the author model and reasoning effort for `output_format=svg`. Supply `svg.model` when SVG model selection is enabled. Otherwise, omit this object. SVG output requires `n=1` and cannot use streaming, partial images, or output compression. Use multipart fields such as `svg[model]`."
+          },
           "user": {
             "deprecated": true,
             "description": "Deprecated: use `safety_identifier` instead. This parameter remains accepted for backward compatibility and is used when `safety_identifier` is omitted, null, or empty. [Learn more](https://developers.openai.com/api/docs/guides/safety-best-practices#implement-safety-identifiers).",
@@ -628,15 +638,8 @@
             "type": "array"
           },
           "output_format": {
-            "description": "The output format of the generated image.",
-            "enum": [
-              "png",
-              "webp",
-              "jpeg",
-              "gif",
-              "svg"
-            ],
-            "type": "string"
+            "$ref": "#/components/schemas/ImagesApiOutputFormat",
+            "description": "The output format of the generated or edited image."
           },
           "quality": {
             "description": "The quality of the image generated. One of `low`, `medium`, `high`, `xhigh`, or `max`.",
@@ -673,32 +676,8 @@
             "description": "The image dimensions as a `WIDTHxHEIGHT` string, for example `1536x864`."
           },
           "svg_usage": {
-            "description": "Token usage for the model that authored the SVG, separate from image rendering usage.",
-            "properties": {
-              "input_tokens": {
-                "type": "integer"
-              },
-              "model": {
-                "type": "string"
-              },
-              "output_tokens": {
-                "type": "integer"
-              },
-              "reasoning_tokens": {
-                "type": "integer"
-              },
-              "total_tokens": {
-                "type": "integer"
-              }
-            },
-            "required": [
-              "model",
-              "input_tokens",
-              "output_tokens",
-              "total_tokens",
-              "reasoning_tokens"
-            ],
-            "type": "object"
+            "$ref": "#/components/schemas/SvgUsage",
+            "description": "Token usage for SVG authoring, separate from image rendering usage."
           },
           "usage": {
             "$ref": "#/components/schemas/ImageGenUsage"
@@ -801,6 +780,16 @@
         },
         "type": "object"
       },
+      "ImagesApiOutputFormat": {
+        "enum": [
+          "png",
+          "webp",
+          "jpeg",
+          "gif",
+          "svg"
+        ],
+        "type": "string"
+      },
       "PartialImages": {
         "anyOf": [
           {
@@ -815,6 +804,27 @@
             "type": "null"
           }
         ]
+      },
+      "SvgParam": {
+        "properties": {
+          "model": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SvgReasoningParam",
+                "description": "Reasoning effort for SVG authoring. When omitted, uses the author model's default in both Images and Responses."
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [],
+        "type": "object"
       },
       "InputFidelity": {
         "description": "Control how much effort the model will exert to match the style and features, especially facial features, of input images. Supports `high` and `low` on `gpt-image-1.5`; `gpt-image-1-mini` supports only `low`. For `gpt-image-2`, omit this parameter. Defaults to `low` on supported models.",
@@ -846,6 +856,33 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "SvgUsage": {
+        "properties": {
+          "input_tokens": {
+            "type": "integer"
+          },
+          "model": {
+            "type": "string"
+          },
+          "output_tokens": {
+            "type": "integer"
+          },
+          "reasoning_tokens": {
+            "type": "integer"
+          },
+          "total_tokens": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "model",
+          "input_tokens",
+          "output_tokens",
+          "total_tokens",
+          "reasoning_tokens"
+        ],
         "type": "object"
       },
       "ImageGenUsage": {
@@ -1091,6 +1128,21 @@
         ],
         "type": "object"
       },
+      "SvgReasoningParam": {
+        "description": "Reasoning effort for SVG authoring. When omitted, uses the author model's default in both Images and Responses.",
+        "properties": {
+          "effort": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReasoningEffortEnum",
+                "description": "Controls how much effort the model should spend on reasoning for this request."
+              }
+            ]
+          }
+        },
+        "required": [],
+        "type": "object"
+      },
       "ImageGenInputUsageDetails": {
         "description": "The input tokens detailed information for the image generation.",
         "properties": {
@@ -1205,6 +1257,18 @@
         },
         "required": [],
         "type": "object"
+      },
+      "ReasoningEffortEnum": {
+        "enum": [
+          "none",
+          "minimal",
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ],
+        "type": "string"
       },
       "_MisalignmentErrorType": {
         "anyOf": [
