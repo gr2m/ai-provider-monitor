@@ -724,7 +724,7 @@
                 "type": "null"
               }
             ],
-            "description": "The environment Claude's sessions run in: the identifier of an active environment of the organization, starting with `env_`. Null clears it."
+            "description": "The environment Claude's sessions run in: the identifier of an active environment of the organization, starting with `env_`, or of a self-hosted runner pool of the organization that every member may use, starting with `ccpool_`. Null clears it."
           },
           "guest_policy": {
             "anyOf": [
@@ -760,6 +760,17 @@
               }
             ],
             "description": "The model Claude uses: the identifier of a model, or the name of a model line, that the organization is entitled to for Claude Tag. Null clears it."
+          },
+          "reply_mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaClaudeTagReplyMode"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How Claude takes part in the channel: `automatic`, `mention_only`, `always_awake` or `thread`. Only a channel takes one: an update of a workspace that sends a value is refused, and one that sends null changes nothing. Null never clears it: sent to a channel that stores none it changes nothing, and sent to a channel that stores one it is refused, because a stored reply mode can be changed but never cleared; a caller that wants Claude's default behavior sends `automatic`."
           }
         },
         "type": "object"
@@ -771,7 +782,7 @@
       },
       "BetaClaudeTagSettings": {
         "additionalProperties": false,
-        "description": "Claude Tag settings. Without `include_inherited`, a setting that is null is not set on the settings level and is inherited. With it, `enabled` and `guest_policy` are never null, and `instructions`, `model` and `environment_id` are null when no settings level sets them.",
+        "description": "Claude Tag settings. Without `include_inherited`, a setting that is null is not set on the settings level and is inherited. With it, `enabled` and `guest_policy` are never null, `instructions`, `model` and `environment_id` are null when no settings level sets them, and `reply_mode` is null unless the channel itself stores one.",
         "properties": {
           "enabled": {
             "anyOf": [
@@ -827,6 +838,17 @@
               }
             ],
             "description": "The model Claude uses: a model identifier or the name of a model line. The nearest settings level that sets it decides. When none does, Claude uses the product's default model."
+          },
+          "reply_mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaClaudeTagReplyMode"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "How Claude takes part in the channel. Only a channel stores one, and no settings level passes one on, so it is always null on a workspace. Null on a channel means the channel stores none yet: Claude then follows the reply mode chosen in Slack, if one was, else `automatic`. A stored reply mode can be changed but never cleared."
           }
         },
         "required": [
@@ -834,7 +856,8 @@
           "instructions",
           "model",
           "environment_id",
-          "guest_policy"
+          "guest_policy",
+          "reply_mode"
         ],
         "type": "object"
       },
@@ -915,6 +938,17 @@
               }
             ],
             "description": "The settings level `model` comes from."
+          },
+          "reply_mode": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaClaudeTagSettingSource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The settings level `reply_mode` comes from: the channel when it stores one. With `include_inherited=true` and no stored mode it is `default`."
           }
         },
         "required": [
@@ -922,7 +956,8 @@
           "instructions",
           "model",
           "environment_id",
-          "guest_policy"
+          "guest_policy",
+          "reply_mode"
         ],
         "type": "object"
       },
@@ -1155,6 +1190,32 @@
           }
         ]
       },
+      "BetaClaudeTagReplyMode": {
+        "description": "How Claude takes part in a Slack channel. A channel alone stores one. More types can be added.",
+        "discriminator": {
+          "mapping": {
+            "always_awake": "#/components/schemas/BetaClaudeTagReplyModeAlwaysAwake",
+            "automatic": "#/components/schemas/BetaClaudeTagReplyModeAutomatic",
+            "mention_only": "#/components/schemas/BetaClaudeTagReplyModeMentionOnly",
+            "thread": "#/components/schemas/BetaClaudeTagReplyModeThread"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaClaudeTagReplyModeAutomatic"
+          },
+          {
+            "$ref": "#/components/schemas/BetaClaudeTagReplyModeMentionOnly"
+          },
+          {
+            "$ref": "#/components/schemas/BetaClaudeTagReplyModeAlwaysAwake"
+          },
+          {
+            "$ref": "#/components/schemas/BetaClaudeTagReplyModeThread"
+          }
+        ]
+      },
       "BetaClaudeTagSettingSource": {
         "description": "The settings level a value comes from. More types can be added.",
         "discriminator": {
@@ -1223,6 +1284,62 @@
         "properties": {
           "type": {
             "const": "channel_only",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "BetaClaudeTagReplyModeAutomatic": {
+        "additionalProperties": false,
+        "description": "Claude reads along and joins in when it can help, and pauses on its own in quiet or busy channels.",
+        "properties": {
+          "type": {
+            "const": "automatic",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "BetaClaudeTagReplyModeMentionOnly": {
+        "additionalProperties": false,
+        "description": "Claude replies only when it is @-mentioned.",
+        "properties": {
+          "type": {
+            "const": "mention_only",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "BetaClaudeTagReplyModeAlwaysAwake": {
+        "additionalProperties": false,
+        "description": "Like `automatic`, but Claude never pauses on its own. Available where it is enabled for the channel.",
+        "properties": {
+          "type": {
+            "const": "always_awake",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "type": "object"
+      },
+      "BetaClaudeTagReplyModeThread": {
+        "additionalProperties": false,
+        "description": "Every new top-level message in the channel gets its own reply from Claude, in a thread under it. Available where it is enabled for the channel, and only once Claude has been used in the channel.",
+        "properties": {
+          "type": {
+            "const": "thread",
             "type": "string"
           }
         },
