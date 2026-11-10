@@ -3744,6 +3744,11 @@ components:
         baseModelId:
           description: ID of the supported or custom base model from which this model was derived.
           type: string
+        createdAt:
+          description: Output only. Timestamp when the model was created.
+          format: date-time
+          readOnly: true
+          type: string
         description:
           description: Human-readable description of the model and its intended use.
           type: string
@@ -3758,6 +3763,11 @@ components:
           type: string
         projectId:
           description: ID of the project that owns the model.
+          type: string
+        updatedAt:
+          description: Output only. Timestamp when the model was last updated.
+          format: date-time
+          readOnly: true
           type: string
         visibility:
           default: VISIBILITY_PRIVATE
@@ -21437,6 +21447,11 @@ paths:
           schema:
             description: Cursor from a previous list response.
             type: string
+        - in: query
+          name: orderBy
+          schema:
+            description: Sort field for the results. Supports `created_at`, optionally followed by `asc` or `desc`. Defaults to ascending.
+            type: string
       responses:
         "200":
           content:
@@ -21497,6 +21512,86 @@ paths:
             for await (const model of client.models.listOrgScoped(organizationId)) {
               console.log(model.id, model.name);
             }
+  /v2/organizations/{organizationId}/models/{modelId}:
+    get:
+      description: Retrieves a custom model shared with every project in the specified organization, regardless of which project owns it. Returns not found if the model belongs to another organization or is not organization-scoped.
+      operationId: VolumeService_GetOrganizationModel
+      parameters:
+        - in: path
+          name: organizationId
+          required: true
+          schema:
+            description: Organization identifier.
+            type: string
+        - in: path
+          name: modelId
+          required: true
+          schema:
+            description: Model identifier.
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DE.Model"
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorData"
+          description: Default error response
+      summary: Get organization model
+      tags:
+        - VolumeService
+      x-codeSamples:
+        - label: Together AI SDK (Python)
+          lang: Python
+          source: |
+            from together import Together
+
+            client = Together()
+            identity = client.whoami()
+            if identity.type == "user_jwt":
+                raise RuntimeError("Use a credential scoped to an organization")
+            organization_id = identity.organization.id
+
+            # The SDK has no dedicated method for this endpoint yet, so call it with
+            # the client's generic GET helper.
+            model = client.get(
+                f"/v2/organizations/{organization_id}/models/ml_abc123",
+                cast_to=object,
+            )
+            print(model)
+        - label: Together AI SDK (TypeScript)
+          lang: TypeScript
+          source: |
+            import Together from "together-ai";
+
+            const client = new Together();
+            const identity = await client.whoami();
+            if (identity.type === "user_jwt") {
+              throw new Error("Use a credential scoped to an organization");
+            }
+            const organizationId = identity.organization.id;
+
+            const model = await client.models.retrieveOrgModel(organizationId, "ml_abc123");
+            console.log(model.id, model.name);
+        - label: Together AI SDK (JavaScript)
+          lang: JavaScript
+          source: |
+            import Together from "together-ai";
+
+            const client = new Together();
+            const identity = await client.whoami();
+            if (identity.type === "user_jwt") {
+              throw new Error("Use a credential scoped to an organization");
+            }
+            const organizationId = identity.organization.id;
+
+            const model = await client.models.retrieveOrgModel(organizationId, "ml_abc123");
+            console.log(model.id, model.name);
   /v2/projects/{projectId}/configs:
     get:
       description: Lists production-ready configuration revisions compatible with a reference model. Specify the model with `referenceModel` or the deprecated `referenceModelId`; if both are supplied, they must identify the same model. Results include public configurations and configurations owned by the specified project.
@@ -26300,6 +26395,11 @@ paths:
           name: after
           schema:
             description: Cursor from a previous model list response.
+            type: string
+        - in: query
+          name: orderBy
+          schema:
+            description: Sort field for the results. Supports `created_at`, optionally followed by `asc` or `desc`. Defaults to ascending.
             type: string
       responses:
         "200":
