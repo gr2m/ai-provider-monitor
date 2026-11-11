@@ -624,6 +624,7 @@ components:
     AgentSessionRequiredActionTypeResource:
       enum:
         - computer_use_approval_request
+        - mcp_approval_request
         - function_call
         - environment_connection
       type: string
@@ -37682,6 +37683,8 @@ components:
           $ref: "#/components/schemas/ModelIdsLive"
           description: The Live model to use for the accepted call.
           minLength: 1
+        safety_identifier:
+          $ref: "#/components/schemas/safety_identifier"
         store:
           $ref: "#/components/schemas/store"
         triggers:
@@ -40453,6 +40456,8 @@ components:
           $ref: "#/components/schemas/instructions"
         model:
           $ref: "#/components/schemas/ModelIdsLive"
+        safety_identifier:
+          $ref: "#/components/schemas/safety_identifier"
         store:
           $ref: "#/components/schemas/store"
         triggers:
@@ -41337,6 +41342,12 @@ components:
             - type: "null"
         model:
           $ref: "#/components/schemas/ModelIdsLive"
+        safety_identifier:
+          anyOf:
+            - description: A stable identifier for your end user, used for safety monitoring and abuse detection.
+              maxLength: 128
+              type: string
+            - type: "null"
         store:
           description: Whether to store the session for later forking and recording download. Defaults to false for new sessions.
           type: boolean
@@ -41431,6 +41442,12 @@ components:
             - type: "null"
         model:
           $ref: "#/components/schemas/ModelIdsLive"
+        safety_identifier:
+          anyOf:
+            - description: A stable identifier for your end user, used for safety monitoring and abuse detection.
+              maxLength: 128
+              type: string
+            - type: "null"
         status:
           default: active
           description: The status of the session snapshot. Always `active`, including the final snapshot in session.closed; use the event type to determine that the session has closed.
@@ -43000,6 +43017,83 @@ components:
           type: array
       required: []
       title: MCP tool filter
+      type: object
+    McpApprovalDecisionParam:
+      enum:
+        - approve
+        - deny
+        - cancel
+      type: string
+    McpApprovalRequestResource:
+      description: Information for presenting an MCP approval.
+      discriminator:
+        mapping:
+          mcp_tool_call: "#/components/schemas/McpApprovalRequestResourceMcpToolCall"
+        propertyName: type
+      oneOf:
+        - $ref: "#/components/schemas/McpApprovalRequestResourceMcpToolCall"
+      x-oai-discriminator-values:
+        - mcp_tool_call
+    McpApprovalRequestResourceMcpToolCall:
+      additionalProperties: false
+      properties:
+        arguments:
+          anyOf:
+            - {}
+            - type: "null"
+          description: The tool arguments as JSON, or null when CCA does not provide them.
+        message:
+          minLength: 0
+          type: string
+        name:
+          description: The tool name, or null when CCA does not provide it.
+          minLength: 0
+          type:
+            - string
+            - "null"
+        server_label:
+          minLength: 0
+          type: string
+        type:
+          default: mcp_tool_call
+          description: The type of the object. Always `mcp_tool_call`.
+          enum:
+            - mcp_tool_call
+          type: string
+          x-stainless-const: true
+      required:
+        - type
+        - server_label
+        - name
+        - arguments
+        - message
+      type: object
+    McpApprovalResponseParam:
+      description: The user's decision for a pending MCP tool call.
+      discriminator:
+        mapping:
+          mcp_tool_call: "#/components/schemas/McpApprovalResponseParamMcpToolCall"
+        propertyName: type
+      oneOf:
+        - $ref: "#/components/schemas/McpApprovalResponseParamMcpToolCall"
+      x-oai-discriminator-values:
+        - mcp_tool_call
+    McpApprovalResponseParamMcpToolCall:
+      additionalProperties: false
+      properties:
+        decision:
+          $ref: "#/components/schemas/McpApprovalDecisionParam"
+          description: Cancel dismisses this request without cancelling the session or turn.
+        type:
+          default: mcp_tool_call
+          description: The type of the object. Always `mcp_tool_call`.
+          enum:
+            - mcp_tool_call
+          type: string
+          x-stainless-const: true
+      required:
+        - type
+        - decision
       type: object
     McpCallItemResource:
       additionalProperties: false
@@ -66861,15 +66955,18 @@ components:
         mapping:
           agent.session.input.cancel: "#/components/schemas/SessionInputParamAgentSessionInputCancel"
           agent.session.input.computer_use_approval_request_result: "#/components/schemas/SessionInputParamAgentSessionInputComputerUseApprovalRequestResult"
+          agent.session.input.mcp_approval_request_result: "#/components/schemas/SessionInputParamAgentSessionInputMcpApprovalRequestResult"
           agent.session.input.message: "#/components/schemas/SessionInputParamAgentSessionInputMessage"
           agent.session.input.tool_result: "#/components/schemas/SessionInputParamAgentSessionInputToolResult"
         propertyName: type
       oneOf:
+        - $ref: "#/components/schemas/SessionInputParamAgentSessionInputMcpApprovalRequestResult"
         - $ref: "#/components/schemas/SessionInputParamAgentSessionInputComputerUseApprovalRequestResult"
         - $ref: "#/components/schemas/SessionInputParamAgentSessionInputMessage"
         - $ref: "#/components/schemas/SessionInputParamAgentSessionInputCancel"
         - $ref: "#/components/schemas/SessionInputParamAgentSessionInputToolResult"
       x-oai-discriminator-values:
+        - agent.session.input.mcp_approval_request_result
         - agent.session.input.computer_use_approval_request_result
         - agent.session.input.message
         - agent.session.input.cancel
@@ -66905,6 +67002,29 @@ components:
           description: The type of the object. Always `agent.session.input.computer_use_approval_request_result`.
           enum:
             - agent.session.input.computer_use_approval_request_result
+          type: string
+          x-stainless-const: true
+      required:
+        - type
+        - request_id
+        - response
+      type: object
+    SessionInputParamAgentSessionInputMcpApprovalRequestResult:
+      additionalProperties: false
+      description: Responds to a pending MCP tool-call approval request.
+      properties:
+        request_id:
+          description: The opaque approval ID from the required action.
+          maxLength: 1048576
+          minLength: 0
+          type: string
+        response:
+          $ref: "#/components/schemas/McpApprovalResponseParam"
+        type:
+          default: agent.session.input.mcp_approval_request_result
+          description: The type of the object. Always `agent.session.input.mcp_approval_request_result`.
+          enum:
+            - agent.session.input.mcp_approval_request_result
           type: string
           x-stainless-const: true
       required:
@@ -67069,12 +67189,15 @@ components:
           computer_use_approval_request: "#/components/schemas/SessionRequiredActionResourceComputerUseApprovalRequest"
           environment_connection: "#/components/schemas/SessionRequiredActionResourceEnvironmentConnection"
           function_call: "#/components/schemas/SessionRequiredActionResourceFunctionCall"
+          mcp_approval_request: "#/components/schemas/SessionRequiredActionResourceMcpApprovalRequest"
         propertyName: type
       oneOf:
+        - $ref: "#/components/schemas/SessionRequiredActionResourceMcpApprovalRequest"
         - $ref: "#/components/schemas/SessionRequiredActionResourceComputerUseApprovalRequest"
         - $ref: "#/components/schemas/SessionRequiredActionResourceFunctionCall"
         - $ref: "#/components/schemas/SessionRequiredActionResourceEnvironmentConnection"
       x-oai-discriminator-values:
+        - mcp_approval_request
         - computer_use_approval_request
         - function_call
         - environment_connection
@@ -67156,6 +67279,33 @@ components:
         - call_id
         - name
         - arguments
+      type: object
+    SessionRequiredActionResourceMcpApprovalRequest:
+      additionalProperties: false
+      description: Respond to an MCP tool-call approval request.
+      properties:
+        request:
+          $ref: "#/components/schemas/McpApprovalRequestResource"
+        request_id:
+          description: The opaque approval ID to echo when responding.
+          minLength: 0
+          type: string
+        turn_id:
+          description: The turn that requested approval.
+          minLength: 0
+          type: string
+        type:
+          default: mcp_approval_request
+          description: The type of the object. Always `mcp_approval_request`.
+          enum:
+            - mcp_approval_request
+          type: string
+          x-stainless-const: true
+      required:
+        - type
+        - turn_id
+        - request_id
+        - request
       type: object
     SessionResource:
       additionalProperties: false
@@ -75663,6 +75813,12 @@ components:
         - $ref: "#/components/schemas/AzureExternalStorageProviderResponse"
         - $ref: "#/components/schemas/GcpExternalStorageProviderResponse"
         - $ref: "#/components/schemas/OciExternalStorageProviderResponse"
+    safety_identifier:
+      anyOf:
+        - description: A stable identifier for your end user, used for safety monitoring and abuse detection.
+          maxLength: 128
+          type: string
+        - type: "null"
     session:
       description: The newly created Live session. Use its ID for session controls and sideband connections.
       properties:
