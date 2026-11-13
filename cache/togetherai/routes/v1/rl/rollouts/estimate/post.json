@@ -1,0 +1,282 @@
+{
+  "description": "Estimates rollout-only time, generator GPU-hours, billed GPU-hours of the whole model resource, and price for a supported model and GPU type. Each generator replica may contain several inference servers or span multiple nodes. Assumes identical episodes, exact reuse of generated tokens between turns, turns that start together within a replica, no environment delay, and no concurrent computation of the same initial prompt. Prompt-cache reuse and capacity misses are approximate, especially for multi-turn episodes. Rates are measured in the training mode reported by lora_enabled. Cache-transfer and request-preemption delays are not included, so long multi-turn rollouts with distinct prompts can take longer than estimated.",
+  "operationId": "estimateRollout",
+  "requestBody": {
+    "content": {
+      "application/json": {
+        "schema": {
+          "$ref": "#/components/schemas/RL.EstimateRolloutRequest"
+        }
+      }
+    },
+    "required": true
+  },
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/RL.EstimateRolloutResponse"
+          }
+        }
+      },
+      "description": "Estimated rollout time and price"
+    },
+    "default": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/ErrorData"
+          }
+        }
+      },
+      "description": "An unexpected error response."
+    }
+  },
+  "summary": "Estimate rollout time and price",
+  "tags": [
+    "RL"
+  ],
+  "components": {
+    "schemas": {
+      "RL.EstimateRolloutRequest": {
+        "description": "Episode shape, model, GPU type, and concurrency for a rollout-only estimate",
+        "properties": {
+          "added_tokens_per_turn": {
+            "description": "Tokens added before each later turn (K), including the prior generated tokens followed by environment tokens. Must be at least generated_tokens_per_turn.",
+            "type": "integer"
+          },
+          "base_model": {
+            "description": "Base model to estimate. The model, GPU type, and training mode must support rollout estimates.",
+            "example": "zai-org/GLM-5.3",
+            "maxLength": 256,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9._/-]+$",
+            "type": "string"
+          },
+          "compute_config": {
+            "$ref": "#/components/schemas/RL.ComputeConfigCreateRequest",
+            "description": "Compute layout to estimate, as for a model resource. Omitted fields use the model's default GPU type and one generator replica (D); num_generator_replicas must be positive."
+          },
+          "concurrency": {
+            "description": "Maximum concurrent episodes across all generator replicas (B). Must be positive.",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "distinct_prompts_per_replica": {
+            "description": "Number of distinct initial prompts among the concurrent episodes of one replica (Q). When episodes_per_prompt is given, defaults to ceil(concurrent episodes / G). Otherwise defaults to 1 when shared_prefix_tokens equals prompt_tokens, and to the concurrent episodes per replica when it does not. Must be 1 when shared_prefix_tokens equals prompt_tokens.",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "episodes": {
+            "description": "Total number of episodes (N). Must be between 1 and 10000000.",
+            "maximum": 10000000,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "episodes_per_prompt": {
+            "description": "Maximum sibling episodes per initial prompt (G). When distinct_prompts_per_replica is given, defaults to ceil(concurrent episodes / Q). Otherwise defaults to the concurrent episodes per replica when shared_prefix_tokens equals prompt_tokens, and to 1 when it does not. When shared_prefix_tokens equals prompt_tokens, must be at least the concurrent episodes per replica.",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "generated_tokens_per_turn": {
+            "description": "Tokens generated on each turn (O). Must be positive.",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "lora_enabled": {
+            "default": true,
+            "description": "Whether to estimate a resource that hosts LoRA sessions (true, default) or a single full-weight session (false), as in a model resource. The model and GPU type must support rollout estimates in this mode.",
+            "example": true,
+            "type": "boolean"
+          },
+          "prompt_tokens": {
+            "description": "Initial prompt tokens per episode (P). Must be positive.",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "shared_prefix_tokens": {
+            "default": 0,
+            "description": "Leading tokens shared by all distinct initial prompts (H). Defaults to 0; cannot exceed prompt_tokens.",
+            "type": "integer"
+          },
+          "turns": {
+            "description": "Assistant turns per episode (T). Must be between 1 and 1024.",
+            "maximum": 1024,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "episodes",
+          "concurrency",
+          "prompt_tokens",
+          "turns",
+          "added_tokens_per_turn",
+          "generated_tokens_per_turn",
+          "base_model"
+        ],
+        "type": "object"
+      },
+      "RL.EstimateRolloutResponse": {
+        "description": "Estimated rollout elapsed time, tokens, throughput, GPU-hours, and price",
+        "properties": {
+          "allocated_gpu_hours": {
+            "description": "Generator GPUs across all replicas times wall time, in GPU-hours.",
+            "format": "double",
+            "type": "number"
+          },
+          "billed_gpu_hours": {
+            "description": "GPUs of the whole model resource, trainer and generator, times wall time, in GPU-hours. A model resource is billed for all of its GPUs while the rollouts run. An approximation measured on single-wave rollouts (concurrency equal to episodes) of up to four turns on one generator replica: actual usage can be up to about 45% higher when episodes share a prompt, and about 20% higher or lower otherwise. Longer multi-turn rollouts with distinct prompts can take longer than estimated.",
+            "format": "double",
+            "type": "number"
+          },
+          "currency": {
+            "description": "Currency of estimated_price.",
+            "example": "USD",
+            "type": "string"
+          },
+          "effective_decode_tokens_per_second": {
+            "description": "generated_tokens divided by wall_seconds.",
+            "format": "double",
+            "type": "number"
+          },
+          "effective_distinct_prompts_per_replica": {
+            "description": "Effective distinct_prompts_per_replica (Q) for the largest concurrent batch of one replica.",
+            "type": "integer"
+          },
+          "effective_episodes_per_prompt": {
+            "description": "Effective episodes_per_prompt (G) for the largest concurrent batch of one replica.",
+            "type": "integer"
+          },
+          "effective_prefill_tokens_per_second": {
+            "description": "submitted_prompt_tokens divided by wall_seconds, counting prompt tokens served from the prompt cache.",
+            "format": "double",
+            "type": "number"
+          },
+          "effective_shared_prefix_tokens": {
+            "description": "Effective shared_prefix_tokens (H).",
+            "type": "integer"
+          },
+          "estimated_price": {
+            "description": "Estimated on-demand price of the rollouts: billed_gpu_hours times the GPU type's list price per GPU-hour, the rate the model resource cost estimate uses. An approximation that inherits the uncertainty of billed_gpu_hours; it is not a quote.",
+            "format": "double",
+            "type": "number"
+          },
+          "generated_tokens": {
+            "description": "Generated output tokens across all turns. JSON encodes this count as a decimal string.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "lora_enabled": {
+            "description": "Whether the estimate is for a LoRA resource (true) or a full-weight resource (false).",
+            "type": "boolean"
+          },
+          "submitted_prompt_tokens": {
+            "description": "Prompt tokens submitted across all turns. JSON encodes this count as a decimal string.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "wall_seconds": {
+            "description": "Estimated time until all rollout episodes finish, in seconds.",
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "wall_seconds",
+          "allocated_gpu_hours",
+          "submitted_prompt_tokens",
+          "generated_tokens",
+          "effective_decode_tokens_per_second",
+          "effective_distinct_prompts_per_replica",
+          "effective_episodes_per_prompt",
+          "effective_shared_prefix_tokens",
+          "lora_enabled",
+          "billed_gpu_hours",
+          "estimated_price",
+          "currency",
+          "effective_prefill_tokens_per_second"
+        ],
+        "type": "object"
+      },
+      "ErrorData": {
+        "properties": {
+          "error": {
+            "properties": {
+              "code": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "message": {
+                "nullable": false,
+                "type": "string"
+              },
+              "param": {
+                "default": null,
+                "nullable": true,
+                "type": "string"
+              },
+              "type": {
+                "nullable": false,
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "RL.ComputeConfigCreateRequest": {
+        "description": "Compute layout to provision for a model resource",
+        "properties": {
+          "gpu_type": {
+            "description": "GPU type to provision. Omit to use the model's default GPU type.",
+            "enum": [
+              "B200-SXM"
+            ],
+            "example": "B200-SXM",
+            "type": "string"
+          },
+          "num_generator_replicas": {
+            "default": 1,
+            "description": "Number of generator replicas. 0 runs the trainer only, with no generator.",
+            "example": 2,
+            "format": "int32",
+            "type": "integer"
+          },
+          "num_trainer_replicas": {
+            "default": 1,
+            "description": "Number of trainers: 0 or 1. Omit to use 1. Each trainer can use multiple GPUs. With 0, at least one generator replica is required, optimizer_config is not allowed, and sessions must resume from an inference checkpoint for sampling only.",
+            "example": 0,
+            "format": "int32",
+            "maximum": 1,
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      }
+    }
+  }
+}
