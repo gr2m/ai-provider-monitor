@@ -882,6 +882,15 @@ components:
             - type: "null"
           description: Whether the member is outside the SSO domain.
           title: Is Sso Outsider
+        last_login_at:
+          anyOf:
+            - format: date-time
+              type: string
+            - type: "null"
+          description: Last time the member signed in to the Organization, accurate to about 30 minutes. Null if they never signed in.
+          examples:
+            - "2026-11-04T09:12:00Z"
+          title: Last Login At
         name:
           anyOf:
             - type: string
@@ -898,24 +907,23 @@ components:
           description: Identity provider ID for the member.
           title: Oid Id
         raw_role:
-          anyOf:
-            - $ref: "#/components/schemas/UserRole"
-            - $ref: "#/components/schemas/StaticOrganizationRoles"
+          $ref: "#/components/schemas/StaticOrganizationRoles"
           deprecated: true
           description: Deprecated single organization role. Use 'raw_roles' instead.
-          title: Raw Role
         raw_roles:
-          anyOf:
-            - items:
-                $ref: "#/components/schemas/UserRole"
-              minItems: 1
-              type: array
-            - items:
-                $ref: "#/components/schemas/StaticOrganizationRoles"
-              minItems: 1
-              type: array
           description: Organization roles assigned to the member.
+          items:
+            $ref: "#/components/schemas/StaticOrganizationRoles"
+          minItems: 1
           title: Raw Roles
+          type: array
+        status:
+          allOf:
+            - $ref: "#/components/schemas/MemberStatus"
+          default: active
+          description: Account status of the member. Deactivated and blocked members cannot access the Organization.
+          examples:
+            - active
         subscription_types:
           anyOf:
             - items:
@@ -945,8 +953,17 @@ components:
                 $ref: "#/components/schemas/MemberWorkspaceInfo"
               type: array
             - type: "null"
-          description: Workspaces the member belongs to.
+          deprecated: true
+          description: "Deprecated: limited to the first 100 Workspaces the member belongs to, ordered by name. Use GET /users/{user_id}/workspaces instead."
           title: Workspaces
+        workspaces_total:
+          anyOf:
+            - type: integer
+            - type: "null"
+          description: Total number of Workspaces the member belongs to, including those not returned in 'workspaces'.
+          examples:
+            - 3
+          title: Workspaces Total
       required:
         - uuid
         - oid_id
@@ -1046,6 +1063,7 @@ components:
                 - observability_viewer
                 - workflow_executor
                 - secret_revealer
+                - offline_evaluations_manager
                 - member
               type: string
             - type: "null"
@@ -1140,8 +1158,6 @@ components:
             - type: string
             - type: "null"
           description: Failure detail when the synchronization run could not complete.
-          examples:
-            - Failed to fetch users from the SCIM provider.
           title: Error Message
         finished_at:
           anyOf:
@@ -1178,12 +1194,6 @@ components:
             - $ref: "#/components/schemas/ScimSyncSummaryOut"
             - type: "null"
           description: Preview or result summary, available after the synchronization plan is built.
-          examples:
-            - groups: {}
-              memberships: []
-              users:
-                deprovision: []
-                provision: []
         sync_config:
           anyOf:
             - $ref: "#/components/schemas/AdminScimSyncConfig"
@@ -1307,17 +1317,6 @@ components:
           examples:
             - Engineering Team
           title: Name
-        parent_group_ids:
-          anyOf:
-            - items:
-                format: uuid
-                type: string
-              type: array
-            - type: "null"
-          description: Full replacement list of parent group UUIDs. Pass an empty list to remove all parents; omit the field to leave the parent groups unchanged.
-          examples:
-            - - a1b2c3d4-e5f6-7890-abcd-ef1234567890
-          title: Parent Group Ids
       title: AdminUpdateUserGroupIn
       type: object
     AdminUpdateUserGroupOrganizationRoleIn:
@@ -1353,6 +1352,9 @@ components:
             - api_key_id
             - api_zone
             - service_tier
+            - call_source
+            - call_type
+            - user_agent
           examples:
             - billing_metric
           title: Field
@@ -1401,15 +1403,6 @@ components:
           maxLength: 255
           title: Name
           type: string
-        parent_group_ids:
-          description: UUIDs of existing groups to nest this new group inside. Omit or pass an empty list to create a top-level group.
-          examples:
-            - - a1b2c3d4-e5f6-7890-abcd-ef1234567890
-          items:
-            format: uuid
-            type: string
-          title: Parent Group Ids
-          type: array
       required:
         - name
       title: AdminUserGroupIn
@@ -1500,15 +1493,6 @@ components:
             - type: "null"
           description: Organization role assigned to the group.
           title: Organization Role
-        parent_group_ids:
-          description: UUIDs of the groups this group is directly nested inside.
-          examples:
-            - - a1b2c3d4-e5f6-7890-abcd-ef1234567890
-          items:
-            format: uuid
-            type: string
-          title: Parent Group Ids
-          type: array
         uuid:
           description: User group ID.
           format: uuid
@@ -1576,6 +1560,15 @@ components:
             - type: "null"
           description: Whether the member is outside the SSO domain.
           title: Is Sso Outsider
+        last_login_at:
+          anyOf:
+            - format: date-time
+              type: string
+            - type: "null"
+          description: Last time the member signed in to the Organization, accurate to about 30 minutes. Null if they never signed in.
+          examples:
+            - "2026-11-04T09:12:00Z"
+          title: Last Login At
         last_name:
           anyOf:
             - type: string
@@ -1600,24 +1593,23 @@ components:
           description: Identity provider ID for the member.
           title: Oid Id
         raw_role:
-          anyOf:
-            - $ref: "#/components/schemas/UserRole"
-            - $ref: "#/components/schemas/StaticOrganizationRoles"
+          $ref: "#/components/schemas/StaticOrganizationRoles"
           deprecated: true
           description: Deprecated single organization role. Use 'raw_roles' instead.
-          title: Raw Role
         raw_roles:
-          anyOf:
-            - items:
-                $ref: "#/components/schemas/UserRole"
-              minItems: 1
-              type: array
-            - items:
-                $ref: "#/components/schemas/StaticOrganizationRoles"
-              minItems: 1
-              type: array
           description: Organization roles assigned to the member.
+          items:
+            $ref: "#/components/schemas/StaticOrganizationRoles"
+          minItems: 1
           title: Raw Roles
+          type: array
+        status:
+          allOf:
+            - $ref: "#/components/schemas/MemberStatus"
+          default: active
+          description: Account status of the member. Deactivated and blocked members cannot access the Organization.
+          examples:
+            - active
         subscription_types:
           anyOf:
             - items:
@@ -1647,8 +1639,17 @@ components:
                 $ref: "#/components/schemas/MemberWorkspaceInfo"
               type: array
             - type: "null"
-          description: Workspaces the member belongs to.
+          deprecated: true
+          description: "Deprecated: limited to the first 100 Workspaces the member belongs to, ordered by name. Use GET /users/{user_id}/workspaces instead."
           title: Workspaces
+        workspaces_total:
+          anyOf:
+            - type: integer
+            - type: "null"
+          description: Total number of Workspaces the member belongs to, including those not returned in 'workspaces'.
+          examples:
+            - 3
+          title: Workspaces Total
       required:
         - uuid
         - oid_id
@@ -1660,6 +1661,39 @@ components:
         - first_name
         - last_name
       title: AdminUserOUT
+      type: object
+    AdminUserWorkspacesOUT:
+      properties:
+        items:
+          description: Workspaces the member belongs to on this page, ordered by name.
+          items:
+            $ref: "#/components/schemas/MemberWorkspaceInfo"
+          title: Items
+          type: array
+        page:
+          description: Page number returned.
+          examples:
+            - 1
+          title: Page
+          type: integer
+        page_size:
+          description: Maximum number of results per page.
+          examples:
+            - 25
+          title: Page Size
+          type: integer
+        total:
+          description: Total number of Workspaces the member belongs to.
+          examples:
+            - 3
+          title: Total
+          type: integer
+      required:
+        - items
+        - total
+        - page
+        - page_size
+      title: AdminUserWorkspacesOUT
       type: object
     AdminWorkspaceIn:
       properties:
@@ -2382,6 +2416,8 @@ components:
           anyOf:
             - type: number
             - type: integer
+            - format: date-time
+              type: string
             - type: "null"
           title: Metric Value
         time_bucket:
@@ -2404,6 +2440,60 @@ components:
           title: values
           type: array
       title: AliasList
+      type: object
+    AmazonConnectContact:
+      description: Contact metadata recorded when Amazon Connect starts a session.
+      properties:
+        called_number:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Called Number
+        caller_number:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Caller Number
+        channel:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Channel
+        contact_arn:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Contact Arn
+        contact_id:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Contact Id
+        context_id:
+          description: Amazon Connect session context ID.
+          maxLength: 1024
+          minLength: 1
+          title: Context Id
+          type: string
+        instance_arn:
+          anyOf:
+            - maxLength: 256
+              type: string
+            - type: "null"
+          title: Instance Arn
+        instance_id:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Instance Id
+        type:
+          const: amazon_connect
+          title: Type
+          type: string
+      required:
+        - type
+        - context_id
+      title: AmazonConnectContact
       type: object
     And:
       description: "Conjunction: rows must match every sub-filter."
@@ -2817,6 +2907,10 @@ components:
           format: uuid
           title: Agent Id
           type: string
+        bridge_metadata:
+          anyOf:
+            - $ref: "#/components/schemas/AmazonConnectContact"
+            - type: "null"
         duration:
           anyOf:
             - type: integer
@@ -3051,6 +3145,7 @@ components:
               minimum: 80
               type: integer
             - type: "null"
+          default: 240
           title: Target Streaming Delay Ms
         turn_detection:
           anyOf:
@@ -3193,6 +3288,10 @@ components:
       type: object
     AudioSessionResponse:
       properties:
+        bridge_metadata:
+          anyOf:
+            - $ref: "#/components/schemas/AmazonConnectContact"
+            - type: "null"
         created_at:
           format: date-time
           title: Created At
@@ -3237,6 +3336,92 @@ components:
         - num_participants
         - created_at
       title: AudioSessionResponse
+      type: object
+    AudioSessionTurnUpdate:
+      additionalProperties: false
+      properties:
+        allow_interruptions:
+          anyOf:
+            - type: boolean
+            - type: "null"
+          title: Allow Interruptions
+      title: AudioSessionTurnUpdate
+      type: object
+    AudioSessionUpdateRequest:
+      additionalProperties: false
+      properties:
+        instructions:
+          anyOf:
+            - maxLength: 32000
+              type: string
+            - type: "null"
+          title: Instructions
+        tools:
+          anyOf:
+            - items:
+                discriminator:
+                  mapping:
+                    connector: "#/components/schemas/VoiceAgentCustomConnector"
+                    document_library: "#/components/schemas/VoiceAgentDocumentLibraryTool"
+                    function: "#/components/schemas/VoiceAgentFunctionToolRequest"
+                    hang_up: "#/components/schemas/HangUpTool"
+                    transfer_call: "#/components/schemas/TransferCallTool"
+                    web_search: "#/components/schemas/VoiceAgentWebSearchTool"
+                  propertyName: type
+                oneOf:
+                  - $ref: "#/components/schemas/VoiceAgentWebSearchTool"
+                  - $ref: "#/components/schemas/VoiceAgentDocumentLibraryTool"
+                  - $ref: "#/components/schemas/VoiceAgentCustomConnector"
+                  - $ref: "#/components/schemas/VoiceAgentFunctionToolRequest"
+                  - $ref: "#/components/schemas/TransferCallTool"
+                  - $ref: "#/components/schemas/HangUpTool"
+              maxItems: 32
+              type: array
+            - type: "null"
+          title: Tools
+        turn:
+          anyOf:
+            - $ref: "#/components/schemas/AudioSessionTurnUpdate"
+            - type: "null"
+      title: AudioSessionUpdateRequest
+      type: object
+    AudioSessionUpdateResponse:
+      description: |-
+        The session the update was sent to. The agent applies the update at its
+        next turn boundary and reports the outcome through the `session_updated`
+        and `session_update_failed` webhooks.
+      properties:
+        bridge_metadata:
+          anyOf:
+            - $ref: "#/components/schemas/AmazonConnectContact"
+            - type: "null"
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        id:
+          format: uuid
+          title: Id
+          type: string
+        num_participants:
+          title: Num Participants
+          type: integer
+        phone_call:
+          anyOf:
+            - $ref: "#/components/schemas/AudioSessionPhoneCall"
+            - type: "null"
+        status:
+          enum:
+            - active
+            - ended
+          title: Status
+          type: string
+      required:
+        - id
+        - status
+        - num_participants
+        - created_at
+      title: AudioSessionUpdateResponse
       type: object
     AudioSpeechCapabilities:
       properties:
@@ -3625,6 +3810,8 @@ components:
         - user.info.update
         - user.password.update
         - user.phone_number.verify
+        - user.deactivate
+        - user.reactivate
         - user.organization.leave
         - user.organization.role.update
         - user.organization.delete
@@ -3632,6 +3819,7 @@ components:
         - organization.create
         - organization.delete
         - organization.update
+        - organization.members.export
         - organization.invite.send
         - organization.invite.resend
         - organization.invite.accepted
@@ -3683,6 +3871,9 @@ components:
         - billing.monthly_limit.updated
         - billing.workspace_monthly_limit.updated
         - billing.shared_budget_override.updated
+        - billing.spending_limit.created
+        - billing.spending_limit.updated
+        - billing.spending_limit.deleted
         - billing.auto_recharge.updated
         - billing.seat.grant
         - billing.seat.revoke
@@ -3747,6 +3938,7 @@ components:
         - knowledge_base.create
         - knowledge_base.delete
         - knowledge_base.update
+        - knowledge_base.load
         - knowledge_base.version.create
         - custom_voice.create
         - custom_voice.update
@@ -5543,6 +5735,13 @@ components:
           anyOf:
             - $ref: "#/components/schemas/OAuth2ClientCredentialsInput"
             - type: "null"
+        query_params:
+          anyOf:
+            - additionalProperties:
+                type: string
+              type: object
+            - type: "null"
+          title: Query Params
       title: ConnectionCredentialsInput
       type: object
     ConnectionPreference:
@@ -5551,6 +5750,12 @@ components:
           anyOf:
             - $ref: "#/components/schemas/ConsumerType"
             - type: "null"
+        http_proxy_enabled:
+          anyOf:
+            - type: boolean
+            - type: "null"
+          description: "Whether raw HTTP calls through this connector are allowed at this level. Only applies to HTTP connectors: null when the level has no opinion, always the case for other connectors. False at any level switches them off for this level and the ones below."
+          title: Http Proxy Enabled
         is_default:
           anyOf:
             - type: boolean
@@ -5605,6 +5810,26 @@ components:
           title: Arguments
           type: object
       title: ConnectorCallToolRequest
+      type: object
+    ConnectorErrorCode:
+      enum:
+        - connectors_count_limit_reached
+        - credentials_rejected
+        - server_unreachable
+      title: ConnectorErrorCode
+      type: string
+    ConnectorErrorResponse:
+      properties:
+        code:
+          anyOf:
+            - $ref: "#/components/schemas/ConnectorErrorCode"
+            - type: "null"
+        detail:
+          title: Detail
+          type: string
+      required:
+        - detail
+      title: ConnectorErrorResponse
       type: object
     ConnectorLocale:
       properties:
@@ -5881,8 +6106,7 @@ components:
           type: boolean
         structuredContent:
           anyOf:
-            - additionalProperties: true
-              type: object
+            - {}
             - type: "null"
           title: Structuredcontent
       title: ConnectorToolResultMetadata
@@ -6913,49 +7137,6 @@ components:
         - name
       title: CreateIngestionPipelineConfigurationRequest
       type: object
-    CreateJudgeRequest:
-      properties:
-        description:
-          maxLength: 2000
-          title: Description
-          type: string
-        instructions:
-          maxLength: 10000
-          title: Instructions
-          type: string
-        model_name:
-          maxLength: 500
-          title: Model Name
-          type: string
-        name:
-          maxLength: 50
-          minLength: 5
-          title: Name
-          type: string
-        output:
-          discriminator:
-            mapping:
-              CLASSIFICATION: "#/components/schemas/JudgeClassificationOutput"
-              REGRESSION: "#/components/schemas/JudgeRegressionOutput"
-            propertyName: type
-          oneOf:
-            - $ref: "#/components/schemas/JudgeClassificationOutput"
-            - $ref: "#/components/schemas/JudgeRegressionOutput"
-          title: Output
-        tools:
-          items:
-            type: string
-          title: Tools
-          type: array
-      required:
-        - name
-        - description
-        - model_name
-        - output
-        - instructions
-        - tools
-      title: CreateJudgeRequest
-      type: object
     CreateLibraryRequest:
       properties:
         chunk_size:
@@ -7100,6 +7281,11 @@ components:
     CreateRealtimeSessionRequest:
       description: Payload used to create realtime client sessions.
       properties:
+        metadata:
+          anyOf:
+            - $ref: "#/components/schemas/MetadataDict"
+            - type: "null"
+          description: Request metadata applied to the realtime session, as if sent in the `x-metadata` header.
         model:
           minLength: 1
           title: Model
@@ -7501,6 +7687,8 @@ components:
                 - flex
                 - scale
                 - priority
+                - fast
+                - ultrafast
               type: string
               x-speakeasy-unknown-values: disallow
             - type: "null"
@@ -7623,6 +7811,29 @@ components:
       title: CreateResponseResponse
       type: object
       x-speakeasy-unknown-values: disallow
+    CreateScorerRequest:
+      properties:
+        config:
+          $ref: "#/components/schemas/LlmJudgeConfig"
+        description:
+          anyOf:
+            - maxLength: 2000
+              type: string
+            - type: "null"
+          title: Description
+        kind:
+          $ref: "#/components/schemas/ScorerKind"
+        name:
+          maxLength: 200
+          minLength: 1
+          title: Name
+          type: string
+      required:
+        - name
+        - kind
+        - config
+      title: CreateScorerRequest
+      type: object
     CreateServiceAccountRequest:
       properties:
         description:
@@ -7642,7 +7853,7 @@ components:
           items:
             format: uuid
             type: string
-          maxItems: 15
+          maxItems: 16
           title: Role Ids
           type: array
         workspace_id:
@@ -7761,12 +7972,18 @@ components:
             - type: "null"
           description: Encryption key used to decrypt webhook payloads
           title: Encryption Key
-        event_type_path:
+        event_id_pattern:
           anyOf:
             - type: string
             - type: "null"
-          description: Path to extract event type, eg body.type or headers.X-GitHub-Event
-          title: Event Type Path
+          description: Pattern for a unique event identifier used to deduplicate deliveries, with {body.<path>} and {headers.<Header-Name>} placeholders, eg {body.id} or {body.event_id}.{headers.X-Delivery-Id}. Defaults to a hash of the request body
+          title: Event Id Pattern
+        event_type_pattern:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Pattern for the event type, with {body.<path>} and {headers.<Header-Name>} placeholders, eg {body.type} or {headers.X-GitHub-Event}
+          title: Event Type Pattern
         expires_at:
           anyOf:
             - format: date-time
@@ -7822,11 +8039,20 @@ components:
           anyOf:
             - type: string
             - type: "null"
+          description: Regex to extract the timestamp from the signature header, used as {timestamp}, eg t=([^,]+)
           title: Timestamp Extractor Regex
+        url_verification_token:
+          anyOf:
+            - minLength: 1
+              type: string
+            - type: "null"
+          description: Token the provider echoes back when verifying the URL. Required for WhatsApp (paste the same value in the Verify token field of the Meta App Dashboard), forbidden for other providers
+          title: Url Verification Token
         validity_period_second:
           anyOf:
             - type: integer
             - type: "null"
+          description: Maximum allowed drift in seconds between the signed timestamp and reception time, eg 300
           title: Validity Period Second
       required:
         - provider
@@ -7840,7 +8066,7 @@ components:
           anyOf:
             - $ref: "#/components/schemas/ConnectionCredentialsInput"
             - type: "null"
-          description: The credential data (headers, bearer_token, or OAuth2 client credentials).
+          description: The credential data (headers, query_params, bearer_token, or OAuth2 client credentials).
         is_default:
           anyOf:
             - type: boolean
@@ -8622,6 +8848,9 @@ components:
           format: uuid
           title: Owner Id
           type: string
+        owner_type:
+          $ref: "#/components/schemas/PrincipalType"
+          default: user
         slug:
           title: Slug
           type: string
@@ -8676,6 +8905,9 @@ components:
           format: uuid
           title: Creator Id
           type: string
+        creator_type:
+          $ref: "#/components/schemas/PrincipalType"
+          default: user
         dataset_id:
           format: uuid
           title: Dataset Id
@@ -8753,6 +8985,9 @@ components:
           format: uuid
           title: Owner Id
           type: string
+        owner_type:
+          $ref: "#/components/schemas/PrincipalType"
+          default: user
         slug:
           title: Slug
           type: string
@@ -9410,6 +9645,12 @@ components:
             - type: integer
             - type: "null"
           title: Generation
+        last_phase_changed_at:
+          anyOf:
+            - format: date-time
+              type: string
+            - type: "null"
+          title: Last Phase Changed At
         last_seen:
           anyOf:
             - format: date-time
@@ -9620,8 +9861,14 @@ components:
           anyOf:
             - type: string
             - type: "null"
-          description: GitHub repository to build the worker from. Set this or 'archive_id', not both.
+          description: Deprecated alias of 'repository_url' for a GitHub repository. Set only 'repository_url'.
           title: Github Url
+        repository_url:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: "Repository to build the worker from, set instead of 'archive_id': a GitHub repository (`https://github.com/<owner>/<repo>`) or a repository on the Mistral git server (`https://api.globalaegis.net/v1/git/<workspace>/<repo>.git`). On the git server you must be able to read the repository; the worker builds from an archive of 'revision' and 'build_directory'."
+          title: Repository Url
         requested_roles:
           anyOf:
             - items:
@@ -9667,6 +9914,12 @@ components:
           description: GitHub repository the worker builds from. Empty for a worker built from an archive.
           title: Github Url
           type: string
+        repository_url:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Repository the worker builds from, on GitHub or the git server, if any.
+          title: Repository Url
         requested_roles:
           anyOf:
             - items:
@@ -9944,6 +10197,27 @@ components:
       required:
         - document_url
       title: DocumentURLChunk
+      type: object
+    EditScorerRequest:
+      properties:
+        config:
+          anyOf:
+            - $ref: "#/components/schemas/LlmJudgeConfig"
+            - type: "null"
+        description:
+          anyOf:
+            - maxLength: 2000
+              type: string
+            - type: "null"
+          title: Description
+        name:
+          anyOf:
+            - maxLength: 200
+              minLength: 1
+              type: string
+            - type: "null"
+          title: Name
+      title: EditScorerRequest
       type: object
     ElicitationCapability:
       description: |-
@@ -10562,6 +10836,9 @@ components:
           format: uuid
           title: Creator Id
           type: string
+        creator_type:
+          $ref: "#/components/schemas/PrincipalType"
+          default: user
         dataset_id:
           anyOf:
             - format: uuid
@@ -10588,6 +10865,12 @@ components:
             $ref: "#/components/schemas/EvaluatorV2"
           title: Evaluators
           type: array
+        failed_record_count:
+          anyOf:
+            - type: integer
+            - type: "null"
+          description: Records whose task or at least one score failed, out of `record_count`. Failed tasks and scores are left out of `statistics`, `goal_results` and `passed`. Null for runs created before this counter existed.
+          title: Failed Record Count
         goal_results:
           additionalProperties:
             $ref: "#/components/schemas/GoalResult"
@@ -10618,6 +10901,12 @@ components:
             - type: boolean
             - type: "null"
           title: Passed
+        record_count:
+          anyOf:
+            - type: integer
+            - type: "null"
+          description: Records whose results were uploaded so far, failed or not. Null for runs created before this counter existed.
+          title: Record Count
         run_evaluators:
           default: []
           items:
@@ -10685,6 +10974,9 @@ components:
           format: uuid
           title: Creator Id
           type: string
+        creator_type:
+          $ref: "#/components/schemas/PrincipalType"
+          default: user
         dataset_id:
           anyOf:
             - format: uuid
@@ -10715,6 +11007,12 @@ components:
             $ref: "#/components/schemas/EvaluatorV2"
           title: Evaluators
           type: array
+        failed_record_count:
+          anyOf:
+            - type: integer
+            - type: "null"
+          description: Records whose task or at least one score failed, out of `record_count`. Failed tasks and scores are left out of `statistics`, `goal_results` and `passed`. Null for runs created before this counter existed.
+          title: Failed Record Count
         goal_results:
           additionalProperties:
             $ref: "#/components/schemas/GoalResult"
@@ -10749,6 +11047,12 @@ components:
           anyOf:
             - $ref: "#/components/schemas/RunProjectSummary"
             - type: "null"
+        record_count:
+          anyOf:
+            - type: integer
+            - type: "null"
+          description: Records whose results were uploaded so far, failed or not. Null for runs created before this counter existed.
+          title: Record Count
         run_evaluators:
           default: []
           items:
@@ -10816,6 +11120,9 @@ components:
           format: uuid
           title: Creator Id
           type: string
+        creator_type:
+          $ref: "#/components/schemas/PrincipalType"
+          default: user
         deleted_at:
           anyOf:
             - format: date-time
@@ -12106,6 +12413,38 @@ components:
       required:
         - function
       title: FunctionTool
+      type: object
+    GeneratedToolFiller:
+      additionalProperties: false
+      description: |-
+        A filler the model writes for each call, in the user's language.
+
+        `instructions` guide what it says. `fallback` is spoken when it writes none;
+        without one, the call is silent.
+      properties:
+        fallback:
+          anyOf:
+            - discriminator:
+                mapping:
+                  static: "#/components/schemas/StaticToolFiller"
+                propertyName: type
+              oneOf:
+                - $ref: "#/components/schemas/StaticToolFiller"
+            - type: "null"
+          title: Fallback
+        instructions:
+          anyOf:
+            - maxLength: 500
+              minLength: 1
+              type: string
+            - type: "null"
+          title: Instructions
+        type:
+          const: generated
+          default: generated
+          title: Type
+          type: string
+      title: GeneratedToolFiller
       type: object
     GetBudgetResponse:
       properties:
@@ -13661,8 +14000,16 @@ components:
       properties:
         filler:
           anyOf:
-            - $ref: "#/components/schemas/StaticToolFiller"
+            - discriminator:
+                mapping:
+                  generated: "#/components/schemas/GeneratedToolFiller"
+                  static: "#/components/schemas/StaticToolFiller"
+                propertyName: type
+              oneOf:
+                - $ref: "#/components/schemas/StaticToolFiller"
+                - $ref: "#/components/schemas/GeneratedToolFiller"
             - type: "null"
+          title: Filler
         type:
           const: hang_up
           default: hang_up
@@ -14428,149 +14775,6 @@ components:
       title: JsonSchema
       type: object
     JsonValue: {}
-    Judge:
-      properties:
-        base_revision:
-          anyOf:
-            - format: uuid
-              type: string
-            - type: "null"
-          title: Base Revision
-        created_at:
-          format: date-time
-          title: Created At
-          type: string
-        deleted_at:
-          anyOf:
-            - format: date-time
-              type: string
-            - type: "null"
-          title: Deleted At
-        description:
-          title: Description
-          type: string
-        down_revision:
-          anyOf:
-            - format: uuid
-              type: string
-            - type: "null"
-          title: Down Revision
-        id:
-          format: uuid
-          title: Id
-          type: string
-        instructions:
-          title: Instructions
-          type: string
-        model_name:
-          title: Model Name
-          type: string
-        name:
-          title: Name
-          type: string
-        output:
-          discriminator:
-            mapping:
-              CLASSIFICATION: "#/components/schemas/JudgeClassificationOutput"
-              REGRESSION: "#/components/schemas/JudgeRegressionOutput"
-            propertyName: type
-          oneOf:
-            - $ref: "#/components/schemas/JudgeClassificationOutput"
-            - $ref: "#/components/schemas/JudgeRegressionOutput"
-          title: Output
-        owner_id:
-          format: uuid
-          title: Owner Id
-          type: string
-        tools:
-          items:
-            type: string
-          title: Tools
-          type: array
-        up_revision:
-          anyOf:
-            - format: uuid
-              type: string
-            - type: "null"
-          title: Up Revision
-        updated_at:
-          format: date-time
-          title: Updated At
-          type: string
-        workspace_id:
-          format: uuid
-          title: Workspace Id
-          type: string
-      required:
-        - id
-        - created_at
-        - updated_at
-        - deleted_at
-        - owner_id
-        - workspace_id
-        - name
-        - description
-        - model_name
-        - output
-        - instructions
-        - tools
-      title: Judge
-      type: object
-    JudgeClassificationOutput:
-      properties:
-        options:
-          items:
-            $ref: "#/components/schemas/JudgeClassificationOutputOption"
-          title: Options
-          type: array
-        type:
-          const: CLASSIFICATION
-          default: CLASSIFICATION
-          title: Type
-          type: string
-      required:
-        - options
-      title: JudgeClassificationOutput
-      type: object
-    JudgeClassificationOutputOption:
-      properties:
-        description:
-          title: Description
-          type: string
-        value:
-          title: Value
-          type: string
-      required:
-        - value
-        - description
-      title: JudgeClassificationOutputOption
-      type: object
-    JudgeConversationRequest:
-      properties:
-        messages:
-          items:
-            additionalProperties: true
-            type: object
-          title: Messages
-          type: array
-        properties:
-          anyOf:
-            - additionalProperties: true
-              type: object
-            - type: "null"
-          title: Properties
-      required:
-        - messages
-      title: JudgeConversationRequest
-      type: object
-    JudgeDatasetRecordRequest:
-      properties:
-        judge_definition:
-          $ref: "#/components/schemas/CreateJudgeRequest"
-      required:
-        - judge_definition
-      title: JudgeDatasetRecordRequest
-      type: object
     JudgeDefinitionV1:
       additionalProperties: false
       description: The fully materialized LLM judge behavior stored in a pipeline config.
@@ -14627,55 +14831,6 @@ components:
         - prompt
         - result_spec
       title: JudgeDefinitionV1
-      type: object
-    JudgeOutput:
-      properties:
-        analysis:
-          title: Analysis
-          type: string
-        answer:
-          anyOf:
-            - type: string
-            - type: number
-          title: Answer
-      required:
-        - analysis
-        - answer
-      title: JudgeOutput
-      type: object
-    JudgeOutputType:
-      enum:
-        - REGRESSION
-        - CLASSIFICATION
-      title: JudgeOutputType
-      type: string
-    JudgeRegressionOutput:
-      properties:
-        max:
-          default: 1
-          exclusiveMaximum: 1e+09
-          title: Max
-          type: number
-        max_description:
-          title: Max Description
-          type: string
-        min:
-          default: 0
-          minimum: 0
-          title: Min
-          type: number
-        min_description:
-          title: Min Description
-          type: string
-        type:
-          const: REGRESSION
-          default: REGRESSION
-          title: Type
-          type: string
-      required:
-        - min_description
-        - max_description
-      title: JudgeRegressionOutput
       type: object
     KeywordArrayFieldDefinition:
       additionalProperties: false
@@ -14770,6 +14925,7 @@ components:
           title: Operator
           type: string
         query:
+          description: "The query string from which to match keywords: at most 20 whitespace-separated words."
           title: Query
           type: string
         top_k:
@@ -15058,14 +15214,6 @@ components:
         - object
       title: ListFilesResponse
       type: object
-    ListJudgesResponse:
-      properties:
-        judges:
-          $ref: "#/components/schemas/PaginatedResultJudgePreview"
-      required:
-        - judges
-      title: ListJudgesResponse
-      type: object
     ListLibrariesResponse:
       properties:
         data:
@@ -15156,6 +15304,14 @@ components:
           title: next_page_token
           type: string
       title: ListPromptsResponse
+      type: object
+    ListScorersResponse:
+      properties:
+        scorers:
+          $ref: "#/components/schemas/PaginatedResultScorerSummary"
+      required:
+        - scorers
+      title: ListScorersResponse
       type: object
     ListServiceAccountRolesResponse:
       properties:
@@ -15275,6 +15431,62 @@ components:
       required:
         - workspaces
       title: ListWorkspacesResponse
+      type: object
+    LlmJudgeConfig:
+      additionalProperties: false
+      properties:
+        model:
+          maxLength: 500
+          minLength: 1
+          title: Model
+          type: string
+        output_spec:
+          $ref: "#/components/schemas/EvaluationResultSpec"
+        params:
+          anyOf:
+            - $ref: "#/components/schemas/LlmJudgeParams"
+            - type: "null"
+        prompt_template:
+          maxLength: 20000
+          minLength: 1
+          title: Prompt Template
+          type: string
+      required:
+        - model
+        - prompt_template
+        - output_spec
+      title: LlmJudgeConfig
+      type: object
+    LlmJudgeParams:
+      additionalProperties: false
+      properties:
+        max_tokens:
+          anyOf:
+            - minimum: 0
+              type: integer
+            - type: "null"
+          title: Max Tokens
+        random_seed:
+          anyOf:
+            - minimum: 0
+              type: integer
+            - type: "null"
+          title: Random Seed
+        temperature:
+          anyOf:
+            - maximum: 1.5
+              minimum: 0
+              type: number
+            - type: "null"
+          title: Temperature
+        top_p:
+          anyOf:
+            - exclusiveMinimum: 0
+              maximum: 1
+              type: number
+            - type: "null"
+          title: Top P
+      title: LlmJudgeParams
       type: object
     LlmJudgeReference:
       additionalProperties: false
@@ -16280,6 +16492,13 @@ components:
         - top_k
       title: MaxCandidatesTooSmallResponse
       type: object
+    MemberStatus:
+      enum:
+        - active
+        - deactivated
+        - blocked
+      title: MemberStatus
+      type: string
     MemberSubscriptionOUT:
       properties:
         member_has_access:
@@ -16334,24 +16553,16 @@ components:
           title: Name
           type: string
         raw_role:
-          anyOf:
-            - $ref: "#/components/schemas/WorkspaceRole"
-            - $ref: "#/components/schemas/StaticWorkspaceRoles"
+          $ref: "#/components/schemas/StaticWorkspaceRoles"
           deprecated: true
           description: Deprecated single workspace role. Use 'raw_roles' instead.
-          title: Raw Role
         raw_roles:
-          anyOf:
-            - items:
-                $ref: "#/components/schemas/WorkspaceRole"
-              minItems: 1
-              type: array
-            - items:
-                $ref: "#/components/schemas/StaticWorkspaceRoles"
-              minItems: 1
-              type: array
           description: Workspace roles assigned to the member.
+          items:
+            $ref: "#/components/schemas/StaticWorkspaceRoles"
+          minItems: 1
           title: Raw Roles
+          type: array
         uuid:
           description: Workspace ID.
           format: uuid
@@ -17204,41 +17415,6 @@ components:
           title: Type
           type: string
       title: NearestNeighbourRetriever
-      type: object
-    NestedGroupRef:
-      properties:
-        name:
-          description: Display name of the group.
-          examples:
-            - Engineering Team
-          title: Name
-          type: string
-        uuid:
-          description: UUID of the group.
-          examples:
-            - a1b2c3d4-e5f6-7890-abcd-ef1234567890
-          format: uuid
-          title: Uuid
-          type: string
-      required:
-        - uuid
-        - name
-      title: NestedGroupRef
-      type: object
-    NestedGroupsOut:
-      properties:
-        children:
-          description: Groups directly nested inside this group (its direct children).
-          examples:
-            - - name: Engineering Team
-                uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
-          items:
-            $ref: "#/components/schemas/NestedGroupRef"
-          title: Children
-          type: array
-      required:
-        - children
-      title: NestedGroupsOut
       type: object
     NetworkEncodedInput:
       properties:
@@ -18589,6 +18765,7 @@ components:
         - JUDGE_NAME_ALREADY_EXISTS
         - JUDGE_NOT_FOUND
         - JUDGE_DID_NOT_CHANGE
+        - JUDGE_WRITES_FROZEN
         - DATASET_NOT_FOUND
         - DATASET_TASK_NOT_FOUND
         - DATASET_RECORD_NOT_FOUND
@@ -18603,6 +18780,7 @@ components:
         - EVALUATION_RUN_TRANSITION_IS_RUNNING_ALREADY
         - EVALUATION_RUN_TRANSITION_ERROR
         - EVALUATION_RUN_OUTPUT_RECORD_CONFLICT
+        - EVALUATION_RUN_INPUT_RECORD_CONFLICT
         - TEMPLATE_ERROR
         - TEMPLATE_SYNTAX_ERROR
         - PROJECT_NOT_FOUND
@@ -18690,6 +18868,9 @@ components:
           format: uuid
           title: Creator Id
           type: string
+        creator_type:
+          $ref: "#/components/schemas/PrincipalType"
+          default: user
         deleted_at:
           anyOf:
             - format: date-time
@@ -18789,6 +18970,9 @@ components:
           format: uuid
           title: Creator Id
           type: string
+        creator_type:
+          $ref: "#/components/schemas/PrincipalType"
+          default: user
         deleted_at:
           anyOf:
             - format: date-time
@@ -19199,24 +19383,16 @@ components:
           title: Expired
           type: boolean
         raw_role:
-          anyOf:
-            - $ref: "#/components/schemas/UserRole"
-            - $ref: "#/components/schemas/StaticOrganizationRoles"
+          $ref: "#/components/schemas/StaticOrganizationRoles"
           deprecated: true
           description: Deprecated single invite role. Use 'raw_roles' instead.
-          title: Raw Role
         raw_roles:
-          anyOf:
-            - items:
-                $ref: "#/components/schemas/UserRole"
-              minItems: 1
-              type: array
-            - items:
-                $ref: "#/components/schemas/StaticOrganizationRoles"
-              minItems: 1
-              type: array
           description: Organization roles assigned by the invite.
+          items:
+            $ref: "#/components/schemas/StaticOrganizationRoles"
+          minItems: 1
           title: Raw Roles
+          type: array
         uuid:
           description: Organization invitation ID.
           format: uuid
@@ -19361,24 +19537,16 @@ components:
           title: Invite Uuid
           type: string
         role:
-          anyOf:
-            - $ref: "#/components/schemas/UserRole"
-            - $ref: "#/components/schemas/StaticOrganizationRoles"
+          $ref: "#/components/schemas/StaticOrganizationRoles"
           deprecated: true
           description: Deprecated single invite role. Use 'roles' instead.
-          title: Role
         roles:
-          anyOf:
-            - items:
-                $ref: "#/components/schemas/UserRole"
-              minItems: 1
-              type: array
-            - items:
-                $ref: "#/components/schemas/StaticOrganizationRoles"
-              minItems: 1
-              type: array
           description: Organization roles assigned by the invite.
+          items:
+            $ref: "#/components/schemas/StaticOrganizationRoles"
+          minItems: 1
           title: Roles
+          type: array
       required:
         - invite_uuid
         - email
@@ -19816,30 +19984,6 @@ components:
         - count
       title: PaginatedResultEvaluationV2
       type: object
-    PaginatedResultJudgePreview:
-      properties:
-        count:
-          title: Count
-          type: integer
-        next:
-          anyOf:
-            - type: string
-            - type: "null"
-          title: Next
-        previous:
-          anyOf:
-            - type: string
-            - type: "null"
-          title: Previous
-        results:
-          items:
-            $ref: "#/components/schemas/Judge"
-          title: Results
-          type: array
-      required:
-        - count
-      title: PaginatedResultJudgePreview
-      type: object
     PaginatedResultOptimization:
       properties:
         count:
@@ -19935,6 +20079,30 @@ components:
       required:
         - count
       title: PaginatedResultProject
+      type: object
+    PaginatedResultScorerSummary:
+      properties:
+        count:
+          title: Count
+          type: integer
+        next:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Next
+        previous:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Previous
+        results:
+          items:
+            $ref: "#/components/schemas/ScorerSummary"
+          title: Results
+          type: array
+      required:
+        - count
+      title: PaginatedResultScorerSummary
       type: object
     PaginationInfo:
       properties:
@@ -20300,12 +20468,18 @@ components:
             type: number
           title: Judge Scores
           type: object
+        operation_name:
+          title: Operation Name
+          type: string
         span_id:
           pattern: ^[0-9a-f]{16}$
           title: Span Id
           type: string
         span_name:
           title: Span Name
+          type: string
+        tool_name:
+          title: Tool Name
           type: string
         trace_id:
           pattern: ^[0-9a-f]{32}$
@@ -20315,6 +20489,8 @@ components:
         - trace_id
         - span_id
         - span_name
+        - operation_name
+        - tool_name
         - duration_ns
         - evaluated_at
         - judge_scores
@@ -20473,6 +20649,9 @@ components:
           format: uuid
           title: Creator Id
           type: string
+        creator_type:
+          $ref: "#/components/schemas/PrincipalType"
+          default: user
         deleted_at:
           anyOf:
             - format: date-time
@@ -20851,6 +21030,7 @@ components:
             oneOf:
               - $ref: "#/components/schemas/KeywordRetriever"
               - $ref: "#/components/schemas/NearestNeighbourRetriever"
+          maxItems: 4
           minItems: 1
           title: Retrievers
           type: array
@@ -20955,6 +21135,18 @@ components:
       required:
         - data
       title: RawAudio
+      type: object
+    ReactivateUserOUT:
+      properties:
+        message:
+          description: Reactivation result message.
+          examples:
+            - User reactivated successfully
+          title: Message
+          type: string
+      required:
+        - message
+      title: ReactivateUserOUT
       type: object
     ReadRequest:
       additionalProperties: false
@@ -21800,6 +21992,15 @@ components:
           default: null
           title: Allowed Callers
           x-speakeasy-unknown-values: disallow
+        async:
+          anyOf:
+            - type: boolean
+              x-speakeasy-unknown-values: disallow
+            - type: "null"
+              x-speakeasy-unknown-values: disallow
+          default: null
+          title: Async
+          x-speakeasy-unknown-values: disallow
         defer_loading:
           anyOf:
             - type: boolean
@@ -21907,7 +22108,9 @@ components:
             - server_error
             - rate_limit_exceeded
             - invalid_prompt
+            - data_residency_mismatch
             - bio_policy
+            - misalignment_policy_violation
             - vector_store_timeout
             - invalid_image
             - invalid_image_format
@@ -21930,9 +22133,44 @@ components:
           title: Message
           type: string
           x-speakeasy-unknown-values: disallow
+        misalignment:
+          anyOf:
+            - $ref: "#/components/schemas/ResponsesMisalignment"
+              x-speakeasy-unknown-values: disallow
+            - type: "null"
+              x-speakeasy-unknown-values: disallow
+          default: null
+          x-speakeasy-unknown-values: disallow
+        param:
+          anyOf:
+            - type: string
+              x-speakeasy-unknown-values: disallow
+            - type: "null"
+              x-speakeasy-unknown-values: disallow
+          default: null
+          title: Param
+          x-speakeasy-unknown-values: disallow
+        reason:
+          enum:
+            - invalid_output_format
+            - generation_failed
+            - missing_finish_reason
+          title: Reason
+          type: string
+          x-speakeasy-unknown-values: disallow
+        type:
+          anyOf:
+            - type: string
+              x-speakeasy-unknown-values: disallow
+            - type: "null"
+              x-speakeasy-unknown-values: disallow
+          default: null
+          title: Type
+          x-speakeasy-unknown-values: disallow
       required:
         - code
         - message
+        - reason
       title: ResponsesError
       type: object
       x-speakeasy-unknown-values: disallow
@@ -22111,10 +22349,6 @@ components:
           title: Item Id
           type: string
           x-speakeasy-unknown-values: disallow
-        name:
-          title: Name
-          type: string
-          x-speakeasy-unknown-values: disallow
         output_index:
           title: Output Index
           type: integer
@@ -22131,7 +22365,6 @@ components:
       required:
         - arguments
         - item_id
-        - name
         - output_index
         - sequence_number
         - type
@@ -22142,6 +22375,7 @@ components:
       additionalProperties: true
       properties:
         call_id:
+          minLength: 1
           title: Call Id
           type: string
           x-speakeasy-unknown-values: disallow
@@ -22162,6 +22396,22 @@ components:
             - type: "null"
               x-speakeasy-unknown-values: disallow
           title: Id
+          x-speakeasy-unknown-values: disallow
+        name:
+          anyOf:
+            - type: string
+              x-speakeasy-unknown-values: disallow
+            - type: "null"
+              x-speakeasy-unknown-values: disallow
+          title: Name
+          x-speakeasy-unknown-values: disallow
+        namespace:
+          anyOf:
+            - type: string
+              x-speakeasy-unknown-values: disallow
+            - type: "null"
+              x-speakeasy-unknown-values: disallow
+          title: Namespace
           x-speakeasy-unknown-values: disallow
         output:
           anyOf:
@@ -22198,9 +22448,9 @@ components:
           type: string
           x-speakeasy-unknown-values: disallow
       required:
-        - call_id
         - output
         - type
+        - call_id
       title: ResponsesFunctionCallOutput
       type: object
       x-speakeasy-unknown-values: disallow
@@ -22252,6 +22502,15 @@ components:
               x-speakeasy-unknown-values: disallow
           default: null
           title: Allowed Callers
+          x-speakeasy-unknown-values: disallow
+        async:
+          anyOf:
+            - type: boolean
+              x-speakeasy-unknown-values: disallow
+            - type: "null"
+              x-speakeasy-unknown-values: disallow
+          default: null
+          title: Async
           x-speakeasy-unknown-values: disallow
         defer_loading:
           anyOf:
@@ -22321,6 +22580,15 @@ components:
         arguments:
           title: Arguments
           type: string
+          x-speakeasy-unknown-values: disallow
+        async:
+          anyOf:
+            - type: boolean
+              x-speakeasy-unknown-values: disallow
+            - type: "null"
+              x-speakeasy-unknown-values: disallow
+          default: null
+          title: Async
           x-speakeasy-unknown-values: disallow
         call_id:
           title: Call Id
@@ -22440,7 +22708,9 @@ components:
           anyOf:
             - enum:
                 - max_output_tokens
+                - max_messages
                 - content_filter
+                - steered
               type: string
               x-speakeasy-unknown-values: disallow
             - type: "null"
@@ -22814,6 +23084,59 @@ components:
       title: ResponsesMessage
       type: object
       x-speakeasy-unknown-values: disallow
+    ResponsesMisalignment:
+      additionalProperties: true
+      properties:
+        detailed_explanation:
+          anyOf:
+            - type: string
+              x-speakeasy-unknown-values: disallow
+            - type: "null"
+              x-speakeasy-unknown-values: disallow
+          default: null
+          title: Detailed Explanation
+          x-speakeasy-unknown-values: disallow
+        error_type:
+          anyOf:
+            - type: string
+              x-speakeasy-unknown-values: disallow
+            - type: "null"
+              x-speakeasy-unknown-values: disallow
+          default: null
+          title: Error Type
+          x-speakeasy-unknown-values: disallow
+        review_target:
+          anyOf:
+            - type: string
+              x-speakeasy-unknown-values: disallow
+            - type: "null"
+              x-speakeasy-unknown-values: disallow
+          default: null
+          title: Review Target
+          x-speakeasy-unknown-values: disallow
+        steer:
+          anyOf:
+            - $ref: "#/components/schemas/ResponsesMisalignmentSteer"
+              x-speakeasy-unknown-values: disallow
+            - type: "null"
+              x-speakeasy-unknown-values: disallow
+          default: null
+          x-speakeasy-unknown-values: disallow
+      title: ResponsesMisalignment
+      type: object
+      x-speakeasy-unknown-values: disallow
+    ResponsesMisalignmentSteer:
+      additionalProperties: true
+      properties:
+        message:
+          title: Message
+          type: string
+          x-speakeasy-unknown-values: disallow
+      required:
+        - message
+      title: ResponsesMisalignmentSteer
+      type: object
+      x-speakeasy-unknown-values: disallow
     ResponsesNamespaceTool:
       additionalProperties: true
       properties:
@@ -23133,6 +23456,17 @@ components:
           const: explicit
           title: Mode
           type: string
+          x-speakeasy-unknown-values: disallow
+        ttl:
+          anyOf:
+            - enum:
+                - 30m
+                - 12h
+              type: string
+              x-speakeasy-unknown-values: disallow
+            - type: "null"
+              x-speakeasy-unknown-values: disallow
+          title: Ttl
           x-speakeasy-unknown-values: disallow
       required:
         - mode
@@ -23661,6 +23995,15 @@ components:
           default: null
           title: Allowed Callers
           x-speakeasy-unknown-values: disallow
+        async:
+          anyOf:
+            - type: boolean
+              x-speakeasy-unknown-values: disallow
+            - type: "null"
+              x-speakeasy-unknown-values: disallow
+          default: null
+          title: Async
+          x-speakeasy-unknown-values: disallow
         defer_loading:
           anyOf:
             - type: boolean
@@ -23875,12 +24218,10 @@ components:
         consumers (e.g. the dashboard rotate button) can show an appropriate message without hardcoding
         the rules. Consumers should treat unknown values as "rotation unavailable".
 
-        Reasons fall into three kinds. Scope-based reasons are immutable (a function of the key's scope
-        alone) and are owned by services that hold the key, e.g. Albe. Key-state reasons depend on the
-        key's own state (e.g. expiry) and are likewise determined where the key lives. Permission-based
-        reasons are request-scoped (they depend on who is asking) and can only be determined where the
-        acting user is known, e.g. the dashboard. When several reasons apply, precedence runs immutable
-        scope-based, then key-state, then request-scoped permission.
+        Key-state reasons depend on the key's own state (e.g. expiry) and are determined where the key
+        lives, e.g. Albe. Permission-based reasons are request-scoped (they depend on who is asking) and can
+        only be determined where the acting user is known, e.g. the dashboard. When both apply, the
+        key-state reason wins.
       enum:
         - unsupported_scope
         - key_expired
@@ -24360,6 +24701,12 @@ components:
             - type: "null"
           description: IANA time zone name, for example ``US/Central``.
           title: Time Zone Name
+        user_id:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: ID of the user who created the schedule.
+          title: User Id
         workflow_name:
           description: Name of the workflow this schedule triggers.
           title: Workflow Name
@@ -24514,9 +24861,13 @@ components:
     ScimSyncGroupRefOut:
       properties:
         groupName:
+          examples:
+            - Platform Team
           title: Groupname
           type: string
         uuid:
+          examples:
+            - 33333333-3333-4333-8333-000000000001
           title: Uuid
           type: string
       required:
@@ -24529,6 +24880,8 @@ components:
         group:
           $ref: "#/components/schemas/ScimSyncGroupRefOut"
         previous_groupName:
+          examples:
+            - Platform Engineering
           title: Previous Groupname
           type: string
       required:
@@ -24616,9 +24969,13 @@ components:
     ScimSyncUserRefOut:
       properties:
         userName:
+          examples:
+            - ada@example.com
           title: Username
           type: string
         uuid:
+          examples:
+            - 11111111-1111-4111-8111-000000000001
           title: Uuid
           type: string
       required:
@@ -24705,6 +25062,121 @@ components:
       required:
         - evaluator_name
       title: ScoreSortInput
+      type: object
+    Scorer:
+      properties:
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        description:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Description
+        kind:
+          $ref: "#/components/schemas/ScorerKind"
+        latest_version:
+          $ref: "#/components/schemas/ScorerVersion"
+        name:
+          title: Name
+          type: string
+        slug:
+          title: Slug
+          type: string
+        updated_at:
+          format: date-time
+          title: Updated At
+          type: string
+      required:
+        - slug
+        - name
+        - description
+        - kind
+        - latest_version
+        - created_at
+        - updated_at
+      title: Scorer
+      type: object
+    ScorerKind:
+      enum:
+        - llm_judge
+      title: ScorerKind
+      type: string
+    ScorerSummary:
+      properties:
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        creator_id:
+          format: uuid
+          title: Creator Id
+          type: string
+        creator_type:
+          $ref: "#/components/schemas/PrincipalType"
+          default: user
+        description:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Description
+        is_ootb:
+          title: Is Ootb
+          type: boolean
+        kind:
+          $ref: "#/components/schemas/ScorerKind"
+        name:
+          title: Name
+          type: string
+        slug:
+          title: Slug
+          type: string
+        updated_at:
+          format: date-time
+          title: Updated At
+          type: string
+      required:
+        - slug
+        - name
+        - description
+        - kind
+        - is_ootb
+        - creator_id
+        - created_at
+        - updated_at
+      title: ScorerSummary
+      type: object
+    ScorerVersion:
+      properties:
+        config:
+          $ref: "#/components/schemas/LlmJudgeConfig"
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        creator_id:
+          format: uuid
+          title: Creator Id
+          type: string
+        creator_type:
+          $ref: "#/components/schemas/PrincipalType"
+          default: user
+        variables:
+          items:
+            type: string
+          title: Variables
+          type: array
+        version:
+          title: Version
+          type: integer
+      required:
+        - version
+        - config
+        - variables
+        - creator_id
+        - created_at
+      title: ScorerVersion
       type: object
     SearchAllEvaluationRunsResponse:
       properties:
@@ -25002,21 +25474,6 @@ components:
         - priority
       title: ServiceTier
       type: string
-    SetNestedGroupsIn:
-      properties:
-        child_group_uuids:
-          description: Full replacement list of UUIDs of groups to nest directly inside this group.
-          examples:
-            - - a1b2c3d4-e5f6-7890-abcd-ef1234567890
-          items:
-            format: uuid
-            type: string
-          title: Child Group Uuids
-          type: array
-      required:
-        - child_group_uuids
-      title: SetNestedGroupsIn
-      type: object
     SetServiceAccountRolesRequest:
       description: Request body for replacing the workspace roles assigned to a service account.
       properties:
@@ -25027,7 +25484,7 @@ components:
           items:
             format: uuid
             type: string
-          maxItems: 15
+          maxItems: 16
           minItems: 1
           title: Role Ids
           type: array
@@ -25630,6 +26087,7 @@ components:
         - ff86d432-7f27-47f8-b02f-b5c102ef6a55
         - 0f9acbf6-93b5-42c7-a227-fc7652755f65
         - 94ef59cf-56bf-4383-9dd6-1fee77d370af
+        - 24b51cb8-72fe-411c-8652-c719c7270ca2
         - 7e69e493-caf6-4671-af60-84951754d9fc
         - b23cd6e0-91cd-4a8a-9869-b30366bf3966
       title: StaticWorkspaceRoles
@@ -25969,6 +26427,7 @@ components:
         - WALLET
         - MONTHLY_LIMIT
         - WORKSPACE_MONTHLY_LIMIT
+        - SPENDING_LIMIT
         - SHARED_BUDGET
         - AUTO_RECHARGE
         - PAYMENT_METHOD
@@ -27294,8 +27753,16 @@ components:
           type: array
         filler:
           anyOf:
-            - $ref: "#/components/schemas/StaticToolFiller"
+            - discriminator:
+                mapping:
+                  generated: "#/components/schemas/GeneratedToolFiller"
+                  static: "#/components/schemas/StaticToolFiller"
+                propertyName: type
+              oneOf:
+                - $ref: "#/components/schemas/StaticToolFiller"
+                - $ref: "#/components/schemas/GeneratedToolFiller"
             - type: "null"
+          title: Filler
         type:
           const: transfer_call
           default: transfer_call
@@ -27889,49 +28356,6 @@ components:
         - name
       title: UpdateInvocationBody
       type: object
-    UpdateJudgeRequest:
-      properties:
-        description:
-          maxLength: 2000
-          title: Description
-          type: string
-        instructions:
-          maxLength: 10000
-          title: Instructions
-          type: string
-        model_name:
-          maxLength: 500
-          title: Model Name
-          type: string
-        name:
-          maxLength: 50
-          minLength: 5
-          title: Name
-          type: string
-        output:
-          discriminator:
-            mapping:
-              CLASSIFICATION: "#/components/schemas/JudgeClassificationOutput"
-              REGRESSION: "#/components/schemas/JudgeRegressionOutput"
-            propertyName: type
-          oneOf:
-            - $ref: "#/components/schemas/JudgeClassificationOutput"
-            - $ref: "#/components/schemas/JudgeRegressionOutput"
-          title: Output
-        tools:
-          items:
-            type: string
-          title: Tools
-          type: array
-      required:
-        - name
-        - description
-        - model_name
-        - output
-        - instructions
-        - tools
-      title: UpdateJudgeRequest
-      type: object
     UpdateLibraryRequest:
       properties:
         description:
@@ -28453,6 +28877,7 @@ components:
                   - untracked
                   - call_source
                   - call_type
+                  - user_agent
                   - customer_tier
                 type: string
               type: array
@@ -28755,6 +29180,7 @@ components:
                   - untracked
                   - call_source
                   - call_type
+                  - user_agent
                   - customer_tier
                 type: string
               type: array
@@ -29039,6 +29465,14 @@ components:
           examples:
             - usage
           title: Usage Type
+        user_agent:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Harness identified from the request User-Agent header.
+          examples:
+            - claude_code
+          title: User Agent
         user_id:
           anyOf:
             - type: string
@@ -30070,8 +30504,16 @@ components:
           type: string
         filler:
           anyOf:
-            - $ref: "#/components/schemas/StaticToolFiller"
+            - discriminator:
+                mapping:
+                  generated: "#/components/schemas/GeneratedToolFiller"
+                  static: "#/components/schemas/StaticToolFiller"
+                propertyName: type
+              oneOf:
+                - $ref: "#/components/schemas/StaticToolFiller"
+                - $ref: "#/components/schemas/GeneratedToolFiller"
             - type: "null"
+          title: Filler
         tool_configuration:
           anyOf:
             - $ref: "#/components/schemas/ToolConfiguration"
@@ -30091,8 +30533,16 @@ components:
       properties:
         filler:
           anyOf:
-            - $ref: "#/components/schemas/StaticToolFiller"
+            - discriminator:
+                mapping:
+                  generated: "#/components/schemas/GeneratedToolFiller"
+                  static: "#/components/schemas/StaticToolFiller"
+                propertyName: type
+              oneOf:
+                - $ref: "#/components/schemas/StaticToolFiller"
+                - $ref: "#/components/schemas/GeneratedToolFiller"
             - type: "null"
+          title: Filler
         library_ids:
           description: Ids of the library in which to search.
           items:
@@ -30164,7 +30614,6 @@ components:
         mapping:
           agent.state.changed: "#/components/schemas/VoiceAgentStateChangedEvent"
           error: "#/components/schemas/VoiceAgentErrorEvent"
-          session.updated: "#/components/schemas/VoiceAgentSessionUpdatedEvent"
           tool_call.ended: "#/components/schemas/VoiceAgentToolCallEndedEvent"
           tool_call.started: "#/components/schemas/VoiceAgentToolCallStartedEvent"
           transcription.segment: "#/components/schemas/VoiceAgentTranscriptEvent"
@@ -30175,14 +30624,21 @@ components:
         - $ref: "#/components/schemas/VoiceAgentErrorEvent"
         - $ref: "#/components/schemas/VoiceAgentTranscriptEvent"
         - $ref: "#/components/schemas/VoiceAgentStateChangedEvent"
-        - $ref: "#/components/schemas/VoiceAgentSessionUpdatedEvent"
     VoiceAgentFunctionTool:
       additionalProperties: false
       properties:
         filler:
           anyOf:
-            - $ref: "#/components/schemas/StaticToolFiller"
+            - discriminator:
+                mapping:
+                  generated: "#/components/schemas/GeneratedToolFiller"
+                  static: "#/components/schemas/StaticToolFiller"
+                propertyName: type
+              oneOf:
+                - $ref: "#/components/schemas/StaticToolFiller"
+                - $ref: "#/components/schemas/GeneratedToolFiller"
             - type: "null"
+          title: Filler
         function:
           $ref: "#/components/schemas/Function"
         timeout_ms:
@@ -30207,8 +30663,16 @@ components:
       properties:
         filler:
           anyOf:
-            - $ref: "#/components/schemas/StaticToolFiller"
+            - discriminator:
+                mapping:
+                  generated: "#/components/schemas/GeneratedToolFiller"
+                  static: "#/components/schemas/StaticToolFiller"
+                propertyName: type
+              oneOf:
+                - $ref: "#/components/schemas/StaticToolFiller"
+                - $ref: "#/components/schemas/GeneratedToolFiller"
             - type: "null"
+          title: Filler
         function:
           $ref: "#/components/schemas/FunctionRequest"
         timeout_ms:
@@ -30227,27 +30691,6 @@ components:
       required:
         - function
       title: VoiceAgentFunctionToolRequest
-      type: object
-    VoiceAgentSessionUpdatedEvent:
-      description: |-
-        Sent to every participant once a session update is committed.
-
-        `instructions` and `tools` reach the agent at its next turn boundary.
-      properties:
-        session:
-          $ref: "#/components/schemas/AudioAgentConfigurationResponseConfig"
-        ts:
-          title: Ts
-          type: number
-        type:
-          const: session.updated
-          default: session.updated
-          title: Type
-          type: string
-      required:
-        - session
-        - ts
-      title: VoiceAgentSessionUpdatedEvent
       type: object
     VoiceAgentStateChangedEvent:
       properties:
@@ -30415,8 +30858,16 @@ components:
       properties:
         filler:
           anyOf:
-            - $ref: "#/components/schemas/StaticToolFiller"
+            - discriminator:
+                mapping:
+                  generated: "#/components/schemas/GeneratedToolFiller"
+                  static: "#/components/schemas/StaticToolFiller"
+                propertyName: type
+              oneOf:
+                - $ref: "#/components/schemas/StaticToolFiller"
+                - $ref: "#/components/schemas/GeneratedToolFiller"
             - type: "null"
+          title: Filler
         tool_configuration:
           anyOf:
             - $ref: "#/components/schemas/ToolConfiguration"
@@ -30738,11 +31189,22 @@ components:
           format: uuid
           title: Creator Id
           type: string
+        event_id_pattern:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Event Id Pattern
         event_type_path:
           anyOf:
             - type: string
             - type: "null"
+          deprecated: true
           title: Event Type Path
+        event_type_pattern:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Event Type Pattern
         expires_at:
           anyOf:
             - format: date-time
@@ -30807,6 +31269,12 @@ components:
         url:
           title: Url
           type: string
+        url_verification_token:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: "Token the provider echoes back when verifying the URL (WhatsApp: the Verify token)"
+          title: Url Verification Token
         url_verified:
           anyOf:
             - type: boolean
@@ -30840,7 +31308,6 @@ components:
         - signature_payload_pattern
         - signature_encoding
         - success_status_code
-        - event_type_path
         - expires_at
         - created_at
         - updated_at
@@ -30855,6 +31322,7 @@ components:
         - linear
         - microsoft
         - ashby
+        - whatsapp
         - custom
       title: WebhookProvider
       type: string
@@ -30934,6 +31402,15 @@ components:
         ``principal`` field is a discriminated union; the remaining fields are the
         shared session context and apply to either principal kind.
       properties:
+        customer_id:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: The billing customer identifier from the authenticated session. Identifies the billing account, not the organization (organization.id); the IDs are not interchangeable. Null when no customer is selected.
+          examples:
+            - 3b241101-e2bb-4255-8caf-4136c566a962
+            - null
+          title: Customer Id
         organization:
           anyOf:
             - $ref: "#/components/schemas/WhoamiOrganization"
@@ -33261,7 +33738,7 @@ components:
             - format: uuid
               type: string
             - type: "null"
-          description: Rebuild the worker from this archive, dropping 'github_url' and 'revision'. Sending 'github_url' instead moves it back to a repository.
+          description: Rebuild the worker from this archive, dropping 'repository_url' and 'revision'. Sending 'repository_url' instead moves it back to a repository.
           title: Archive Id
         backend_spec:
           anyOf:
@@ -33272,7 +33749,14 @@ components:
           anyOf:
             - type: string
             - type: "null"
+          description: Deprecated alias of 'repository_url' for a GitHub repository. Set only 'repository_url'.
           title: Github Url
+        repository_url:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Rebuild the worker from this repository, on GitHub or the git server, dropping 'archive_id'.
+          title: Repository Url
         requested_roles:
           anyOf:
             - items:
@@ -33333,7 +33817,6 @@ components:
           type: string
         raw_role:
           anyOf:
-            - $ref: "#/components/schemas/WorkspaceRole"
             - $ref: "#/components/schemas/StaticWorkspaceRoles"
             - $ref: "#/components/schemas/StaticOrganizationRoles"
           deprecated: true
@@ -33343,7 +33826,6 @@ components:
           description: Roles granted for the Workspace.
           items:
             anyOf:
-              - $ref: "#/components/schemas/WorkspaceRole"
               - $ref: "#/components/schemas/StaticWorkspaceRoles"
               - $ref: "#/components/schemas/StaticOrganizationRoles"
           minItems: 1
@@ -34265,6 +34747,47 @@ paths:
             examples:
               - Engineering
             title: Search
+        - description: Filter groups to those assigned to this Workspace. Assignments to archived Workspaces never match.
+          examples: {}
+          in: query
+          name: workspace_uuid
+          required: false
+          schema:
+            anyOf:
+              - format: uuid
+                type: string
+              - type: "null"
+            description: Filter groups to those assigned to this Workspace. Assignments to archived Workspaces never match.
+            examples:
+              - a1b2c3d4-e5f6-7890-abcd-ef1234567890
+            title: Workspace Uuid
+        - description: Filter groups to those holding this role on a Workspace. When combined with workspace_uuid, the role must be held on that Workspace. Assignments to archived Workspaces never match.
+          examples: {}
+          in: query
+          name: role
+          required: false
+          schema:
+            anyOf:
+              - enum:
+                  - billing
+                  - user
+                  - contributor
+                  - dev
+                  - dev_contributor
+                  - mistral_code_user
+                  - vibe_code_cli_user
+                  - cloud_user
+                  - workspace_contributor
+                  - workspace_admin
+                  - observability_viewer
+                  - workflow_executor
+                  - member
+                type: string
+              - type: "null"
+            description: Filter groups to those holding this role on a Workspace. When combined with workspace_uuid, the role must be held on that Workspace. Assignments to archived Workspaces never match.
+            examples:
+              - workspace_admin
+            title: Role
       responses:
         "200":
           content:
@@ -34277,6 +34800,7 @@ paths:
       summary: Get User Groups
       tags:
         - beta.admin.user-groups
+      x-speakeasy-max-method-params: 5
     post:
       description: Create a new user group.
       operationId: users_api_admin_user_groups_create_user_group
@@ -34496,59 +35020,6 @@ paths:
       summary: Assign Users To Group
       tags:
         - beta.admin.user-groups
-  /v1/admin/user-groups/{group_uuid}/nested:
-    get:
-      description: List the groups directly nested inside this group.
-      operationId: users_api_admin_user_groups_get_nested_groups
-      parameters:
-        - description: User group ID.
-          in: path
-          name: group_uuid
-          required: true
-          schema:
-            description: User group ID.
-            format: uuid
-            title: Group Uuid
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/NestedGroupsOut"
-          description: OK
-      security:
-        - AdminApiKey: []
-      summary: Get Nested Groups Admin
-      tags:
-        - beta.admin.user-groups
-    patch:
-      description: Replace the set of groups directly nested inside this group.
-      operationId: users_api_admin_user_groups_set_nested_groups
-      parameters:
-        - description: User group ID.
-          in: path
-          name: group_uuid
-          required: true
-          schema:
-            description: User group ID.
-            format: uuid
-            title: Group Uuid
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/SetNestedGroupsIn"
-        required: true
-      responses:
-        "204":
-          description: No Content
-      security:
-        - AdminApiKey: []
-      summary: Set Nested Groups Admin
-      tags:
-        - beta.admin.user-groups
   /v1/admin/user-groups/{group_uuid}/organization-role:
     patch:
       description: Update the organization role for a user group.
@@ -34757,6 +35228,18 @@ paths:
             examples:
               - alice.martin@example.com
             title: Email
+        - description: Also return deactivated and blocked members.
+          examples: {}
+          in: query
+          name: include_inactive
+          required: false
+          schema:
+            default: false
+            description: Also return deactivated and blocked members.
+            examples:
+              - true
+            title: Include Inactive
+            type: boolean
       responses:
         "200":
           content:
@@ -34864,7 +35347,10 @@ paths:
         - beta.admin.users
   /v1/admin/users/{user_id}:
     delete:
-      description: Remove a member from the Organization.
+      description: |-
+        Remove a member from the Organization, whatever their account status.
+
+        Members whose email is on one of the Organization's verified domains cannot be removed: deactivate them instead.
       operationId: users_api_admin_users_delete_user
       parameters:
         - description: User ID.
@@ -34889,7 +35375,7 @@ paths:
       tags:
         - beta.admin.users
     get:
-      description: Get details for an Organization member.
+      description: Get details for an Organization member, including deactivated and blocked members.
       operationId: users_api_admin_users_get_user
       parameters:
         - description: User ID.
@@ -34947,8 +35433,9 @@ paths:
   /v1/admin/users/{user_id}/deactivate:
     post:
       description: |-
-        Deactivate a user whose email address is on one of the Organization's verified domains: remove them from
-        every organization they belong to, which revokes their API keys, and end their sessions.
+        Deactivate a user whose email address is on one of the Organization's verified domains: end their sessions,
+        delete their API keys and release their seats. Their memberships, groups and roles are kept, so that
+        `POST /users/{user_id}/reactivate` can give their access back.
       operationId: users_api_admin_users_deactivate_user
       parameters:
         - description: User ID.
@@ -34970,6 +35457,87 @@ paths:
       security:
         - AdminApiKey: []
       summary: Deactivate User
+      tags:
+        - beta.admin.users
+  /v1/admin/users/{user_id}/reactivate:
+    post:
+      description: |-
+        Reactivate a deactivated user whose email address is on one of the Organization's verified domains: give
+        them their access back, with their seats when free ones remain.
+      operationId: users_api_admin_users_reactivate_user
+      parameters:
+        - description: User ID.
+          in: path
+          name: user_id
+          required: true
+          schema:
+            description: User ID.
+            format: uuid
+            title: User Id
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactivateUserOUT"
+          description: OK
+      security:
+        - AdminApiKey: []
+      summary: Reactivate User
+      tags:
+        - beta.admin.users
+  /v1/admin/users/{user_id}/workspaces:
+    get:
+      description: List the Workspaces an Organization member belongs to, with their roles.
+      operationId: users_api_admin_users_get_user_workspaces
+      parameters:
+        - description: User ID.
+          in: path
+          name: user_id
+          required: true
+          schema:
+            description: User ID.
+            format: uuid
+            title: User Id
+            type: string
+        - description: Page number to return.
+          examples: {}
+          in: query
+          name: page
+          required: false
+          schema:
+            default: 1
+            description: Page number to return.
+            examples:
+              - 1
+            exclusiveMinimum: 0
+            title: Page
+            type: integer
+        - description: Maximum number of results per page.
+          examples: {}
+          in: query
+          name: page_size
+          required: false
+          schema:
+            default: 25
+            description: Maximum number of results per page.
+            examples:
+              - 25
+            exclusiveMinimum: 0
+            maximum: 100
+            title: Page Size
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserWorkspacesOUT"
+          description: OK
+      security:
+        - AdminApiKey: []
+      summary: Get User Workspaces
       tags:
         - beta.admin.users
   /v1/admin/workspaces:
@@ -36188,6 +36756,45 @@ paths:
       summary: Get session status
       tags:
         - audio.sessions
+    patch:
+      description: |-
+        Update the instructions, tools or turn handling of a live session.
+
+        The agent applies the update at its next turn boundary, so it is not yet
+        applied when this returns.
+        The agent's `session_updated` and `session_update_failed` webhooks report
+        the outcome to your server.
+      operationId: update_session_v1_audio_sessions__session_id__patch
+      parameters:
+        - in: path
+          name: session_id
+          required: true
+          schema:
+            format: uuid
+            title: Session Id
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AudioSessionUpdateRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AudioSessionUpdateResponse"
+          description: Successful Response
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+          description: Validation Error
+      summary: Update a live agent session
+      tags:
+        - audio.sessions
   /v1/audio/speech:
     post:
       description: Speech
@@ -37093,6 +37700,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Connector"
           description: Successful Response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectorErrorResponse"
+          description: Bad Request
         "422":
           content:
             application/json:
@@ -37572,6 +38185,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
           description: Successful Response
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectorErrorResponse"
+          description: Unauthorized
         "422":
           content:
             application/json:
@@ -37582,7 +38201,7 @@ paths:
       tags:
         - beta.connectors
     post:
-      description: Create consumer credentials for a given connector and consumer scope (organization, workspace, user)
+      description: Create consumer credentials for a given connector and consumer scope (workspace, user)
       operationId: connector_create_credentials_v1
       parameters:
         - in: path
@@ -37601,7 +38220,6 @@ paths:
             enum:
               - user
               - workspace
-              - organization
             title: Consumer Scope
             type: string
       requestBody:
@@ -37617,6 +38235,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
           description: Successful Response
+        "401":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectorErrorResponse"
+          description: Unauthorized
         "422":
           content:
             application/json:
@@ -37733,6 +38357,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/Connector"
           description: Successful Response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConnectorErrorResponse"
+          description: Bad Request
         "422":
           content:
             application/json:
@@ -38427,6 +39057,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/HTTPValidationError"
           description: Validation Error
+        "429":
+          description: Query embedding rate limited
         "500":
           description: Search execution failed
       summary: Search a managed index
@@ -39171,7 +39803,7 @@ paths:
       description: |-
         Upload a file that can be used across various endpoints.
 
-        The size of individual files can be a maximum of 512 MB. The Fine-tuning API only supports .jsonl files.
+        The size of individual files can be a maximum of 512 MB.
 
         Please contact us if you need to increase these storage limits.
       operationId: files_api_routes_upload_file
@@ -39217,8 +39849,8 @@ paths:
                     mimetype: application/jsonl
                     num_lines: 2
                     object: file
-                    purpose: fine-tune
-                    sample_type: instruct
+                    purpose: batch
+                    sample_type: batch_request
                     signature: d4821d2de1917341
                     source: upload
               schema:
@@ -40641,64 +41273,6 @@ paths:
                 $ref: "#/components/schemas/ObservabilityError"
           description: Unprocessable Entity - Validation error
       summary: Get the content of a given dataset record
-      tags:
-        - beta.observability.datasets.records
-  /v1/observability/dataset-records/{dataset_record_id}/live-judging:
-    post:
-      description: Run Judge on a dataset record based on the given options
-      operationId: judge_dataset_record_v1_observability_dataset_records__dataset_record_id__live_judging_post
-      parameters:
-        - in: path
-          name: dataset_record_id
-          required: true
-          schema:
-            format: uuid
-            title: Dataset Record Id
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/JudgeDatasetRecordRequest"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/JudgeOutput"
-          description: Successful Response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Bad Request - Invalid request parameters or data
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Not Found - Resource does not exist
-        "408":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Request Timeout - Operation timed out
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Conflict - Resource conflict
-        "422":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Unprocessable Entity - Validation error
-      summary: Run Judge on a dataset record based on the given options
       tags:
         - beta.observability.datasets.records
   /v1/observability/dataset-records/{dataset_record_id}/payload:
@@ -42132,361 +42706,6 @@ paths:
       summary: Search evaluation runs with filters
       tags:
         - beta.observability.evaluations.runs
-  /v1/observability/judges:
-    get:
-      description: Get judges with optional filtering and search
-      operationId: get_judges_v1_observability_judges_get
-      parameters:
-        - description: Filter by judge output types
-          in: query
-          name: type_filter
-          required: false
-          schema:
-            anyOf:
-              - items:
-                  $ref: "#/components/schemas/JudgeOutputType"
-                type: array
-              - type: "null"
-            description: Filter by judge output types
-            title: Type Filter
-        - description: Filter by model names
-          in: query
-          name: model_filter
-          required: false
-          schema:
-            anyOf:
-              - items:
-                  type: string
-                type: array
-              - type: "null"
-            description: Filter by model names
-            title: Model Filter
-        - in: query
-          name: page_size
-          required: false
-          schema:
-            default: 50
-            maximum: 100
-            minimum: 0
-            title: Page Size
-            type: integer
-        - in: query
-          name: page
-          required: false
-          schema:
-            default: 1
-            minimum: 1
-            title: Page
-            type: integer
-        - in: query
-          name: q
-          required: false
-          schema:
-            anyOf:
-              - type: string
-              - type: "null"
-            title: Q
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListJudgesResponse"
-          description: Successful Response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Bad Request - Invalid request parameters or data
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Not Found - Resource does not exist
-        "408":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Request Timeout - Operation timed out
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Conflict - Resource conflict
-        "422":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Unprocessable Entity - Validation error
-      summary: Get judges with optional filtering and search
-      tags:
-        - beta.observability.judges
-      x-speakeasy-max-method-params: 5
-    post:
-      description: Create a new judge
-      operationId: create_judge_v1_observability_judges_post
-      parameters: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateJudgeRequest"
-        required: true
-      responses:
-        "201":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Judge"
-          description: Successful Response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Bad Request - Invalid request parameters or data
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Not Found - Resource does not exist
-        "408":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Request Timeout - Operation timed out
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Conflict - Resource conflict
-        "422":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Unprocessable Entity - Validation error
-      summary: Create a new judge
-      tags:
-        - beta.observability.judges
-  /v1/observability/judges/{judge_id}:
-    delete:
-      description: Delete a judge
-      operationId: delete_judge_v1_observability_judges__judge_id__delete
-      parameters:
-        - in: path
-          name: judge_id
-          required: true
-          schema:
-            format: uuid
-            title: Judge Id
-            type: string
-      responses:
-        "204":
-          description: Successful Response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Bad Request - Invalid request parameters or data
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Not Found - Resource does not exist
-        "408":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Request Timeout - Operation timed out
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Conflict - Resource conflict
-        "422":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Unprocessable Entity - Validation error
-      summary: Delete a judge
-      tags:
-        - beta.observability.judges
-    get:
-      description: Get judge by id
-      operationId: get_judge_by_id_v1_observability_judges__judge_id__get
-      parameters:
-        - in: path
-          name: judge_id
-          required: true
-          schema:
-            format: uuid
-            title: Judge Id
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Judge"
-          description: Successful Response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Bad Request - Invalid request parameters or data
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Not Found - Resource does not exist
-        "408":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Request Timeout - Operation timed out
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Conflict - Resource conflict
-        "422":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Unprocessable Entity - Validation error
-      summary: Get judge by id
-      tags:
-        - beta.observability.judges
-    put:
-      description: Update a judge
-      operationId: update_judge_v1_observability_judges__judge_id__put
-      parameters:
-        - in: path
-          name: judge_id
-          required: true
-          schema:
-            format: uuid
-            title: Judge Id
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateJudgeRequest"
-        required: true
-      responses:
-        "204":
-          description: Successful Response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Bad Request - Invalid request parameters or data
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Not Found - Resource does not exist
-        "408":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Request Timeout - Operation timed out
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Conflict - Resource conflict
-        "422":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Unprocessable Entity - Validation error
-      summary: Update a judge
-      tags:
-        - beta.observability.judges
-  /v1/observability/judges/{judge_id}/live-judging:
-    post:
-      description: Run a saved judge on a conversation
-      operationId: judge_conversation_v1_observability_judges__judge_id__live_judging_post
-      parameters:
-        - in: path
-          name: judge_id
-          required: true
-          schema:
-            format: uuid
-            title: Judge Id
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/JudgeConversationRequest"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/JudgeOutput"
-          description: Successful Response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Bad Request - Invalid request parameters or data
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Not Found - Resource does not exist
-        "408":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Request Timeout - Operation timed out
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Conflict - Resource conflict
-        "422":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Unprocessable Entity - Validation error
-      summary: Run a saved judge on a conversation
-      tags:
-        - beta.observability.judges
   /v1/observability/logs/fields:
     get:
       description: Get log field definitions
@@ -43025,6 +43244,24 @@ paths:
               - type: "null"
             title: Enabled
         - in: query
+          name: from
+          required: false
+          schema:
+            anyOf:
+              - format: date-time
+                type: string
+              - type: "null"
+            title: From
+        - in: query
+          name: to
+          required: false
+          schema:
+            anyOf:
+              - format: date-time
+                type: string
+              - type: "null"
+            title: To
+        - in: query
           name: page_size
           required: false
           schema:
@@ -43089,6 +43326,7 @@ paths:
       summary: List pipelines
       tags:
         - beta.observability.evaluations
+      x-speakeasy-max-method-params: 6
     post:
       description: Create a pipeline
       operationId: create_pipeline_v1_observability_pipelines_post
@@ -43538,6 +43776,254 @@ paths:
       summary: List evaluations for a project
       tags:
         - beta.observability.evaluations
+  /v1/observability/scorers:
+    get:
+      description: List scorers
+      operationId: list_scorers_v1_observability_scorers_get
+      parameters:
+        - description: Only return scorers created by the current user
+          in: query
+          name: created_by_me
+          required: false
+          schema:
+            default: false
+            description: Only return scorers created by the current user
+            title: Created By Me
+            type: boolean
+        - description: Only return out-of-the-box scorers
+          in: query
+          name: ootb
+          required: false
+          schema:
+            default: false
+            description: Only return out-of-the-box scorers
+            title: Ootb
+            type: boolean
+        - description: Case-insensitive filter on scorer slug, name, or description
+          in: query
+          name: q
+          required: false
+          schema:
+            anyOf:
+              - type: string
+              - type: "null"
+            description: Case-insensitive filter on scorer slug, name, or description
+            title: Q
+        - in: query
+          name: page_size
+          required: false
+          schema:
+            default: 50
+            maximum: 100
+            minimum: 0
+            title: Page Size
+            type: integer
+        - in: query
+          name: page
+          required: false
+          schema:
+            default: 1
+            minimum: 1
+            title: Page
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListScorersResponse"
+          description: Successful Response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Bad Request - Invalid request parameters or data
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Not Found - Resource does not exist
+        "408":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Request Timeout - Operation timed out
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Conflict - Resource conflict
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Unprocessable Entity - Validation error
+      summary: List scorers
+      tags:
+        - beta.observability.evaluations.scorers
+      x-speakeasy-max-method-params: 5
+    post:
+      description: Create a scorer
+      operationId: create_scorer_v1_observability_scorers_post
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScorerRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scorer"
+          description: Successful Response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Bad Request - Invalid request parameters or data
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Not Found - Resource does not exist
+        "408":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Request Timeout - Operation timed out
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Conflict - Resource conflict
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Unprocessable Entity - Validation error
+      summary: Create a scorer
+      tags:
+        - beta.observability.evaluations.scorers
+  /v1/observability/scorers/{scorer_slug}:
+    get:
+      description: Get a scorer by slug
+      operationId: get_scorer_v1_observability_scorers__scorer_slug__get
+      parameters:
+        - in: path
+          name: scorer_slug
+          required: true
+          schema:
+            title: Scorer Slug
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scorer"
+          description: Successful Response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Bad Request - Invalid request parameters or data
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Not Found - Resource does not exist
+        "408":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Request Timeout - Operation timed out
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Conflict - Resource conflict
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Unprocessable Entity - Validation error
+      summary: Get a scorer by slug
+      tags:
+        - beta.observability.evaluations.scorers
+    patch:
+      description: Edit a scorer
+      operationId: edit_scorer_v1_observability_scorers__scorer_slug__patch
+      parameters:
+        - in: path
+          name: scorer_slug
+          required: true
+          schema:
+            title: Scorer Slug
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditScorerRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Scorer"
+          description: Successful Response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Bad Request - Invalid request parameters or data
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Not Found - Resource does not exist
+        "408":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Request Timeout - Operation timed out
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Conflict - Resource conflict
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Unprocessable Entity - Validation error
+      summary: Edit a scorer
+      tags:
+        - beta.observability.evaluations.scorers
   /v1/observability/spans/aggregate:
     post:
       description: Aggregate spans
@@ -44966,7 +45452,7 @@ paths:
       description: |-
         Create a response.
 
-        Generate a model response from text or image inputs. The response can
+        Generate a model response from text, image, or file inputs. The response can
         include text, reasoning, and function calls. Set stream to true to
         receive Server-Sent Events.
 
@@ -45069,6 +45555,7 @@ paths:
           name: offset
           required: true
           schema:
+            maximum: 9.223372036854776e+18
             minimum: 0
             title: Offset
             type: integer
@@ -45195,7 +45682,7 @@ paths:
       description: |-
         Retrieve a service account.
 
-        Requires the Workspace admin (`workspace_admin`) role.
+        Requires the `see_all_workspace_service_accounts` or `read_workspace_service_account` permission.
       operationId: get_service_account_v1_service_accounts__service_account_id__get
       parameters:
         - in: path
@@ -45870,6 +46357,18 @@ paths:
               - type: "null"
             description: Filter to workflows tagged with all listed tags (AND).
             title: Tags
+        - description: Exclude workflows tagged with any of the listed tags.
+          in: query
+          name: exclude_tags
+          required: false
+          schema:
+            anyOf:
+              - items:
+                  type: string
+                type: array
+              - type: "null"
+            description: Exclude workflows tagged with any of the listed tags.
+            title: Exclude Tags
         - description: Field to sort by
           in: query
           name: sort_by
@@ -45951,7 +46450,7 @@ paths:
       summary: Get Workflows
       tags:
         - workflows
-      x-speakeasy-max-method-params: 13
+      x-speakeasy-max-method-params: 14
       x-speakeasy-pagination:
         inputs:
           - in: parameters
@@ -46092,12 +46591,11 @@ paths:
           name: limit
           required: false
           schema:
-            anyOf:
-              - minimum: 1
-                type: integer
-              - type: "null"
+            default: 100
             description: Maximum number of deployments to return
+            minimum: 1
             title: Limit
+            type: integer
         - description: Cursor from a previous response for pagination
           in: query
           name: cursor
@@ -47684,6 +48182,18 @@ paths:
               - type: "null"
             description: Whether to only return workflows available in chat assistant
             title: Available In Chat Assistant
+        - description: Exclude registrations of workflows tagged with any of the listed tags.
+          in: query
+          name: exclude_tags
+          required: false
+          schema:
+            anyOf:
+              - items:
+                  type: string
+                type: array
+              - type: "null"
+            description: Exclude registrations of workflows tagged with any of the listed tags.
+            title: Exclude Tags
         - description: The maximum number of workflows versions to return
           in: query
           name: limit
@@ -47721,7 +48231,7 @@ paths:
       summary: Get Workflow Registrations
       tags:
         - workflows
-      x-speakeasy-max-method-params: 11
+      x-speakeasy-max-method-params: 12
   /v1/workflows/registrations/{workflow_registration_id}:
     get:
       description: Get Workflow Registration
@@ -47956,12 +48466,25 @@ paths:
               - type: "null"
             description: Filter to runs of workflows tagged with all listed tags (AND).
             title: Workflow Tags
+        - description: Exclude runs of workflows tagged with any of the listed tags.
+          in: query
+          name: exclude_workflow_tags
+          required: false
+          schema:
+            anyOf:
+              - items:
+                  type: string
+                maxItems: 20
+                type: array
+              - type: "null"
+            description: Exclude runs of workflows tagged with any of the listed tags.
+            title: Exclude Workflow Tags
         - description: Include runs of internal/technical workflows (e.g. parallel-execution)
           in: query
           name: include_internal
           required: false
           schema:
-            default: true
+            default: false
             description: Include runs of internal/technical workflows (e.g. parallel-execution)
             title: Include Internal
             type: boolean
@@ -48016,7 +48539,7 @@ paths:
       summary: List Runs
       tags:
         - workflows.runs
-      x-speakeasy-max-method-params: 17
+      x-speakeasy-max-method-params: 18
       x-speakeasy-pagination:
         inputs:
           - in: parameters
@@ -49618,9 +50141,9 @@ tags:
   - description: (beta) Observability - Evaluations - Runs API.
     name: beta.observability.evaluations.runs
     x-displayName: (beta) Observability - Evaluations - Runs
-  - description: (beta) Observability API - judges.
-    name: beta.observability.judges
-    x-displayName: (beta) Observability - Judges
+  - description: (beta) Observability - Evaluations - Scorers API.
+    name: beta.observability.evaluations.scorers
+    x-displayName: (beta) Observability - Evaluations - Scorers
   - description: (beta) Observability API - logs.
     name: beta.observability.logs
     x-displayName: (beta) Observability - Logs

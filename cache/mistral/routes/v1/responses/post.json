@@ -1,5 +1,5 @@
 {
-  "description": "Create a response.\n\nGenerate a model response from text or image inputs. The response can\ninclude text, reasoning, and function calls. Set stream to true to\nreceive Server-Sent Events.\n\nFor multi-turn conversations, send the full history in input, including\nprior output items and function results. Responses are not stored. Only\nclient-executed function tools are supported.",
+  "description": "Create a response.\n\nGenerate a model response from text, image, or file inputs. The response can\ninclude text, reasoning, and function calls. Set stream to true to\nreceive Server-Sent Events.\n\nFor multi-turn conversations, send the full history in input, including\nprior output items and function results. Responses are not stored. Only\nclient-executed function tools are supported.",
   "operationId": "create_response_v1_responses_post",
   "requestBody": {
     "content": {
@@ -491,7 +491,9 @@
                   "default",
                   "flex",
                   "scale",
-                  "priority"
+                  "priority",
+                  "fast",
+                  "ultrafast"
                 ],
                 "type": "string"
               },
@@ -951,6 +953,18 @@
             "title": "Arguments",
             "type": "string"
           },
+          "async": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Async"
+          },
           "call_id": {
             "title": "Call Id",
             "type": "string"
@@ -1034,6 +1048,7 @@
         "additionalProperties": true,
         "properties": {
           "call_id": {
+            "minLength": 1,
             "title": "Call Id",
             "type": "string"
           },
@@ -1061,6 +1076,28 @@
               }
             ],
             "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "namespace": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Namespace"
           },
           "output": {
             "anyOf": [
@@ -1109,9 +1146,9 @@
           }
         },
         "required": [
-          "call_id",
           "output",
-          "type"
+          "type",
+          "call_id"
         ],
         "title": "ResponsesFunctionCallOutput",
         "type": "object"
@@ -1299,6 +1336,18 @@
             "default": null,
             "title": "Allowed Callers"
           },
+          "async": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Async"
+          },
           "defer_loading": {
             "anyOf": [
               {
@@ -1426,7 +1475,9 @@
               "server_error",
               "rate_limit_exceeded",
               "invalid_prompt",
+              "data_residency_mismatch",
               "bio_policy",
+              "misalignment_policy_violation",
               "vector_store_timeout",
               "invalid_image",
               "invalid_image_format",
@@ -1449,11 +1500,56 @@
           "message": {
             "title": "Message",
             "type": "string"
+          },
+          "misalignment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponsesMisalignment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "param": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Param"
+          },
+          "reason": {
+            "enum": [
+              "invalid_output_format",
+              "generation_failed",
+              "missing_finish_reason"
+            ],
+            "title": "Reason",
+            "type": "string"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Type"
           }
         },
         "required": [
           "code",
-          "message"
+          "message",
+          "reason"
         ],
         "title": "ResponsesError",
         "type": "object"
@@ -1466,7 +1562,9 @@
               {
                 "enum": [
                   "max_output_tokens",
-                  "content_filter"
+                  "max_messages",
+                  "content_filter",
+                  "steered"
                 ],
                 "type": "string"
               },
@@ -2084,10 +2182,6 @@
             "title": "Item Id",
             "type": "string"
           },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
           "output_index": {
             "title": "Output Index",
             "type": "integer"
@@ -2105,7 +2199,6 @@
         "required": [
           "arguments",
           "item_id",
-          "name",
           "output_index",
           "sequence_number",
           "type"
@@ -2753,6 +2846,18 @@
             "default": null,
             "title": "Allowed Callers"
           },
+          "async": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Async"
+          },
           "defer_loading": {
             "anyOf": [
               {
@@ -2851,6 +2956,18 @@
             "default": null,
             "title": "Allowed Callers"
           },
+          "async": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Async"
+          },
           "defer_loading": {
             "anyOf": [
               {
@@ -2905,6 +3022,60 @@
           "type"
         ],
         "title": "ResponsesCustomTool",
+        "type": "object"
+      },
+      "ResponsesMisalignment": {
+        "additionalProperties": true,
+        "properties": {
+          "detailed_explanation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Detailed Explanation"
+          },
+          "error_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error Type"
+          },
+          "review_target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Review Target"
+          },
+          "steer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResponsesMisalignmentSteer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "title": "ResponsesMisalignment",
         "type": "object"
       },
       "ResponsesInputTokensDetails": {
@@ -3035,6 +3206,21 @@
             "const": "explicit",
             "title": "Mode",
             "type": "string"
+          },
+          "ttl": {
+            "anyOf": [
+              {
+                "enum": [
+                  "30m",
+                  "12h"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ttl"
           }
         },
         "required": [
@@ -3250,6 +3436,20 @@
           "type"
         ],
         "title": "ResponsesGrammar",
+        "type": "object"
+      },
+      "ResponsesMisalignmentSteer": {
+        "additionalProperties": true,
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "title": "ResponsesMisalignmentSteer",
         "type": "object"
       },
       "ResponsesTextDeltaEventLogprobTopLogprob": {
