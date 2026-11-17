@@ -152,6 +152,17 @@
           "review": {
             "$ref": "#/components/schemas/SessionReviewParam",
             "description": "Default action review for new root turns. Existing turns and their subagents keep their review mode."
+          },
+          "spend_control": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionBudgetControlParams"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Omit to retain the limit; null or a null limit removes it without resetting spend."
           }
         },
         "type": "object"
@@ -235,6 +246,10 @@
           "review": {
             "$ref": "#/components/schemas/SessionReviewResource",
             "description": "Review applied to eligible actions in this session. Omitted when review is none and automatic review is not enabled. Omission means none."
+          },
+          "spend_control": {
+            "$ref": "#/components/schemas/SessionBudgetControlResource",
+            "description": "Spending limit and best-effort consumption, in USD cents. Present when spending-control visibility is enabled; limit is null without a cap. Older server responses may omit this object."
           },
           "status": {
             "$ref": "#/components/schemas/SessionStatusResource",
@@ -350,6 +365,26 @@
           "auto_review"
         ],
         "type": "string"
+      },
+      "SessionBudgetControlParams": {
+        "additionalProperties": false,
+        "description": "Sets the session-wide limit without changing recorded spend.",
+        "properties": {
+          "limit": {
+            "description": "Positive USD cents, or null to remove the limit.",
+            "format": "int64",
+            "maximum": 4503599627370495,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "limit"
+        ],
+        "type": "object"
       },
       "SessionAgentResource": {
         "additionalProperties": false,
@@ -496,13 +531,43 @@
         ],
         "type": "string"
       },
+      "SessionBudgetControlResource": {
+        "additionalProperties": false,
+        "description": "Session-wide spending limit and best-effort consumption, including unlimited sessions.",
+        "properties": {
+          "consumed": {
+            "description": "Best-effort recorded spend floored to whole USD cents, or null when unavailable.",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "limit": {
+            "description": "The configured positive limit in USD cents, or null when unlimited.",
+            "format": "int64",
+            "maximum": 4503599627370495,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "limit",
+          "consumed"
+        ],
+        "type": "object"
+      },
       "SessionStatusResource": {
         "description": "The current status of a session.",
         "enum": [
           "idle",
           "in_progress",
           "requires_action",
-          "failed"
+          "failed",
+          "budget_reached"
         ],
         "type": "string"
       },

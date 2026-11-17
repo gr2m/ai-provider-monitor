@@ -176,6 +176,17 @@
             "$ref": "#/components/schemas/SessionReviewParam",
             "description": "Action review mode. Omit to use none."
           },
+          "spend_control": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionBudgetControlParams"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional spending limit in USD cents. Omission or null creates an unlimited session."
+          },
           "stream": {
             "default": false,
             "description": "Whether to stream session events as server-sent events. Defaults to `false`.",
@@ -285,6 +296,10 @@
             "$ref": "#/components/schemas/SessionReviewResource",
             "description": "Review applied to eligible actions in this session. Omitted when review is none and automatic review is not enabled. Omission means none."
           },
+          "spend_control": {
+            "$ref": "#/components/schemas/SessionBudgetControlResource",
+            "description": "Spending limit and best-effort consumption, in USD cents. Present when spending-control visibility is enabled; limit is null without a cap. Older server responses may omit this object."
+          },
           "status": {
             "$ref": "#/components/schemas/SessionStatusResource",
             "description": "The current status of the session."
@@ -332,6 +347,7 @@
         "discriminator": {
           "mapping": {
             "agent.output.command_execution_output.delta": "#/components/schemas/SessionEventAgentOutputCommandExecutionOutputDelta",
+            "agent.session.budget_reached": "#/components/schemas/SessionEventAgentSessionBudgetReached",
             "agent.session.created": "#/components/schemas/SessionEventAgentSessionCreated",
             "agent.session.environment.connected": "#/components/schemas/SessionEventAgentSessionEnvironmentConnected",
             "agent.session.environment.disconnected": "#/components/schemas/SessionEventAgentSessionEnvironmentDisconnected",
@@ -409,6 +425,9 @@
           },
           {
             "$ref": "#/components/schemas/SessionEventAgentSessionIdle"
+          },
+          {
+            "$ref": "#/components/schemas/SessionEventAgentSessionBudgetReached"
           },
           {
             "$ref": "#/components/schemas/SessionEventAgentSessionInProgress"
@@ -636,6 +655,26 @@
         ],
         "type": "string"
       },
+      "SessionBudgetControlParams": {
+        "additionalProperties": false,
+        "description": "Sets the session-wide limit without changing recorded spend.",
+        "properties": {
+          "limit": {
+            "description": "Positive USD cents, or null to remove the limit.",
+            "format": "int64",
+            "maximum": 4503599627370495,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "limit"
+        ],
+        "type": "object"
+      },
       "SessionStreamOptionsParam": {
         "additionalProperties": false,
         "description": "Options for a Managed Agents session event stream.",
@@ -793,13 +832,43 @@
         ],
         "type": "string"
       },
+      "SessionBudgetControlResource": {
+        "additionalProperties": false,
+        "description": "Session-wide spending limit and best-effort consumption, including unlimited sessions.",
+        "properties": {
+          "consumed": {
+            "description": "Best-effort recorded spend floored to whole USD cents, or null when unavailable.",
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "limit": {
+            "description": "The configured positive limit in USD cents, or null when unlimited.",
+            "format": "int64",
+            "maximum": 4503599627370495,
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "limit",
+          "consumed"
+        ],
+        "type": "object"
+      },
       "SessionStatusResource": {
         "description": "The current status of a session.",
         "enum": [
           "idle",
           "in_progress",
           "requires_action",
-          "failed"
+          "failed",
+          "budget_reached"
         ],
         "type": "string"
       },
@@ -1531,6 +1600,40 @@
             "description": "The type of the object. Always `agent.session.idle`.",
             "enum": [
               "agent.session.idle"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "event_id",
+          "session"
+        ],
+        "type": "object"
+      },
+      "SessionEventAgentSessionBudgetReached": {
+        "additionalProperties": false,
+        "description": "Emitted when a session pauses because its spending limit was reached.",
+        "properties": {
+          "event_id": {
+            "description": "The unique ID of the event.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "obfuscation": {
+            "description": "Random alphanumeric padding. Present when stream obfuscation is enabled.",
+            "minLength": 0,
+            "type": "string"
+          },
+          "session": {
+            "$ref": "#/components/schemas/SessionResource",
+            "description": "The paused session."
+          },
+          "type": {
+            "default": "agent.session.budget_reached",
+            "description": "The type of the object. Always `agent.session.budget_reached`.",
+            "enum": [
+              "agent.session.budget_reached"
             ],
             "type": "string"
           }
