@@ -18038,6 +18038,80 @@ components:
         - invalid
         - not_present
       type: string
+    CSAMCategoryAppliedInputTypes:
+      additionalProperties: false
+      properties:
+        likely-csam:
+          items:
+            const: image
+            type: string
+          maxItems: 1
+          minItems: 1
+          title: Likely-Csam
+          type: array
+        likely-csam/gen-ai:
+          items:
+            const: image
+            type: string
+          maxItems: 1
+          minItems: 1
+          title: Likely-Csam/Gen-Ai
+          type: array
+      required:
+        - likely-csam
+        - likely-csam/gen-ai
+      title: CSAMCategoryAppliedInputTypes
+      type: object
+    CSAMCategoryFlags:
+      additionalProperties: false
+      properties:
+        likely-csam:
+          title: Likely-Csam
+          type: boolean
+        likely-csam/gen-ai:
+          title: Likely-Csam/Gen-Ai
+          type: boolean
+      required:
+        - likely-csam
+        - likely-csam/gen-ai
+      title: CSAMCategoryFlags
+      type: object
+    CSAMCategoryScores:
+      additionalProperties: false
+      properties:
+        likely-csam:
+          title: Likely-Csam
+          type: number
+        likely-csam/gen-ai:
+          title: Likely-Csam/Gen-Ai
+          type: number
+      required:
+        - likely-csam
+        - likely-csam/gen-ai
+      title: CSAMCategoryScores
+      type: object
+    CSAMModerationResult:
+      properties:
+        categories:
+          $ref: "#/components/schemas/CSAMCategoryFlags"
+          description: Whether the image was flagged in each category.
+        category_applied_input_types:
+          $ref: "#/components/schemas/CSAMCategoryAppliedInputTypes"
+          description: The input types evaluated for each category.
+        category_scores:
+          $ref: "#/components/schemas/CSAMCategoryScores"
+          description: The classifier score for each category.
+        flagged:
+          description: Whether either CSAM category was flagged.
+          title: Flagged
+          type: boolean
+      required:
+        - flagged
+        - categories
+        - category_scores
+        - category_applied_input_types
+      title: CSAMModerationResult
+      type: object
     CacheMissReasonTypeEnum:
       enum:
         - model_changed
@@ -22129,6 +22203,28 @@ components:
         - endpoint
         - completion_window
       type: object
+    CreateCSAMModerationResponse:
+      properties:
+        id:
+          title: Id
+          type: string
+        model:
+          const: omni-moderation-csam-latest
+          title: Model
+          type: string
+        results:
+          items:
+            $ref: "#/components/schemas/CSAMModerationResult"
+          maxItems: 1
+          minItems: 1
+          title: Results
+          type: array
+      required:
+        - id
+        - model
+        - results
+      title: CreateCSAMModerationResponse
+      type: object
     CreateChatCompletionRequest:
       allOf:
         - $ref: "#/components/schemas/CreateModelResponseProperties"
@@ -24948,6 +25044,7 @@ components:
             The content moderation model you would like to use. Learn more in
             [the moderation guide](https://developers.openai.com/api/docs/guides/moderation), and learn about
             available models [here](https://developers.openai.com/api/docs/guides/moderation).
+            Approved organizations can use `omni-moderation-csam-latest` with a single `image_url` input.
           example: omni-moderation-2024-09-26
           x-oaiTypeLabel: string
       required:
@@ -67274,7 +67371,6 @@ components:
       enum:
         - context_length_exceeded
         - max_output_tokens
-        - session_budget_exceeded
         - usage_limit_exceeded
         - api_key_spend_limit_exceeded
         - project_spend_limit_exceeded
@@ -67301,7 +67397,6 @@ components:
       x-enumDescriptions:
         - The request exceeds the model's context window.
         - The model reached its output token limit before finishing the response.
-        - The session has reached its usage budget.
         - The organization has reached a usage, plan, or billing limit.
         - The API key has reached its enforced spend limit.
         - The project has reached its enforced spend limit.
@@ -90876,7 +90971,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CreateModerationResponse"
+                oneOf:
+                  - $ref: "#/components/schemas/CreateModerationResponse"
+                  - $ref: "#/components/schemas/CreateCSAMModerationResponse"
           description: OK
         "400":
           content:
