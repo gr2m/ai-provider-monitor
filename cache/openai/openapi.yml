@@ -188,11 +188,9 @@ components:
           description: The name of the API key
           example: Administration Key
         object:
+          const: organization.admin_api_key
           description: The object type, which is always `organization.admin_api_key`
-          enum:
-            - organization.admin_api_key
           type: string
-          x-stainless-const: true
         owner:
           properties:
             created_at:
@@ -1234,11 +1232,9 @@ components:
             - type: "null"
           example: key_xyz
         object:
-          enum:
-            - list
+          const: list
           example: list
           type: string
-          x-stainless-const: true
       required:
         - object
         - data
@@ -40420,6 +40416,8 @@ components:
           $ref: "#/components/schemas/LiveClientConfigParam"
         delegation:
           $ref: "#/components/schemas/delegation"
+        idle_timeout_s:
+          $ref: "#/components/schemas/idle_timeout_s"
         input:
           $ref: "#/components/schemas/input"
         instructions:
@@ -40432,6 +40430,8 @@ components:
           $ref: "#/components/schemas/store"
         triggers:
           $ref: "#/components/schemas/triggers"
+        wake_policy:
+          $ref: "#/components/schemas/LiveSpeechWakePolicyParam"
       required:
         - model
       type: object
@@ -41068,6 +41068,8 @@ components:
       oneOf:
         - $ref: "#/components/schemas/LiveSessionStarted"
         - $ref: "#/components/schemas/LiveSessionUpdated"
+        - $ref: "#/components/schemas/LiveSessionResumed"
+        - $ref: "#/components/schemas/LiveSessionPaused"
         - $ref: "#/components/schemas/LiveInputAudioMuted"
         - $ref: "#/components/schemas/LiveInputAudioUnmuted"
         - $ref: "#/components/schemas/LiveOutputAudioFixturePlaying"
@@ -41198,11 +41200,11 @@ components:
           id: live_abc123
           input: []
           instructions: Help the caller plan a restaurant reservation. Confirm details before booking.
-          model: gpt-live-1
+          model: gpt-live-1.1
           status: active
         type: session.closed
         usage:
-          seconds: 45.8
+          seconds: 45
       properties:
         client_event_id:
           description: The event_id of the client command associated with this server event, when supplied.
@@ -41275,11 +41277,11 @@ components:
             id: live_abc123
             input: []
             instructions: Help the caller plan a restaurant reservation. Confirm details before booking.
-            model: gpt-live-1
+            model: gpt-live-1.1
             status: active
           type: session.closed
           usage:
-            seconds: 45.8
+            seconds: 45
     LiveSessionCreateParams:
       description: Initial configuration for a Live session, including its model, conversation instructions, audio, and delegated task handling.
       properties:
@@ -41374,6 +41376,32 @@ components:
         - session
         - transport
       type: object
+    LiveSessionPaused:
+      description: Sent when the idle timeout pauses inference in a Live WebRTC session. The WebRTC connection, sideband, and session ID persist. Delivered to the sideband and, when permitted by its event settings, the data channel.
+      example:
+        event_id: evt_paused_001
+        type: session.paused
+      properties:
+        client_event_id:
+          description: The event_id of the client command associated with this server event, when supplied.
+          type: string
+        event_id:
+          description: The unique ID of the Live server event.
+          type: string
+        type:
+          default: session.paused
+          enum:
+            - session.paused
+          type: string
+          x-stainless-const: true
+      required:
+        - event_id
+        - type
+      type: object
+      x-oaiMeta:
+        example:
+          event_id: evt_paused_001
+          type: session.paused
     LiveSessionResourceParam:
       description: The resolved Live session configuration and server-assigned session metadata.
       properties:
@@ -41440,6 +41468,32 @@ components:
         - expires_at
         - status
       type: object
+    LiveSessionResumed:
+      description: Sent when speech wakes inference and it is ready for audio in a Live WebRTC session. This occurs on the first wake and after each later wake. Delivered to the sideband and, when permitted by its event settings, the data channel.
+      example:
+        event_id: evt_resumed_001
+        type: session.resumed
+      properties:
+        client_event_id:
+          description: The event_id of the client command associated with this server event, when supplied.
+          type: string
+        event_id:
+          description: The unique ID of the Live server event.
+          type: string
+        type:
+          default: session.resumed
+          enum:
+            - session.resumed
+          type: string
+          x-stainless-const: true
+      required:
+        - event_id
+        - type
+      type: object
+      x-oaiMeta:
+        example:
+          event_id: evt_resumed_001
+          type: session.resumed
     LiveSessionStartEvent:
       description: Start a Live session on a primary WebSocket. Send this event before other commands and wait for `session.started`.
       example:
@@ -41454,7 +41508,7 @@ components:
           delegation:
             type: client
           instructions: Help the caller plan a restaurant reservation. Confirm details before booking.
-          model: gpt-live-1
+          model: gpt-live-1.1
         type: session.start
       properties:
         event_id:
@@ -41490,7 +41544,7 @@ components:
             delegation:
               type: client
             instructions: Help the caller plan a restaurant reservation. Confirm details before booking.
-            model: gpt-live-1
+            model: gpt-live-1.1
           type: session.start
     LiveSessionStarted:
       description: Returned when a Live session has started. Contains the resolved session configuration, including server defaults.
@@ -41510,7 +41564,7 @@ components:
           id: live_abc123
           input: []
           instructions: Help the caller plan a restaurant reservation. Confirm details before booking.
-          model: gpt-live-1
+          model: gpt-live-1.1
           status: active
         type: session.started
       properties:
@@ -41551,7 +41605,7 @@ components:
             id: live_abc123
             input: []
             instructions: Help the caller plan a restaurant reservation. Confirm details before booking.
-            model: gpt-live-1
+            model: gpt-live-1.1
             status: active
           type: session.started
     LiveSessionUpdateParam:
@@ -41640,7 +41694,7 @@ components:
           id: live_def456
           input: []
           instructions: Help the caller plan a restaurant reservation. Confirm details before booking.
-          model: gpt-live-1
+          model: gpt-live-1.1
           status: active
         type: session.updated
       properties:
@@ -41686,15 +41740,21 @@ components:
             id: live_def456
             input: []
             instructions: Help the caller plan a restaurant reservation. Confirm details before booking.
-            model: gpt-live-1
+            model: gpt-live-1.1
             status: active
           type: session.updated
     LiveSessionUsage:
-      description: Cumulative audio duration for a Live session. Values are totals for the session, not increments to sum across usage events.
+      description: Cumulative billable duration for a Live session. Eligible WebRTC sessions also report the active and paused breakdown. Do not sum values across usage events.
       properties:
+        active_seconds:
+          description: The remaining billable seconds attributed to active audio and any unused prepaid duration.
+          type: integer
+        paused_seconds:
+          description: Billable time attributed to paused inference at the configured rate, rounded down to whole seconds.
+          type: integer
         seconds:
-          description: The cumulative Live audio duration in seconds. Do not sum this value across usage events.
-          type: number
+          description: The cumulative billable duration in whole seconds. When present, the active and paused breakdown adds up to this total.
+          type: integer
       required:
         - seconds
       type: object
@@ -41706,7 +41766,7 @@ components:
         event_id: evt_usage_001
         type: session.usage.updated
         usage:
-          seconds: 32.5
+          seconds: 32
       properties:
         client_event_id:
           description: The event_id of the client command associated with this server event, when supplied.
@@ -41739,7 +41799,7 @@ components:
           event_id: evt_usage_001
           type: session.usage.updated
           usage:
-            seconds: 32.5
+            seconds: 32
     LiveSidebandClientEvent:
       description: Client events accepted by an attached Live sideband WebSocket. The session has already started. Send input audio over the primary connection.
       discriminator:
@@ -41788,6 +41848,8 @@ components:
         - $ref: "#/components/schemas/LiveTransportDTMFSent"
         - $ref: "#/components/schemas/LiveSessionStarted"
         - $ref: "#/components/schemas/LiveSessionUpdated"
+        - $ref: "#/components/schemas/LiveSessionResumed"
+        - $ref: "#/components/schemas/LiveSessionPaused"
         - $ref: "#/components/schemas/LiveInputAudioMuted"
         - $ref: "#/components/schemas/LiveInputAudioUnmuted"
         - $ref: "#/components/schemas/LiveOutputAudioFixturePlaying"
@@ -41954,6 +42016,22 @@ components:
             - web_search_preview
           type: string
           x-stainless-const: true
+      required:
+        - type
+      type: object
+    LiveSpeechWakePolicyParam:
+      description: Starts inference when microphone speech is detected.
+      properties:
+        type:
+          default: speech
+          description: The wake policy type, always `speech`.
+          enum:
+            - speech
+          type: string
+          x-stainless-const: true
+        vad_threshold:
+          description: The speech detection threshold for the first wake and each later wake, from 0 to 1 inclusive. Defaults to 0.5. Higher values require stronger evidence of speech. This setting is independent of active turn detection.
+          type: number
       required:
         - type
       type: object
@@ -44358,9 +44436,10 @@ components:
           type: string
         - enum:
             - gpt-live-1
+            - gpt-live-1.1
           type: string
       description: The Live model. Required in the session configuration for every transport; do not pass it as a URL query parameter.
-      example: gpt-live-1
+      example: gpt-live-1.1
     ModelIdsResponses:
       anyOf:
         - $ref: "#/components/schemas/ModelIdsShared"
@@ -75519,6 +75598,11 @@ components:
       type:
         - integer
         - "null"
+    idle_timeout_s:
+      description: Whole seconds of inactivity after which a Live WebRTC session with a speech wake policy pauses inference. The connection and conversation history are retained. Omit to keep inference active after the first wake until the session ends.
+      maximum: 60
+      minimum: 5
+      type: integer
     input:
       description: Ordered text-only history supplied before startup. Supports developer, user, and assistant messages with one text part each; at most 128 messages and a configured rendered-token limit (8,192 by default).
       items:
@@ -90431,7 +90515,7 @@ paths:
                 curl https://api.openai.com/v1/live/sessions \
                   -H "Authorization: Bearer $OPENAI_API_KEY" \
                   -H "Content-Type: application/json" \
-                  -d '{"session":{"model":"gpt-live-1","instructions":"Be concise. Ask for clarification when needed."},"transport":{"type":"webrtc","sdp":"<SDP offer>"}}'
+                  -d '{"session":{"model":"gpt-live-1.1","instructions":"Be concise. Ask for clarification when needed."},"transport":{"type":"webrtc","sdp":"<SDP offer>"}}'
             response: '{"session":{"id":"live_123"},"transport":{"type":"webrtc","sdp":"<SDP answer>"}}'
             title: Create a WebRTC session
           - request:
@@ -90439,7 +90523,7 @@ paths:
                 # Export SIP_USERNAME and SIP_PASSWORD in your environment first.
                 jq -n '{
                     "session": {
-                      "model": "gpt-live-1",
+                      "model": "gpt-live-1.1",
                       "instructions": "Help the user schedule an appointment.",
                       "audio": { "output": { "voice": "marin" } },
                       "delegation": { "type": "client" }
@@ -91438,11 +91522,9 @@ paths:
                     example: key_abc
                     type: string
                   object:
-                    enum:
-                      - organization.admin_api_key.deleted
+                    const: organization.admin_api_key.deleted
                     example: organization.admin_api_key.deleted
                     type: string
-                    x-stainless-const: true
                 required:
                   - id
                   - object
