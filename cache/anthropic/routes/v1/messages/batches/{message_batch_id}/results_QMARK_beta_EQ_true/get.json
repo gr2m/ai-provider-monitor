@@ -353,6 +353,7 @@
               "skills-2025-10-02",
               "cache-diagnosis-2026-04-07",
               "ce-user-management-2026-07-13",
+              "ce-claude-code-managed-settings-2026-10-06",
               "user-profiles-billing-2026-10-01"
             ],
             "type": "string"
@@ -927,7 +928,7 @@
           "stop_details": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/BetaRefusalStopDetails"
+                "$ref": "#/components/schemas/BetaStopDetails"
               },
               {
                 "type": "null"
@@ -1290,99 +1291,18 @@
         "description": "The model that will complete your prompt.\n\nSee [models](https://docs.anthropic.com/en/docs/models-overview) for additional details and options.",
         "title": "Model"
       },
-      "BetaRefusalStopDetails": {
-        "description": "Structured information about a refusal.",
-        "properties": {
-          "category": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/BetaRefusalCategory"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "The policy category that triggered the refusal.\n\n`null` when the refusal doesn't map to a named category."
+      "BetaStopDetails": {
+        "discriminator": {
+          "mapping": {
+            "refusal": "#/components/schemas/BetaRefusalStopDetails"
           },
-          "explanation": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Human-readable explanation of the refusal.\n\nThis text is not guaranteed to be stable. `null` when no explanation is available for the category.",
-            "examples": [
-              "This request was declined because it conflicts with Anthropic's Usage Policy."
-            ],
-            "title": "Explanation"
-          },
-          "fallback_credit_token": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Opaque code that refunds the cache-miss cost when retrying this refused\nrequest on the fallback model. Pass it as `fallback_credit_token` on the\nretry request. Expires 5 minutes after the refusal.\n\nThe retry is sent either with the same request body (`system`, `messages`,\n`tools`, and other render-shaping fields), or with the same body plus one\nappended `assistant` message whose content is the partial text (with any\ntrailing whitespace stripped from the final text block) and paired\nserver-tool blocks from this refusal — which also authorizes that\nappended turn as an assistant-prefill continuation on models that otherwise\ndisallow prefill. A token minted mid-server-tool-loop whose partial content\nwas continuable may only be redeemed the second way — if a same-body retry\nis rejected with a 400 saying the token must be redeemed by continuing the\npartial response, retry the second way instead. Either way: same workspace,\nsame platform; a mismatch is a 400. Resending a token for an already-warm\nprefix is permitted but yields no additional credit.\n\n`null` when the refused model isn't eligible for a fallback credit.",
-            "examples": [
-              "QW50aHJvcGljL0NsYXVkZQ=="
-            ],
-            "title": "Fallback Credit Token"
-          },
-          "fallback_has_prefill_claim": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "Whether the accompanying `fallback_credit_token` may be redeemed with the\nappended-assistant retry form. Only set when `fallback_credit_token` is\npresent.\n\n`true`: retry by resending the same request body plus one appended\n`assistant` message whose content is this response's `content` with any\ntrailing whitespace stripped from the final text block and unpaired\n`tool_use` blocks omitted (the same appended-turn shape described on\n`fallback_credit_token`), with the token attached. `false`: retry by\nresending the original request body unchanged, with the token attached —\nthe appended-assistant form is not available for this refusal (no\ncontinuable partial content, or the request uses `output_format` or a\n`tool_choice` that forces tool use). One exception: when the request used\n`output_format` or a forced `tool_choice` and the refusal arrived after\nserver tools (including MCP connector tools) had already executed, the\ntoken may not be redeemable by either retry form; if the exact-body retry\nis then rejected with a 400 saying the token must be redeemed by\ncontinuing the partial response, discard the token and retry without it.\n\nAdvisory: if an appended-assistant retry is rejected with a 400 despite\n`true`, fall back to resending the original request body with the token.",
-            "title": "Fallback Has Prefill Claim"
-          },
-          "recommended_model": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "description": "The server's suggested retry target for this refusal. Populated when a fallback attempt could not be made (the fallback model's rate limit was exhausted, or it was overloaded); names the fallback model the caller can retry directly. Null otherwise.",
-            "examples": [
-              "claude-opus-4-8"
-            ],
-            "title": "Recommended Model"
-          },
-          "type": {
-            "const": "refusal",
-            "default": "refusal",
-            "title": "Type",
-            "type": "string"
-          }
+          "propertyName": "type"
         },
-        "required": [
-          "category",
-          "explanation",
-          "fallback_credit_token",
-          "fallback_has_prefill_claim",
-          "recommended_model",
-          "type"
-        ],
-        "title": "RefusalStopDetails",
-        "type": "object"
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaRefusalStopDetails"
+          }
+        ]
       },
       "BetaStopReason": {
         "enum": [
@@ -2556,36 +2476,99 @@
         "title": "ThinkingMismatchAllowedInputTransformation",
         "type": "object"
       },
-      "BetaRefusalCategory": {
-        "anyOf": [
-          {
-            "const": "cyber",
-            "description": "The request could enable cyber harm, such as malware or exploit development. Benign cybersecurity work can also trigger this category.",
-            "type": "string"
+      "BetaRefusalStopDetails": {
+        "description": "Structured information about a refusal.",
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaRefusalCategory"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The policy category that triggered the refusal.\n\n`null` when the refusal doesn't map to a named category."
           },
-          {
-            "const": "bio",
-            "description": "The request could enable biological harm, such as dangerous lab methods. Beneficial life sciences work can also trigger this category.",
-            "type": "string"
+          "explanation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Human-readable explanation of the refusal.\n\nThis text is not guaranteed to be stable. `null` when no explanation is available for the category.",
+            "examples": [
+              "This request was declined because it conflicts with Anthropic's Usage Policy."
+            ],
+            "title": "Explanation"
           },
-          {
-            "const": "frontier_llm",
-            "description": "The request could assist the development of competing AI models, which is restricted under [Anthropic's commercial terms](https://www.anthropic.com/legal/commercial-terms). Benign machine learning work can also trigger this category.",
-            "type": "string"
+          "fallback_credit_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Opaque code that refunds the cache-miss cost when retrying this refused\nrequest on the fallback model. Pass it as `fallback_credit_token` on the\nretry request. Expires 5 minutes after the refusal.\n\nThe retry is sent either with the same request body (`system`, `messages`,\n`tools`, and other render-shaping fields), or with the same body plus one\nappended `assistant` message whose content is the partial text (with any\ntrailing whitespace stripped from the final text block) and paired\nserver-tool blocks from this refusal — which also authorizes that\nappended turn as an assistant-prefill continuation on models that otherwise\ndisallow prefill. A token minted mid-server-tool-loop whose partial content\nwas continuable may only be redeemed the second way — if a same-body retry\nis rejected with a 400 saying the token must be redeemed by continuing the\npartial response, retry the second way instead. Either way: same workspace,\nsame platform; a mismatch is a 400. Resending a token for an already-warm\nprefix is permitted but yields no additional credit.\n\n`null` when the refused model isn't eligible for a fallback credit.",
+            "examples": [
+              "QW50aHJvcGljL0NsYXVkZQ=="
+            ],
+            "title": "Fallback Credit Token"
           },
-          {
-            "const": "reasoning_extraction",
-            "description": "The request asks the model to reproduce its internal reasoning in the response text. To get reasoning in a structured form instead, use [adaptive thinking](https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking).",
-            "type": "string"
+          "fallback_has_prefill_claim": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Whether the accompanying `fallback_credit_token` may be redeemed with the\nappended-assistant retry form. Only set when `fallback_credit_token` is\npresent.\n\n`true`: retry by resending the same request body plus one appended\n`assistant` message whose content is this response's `content` with any\ntrailing whitespace stripped from the final text block and unpaired\n`tool_use` blocks omitted (the same appended-turn shape described on\n`fallback_credit_token`), with the token attached. `false`: retry by\nresending the original request body unchanged, with the token attached —\nthe appended-assistant form is not available for this refusal (no\ncontinuable partial content, or the request uses `output_format` or a\n`tool_choice` that forces tool use). One exception: when the request used\n`output_format` or a forced `tool_choice` and the refusal arrived after\nserver tools (including MCP connector tools) had already executed, the\ntoken may not be redeemable by either retry form; if the exact-body retry\nis then rejected with a 400 saying the token must be redeemed by\ncontinuing the partial response, discard the token and retry without it.\n\nAdvisory: if an appended-assistant retry is rejected with a 400 despite\n`true`, fall back to resending the original request body with the token.",
+            "title": "Fallback Has Prefill Claim"
           },
-          {
-            "const": "general_harms",
-            "description": "The request could be related to an area that was determined as harmful. Benign work might sometimes trigger this category.",
+          "recommended_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The server's suggested retry target for this refusal. Populated when a fallback attempt could not be made (the fallback model's rate limit was exhausted, or it was overloaded); names the fallback model the caller can retry directly. Null otherwise.",
+            "examples": [
+              "claude-opus-4-8"
+            ],
+            "title": "Recommended Model"
+          },
+          "type": {
+            "const": "refusal",
+            "default": "refusal",
+            "title": "Type",
             "type": "string"
           }
+        },
+        "required": [
+          "category",
+          "explanation",
+          "fallback_credit_token",
+          "fallback_has_prefill_claim",
+          "recommended_model",
+          "type"
         ],
-        "description": "The policy category that triggered a refusal.",
-        "title": "RefusalCategory"
+        "title": "RefusalStopDetails",
+        "type": "object"
       },
       "BetaCacheCreation": {
         "properties": {
@@ -4003,6 +3986,37 @@
         ],
         "title": "CacheMissUnavailable",
         "type": "object"
+      },
+      "BetaRefusalCategory": {
+        "anyOf": [
+          {
+            "const": "cyber",
+            "description": "The request could enable cyber harm, such as malware or exploit development. Benign cybersecurity work can also trigger this category.",
+            "type": "string"
+          },
+          {
+            "const": "bio",
+            "description": "The request could enable biological harm, such as dangerous lab methods. Beneficial life sciences work can also trigger this category.",
+            "type": "string"
+          },
+          {
+            "const": "frontier_llm",
+            "description": "The request could assist the development of competing AI models, which is restricted under [Anthropic's commercial terms](https://www.anthropic.com/legal/commercial-terms). Benign machine learning work can also trigger this category.",
+            "type": "string"
+          },
+          {
+            "const": "reasoning_extraction",
+            "description": "The request asks the model to reproduce its internal reasoning in the response text. To get reasoning in a structured form instead, use [adaptive thinking](https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking).",
+            "type": "string"
+          },
+          {
+            "const": "general_harms",
+            "description": "The request could be related to an area that was determined as harmful. Benign work might sometimes trigger this category.",
+            "type": "string"
+          }
+        ],
+        "description": "The policy category that triggered a refusal.",
+        "title": "RefusalCategory"
       },
       "BetaFallbackCreditRedeemed": {
         "description": "The reprice was applied: the retry is billed as if the conversation\nhad been on the retry model all along.",
