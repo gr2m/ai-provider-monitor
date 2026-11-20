@@ -445,3 +445,78 @@
       after: '["context_length_exceeded","max_output_tokens","usage_limit_exceeded","api_key_spend_limit_exceeded","project_spend_limit_exceeded","organization_spend_limit_exceeded","organization_usage_limit_exceeded","billing_not_active","credit_balance_exhausted","rate_limit_exceeded","flex_unavailable","server_overloaded","cyber_policy","misalignment_policy_violation","audio_input_unavailable","connection_failed","server_error","authentication_error","invalid_request","resource_not_found","sandbox_error","executor_version_incompatible","active_turn_not_steerable","request_timeout","internal_error"]'
   date: '2026-11-20'
   diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1266
+- change: added
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: Added optional spend_control to set a session-wide spending limit when creating a session.
+  paths:
+    - path: components/schemas/CreateAgentSessionParams/properties/spend_control
+      before: 'null'
+      after: '{"anyOf":[{"$ref":"#/components/schemas/SessionBudgetControlParams"},{"type":"null"}],"description":"Optional spending limit in USD cents. Omission or null creates an unlimited session."}'
+    - path: components/schemas/SessionBudgetControlParams
+      before: 'null'
+      after: '{"additionalProperties":false,"description":"Sets the session-wide limit without changing recorded spend.","properties":{"limit":{"description":"Positive USD cents, or null to remove the limit.","format":"int64","maximum":4503599627370495,"minimum":1,"type":["integer","null"]}},"required":["limit"],"type":"object"}'
+  date: '2026-11-20'
+- change: added
+  target: response
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: Session response now includes spend_control with limit and consumed fields.
+  paths:
+    - path: components/schemas/SessionResource/properties/spend_control
+      before: 'null'
+      after: '{"$ref":"#/components/schemas/SessionBudgetControlResource","description":"Spending limit and best-effort consumption, in USD cents. The limit is null for an unlimited session. Consumption is null when unavailable."}'
+    - path: components/schemas/SessionBudgetControlResource
+      before: 'null'
+      after: '{"additionalProperties":false,"description":"Session-wide spending limit and best-effort consumption, including unlimited sessions.","properties":{"consumed":{"description":"Best-effort recorded spend floored to whole USD cents, or null when unavailable.","minimum":0,"type":["integer","null"]},"limit":{"description":"The configured positive limit in USD cents, or null when unlimited.","format":"int64","maximum":4503599627370495,"minimum":1,"type":["integer","null"]}},"required":["limit","consumed"],"type":"object"}'
+  date: '2026-11-20'
+- change: changed
+  target: response
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: SessionResource required now includes spend_control (always present in responses).
+  paths:
+    - path: components/schemas/SessionResource/required
+      before: '["metadata","id","object","created_at","last_active_at","status","required_actions","error","agent","environment","vault_ids","usage"]'
+      after: '["spend_control","metadata","id","object","created_at","last_active_at","status","required_actions","error","agent","environment","vault_ids","usage"]'
+  date: '2026-11-20'
+- change: added
+  target: response
+  breaking: true
+  deprecated: false
+  doc_only: false
+  note: New streaming event type agent.session.budget_reached added for budget limit pauses.
+  paths:
+    - path: components/schemas/SessionEvent/discriminator/mapping/agent.session.budget_reached
+      before: 'null'
+      after: '"#/components/schemas/SessionEventAgentSessionBudgetReached"'
+    - path: components/schemas/SessionEventAgentSessionBudgetReached
+      before: 'null'
+      after: '{"additionalProperties":false,"description":"Emitted when a session pauses because its spending limit was reached.","properties":{"event_id":{"description":"The unique ID of the event.","minLength":0,"type":"string"},"obfuscation":{"description":"Random alphanumeric padding. Present when stream obfuscation is enabled.","minLength":0,"type":"string"},"session":{"$ref":"#/components/schemas/SessionResource","description":"The paused session."},"type":{"default":"agent.session.budget_reached","description":"The type of the object. Always `agent.session.budget_reached`.","enum":["agent.session.budget_reached"],"type":"string"}},"required":["type","event_id","session"],"type":"object"}'
+  date: '2026-11-20'
+- change: changed
+  target: response
+  breaking: true
+  deprecated: false
+  doc_only: false
+  note: SessionStatusResource enum now includes budget_reached.
+  paths:
+    - path: components/schemas/SessionStatusResource/enum
+      before: '["idle","in_progress","requires_action","failed"]'
+      after: '["idle","in_progress","requires_action","failed","budget_reached"]'
+  date: '2026-11-20'
+- change: changed
+  target: response
+  breaking: true
+  deprecated: false
+  doc_only: false
+  note: SessionTurnErrorCodeResource enum now includes session_budget_exceeded.
+  paths:
+    - path: components/schemas/SessionTurnErrorCodeResource/enum
+      before: '["context_length_exceeded","max_output_tokens","usage_limit_exceeded","api_key_spend_limit_exceeded","project_spend_limit_exceeded","organization_spend_limit_exceeded","organization_usage_limit_exceeded","billing_not_active","credit_balance_exhausted","rate_limit_exceeded","flex_unavailable","server_overloaded","cyber_policy","misalignment_policy_violation","audio_input_unavailable","connection_failed","server_error","authentication_error","invalid_request","resource_not_found","sandbox_error","executor_version_incompatible","active_turn_not_steerable","request_timeout","internal_error"]'
+      after: '["context_length_exceeded","max_output_tokens","session_budget_exceeded","usage_limit_exceeded","api_key_spend_limit_exceeded","project_spend_limit_exceeded","organization_spend_limit_exceeded","organization_usage_limit_exceeded","billing_not_active","credit_balance_exhausted","rate_limit_exceeded","flex_unavailable","server_overloaded","cyber_policy","misalignment_policy_violation","audio_input_unavailable","connection_failed","server_error","authentication_error","invalid_request","resource_not_found","sandbox_error","executor_version_incompatible","active_turn_not_steerable","request_timeout","internal_error"]'
+  date: '2026-11-20'
