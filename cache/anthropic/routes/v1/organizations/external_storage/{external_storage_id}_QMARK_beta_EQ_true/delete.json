@@ -1,0 +1,782 @@
+{
+  "description": "Delete External Storage. Storage that is pending configuration, available, or active\nbut never attached is deleted at once, unless an Enterprise Frontier Safeguards workspace\npolicy lists it. Other storage gets a 400 that says what to do next. On `draining`\nstorage that 400 can mean this delete started a removal that can't be undone. To check,\nget the storage: if `status.removal_started` is true, delete it again later to finish.",
+  "operationId": "beta_delete_external_storage_v1_organizations_external_storage__external_storage_id__delete",
+  "parameters": [
+    {
+      "description": "The External Storage ID, which starts with `estrg_`. Through Claude Platform on AWS, storage whose `provider_config.type` is `aws` has its bucket ARN as its ID instead: `arn:<partition>:s3:::<bucket_name>`, where `<partition>` is the partition of the bucket's region.",
+      "in": "path",
+      "name": "external_storage_id",
+      "required": true,
+      "schema": {
+        "description": "The External Storage ID, which starts with `estrg_`. Through Claude Platform on AWS, storage whose `provider_config.type` is `aws` has its bucket ARN as its ID instead: `arn:<partition>:s3:::<bucket_name>`, where `<partition>` is the partition of the bucket's region.",
+        "title": "External Storage Id",
+        "type": "string"
+      }
+    },
+    {
+      "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+      "in": "header",
+      "name": "anthropic-version",
+      "required": false,
+      "schema": {
+        "description": "The version of the Claude API you want to use.\n\nRead more about versioning and our version history [here](https://platform.claude.com/docs/en/api/versioning).",
+        "title": "Anthropic-Version",
+        "type": "string"
+      }
+    },
+    {
+      "description": "This endpoint is in beta: requests must send `efs-2026-10-01` in this header.",
+      "in": "header",
+      "name": "anthropic-beta",
+      "required": true,
+      "schema": {
+        "description": "This endpoint is in beta: requests must send `efs-2026-10-01` in this header.",
+        "items": {
+          "$ref": "#/components/schemas/AnthropicBeta"
+        },
+        "title": "Anthropic-Beta",
+        "type": "array"
+      }
+    }
+  ],
+  "responses": {
+    "200": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaExternalStorageDeletedResponse"
+          }
+        }
+      },
+      "description": "Successful Response"
+    },
+    "400": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "details": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/BetaExternalStorageInUseErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaExternalStorageInWorkspacePolicyErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaInvalidStorageArnErrorDetails"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Machine-readable detail about the cause of the error. `error_code` names the cause; branch on it rather than on `message`. Absent when the error has no code. Treat an unrecognized `error_code` as the bare `type`.",
+                    "title": "Details"
+                  },
+                  "message": {
+                    "default": "Invalid request",
+                    "description": "A human-readable explanation of the error. Its wording can change, so don't match on it.",
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "invalid_request_error",
+                    "default": "invalid_request_error",
+                    "description": "The broad category of the error.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "type"
+                ],
+                "title": "InvalidRequestError",
+                "type": "object"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "type": {
+                "const": "error",
+                "default": "error",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "error",
+              "request_id",
+              "type"
+            ],
+            "title": "ErrorResponse",
+            "type": "object"
+          }
+        }
+      },
+      "description": "Invalid argument - The client specified an invalid argument"
+    },
+    "401": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unauthenticated - The request does not have valid authentication credentials"
+    },
+    "403": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "properties": {
+              "error": {
+                "properties": {
+                  "details": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/BetaSandboxEgressRestrictedErrorDetails"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Machine-readable detail about the cause of the error. `error_code` names the cause; branch on it rather than on `message`. Absent when the error has no code. Treat an unrecognized `error_code` as the bare `type`."
+                  },
+                  "message": {
+                    "default": "Permission denied",
+                    "description": "A human-readable explanation of the error. Its wording can change, so don't match on it.",
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "permission_error",
+                    "default": "permission_error",
+                    "description": "The broad category of the error.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "type"
+                ],
+                "title": "PermissionError",
+                "type": "object"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "type": {
+                "const": "error",
+                "default": "error",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "error",
+              "request_id",
+              "type"
+            ],
+            "title": "ErrorResponse",
+            "type": "object"
+          }
+        }
+      },
+      "description": "Permission denied - The caller does not have permission to execute the specified operation"
+    },
+    "404": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Not found - Some requested entity was not found"
+    },
+    "408": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - The deadline expired before the operation could complete"
+    },
+    "409": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Aborted - The operation was aborted due to concurrency issue"
+    },
+    "412": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Failed precondition - Operation was rejected because the system is not in required state"
+    },
+    "413": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Out of range - Operation was attempted past the valid range"
+    },
+    "429": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Resource exhausted - Some resource has been exhausted (rate limiting)"
+    },
+    "431": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Request header fields too large - Request metadata was too large"
+    },
+    "499": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Cancelled - The operation was cancelled by the client"
+    },
+    "500": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Internal - Internal server error"
+    },
+    "501": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unimplemented - The operation is not implemented or supported"
+    },
+    "503": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Unavailable - The service is currently unavailable"
+    },
+    "504": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Deadline exceeded - Upstream service did not respond in time"
+    },
+    "529": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "$ref": "#/components/schemas/BetaErrorResponse"
+          }
+        }
+      },
+      "description": "Overloaded - The service is temporarily overloaded"
+    }
+  },
+  "summary": "Delete External Storage",
+  "components": {
+    "schemas": {
+      "AnthropicBeta": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "enum": [
+              "computer-use-2024-10-22",
+              "computer-use-2025-01-24",
+              "output-128k-2025-02-19",
+              "mcp-client-2025-04-04",
+              "mcp-client-2025-11-20",
+              "dev-full-thinking-2025-05-14",
+              "interleaved-thinking-2025-05-14",
+              "code-execution-2025-05-22",
+              "context-1m-2025-08-07",
+              "context-management-2025-06-27",
+              "model-context-window-exceeded-2025-08-26",
+              "fast-mode-2026-02-01",
+              "output-300k-2026-03-24",
+              "user-profiles-2026-03-24",
+              "user-profiles-2026-08-18",
+              "user-profiles-2026-09-04",
+              "advisor-tool-2026-03-01",
+              "managed-agents-2026-04-01",
+              "dreaming-2026-04-21",
+              "thinking-token-count-2026-05-13",
+              "server-side-fallback-2026-06-01",
+              "server-side-fallback-2026-07-01",
+              "fallback-credit-2026-06-01",
+              "fallback-credit-2026-07-01",
+              "agent-memory-2026-07-22",
+              "mid-conversation-tool-changes-2026-07-01",
+              "compact-2026-01-12",
+              "computer-use-2025-11-24",
+              "mcp-tunnels-2026-06-22",
+              "structured-outputs-2025-11-13",
+              "task-budgets-2026-03-13",
+              "thinking-display-updates-2026-08-18",
+              "mid-conversation-output-config-2026-07-01",
+              "thinking-binding-controls-2026-08-01",
+              "mid-conversation-system-clear-at-2026-08-21",
+              "compact-2026-09-04",
+              "inline-tools-2026-09-15",
+              "mcp-client-2026-09-15",
+              "ce-plugins-2026-09-01",
+              "spend-limit-reads-2026-09-26",
+              "telemetry-destinations-2026-08-11",
+              "webhooks-2026-10-07",
+              "admin-user-sign-out-2026-10-08",
+              "message-threads-2026-08-12",
+              "analytics-usage-cost-2026-08-24",
+              "experimental-claude-tag-2026-10-21",
+              "message-batches-2024-09-24",
+              "prompt-caching-2024-07-31",
+              "pdfs-2024-09-25",
+              "token-counting-2024-11-01",
+              "token-efficient-tools-2025-02-19",
+              "files-api-2025-04-14",
+              "extended-cache-ttl-2025-04-11",
+              "skills-2025-10-02",
+              "cache-diagnosis-2026-04-07",
+              "ce-user-management-2026-07-13",
+              "ce-claude-code-managed-settings-2026-10-06",
+              "efs-2026-10-01",
+              "user-profiles-billing-2026-10-01"
+            ],
+            "type": "string"
+          }
+        ],
+        "description": "Beta names you can send in the `anthropic-beta` header.\n\nSee [Beta headers](https://platform.claude.com/docs/en/api/beta-headers) for how to send them and where to find the name a feature needs."
+      },
+      "BetaExternalStorageDeletedResponse": {
+        "properties": {
+          "id": {
+            "description": "The External Storage ID, which starts with `estrg_`. Through Claude Platform on AWS, storage whose `provider_config.type` is `aws` has its bucket ARN as its ID instead: `arn:<partition>:s3:::<bucket_name>`, where `<partition>` is the partition of the bucket's region.",
+            "examples": [
+              "estrg_01SDCCSbTxrXDpWc1phhtcfK"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "external_storage_deleted",
+            "default": "external_storage_deleted",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type"
+        ],
+        "title": "ExternalStorageDeletedResponse",
+        "type": "object"
+      },
+      "BetaExternalStorageInUseErrorDetails": {
+        "description": "The External Storage is `active` or `draining`, so this delete didn't erase it. The message says what to do next. On `draining` storage this delete may have started a removal that can't be undone: get the storage and read `status.removal_started`.",
+        "properties": {
+          "error_code": {
+            "const": "external_storage_in_use",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "ExternalStorageInUseErrorDetails",
+        "type": "object"
+      },
+      "BetaExternalStorageInWorkspacePolicyErrorDetails": {
+        "description": "The External Storage can't be deleted while an Enterprise Frontier Safeguards workspace policy lists it as allowed storage.",
+        "properties": {
+          "error_code": {
+            "const": "external_storage_in_workspace_policy",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "ExternalStorageInWorkspacePolicyErrorDetails",
+        "type": "object"
+      },
+      "BetaInvalidStorageArnErrorDetails": {
+        "description": "On Claude Platform on AWS, the External Storage ID in the request is neither a bucket ARN nor an `estrg_` ID, or is the `estrg_` ID of AWS storage. Name AWS storage by its bucket ARN, `arn:<partition>:s3:::<bucket_name>`, which responses return as its `id`.",
+        "properties": {
+          "error_code": {
+            "const": "invalid_storage_arn",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "InvalidStorageArnErrorDetails",
+        "type": "object"
+      },
+      "BetaErrorResponse": {
+        "properties": {
+          "error": {
+            "discriminator": {
+              "mapping": {
+                "api_error": "#/components/schemas/BetaAPIError",
+                "authentication_error": "#/components/schemas/BetaAuthenticationError",
+                "billing_error": "#/components/schemas/BetaBillingError",
+                "invalid_request_error": "#/components/schemas/BetaInvalidRequestError",
+                "not_found_error": "#/components/schemas/BetaNotFoundError",
+                "overloaded_error": "#/components/schemas/BetaOverloadedError",
+                "permission_error": "#/components/schemas/BetaPermissionError",
+                "rate_limit_error": "#/components/schemas/BetaRateLimitError",
+                "timeout_error": "#/components/schemas/BetaGatewayTimeoutError"
+              },
+              "propertyName": "type"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/BetaInvalidRequestError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaAuthenticationError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaBillingError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaPermissionError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaNotFoundError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaRateLimitError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaGatewayTimeoutError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaAPIError"
+              },
+              {
+                "$ref": "#/components/schemas/BetaOverloadedError"
+              }
+            ],
+            "title": "Error"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Id"
+          },
+          "type": {
+            "const": "error",
+            "default": "error",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error",
+          "request_id",
+          "type"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "BetaSandboxEgressRestrictedErrorDetails": {
+        "description": "The request came from a Claude sandbox with restricted network access, which is not allowed to make this request. Send it from outside the sandbox, or from a sandbox with unrestricted network access.",
+        "properties": {
+          "error_code": {
+            "const": "sandbox_egress_restricted",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "SandboxEgressRestrictedErrorDetails",
+        "type": "object"
+      },
+      "BetaInvalidRequestError": {
+        "properties": {
+          "message": {
+            "default": "Invalid request",
+            "description": "A human-readable explanation of the error. Its wording can change, so don't match on it.",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "invalid_request_error",
+            "default": "invalid_request_error",
+            "description": "The broad category of the error.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "InvalidRequestError",
+        "type": "object"
+      },
+      "BetaAuthenticationError": {
+        "properties": {
+          "message": {
+            "default": "Authentication error",
+            "description": "A human-readable explanation of the error. Its wording can change, so don't match on it.",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "authentication_error",
+            "default": "authentication_error",
+            "description": "The broad category of the error.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "AuthenticationError",
+        "type": "object"
+      },
+      "BetaBillingError": {
+        "properties": {
+          "message": {
+            "default": "Billing error",
+            "description": "A human-readable explanation of the error. Its wording can change, so don't match on it.",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "billing_error",
+            "default": "billing_error",
+            "description": "The broad category of the error.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "BillingError",
+        "type": "object"
+      },
+      "BetaPermissionError": {
+        "properties": {
+          "message": {
+            "default": "Permission denied",
+            "description": "A human-readable explanation of the error. Its wording can change, so don't match on it.",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "permission_error",
+            "default": "permission_error",
+            "description": "The broad category of the error.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "PermissionError",
+        "type": "object"
+      },
+      "BetaNotFoundError": {
+        "properties": {
+          "message": {
+            "default": "Not found",
+            "description": "A human-readable explanation of the error. Its wording can change, so don't match on it.",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "not_found_error",
+            "default": "not_found_error",
+            "description": "The broad category of the error.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "NotFoundError",
+        "type": "object"
+      },
+      "BetaRateLimitError": {
+        "properties": {
+          "message": {
+            "default": "Rate limited",
+            "description": "A human-readable explanation of the error. Its wording can change, so don't match on it.",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "rate_limit_error",
+            "default": "rate_limit_error",
+            "description": "The broad category of the error.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "RateLimitError",
+        "type": "object"
+      },
+      "BetaGatewayTimeoutError": {
+        "properties": {
+          "message": {
+            "default": "Request timeout",
+            "description": "A human-readable explanation of the error. Its wording can change, so don't match on it.",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "timeout_error",
+            "default": "timeout_error",
+            "description": "The broad category of the error.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "GatewayTimeoutError",
+        "type": "object"
+      },
+      "BetaAPIError": {
+        "properties": {
+          "message": {
+            "default": "Internal server error",
+            "description": "A human-readable explanation of the error. Its wording can change, so don't match on it.",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "api_error",
+            "default": "api_error",
+            "description": "The broad category of the error.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "APIError",
+        "type": "object"
+      },
+      "BetaOverloadedError": {
+        "properties": {
+          "message": {
+            "default": "Overloaded",
+            "description": "A human-readable explanation of the error. Its wording can change, so don't match on it.",
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "overloaded_error",
+            "default": "overloaded_error",
+            "description": "The broad category of the error.",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "type"
+        ],
+        "title": "OverloadedError",
+        "type": "object"
+      }
+    }
+  }
+}
