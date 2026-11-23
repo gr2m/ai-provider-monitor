@@ -286,3 +286,101 @@
       after: 'Product surface that produced the usage or cost. Null unless product is in `group_by[]`; it can also be null on grouped rows whose usage cannot be attributed to a known surface. Values include `chat`, `claude_code`, `cowork`, `office_agent`, `claude_in_chrome`, `claude_design`, `claude_tag`, and `chat_cowork_unified`. `claude_tag` is Claude Tag, the Claude product in Slack. `chat_cowork_unified` is Chat and Cowork unified, Cowork''s features inside claude.ai chat: chat and Cowork usage by a member who has it turned on is reported under this value instead of `chat` or `cowork`. It is accepted as a filter only where Chat and Cowork unified is available. `cc_security_autopatch` is work that Claude Security runs for the organization. Some unattributed usage is reported as "other".'
   date: '2026-11-19'
   diff_url: https://github.com/gr2m/ai-provider-monitor/pull/1256
+- change: changed
+  target: route
+  breaking: false
+  deprecated: false
+  doc_only: true
+  note: Route description updated to document HIPAA-readiness availability limits and 400 behavior; parent org reports exclude HIPAA-enabled children.
+  paths:
+    - path: $.description
+      before: |-
+        Get token usage across a date range, broken out by dimension.
+
+        Returns one row per combination of the requested `group_by[]`
+        dimensions (and time bucket, when `time_bucket_width` is set) that has
+        usage in the range, ranked by the `order_by` metric or ordered by time
+        bucket; every combination is returned across pages. With no `group_by[]`
+        and no `time_bucket_width`, a single row aggregates the whole range.
+        Includes all usage, whether or not it is attributable to a seat user.
+        Requires an API key with the `read:analytics` scope, or an Admin API key.
+      after: |-
+        Get token usage across a date range, broken out by dimension.
+
+        Returns one row per combination of the requested `group_by[]`
+        dimensions (and time bucket, when `time_bucket_width` is set) that has
+        usage in the range, ranked by the `order_by` metric or ordered by time
+        bucket; every combination is returned across pages. With no `group_by[]`
+        and no `time_bucket_width`, a single row aggregates the whole range.
+        Includes all usage, whether or not it is attributable to a seat user.
+        Requires an API key with the `read:analytics` scope, or an Admin API key.
+        This endpoint is in beta and is not available to organizations with HIPAA
+        readiness enabled: their API requests return a 400 error. A parent
+        organization's report across its child organizations leaves out the child
+        organizations that have HIPAA readiness enabled. If the parent has child
+        organizations and all of them have HIPAA readiness enabled, the request
+        returns a 400 error.
+    - path: $.parameters[?(@.name=='organization_ids[]')].schema.description
+      before: Filter a parent organization's report to specific child organizations, by organization UUID or `org_` ID; an ID that is not one of its child organizations matches nothing. Requires an API key created at the parent organization level. Use `group_by[]=organization_id` to break out per-organization values.
+      after: Filter a parent organization's report to specific child organizations, by organization UUID or `org_` ID; an ID that is not one of its child organizations matches nothing. The report leaves out child organizations with HIPAA readiness enabled, and naming one returns a 400 error. Requires an API key created at the parent organization level. Use `group_by[]=organization_id` to break out per-organization values.
+  date: '2026-11-23'
+- change: added
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: false
+  note: Added new beta header value 'efs-2026-10-01' to Anthropic-Beta enum.
+  paths:
+    - path: $.components.schemas.AnthropicBeta.anyOf[1].enum[]
+      before: 'null'
+      after: efs-2026-10-01
+  date: '2026-11-23'
+- change: changed
+  target: request
+  breaking: false
+  deprecated: false
+  doc_only: true
+  note: Clarified/removed Claude Platform-only caveats in several filter parameter descriptions (now generally applicable).
+  paths:
+    - path: $.parameters[?(@.name=='workspace_ids[]')].schema.description
+      before: Filter to usage in specific workspaces, by tagged workspace ID (`wrkspc_...`). Use `group_by[]=workspace_id` to break out per-workspace values. Claude Platform organizations only; matches nothing for a Claude Enterprise organization.
+      after: Filter to usage in specific workspaces, by tagged workspace ID (`wrkspc_...`). Use `group_by[]=workspace_id` to break out per-workspace values.
+    - path: $.parameters[?(@.name=='service_tiers[]')].schema.description
+      before: Filter to specific service tiers. Use `group_by[]=service_tier` to break out per-tier values. Claude Platform organizations only; matches nothing for a Claude Enterprise organization.
+      after: Filter to specific service tiers. Use `group_by[]=service_tier` to break out per-tier values.
+    - path: $.parameters[?(@.name=='user_profile_ids[]')].schema.description
+      before: Filter to usage attributed to specific user profiles, by tagged user profile ID (`uprof_...`). Use `group_by[]=user_profile_id` to break out per-profile values. Claude Platform organizations only.
+      after: Filter to usage attributed to specific user profiles, by tagged user profile ID (`uprof_...`). Use `group_by[]=user_profile_id` to break out per-profile values.
+    - path: $.parameters[?(@.name=='agent_ids[]')].schema.description
+      before: Filter to usage incurred by sessions of specific Claude Managed Agents agents. Use `group_by[]=agent_id` to break out per-agent values. Claude Platform organizations only.
+      after: Filter to usage incurred by sessions of specific Claude Managed Agents agents. Use `group_by[]=agent_id` to break out per-agent values.
+    - path: $.parameters[?(@.name=='environment_ids[]')].schema.description
+      before: Filter to usage incurred by Claude Managed Agents sessions that ran in specific environments. Use `group_by[]=environment_id` to break out per-environment values. Claude Platform organizations only.
+      after: Filter to usage incurred by Claude Managed Agents sessions that ran in specific environments. Use `group_by[]=environment_id` to break out per-environment values.
+    - path: $.parameters[?(@.name=='deployment_ids[]')].schema.description
+      before: Filter to usage incurred by Claude Managed Agents sessions that specific deployments started. Use `group_by[]=deployment_id` to break out per-deployment values. Claude Platform organizations only.
+      after: Filter to usage incurred by Claude Managed Agents sessions that specific deployments started. Use `group_by[]=deployment_id` to break out per-deployment values.
+    - path: $.parameters[?(@.name=='session_ids[]')].schema.description
+      before: Filter to usage incurred by specific Claude Managed Agents sessions, by tagged session ID (`sesn_...`). Use `group_by[]=session_id` to break out per-session values. Claude Platform organizations only.
+      after: Filter to usage incurred by specific Claude Managed Agents sessions, by tagged session ID (`sesn_...`). Use `group_by[]=session_id` to break out per-session values.
+    - path: $.parameters[?(@.name=='api_key_ids[]')].schema.description
+      before: Filter to usage authenticated by specific API keys, by tagged API key ID (`apikey_...`), whichever identity the usage is attributed to. Include an empty entry (`api_key_ids[]=`) to also match usage that no API key authenticated. Use `group_by[]=api_key_id` to break out per-key values; usage without a key has a null `api_key_id`. Claude Platform organizations only.
+      after: Filter to usage authenticated by specific API keys, by tagged API key ID (`apikey_...`), whichever identity the usage is attributed to. Include an empty entry (`api_key_ids[]=`) to also match usage that no API key authenticated. Use `group_by[]=api_key_id` to break out per-key values; usage without a key has a null `api_key_id`.
+  date: '2026-11-23'
+- change: changed
+  target: response
+  breaking: false
+  deprecated: false
+  doc_only: true
+  note: Clarified response field docs around Claude Enterprise vs Platform for workspace_id, service_tier, and user_profile_id; no schema changes.
+  paths:
+    - path: $.components.schemas.BetaAnalyticsFlatGroup.properties.workspace_id.description
+      before: Workspace the usage occurred in, as a tagged workspace ID, including the organization's default workspace. Populated only when `workspace_id` is in `group_by[]`; null for Claude Enterprise usage.
+      after: Workspace the usage occurred in, as a tagged workspace ID, including a Claude Platform organization's default workspace. Populated only when `workspace_id` is in `group_by[]`; null for usage in a Claude Enterprise organization's default workspace, which is its only workspace.
+    - path: $.components.schemas.BetaAnalyticsFlatGroup.properties.service_tier.description
+      before: Service tier the usage was served at. Populated only when `service_tier` is in `group_by[]`; null for usage with no service tier (for example, code execution) and for Claude Enterprise usage.
+      after: Service tier the usage was served at. Populated only when `service_tier` is in `group_by[]`; null for usage with no service tier (for example, code execution).
+    - path: $.components.schemas.BetaAnalyticsFlatGroup.properties.user_profile_id.description
+      before: User profile the usage was attributed to, as a tagged `uprof_` ID. Populated only when `user_profile_id` is in `group_by[]`; null for usage that named no profile and for Claude Enterprise usage.
+      after: User profile the usage was attributed to, as a tagged `uprof_` ID. Populated only when `user_profile_id` is in `group_by[]`; null for usage that named no profile.
+  date: '2026-11-23'

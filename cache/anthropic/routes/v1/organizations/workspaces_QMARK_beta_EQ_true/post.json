@@ -58,13 +58,46 @@
                   "details": {
                     "anyOf": [
                       {
+                        "$ref": "#/components/schemas/BetaApprovalRequiredErrorDetails"
+                      },
+                      {
                         "$ref": "#/components/schemas/BetaExternalKeyValidationFailedErrorDetails"
                       },
                       {
                         "$ref": "#/components/schemas/BetaExternalKeyValidationTimedOutErrorDetails"
                       },
                       {
+                        "$ref": "#/components/schemas/BetaExternalStorageNotAvailableErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaGrantRequiredErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaHumanReviewNotAvailableErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaHumanReviewOnWithExternalStorageErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaInvalidStorageArnErrorDetails"
+                      },
+                      {
                         "$ref": "#/components/schemas/BetaKeyProfileMismatchErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaOrganizationNotEligibleErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaStorageNotAttachableErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaStorageProfileMismatchErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaStorageVerificationFailedErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaTranscriptsStorageRequiredErrorDetails"
                       },
                       {
                         "$ref": "#/components/schemas/BetaUserProfileNotFoundErrorDetails"
@@ -372,7 +405,70 @@
       "content": {
         "application/json": {
           "schema": {
-            "$ref": "#/components/schemas/BetaErrorResponse"
+            "properties": {
+              "error": {
+                "properties": {
+                  "details": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/BetaAuthorizationCheckUnavailableErrorDetails"
+                      },
+                      {
+                        "$ref": "#/components/schemas/BetaWorkspaceCreatedIncompleteErrorDetails"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Machine-readable detail about the cause of the error. `error_code` names the cause; branch on it rather than on `message`. Absent when the error has no code. Treat an unrecognized `error_code` as the bare `type`.",
+                    "title": "Details"
+                  },
+                  "message": {
+                    "default": "Overloaded",
+                    "description": "A human-readable explanation of the error. Its wording can change, so don't match on it.",
+                    "title": "Message",
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "overloaded_error",
+                    "default": "overloaded_error",
+                    "description": "The broad category of the error.",
+                    "title": "Type",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "message",
+                  "type"
+                ],
+                "title": "OverloadedError",
+                "type": "object"
+              },
+              "request_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Request Id"
+              },
+              "type": {
+                "const": "error",
+                "default": "error",
+                "title": "Type",
+                "type": "string"
+              }
+            },
+            "required": [
+              "error",
+              "request_id",
+              "type"
+            ],
+            "title": "ErrorResponse",
+            "type": "object"
           }
         }
       },
@@ -466,6 +562,7 @@
               "cache-diagnosis-2026-04-07",
               "ce-user-management-2026-07-13",
               "ce-claude-code-managed-settings-2026-10-06",
+              "efs-2026-10-01",
               "user-profiles-billing-2026-10-01"
             ],
             "type": "string"
@@ -518,6 +615,17 @@
               "ekey_01SDCCSbTxrXDpWc1phhtcfK"
             ],
             "title": "External Key Id"
+          },
+          "inference_data_privacy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BetaInferenceDataPrivacyCreateParams"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where the Workspace's retained inference data and transcript copies go, and whether Anthropic's human review applies. Requires the `efs-2026-10-01` `anthropic-beta` value. When omitted, `safeguards_storage` and `transcripts_storage` are `internal` and `human_review` is `enabled`. Cannot be null. An Admin API key can't set this field, because it doesn't belong to a user or a service account. Use an API key that belongs to one, or an OAuth token."
           },
           "name": {
             "description": "Name of the Workspace.",
@@ -642,6 +750,11 @@
             "title": "Id",
             "type": "string"
           },
+          "inference_data_privacy": {
+            "$ref": "#/components/schemas/BetaInferenceDataPrivacy",
+            "description": "Where the Workspace's retained inference data and transcript copies go, and whether Anthropic's human review applies. Returned only to requests that send the `efs-2026-10-01` `anthropic-beta` value, and each member only to organizations enabled for it.",
+            "title": "Inference Data Privacy"
+          },
           "name": {
             "description": "Name of the Workspace.",
             "examples": [
@@ -703,6 +816,30 @@
         "title": "Workspace",
         "type": "object"
       },
+      "BetaApprovalRequiredErrorDetails": {
+        "description": "Turning human review off needs Anthropic's approval for the organization, and the organization doesn't have it. Contact Anthropic support to request approval.",
+        "properties": {
+          "error_code": {
+            "const": "approval_required",
+            "title": "Error Code",
+            "type": "string"
+          },
+          "field": {
+            "description": "The request field that needs the approval.",
+            "examples": [
+              "inference_data_privacy.human_review"
+            ],
+            "title": "Field",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code",
+          "field"
+        ],
+        "title": "ApprovalRequiredErrorDetails",
+        "type": "object"
+      },
       "BetaExternalKeyValidationFailedErrorDetails": {
         "description": "The External Key failed Anthropic's validation, so the request was refused. The message gives the reason, if there is one.",
         "properties": {
@@ -733,6 +870,81 @@
         "title": "ExternalKeyValidationTimedOutErrorDetails",
         "type": "object"
       },
+      "BetaExternalStorageNotAvailableErrorDetails": {
+        "description": "External Storage isn't available for this Workspace, so only `internal` storage is accepted. The error's `message` says why.",
+        "properties": {
+          "error_code": {
+            "const": "external_storage_not_available",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "ExternalStorageNotAvailableErrorDetails",
+        "type": "object"
+      },
+      "BetaGrantRequiredErrorDetails": {
+        "description": "Anthropic has not approved External Storage for the organization, for the Workspace or, for storage bound to a user profile, for that user profile. Contact your Anthropic account team.",
+        "properties": {
+          "error_code": {
+            "const": "grant_required",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "GrantRequiredErrorDetails",
+        "type": "object"
+      },
+      "BetaHumanReviewNotAvailableErrorDetails": {
+        "description": "Human review can't be set as requested on this Workspace, so the request changed nothing. The error's `message` says what to do instead.",
+        "properties": {
+          "error_code": {
+            "const": "human_review_not_available",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "HumanReviewNotAvailableErrorDetails",
+        "type": "object"
+      },
+      "BetaHumanReviewOnWithExternalStorageErrorDetails": {
+        "description": "The request would leave the Workspace with `inference_data_privacy.safeguards_storage` set to External Storage and `inference_data_privacy.human_review` enabled. Anthropic doesn't offer human review of data in a customer's own storage. Set `human_review` to `disabled`, or `safeguards_storage` to `internal`.",
+        "properties": {
+          "error_code": {
+            "const": "human_review_on_with_external_storage",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "HumanReviewOnWithExternalStorageErrorDetails",
+        "type": "object"
+      },
+      "BetaInvalidStorageArnErrorDetails": {
+        "description": "On Claude Platform on AWS, the External Storage ID in the request is neither a bucket ARN nor an `estrg_` ID, or is the `estrg_` ID of AWS storage. Name AWS storage by its bucket ARN, `arn:<partition>:s3:::<bucket_name>`, which responses return as its `id`.",
+        "properties": {
+          "error_code": {
+            "const": "invalid_storage_arn",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "InvalidStorageArnErrorDetails",
+        "type": "object"
+      },
       "BetaKeyProfileMismatchErrorDetails": {
         "description": "After this request, the External Key and the Workspace would not have the same user profile. A key and its Workspace must have the same user profile, or both have none.",
         "properties": {
@@ -746,6 +958,120 @@
           "error_code"
         ],
         "title": "KeyProfileMismatchErrorDetails",
+        "type": "object"
+      },
+      "BetaOrganizationNotEligibleErrorDetails": {
+        "description": "The feature isn't offered to this organization. The error's `message` names the kind of organization or, when it names none, says to contact your Anthropic account team.",
+        "properties": {
+          "error_code": {
+            "const": "organization_not_eligible",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "OrganizationNotEligibleErrorDetails",
+        "type": "object"
+      },
+      "BetaStorageNotAttachableErrorDetails": {
+        "description": "This External Storage can't be attached to the setting named in `field`. The error's `message` says why.",
+        "properties": {
+          "error_code": {
+            "const": "storage_not_attachable",
+            "title": "Error Code",
+            "type": "string"
+          },
+          "field": {
+            "description": "The request field at fault.",
+            "examples": [
+              "inference_data_privacy.safeguards_storage"
+            ],
+            "title": "Field",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code",
+          "field"
+        ],
+        "title": "StorageNotAttachableErrorDetails",
+        "type": "object"
+      },
+      "BetaStorageProfileMismatchErrorDetails": {
+        "description": "The Workspace's storage and its user profile don't match: the Workspace and its storage must have the same user profile, or both have none.",
+        "properties": {
+          "error_code": {
+            "const": "storage_profile_mismatch",
+            "title": "Error Code",
+            "type": "string"
+          },
+          "field": {
+            "description": "The storage setting that doesn't match the Workspace's user profile.",
+            "title": "Field",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code",
+          "field"
+        ],
+        "title": "StorageProfileMismatchErrorDetails",
+        "type": "object"
+      },
+      "BetaStorageVerificationFailedErrorDetails": {
+        "description": "The External Storage failed verification, so the request changed nothing. `failed_checks` lists what to fix.",
+        "properties": {
+          "error_code": {
+            "const": "storage_verification_failed",
+            "title": "Error Code",
+            "type": "string"
+          },
+          "failed_checks": {
+            "description": "One entry for each check that failed.",
+            "items": {
+              "$ref": "#/components/schemas/BetaExternalStorageFailedCheck"
+            },
+            "title": "Failed Checks",
+            "type": "array"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The request field at fault. Sent when the refused request is a Workspace's create or update.",
+            "examples": [
+              "inference_data_privacy.safeguards_storage"
+            ],
+            "title": "Field"
+          }
+        },
+        "required": [
+          "error_code",
+          "failed_checks"
+        ],
+        "title": "StorageVerificationFailedErrorDetails",
+        "type": "object"
+      },
+      "BetaTranscriptsStorageRequiredErrorDetails": {
+        "description": "In an organization managed through AWS or Google Cloud, the request would leave the Workspace with `inference_data_privacy.human_review` disabled and `inference_data_privacy.transcripts_storage` not set to External Storage. With human review disabled, the organization reviews its own flagged requests, and it receives them only in that storage.",
+        "properties": {
+          "error_code": {
+            "const": "transcripts_storage_required",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "TranscriptsStorageRequiredErrorDetails",
         "type": "object"
       },
       "BetaUserProfileNotFoundErrorDetails": {
@@ -773,7 +1099,7 @@
           },
           "field": {
             "$ref": "#/components/schemas/BetaWorkspacePolicyField",
-            "description": "The request field the broken rule applies to.",
+            "description": "The request field the broken rule applies to. Other values may be returned.",
             "examples": [
               "external_key_id"
             ]
@@ -891,6 +1217,45 @@
         "title": "ExternalKeyChangedErrorDetails",
         "type": "object"
       },
+      "BetaAuthorizationCheckUnavailableErrorDetails": {
+        "description": "One of the organization's approvals from Anthropic could not be read right now, so nothing was done. Retry after the `Retry-After` delay.",
+        "properties": {
+          "error_code": {
+            "const": "authorization_check_unavailable",
+            "title": "Error Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code"
+        ],
+        "title": "AuthorizationCheckUnavailableErrorDetails",
+        "type": "object"
+      },
+      "BetaWorkspaceCreatedIncompleteErrorDetails": {
+        "description": "The Workspace was created, but some of what the request asked for did not take effect, or may not have. Don't send the create again. The error's `message` says what to do with the Workspace at `workspace_id`.",
+        "properties": {
+          "error_code": {
+            "const": "workspace_created_incomplete",
+            "title": "Error Code",
+            "type": "string"
+          },
+          "workspace_id": {
+            "description": "ID of the Workspace the request created.",
+            "examples": [
+              "wrkspc_01JwQvzr7rXLA5AGx3HKfFUJ"
+            ],
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code",
+          "workspace_id"
+        ],
+        "title": "WorkspaceCreatedIncompleteErrorDetails",
+        "type": "object"
+      },
       "BetaDataResidencyCreateParams": {
         "additionalProperties": false,
         "properties": {
@@ -940,6 +1305,26 @@
         "title": "DataResidencyCreateParams",
         "type": "object"
       },
+      "BetaInferenceDataPrivacyCreateParams": {
+        "additionalProperties": false,
+        "description": "Where the Workspace's retained inference data and transcript copies go, and\nwhether Anthropic's human review applies. A member cannot be null; omit it\ninstead.",
+        "properties": {
+          "human_review": {
+            "$ref": "#/components/schemas/BetaHumanReviewParams",
+            "description": "Whether Anthropic's human review applies to the Workspace. `disabled` needs Anthropic's approval. When omitted, `enabled`. Cannot be null."
+          },
+          "safeguards_storage": {
+            "$ref": "#/components/schemas/BetaStorageMemberParams",
+            "description": "Where the data Anthropic's safeguards systems retain for the Workspace goes. `external` sends it, once the attach takes effect, to the External Storage that `external_storage_id` names. `internal` means no External Storage: it goes to Anthropic's storage or, on a cloud provider's platform, to that provider's storage. When omitted, `internal`. Cannot be null."
+          },
+          "transcripts_storage": {
+            "$ref": "#/components/schemas/BetaStorageMemberParams",
+            "description": "Where copies of the Workspace's transcripts and its cases (Anthropic's safety findings about those transcripts) go. `external` sends them, once the attach takes effect, to the External Storage that `external_storage_id` names. `internal` means no External Storage, so no copies are made. When omitted, `internal`. Cannot be null."
+          }
+        },
+        "title": "InferenceDataPrivacyCreateParams",
+        "type": "object"
+      },
       "BetaDataResidency": {
         "properties": {
           "allowed_inference_geos": {
@@ -976,6 +1361,109 @@
           "workspace_geo"
         ],
         "title": "DataResidency",
+        "type": "object"
+      },
+      "BetaInferenceDataPrivacy": {
+        "properties": {
+          "human_review": {
+            "$ref": "#/components/schemas/BetaHumanReview",
+            "description": "The Workspace's human review setting. Human review is off only while this is `disabled` and Anthropic's approval stands.",
+            "title": "Human Review"
+          },
+          "safeguards_storage": {
+            "$ref": "#/components/schemas/BetaStorageMember",
+            "description": "Where the data Anthropic's safeguards systems retain for the Workspace goes. `external` sends it to the External Storage that `external_storage_id` names. `internal` means no External Storage: it goes to Anthropic's storage or, on a cloud provider's platform, to that provider's storage. A recent change may not have taken effect yet.",
+            "title": "Safeguards Storage"
+          },
+          "transcripts_storage": {
+            "$ref": "#/components/schemas/BetaStorageMember",
+            "description": "Where copies of the Workspace's transcripts and its cases (Anthropic's safety findings about those transcripts) go. `external` sends them to the External Storage that `external_storage_id` names. `internal` means no External Storage, so no copies are made. A recent change may not have taken effect yet.",
+            "title": "Transcripts Storage"
+          }
+        },
+        "required": [],
+        "title": "InferenceDataPrivacy",
+        "type": "object"
+      },
+      "BetaExternalStorageFailedCheck": {
+        "description": "One check that an External Storage's verification failed.",
+        "properties": {
+          "check": {
+            "description": "Name of the check that failed, such as `versioning`, for code to branch on. New names may be added; `other` is a check this API does not name. The value is a name with no data of its own.",
+            "enum": [
+              "already_registered",
+              "assume_role",
+              "bucket_empty",
+              "bucket_not_confirmed",
+              "bucket_policy",
+              "bucket_settings",
+              "default_encryption",
+              "deletion_policy",
+              "encryption",
+              "grant_mismatch",
+              "key_usable",
+              "kms_key_refused",
+              "lifecycle_no_archive",
+              "lifecycle_rules",
+              "lifecycle_template",
+              "location_mismatch",
+              "object_lock",
+              "other",
+              "ownership_enforced",
+              "probe_failed",
+              "probe_object",
+              "probe_storage_class",
+              "public_access_block",
+              "region",
+              "replication",
+              "request_metrics",
+              "request_payment",
+              "transcripts_support",
+              "trust_ingest_role",
+              "trust_maintenance_role",
+              "trust_media_erasure_role",
+              "trust_read_role",
+              "trust_transcripts_role",
+              "trust_transcripts_verify_role",
+              "trust_verify_role",
+              "versioning"
+            ],
+            "title": "Check",
+            "type": "string"
+          },
+          "message": {
+            "description": "What failed and how to fix it, in plain words.",
+            "title": "Message",
+            "type": "string"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ingest",
+                  "maintenance",
+                  "media_erasure",
+                  "read",
+                  "transcripts",
+                  "transcripts_verify",
+                  "verify"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The part of your access grant that the check is about, such as `ingest`: on AWS, one of the IAM roles your setup created; on Google Cloud, the grant to one of Anthropic's service accounts. `null` when the check is not about one. New names may be added. The value is a name with no data of its own.",
+            "title": "Role"
+          }
+        },
+        "required": [
+          "check",
+          "message",
+          "role"
+        ],
+        "title": "ExternalStorageFailedCheck",
         "type": "object"
       },
       "BetaWorkspacePolicyField": {
@@ -1214,6 +1702,155 @@
         ],
         "title": "WorkspaceGeo",
         "type": "string"
+      },
+      "BetaHumanReviewParams": {
+        "additionalProperties": false,
+        "description": "Whether Anthropic's human review applies to the Workspace's inference\ndata.",
+        "properties": {
+          "type": {
+            "enum": [
+              "disabled",
+              "enabled"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "HumanReviewParams",
+        "type": "object"
+      },
+      "BetaStorageMemberParams": {
+        "discriminator": {
+          "mapping": {
+            "external": "#/components/schemas/BetaExternalStorageMemberParams",
+            "internal": "#/components/schemas/BetaInternalStorageParams"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaInternalStorageParams"
+          },
+          {
+            "$ref": "#/components/schemas/BetaExternalStorageMemberParams"
+          }
+        ],
+        "title": "StorageMemberParams"
+      },
+      "BetaHumanReview": {
+        "description": "The Workspace's human review setting.",
+        "properties": {
+          "type": {
+            "enum": [
+              "disabled",
+              "enabled"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "HumanReview",
+        "type": "object"
+      },
+      "BetaStorageMember": {
+        "discriminator": {
+          "mapping": {
+            "external": "#/components/schemas/BetaExternalStorageMember",
+            "internal": "#/components/schemas/BetaInternalStorage"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/BetaInternalStorage"
+          },
+          {
+            "$ref": "#/components/schemas/BetaExternalStorageMember"
+          }
+        ],
+        "title": "StorageMember"
+      },
+      "BetaInternalStorageParams": {
+        "additionalProperties": false,
+        "description": "No External Storage for this purpose.",
+        "properties": {
+          "type": {
+            "const": "internal",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "InternalStorageParams",
+        "type": "object"
+      },
+      "BetaExternalStorageMemberParams": {
+        "additionalProperties": false,
+        "description": "The organization's External Storage that `external_storage_id` names.",
+        "properties": {
+          "external_storage_id": {
+            "description": "The External Storage ID, which starts with `estrg_`. Through Claude Platform on AWS, storage whose `provider_config.type` is `aws` has its bucket ARN as its ID instead: `arn:<partition>:s3:::<bucket_name>`, where `<partition>` is the partition of the bucket's region.",
+            "title": "External Storage Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "external",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "external_storage_id",
+          "type"
+        ],
+        "title": "ExternalStorageMemberParams",
+        "type": "object"
+      },
+      "BetaInternalStorage": {
+        "description": "No External Storage for this purpose.",
+        "properties": {
+          "type": {
+            "const": "internal",
+            "default": "internal",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "InternalStorage",
+        "type": "object"
+      },
+      "BetaExternalStorageMember": {
+        "description": "The organization's External Storage that `external_storage_id` names.",
+        "properties": {
+          "external_storage_id": {
+            "description": "The External Storage ID, which starts with `estrg_`. Through Claude Platform on AWS, storage whose `provider_config.type` is `aws` has its bucket ARN as its ID instead: `arn:<partition>:s3:::<bucket_name>`, where `<partition>` is the partition of the bucket's region.",
+            "title": "External Storage Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "external",
+            "default": "external",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "external_storage_id",
+          "type"
+        ],
+        "title": "ExternalStorageMember",
+        "type": "object"
       }
     }
   }
