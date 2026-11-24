@@ -1834,6 +1834,11 @@ components:
           items:
             $ref: "#/components/schemas/ModelMount"
           type: array
+        model_name:
+          description: ModelName is the model this deployment handles traffic for. Defaults to name of the deployment. A value used by one project as a deployment or model name is unavailable to other projects; within a project, any number of deployments may share a model name
+          maxLength: 31
+          minLength: 4
+          type: string
         name:
           description: Name is the unique identifier for your deployment. Must contain lowercase letters, numbers, or hyphens, start with a lowercase letter or number, and be 4-63 characters. It cannot be changed.
           maxLength: 63
@@ -1858,6 +1863,12 @@ components:
           type: integer
         termination_grace_period_seconds:
           description: TerminationGracePeriodSeconds is the time in seconds to wait for graceful shutdown before forcefully terminating the replica
+          type: integer
+        traffic_weight:
+          default: 100
+          description: TrafficWeight is the deployment's share of its model's traffic, relative to the other deployments of that model.
+          maximum: 10000
+          minimum: 0
           type: integer
         volumes:
           description: Volumes is a list of volume mounts to attach to the container. Each mount must reference an existing volume by name
@@ -2094,16 +2105,26 @@ components:
           description: Adapter attachment `dad_` id used by get, update, and remove; stale ids never address a replacement after remove and re-add.
           type: string
         perCluster:
-          description: Per-cluster adapter load state reported by the controller.
+          description: Per-cluster adapter load state reported by the controller for the clusters the deployment is placed on. Empty while the deployment is stopped or being torn down, and briefly after AddAdapter.
           items:
             $ref: "#/components/schemas/DE.DeploymentAdapterStatus"
           type: array
+        servingState:
+          description: Whether the adapter can serve requests right now. INACTIVE means the deployment is stopped, scaled to zero, or being torn down; LOADING means a placed cluster has not finished loading it; READY means every placed cluster serves it; FAILED means a placed cluster failed to load it.
+          enum:
+            - ADAPTER_SERVING_STATE_INACTIVE
+            - ADAPTER_SERVING_STATE_LOADING
+            - ADAPTER_SERVING_STATE_READY
+            - ADAPTER_SERVING_STATE_FAILED
+          readOnly: true
+          type: string
       required:
         - adapterModelId
         - desiredRevisionId
         - perCluster
         - etag
         - id
+        - servingState
       type: object
     DE.AddAdapterRequest:
       description: Configuration for attaching a LoRA adapter to a deployment that has adapter loading enabled.
@@ -5126,6 +5147,12 @@ components:
           items:
             type: string
           type: array
+        unitPrices:
+          description: Serverless prices for usage not measured in tokens, such as minutes of transcribed audio or characters of synthesized speech, ordered by unit then tier. Empty when none are curated; a model priced the same on every tier lists only `PRICING_TIER_STANDARD`.
+          items:
+            $ref: "#/components/schemas/DE.SupportedModelUnitPrice"
+          readOnly: true
+          type: array
         updatedAt:
           description: Timestamp when the catalog entry was last updated.
           format: date-time
@@ -5232,6 +5259,31 @@ components:
           description: Price in USD per one million output tokens.
           format: double
           type: number
+      type: object
+    DE.SupportedModelUnitPrice:
+      description: Serverless display price in USD per one non-token unit on one request tier.
+      properties:
+        priceUsd:
+          description: Price in USD per one unit.
+          format: double
+          type: number
+        tier:
+          description: Request tier the price applies to, such as synchronous HTTP, batch, or streaming realtime sessions.
+          enum:
+            - PRICING_TIER_STANDARD
+            - PRICING_TIER_BATCH
+            - PRICING_TIER_REALTIME
+          type: string
+        unit:
+          description: Billing unit, either one minute of input audio (speech-to-text) or one million input characters (text-to-speech).
+          enum:
+            - PRICING_UNIT_AUDIO_MINUTE
+            - PRICING_UNIT_MILLION_CHARACTERS
+          type: string
+      required:
+        - unit
+        - tier
+        - priceUsd
       type: object
     DE.ThresholdCheck:
       description: Threshold criteria that fail when the target metric violates the configured bound.
@@ -5520,6 +5572,9 @@ components:
           items:
             $ref: "#/components/schemas/ModelMount"
           type: array
+        model_name:
+          description: ModelName is the model the deployment handles traffic for. Equals name unless set
+          type: string
         name:
           description: Name is the name of the deployment
           type: string
@@ -5560,6 +5615,9 @@ components:
           type: integer
         termination_grace_period_seconds:
           description: TerminationGracePeriodSeconds is the time in seconds to wait for graceful shutdown before forcefully terminating the replica
+          type: integer
+        traffic_weight:
+          description: TrafficWeight is the deployment's share of its model's traffic, relative to the other deployments of that model
           type: integer
         updated_at:
           description: UpdatedAt is the ISO8601 timestamp when this deployment was last updated
@@ -5697,18 +5755,13 @@ components:
           type: string
       type: object
     EvaluationClassifyParameters:
+      deprecated: true
       properties:
         input_data_file_path:
-          description: Data file ID
-          example: file-1234-aefd
           type: string
         judge:
           $ref: "#/components/schemas/EvaluationJudgeModelConfig"
         labels:
-          description: List of possible classification labels
-          example:
-            - "yes"
-            - "no"
           items:
             type: string
           minItems: 2
@@ -5716,9 +5769,6 @@ components:
         model_to_evaluate:
           $ref: "#/components/schemas/EvaluationModelOrString"
         pass_labels:
-          description: List of labels that are considered passing
-          example:
-            - "yes"
           items:
             type: string
           minItems: 1
@@ -5730,110 +5780,77 @@ components:
         - input_data_file_path
       type: object
     EvaluationClassifyResults:
+      deprecated: true
       properties:
         generation_fail_count:
-          description: Number of failed generations.
-          example: 0
           nullable: true
           type: number
         invalid_label_count:
-          description: Number of invalid labels
-          example: 0
           nullable: true
           type: number
         judge_fail_count:
-          description: Number of failed judge generations
-          example: 0
           nullable: true
           type: number
         label_counts:
-          description: JSON string representing label counts
-          example: '{"yes": 10, "no": 0}'
           type: string
         pass_percentage:
-          description: Pecentage of pass labels.
-          example: 10
           nullable: true
           type: number
         result_file_id:
-          description: Data File ID
-          example: file-1234-aefd
           type: string
       type: object
     EvaluationCompareParameters:
+      deprecated: true
       properties:
         disable_position_bias_correction:
           default: false
-          description: |
-            When false (default), the judge runs twice per sample: once with model A's response first (original order) and once with model B's response first (flipped order). The two verdicts are reconciled to cancel out position bias. When true, only the original-order pass is run, halving judge cost and latency at the expense of position-bias correction. The result file will not contain flipped-order judge fields when this is true.
           type: boolean
         input_data_file_path:
-          description: Data file ID
-          example: file-01234567890123456789
           type: string
         judge:
           $ref: "#/components/schemas/EvaluationJudgeModelConfig"
         model_a:
-          description: |
-            Either an EvaluationModelRequest for generation or a string column name from the dataset (when responses are pre-generated). When both model_a and model_b are EvaluationModelRequest objects, their inference runs execute in parallel to reduce total wall-clock time.
           oneOf:
             - $ref: "#/components/schemas/EvaluationModelRequest"
-            - description: Column name in the input data containing pre-generated responses
-              type: string
+            - type: string
         model_b:
-          description: |
-            Either an EvaluationModelRequest for generation or a string column name from the dataset (when responses are pre-generated). When both model_a and model_b are EvaluationModelRequest objects, their inference runs execute in parallel to reduce total wall-clock time.
           oneOf:
             - $ref: "#/components/schemas/EvaluationModelRequest"
-            - description: Column name in the input data containing pre-generated responses
-              type: string
+            - type: string
       required:
         - judge
         - input_data_file_path
       type: object
     EvaluationCompareResults:
+      deprecated: true
       properties:
         A_wins:
-          description: Number of samples where model A was judged the winner
           type: integer
         B_wins:
-          description: Number of samples where model B was judged the winner
           type: integer
         Ties:
-          description: Number of samples that resulted in a tie score
           type: integer
         generation_fail_count:
-          description: Number of generation failures across model A and model B.
-          example: 0
           nullable: true
           type: number
         judge_fail_count:
-          description: |
-            Number of judge inference failures. In the default two-pass mode (disable_position_bias_correction=false) this is the combined failure count from both the original-order and flipped-order judge passes.
-          example: 0
           nullable: true
           type: number
         result_file_id:
-          description: |
-            File ID of the detailed output file. Each row contains the original input fields plus judge outputs. In two-pass mode the file includes both original-order and flipped-order judge fields; in single-pass mode (disable_position_bias_correction=true) only original-order fields are present.
           type: string
       type: object
     EvaluationJob:
+      deprecated: true
       properties:
         created_at:
-          description: When the job was created
-          example: "2025-07-23T17:10:04.837888Z"
           format: date-time
           type: string
         owner_id:
-          description: ID of the job owner (admin only)
           type: string
         parameters:
           additionalProperties: true
-          description: The parameters used for this evaluation
           type: object
         results:
-          description: Results of the evaluation (when completed)
           nullable: true
           oneOf:
             - $ref: "#/components/schemas/EvaluationClassifyResults"
@@ -5844,7 +5861,6 @@ components:
                   type: string
               type: object
         status:
-          description: Current status of the job
           enum:
             - pending
             - queued
@@ -5852,89 +5868,58 @@ components:
             - completed
             - error
             - user_error
-          example: completed
           type: string
         status_updates:
-          description: History of status updates (admin only)
           items:
             $ref: "#/components/schemas/EvaluationJobStatusUpdate"
           type: array
         type:
-          description: The type of evaluation
           enum:
             - classify
             - score
             - compare
-          example: classify
           type: string
         updated_at:
-          description: When the job was last updated
-          example: "2025-07-23T17:10:04.837888Z"
           format: date-time
           type: string
         workflow_id:
-          description: The evaluation job ID
-          example: eval-1234aedf
           type: string
       type: object
     EvaluationJobStatusUpdate:
+      deprecated: true
       properties:
         message:
-          description: Additional message for this update
-          example: Job is pending evaluation
           type: string
         status:
-          description: The status at this update
-          example: pending
           type: string
         timestamp:
-          description: When this update occurred
-          example: "2025-07-23T17:10:04.837888Z"
           format: date-time
           type: string
       type: object
     EvaluationJudgeModelConfig:
+      deprecated: true
       properties:
         external_api_token:
-          description: Bearer/API token for the external judge model provider. Required when model_source is 'external'.
           type: string
         external_base_url:
-          description: Base URL of the external inference API for the judge. Must be OpenAI-compatible. Required when model_source is 'external'.
           type: string
         max_tokens:
-          description: Maximum number of tokens the judge model may generate. Defaults to 32768 if omitted. Set higher for reasoning judges (e.g. o-series, Gemini) that spend tokens on internal chain-of-thought before emitting the verdict JSON.
-          example: 8192
           minimum: 1
           type: integer
         model:
-          description: Name of the judge model
-          example: Qwen/Qwen3.5-9B
           type: string
         model_source:
-          description: |
-            Source of the judge model inference: - `serverless`: Together's shared serverless inference API. Default concurrency: 25 workers. - `dedicated`: A Together dedicated deployment endpoint. Default concurrency: 5 workers
-              (minimum enforced even if num_workers is set lower).
-            - `external`: An external inference API (e.g. OpenAI, Anthropic, Google, OpenRouter).
-              Requires `external_api_token` and `external_base_url`. Default concurrency: 2 workers
-              for first-party APIs, 20 for proxy/aggregator endpoints.
           enum:
             - serverless
             - dedicated
             - external
           type: string
         num_workers:
-          description: |
-            Number of concurrent inference workers for the judge. Overrides the source-specific default (serverless: 25, dedicated: 5, external: 2–20). For dedicated endpoints the value is clamped to a minimum of 5 regardless of what is set here.
-          example: 5
           minimum: 1
           type: integer
         system_template:
-          description: System prompt template for the judge
-          example: Imagine you are a helpful assistant
           type: string
         temperature:
-          description: Sampling temperature for the judge model. Defaults to 0.05 if omitted.
-          example: 0.0
           maximum: 2
           minimum: 0
           type: number
@@ -5944,57 +5929,36 @@ components:
         - model_source
       type: object
     EvaluationModelOrString:
+      deprecated: true
       oneOf:
-        - description: Column name in the input dataset containing pre-generated responses
-          type: string
+        - type: string
         - $ref: "#/components/schemas/EvaluationModelRequest"
     EvaluationModelRequest:
+      deprecated: true
       properties:
         external_api_token:
-          description: Bearer/API token for the external model provider. Required when model_source is 'external'.
           type: string
         external_base_url:
-          description: Base URL of the external inference API. Must be OpenAI-compatible. Required when model_source is 'external'.
           type: string
         input_template:
-          description: User message template. Supports Jinja2 variables referencing dataset columns.
-          example: "Please answer the following question: {{ question }}"
           type: string
         max_tokens:
-          description: Maximum number of tokens to generate.
-          example: 512
           minimum: 1
           type: integer
         model:
-          description: Name of the model to evaluate
-          example: Qwen/Qwen3.5-9B
           type: string
         model_source:
-          description: |
-            Source of the model inference: - `serverless`: Together's shared serverless inference API. Default concurrency: 25 workers. - `dedicated`: A Together dedicated deployment endpoint. Default concurrency: 5 workers
-              (minimum enforced even if num_workers is set lower). Authentication uses the requesting
-              user's Together API token automatically.
-            - `external`: An external inference API (e.g. OpenAI, Anthropic, Google, OpenRouter).
-              Requires `external_api_token` and `external_base_url`. Default concurrency: 2 workers
-              for first-party APIs (OpenAI, Anthropic, Google), 20 for proxy/aggregator endpoints.
           enum:
             - serverless
             - dedicated
             - external
           type: string
         num_workers:
-          description: |
-            Number of concurrent inference workers. Overrides the source-specific default (serverless: 25, dedicated: 5, external: 2–20). For dedicated endpoints the value is clamped to a minimum of 5 regardless of what is set here.
-          example: 5
           minimum: 1
           type: integer
         system_template:
-          description: System prompt template. Supports Jinja2 variables referencing dataset columns.
-          example: You are a helpful assistant.
           type: string
         temperature:
-          description: Sampling temperature for generation.
-          example: 0.7
           maximum: 2
           minimum: 0
           type: number
@@ -6007,38 +5971,29 @@ components:
         - model_source
       type: object
     EvaluationResponse:
+      deprecated: true
       properties:
         status:
-          description: Initial status of the job
           enum:
             - pending
           type: string
         workflow_id:
-          description: The ID of the created evaluation job
-          example: eval-1234-1244513
           type: string
       type: object
     EvaluationScoreParameters:
+      deprecated: true
       properties:
         input_data_file_path:
-          description: Data file ID
-          example: file-01234567890123456789
           type: string
         judge:
           $ref: "#/components/schemas/EvaluationJudgeModelConfig"
         max_score:
-          description: Maximum possible score
-          example: 10.0
           type: number
         min_score:
-          description: Minimum possible score
-          example: 0.0
           type: number
         model_to_evaluate:
           $ref: "#/components/schemas/EvaluationModelOrString"
         pass_threshold:
-          description: Score threshold for passing
-          example: 7.0
           type: number
       required:
         - judge
@@ -6048,6 +6003,7 @@ components:
         - input_data_file_path
       type: object
     EvaluationScoreResults:
+      deprecated: true
       properties:
         aggregated_scores:
           properties:
@@ -6059,41 +6015,31 @@ components:
               type: number
           type: object
         failed_samples:
-          description: number of failed samples generated from model
           type: number
         generation_fail_count:
-          description: Number of failed generations.
-          example: 0
           nullable: true
           type: number
         invalid_score_count:
-          description: number of invalid scores generated from model
           type: number
         judge_fail_count:
-          description: Number of failed judge generations
-          example: 0
           nullable: true
           type: number
         result_file_id:
-          description: Data File ID
-          example: file-1234-aefd
           type: string
       type: object
     EvaluationTypedRequest:
+      deprecated: true
       properties:
         parameters:
-          description: Type-specific parameters for the evaluation
           oneOf:
             - $ref: "#/components/schemas/EvaluationClassifyParameters"
             - $ref: "#/components/schemas/EvaluationScoreParameters"
             - $ref: "#/components/schemas/EvaluationCompareParameters"
         type:
-          description: The type of evaluation to perform
           enum:
             - classify
             - score
             - compare
-          example: classify
           type: string
       required:
         - type
@@ -11336,8 +11282,13 @@ components:
           items:
             $ref: "#/components/schemas/ModelMount"
           type: array
+        model_name:
+          description: ModelName changes the model this deployment handles traffic for. Can be omitted. Send the deployment name to reset it
+          maxLength: 31
+          minLength: 4
+          type: string
         name:
-          description: Name is the new unique identifier for your deployment. Must contain only alphanumeric characters, underscores, or hyphens (1-100 characters)
+          description: Name is the deployment's current name. Deployment names cannot be changed after creation
           maxLength: 100
           minLength: 1
           type: string
@@ -11360,6 +11311,11 @@ components:
           type: integer
         termination_grace_period_seconds:
           description: TerminationGracePeriodSeconds is the time in seconds to wait for graceful shutdown before forcefully terminating the replica
+          type: integer
+        traffic_weight:
+          description: TrafficWeight is the deployment's share of its model's traffic, relative to the other deployments of that model.
+          maximum: 10000
+          minimum: 0
           type: integer
         volumes:
           description: Volumes is a list of volume mounts to attach to the container. Replaces all existing volumes.
@@ -11480,6 +11436,9 @@ components:
           required:
             - message
           type: object
+        estimated_done_at:
+          description: Estimated Unix timestamp (seconds) for when the job is expected to finish. This is an estimate, not a guarantee. It is only returned when creating a video and an estimate is available.
+          type: number
         id:
           description: Unique identifier for the video job.
           type: string
@@ -16379,20 +16338,18 @@ paths:
                  }'
   /v1/evaluation:
     get:
-      operationId: getAllEvaluationJobs
+      deprecated: true
       parameters:
         - in: query
           name: status
           required: false
           schema:
-            description: Filter evaluation jobs by status
             type: string
         - in: query
           name: limit
           required: false
           schema:
             default: 10
-            description: Limit the number of results
             type: integer
       responses:
         "200":
@@ -16402,67 +16359,15 @@ paths:
                 items:
                   $ref: "#/components/schemas/EvaluationJob"
                 type: array
-          description: evaluation jobs retrieved successfully
-        "400":
+          description: OK
+        "410":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorData"
-          description: Invalid request format
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorData"
-          description: Error retrieving jobs from manager
-      summary: Get all evaluation jobs
-      tags:
-        - evaluation
-      x-codeSamples:
-        - label: Together AI SDK (Python)
-          lang: Python
-          source: |
-            from together import Together
-            import os
-
-            client = Together(
-                api_key=os.environ.get("TOGETHER_API_KEY"),
-            )
-
-            response = client.evals.list()
-
-            for job in response:
-                print(job.workflow_id)
-        - label: Together AI SDK (TypeScript)
-          lang: TypeScript
-          source: |
-            import Together from "together-ai";
-
-            const client = new Together({
-              apiKey: process.env.TOGETHER_API_KEY,
-            });
-
-            const response = await client.evals.list();
-
-            for (const job of response) {
-              console.log(job.workflow_id);
-            }
-        - label: Together AI SDK (JavaScript)
-          lang: JavaScript
-          source: |
-            import Together from "together-ai";
-
-            const client = new Together({
-              apiKey: process.env.TOGETHER_API_KEY,
-            });
-
-            const response = await client.evals.list();
-
-            for (const job of response) {
-              console.log(job.workflow_id);
-            }
+          description: Gone
     post:
-      operationId: createEvaluationJob
+      deprecated: true
       requestBody:
         content:
           application/json:
@@ -16475,109 +16380,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EvaluationResponse"
-          description: Evaluation job created successfully
-        "400":
+          description: OK
+        "410":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorData"
-          description: Invalid request format
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorData"
-          description: Failed to create evaluation job
-      summary: Create an evaluation job
-      tags:
-        - evaluation
-      x-codeSamples:
-        - label: Together AI SDK (Python)
-          lang: Python
-          source: |
-            from together import Together
-            import os
-
-            client = Together(
-                api_key=os.environ.get("TOGETHER_API_KEY"),
-            )
-
-            response = client.evals.create(
-                type="classify",
-                parameters={
-                    "judge": {
-                        "model": "openai/gpt-oss-120b",
-                        "model_source": "serverless",
-                        "system_template": "You are an expert evaluator...",
-                    },
-                    "input_data_file_path": "<FILE_ID>",
-                    "labels": ["good", "bad"],
-                    "pass_labels": ["good"],
-                    "model_to_evaluate": "Qwen/Qwen3.5-9B",
-                },
-            )
-
-            print(response.workflow_id)
-        - label: Together AI SDK (TypeScript)
-          lang: TypeScript
-          source: |
-            import Together from "together-ai";
-
-            const client = new Together({
-              apiKey: process.env.TOGETHER_API_KEY,
-            });
-
-            const response = await client.evals.create({
-              type: 'classify',
-              parameters: {
-                judge: {
-                  model: 'openai/gpt-oss-120b',
-                  model_source: 'serverless',
-                  system_template: 'You are an expert evaluator...',
-                },
-                input_data_file_path: '<FILE_ID>',
-                labels: ['good', 'bad'],
-                pass_labels: ['good'],
-                model_to_evaluate: 'Qwen/Qwen3.5-9B',
-              },
-            });
-
-            console.log(response.workflow_id);
-        - label: Together AI SDK (JavaScript)
-          lang: JavaScript
-          source: |
-            import Together from "together-ai";
-
-            const client = new Together({
-              apiKey: process.env.TOGETHER_API_KEY,
-            });
-
-            const response = await client.evals.create({
-              type: 'classify',
-              parameters: {
-                judge: {
-                  model: 'openai/gpt-oss-120b',
-                  model_source: 'serverless',
-                  system_template: 'You are an expert evaluator...',
-                },
-                input_data_file_path: '<FILE_ID>',
-                labels: ['good', 'bad'],
-                pass_labels: ['good'],
-                model_to_evaluate: 'Qwen/Qwen3.5-9B',
-              },
-            });
-
-            console.log(response.workflow_id);
+          description: Gone
   /v1/evaluation/model-list:
     get:
-      operationId: getModelList
+      deprecated: true
       parameters:
         - in: query
           name: model_source
           required: false
           schema:
             default: all
-            description: Filter models by source
             type: string
       responses:
         "200":
@@ -16587,77 +16405,24 @@ paths:
                 properties:
                   model_list:
                     items:
-                      description: The name of the model
                       type: string
                     type: array
                 type: object
-          description: Model list retrieved successfully
-        "400":
+          description: OK
+        "410":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorData"
-          description: Invalid request format
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorData"
-          description: Error retrieving model list
-      summary: Get model list
-      tags:
-        - evaluation
-      x-codeSamples:
-        - label: Together AI SDK (Python)
-          lang: Python
-          source: |
-            from together import Together
-
-            client = Together()
-
-            # The SDK has no dedicated method for this endpoint yet, so call it with
-            # the client's generic GET helper.
-            models = client.get(
-                "/v1/evaluation/model-list",
-                cast_to=object,
-                options={"params": {"model_source": "serverless"}},
-            )
-            print(models)
-        - label: Together AI SDK (TypeScript)
-          lang: TypeScript
-          source: |
-            import Together from "together-ai";
-
-            const client = new Together();
-
-            // The SDK has no dedicated method for this endpoint yet, so call it with
-            // the client's generic GET helper.
-            const models = await client.get("/v1/evaluation/model-list", {
-              query: { model_source: "serverless" },
-            });
-            console.log(models);
-        - label: Together AI SDK (JavaScript)
-          lang: JavaScript
-          source: |
-            import Together from "together-ai";
-
-            const client = new Together();
-
-            // The SDK has no dedicated method for this endpoint yet, so call it with
-            // the client's generic GET helper.
-            const models = await client.get("/v1/evaluation/model-list", {
-              query: { model_source: "serverless" },
-            });
-            console.log(models);
+          description: Gone
   /v1/evaluation/{id}:
     get:
-      operationId: getEvaluationJobDetails
+      deprecated: true
       parameters:
         - in: path
           name: id
           required: true
           schema:
-            description: The ID of the evaluation job to retrieve
             type: string
       responses:
         "200":
@@ -16665,69 +16430,21 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EvaluationJob"
-          description: Evaluation job details retrieved successfully
-        "404":
+          description: OK
+        "410":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorData"
-          description: Evaluation job not found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorData"
-          description: Failed to get evaluation job
-      summary: Get evaluation job details
-      tags:
-        - evaluation
-      x-codeSamples:
-        - label: Together AI SDK (Python)
-          lang: Python
-          source: |
-            from together import Together
-            import os
-
-            client = Together(
-                api_key=os.environ.get("TOGETHER_API_KEY"),
-            )
-
-            response = client.evals.retrieve('<EVALUATION_ID>')
-
-            print(response)
-        - label: Together AI SDK (TypeScript)
-          lang: TypeScript
-          source: |
-            import Together from "together-ai";
-
-            const client = new Together({
-              apiKey: process.env.TOGETHER_API_KEY,
-            });
-
-            const response = await client.evals.retrieve('<EVALUATION_ID>');
-
-            console.log(response);
-        - label: Together AI SDK (JavaScript)
-          lang: JavaScript
-          source: |
-            import Together from "together-ai";
-
-            const client = new Together({
-              apiKey: process.env.TOGETHER_API_KEY,
-            });
-
-            const response = await client.evals.retrieve('<EVALUATION_ID>');
-
-            console.log(response);
+          description: Gone
   /v1/evaluation/{id}/status:
     get:
-      operationId: getEvaluationJobStatusAndResults
+      deprecated: true
       parameters:
         - in: path
           name: id
           required: true
           schema:
-            description: The ID of the evaluation job to get the status of
             type: string
       responses:
         "200":
@@ -16736,13 +16453,11 @@ paths:
               schema:
                 properties:
                   results:
-                    description: The results of the evaluation job
                     oneOf:
                       - $ref: "#/components/schemas/EvaluationClassifyResults"
                       - $ref: "#/components/schemas/EvaluationScoreResults"
                       - $ref: "#/components/schemas/EvaluationCompareResults"
                   status:
-                    description: The status of the evaluation job
                     enum:
                       - completed
                       - error
@@ -16752,63 +16467,13 @@ paths:
                       - pending
                     type: string
                 type: object
-          description: Evaluation job status and results retrieved successfully
-        "404":
+          description: OK
+        "410":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorData"
-          description: Evaluation job not found
-        "500":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorData"
-          description: Failed to get evaluation job
-      summary: Get evaluation job status and results
-      tags:
-        - evaluation
-      x-codeSamples:
-        - label: Together AI SDK (Python)
-          lang: Python
-          source: |
-            from together import Together
-            import os
-
-            client = Together(
-                api_key=os.environ.get("TOGETHER_API_KEY"),
-            )
-
-            response = client.evals.status('<EVALUATION_ID>')
-
-            print(response.status)
-            print(response.results)
-        - label: Together AI SDK (TypeScript)
-          lang: TypeScript
-          source: |
-            import Together from "together-ai";
-
-            const client = new Together({
-              apiKey: process.env.TOGETHER_API_KEY,
-            });
-
-            const response = await client.evals.status('<EVALUATION_ID>');
-
-            console.log(response.status);
-            console.log(response.results);
-        - label: Together AI SDK (JavaScript)
-          lang: JavaScript
-          source: |
-            import Together from "together-ai";
-
-            const client = new Together({
-              apiKey: process.env.TOGETHER_API_KEY,
-            });
-
-            const response = await client.evals.status('<EVALUATION_ID>');
-
-            console.log(response.status);
-            console.log(response.results);
+          description: Gone
   /v1/files:
     get:
       description: List the metadata for all uploaded data files.
@@ -20149,6 +19814,25 @@ paths:
       summary: Estimate rollout time and price
       tags:
         - RL
+      x-codeSamples:
+        - label: Together AI SDK (Python)
+          lang: Python
+          source: |
+            from together import Together
+
+            client = Together()
+
+            estimate = client.post_training.rollouts.estimate(
+                base_model="Qwen/Qwen3.5-9B",
+                episodes=1024,
+                concurrency=64,
+                prompt_tokens=2000,
+                turns=4,
+                added_tokens_per_turn=1500,
+                generated_tokens_per_turn=500,
+                compute_config={"gpu_type": "B200-SXM", "num_generator_replicas": 1},
+            )
+            print(estimate.wall_seconds, estimate.estimated_price, estimate.currency)
   /v1/rl/supported-models:
     get:
       description: Returns the models supported by the RL service and their limits for training/sampling operations.
@@ -28235,6 +27919,51 @@ paths:
         "200":
           content:
             application/json:
+              # WhoamiResponse is a oneOf, and doc generators build the response
+              # example from its first variant only. One named example per variant
+              # shows the exact body each credential type gets back.
+              examples:
+                project_api_key:
+                  summary: Project API key
+                  value:
+                    api_key:
+                      id: key_CTnK8fQyRz3uVbW6aHd2M
+                    organization:
+                      id: org_CWx4pLm9sTe7YjN2kQa5B
+                      name: Acme
+                    project:
+                      id: proj_CczF9KYFantA84sNYDTJd
+                      name: Acme Production
+                      slug: acme-production-4821
+                    type: project_api_key
+                user_jwt:
+                  summary: User JWT
+                  value:
+                    type: user_jwt
+                    user:
+                      id: user_CKfewYkQBpaEmN7wuQS3W
+                user_org_jwt:
+                  summary: User organization JWT
+                  value:
+                    organization:
+                      id: org_CWx4pLm9sTe7YjN2kQa5B
+                      name: Acme
+                    type: user_org_jwt
+                    user:
+                      id: user_CKfewYkQBpaEmN7wuQS3W
+                user_org_project_jwt:
+                  summary: User organization project JWT
+                  value:
+                    organization:
+                      id: org_CWx4pLm9sTe7YjN2kQa5B
+                      name: Acme
+                    project:
+                      id: proj_CczF9KYFantA84sNYDTJd
+                      name: Acme Production
+                      slug: acme-production-4821
+                    type: user_org_project_jwt
+                    user:
+                      id: user_CKfewYkQBpaEmN7wuQS3W
               schema:
                 $ref: "#/components/schemas/WhoamiResponse"
           description: Caller identity
