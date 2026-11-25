@@ -777,7 +777,7 @@
           },
           "run_scores": {
             "additionalProperties": {
-              "$ref": "#/components/schemas/EvaluationRunScoreV2"
+              "$ref": "#/components/schemas/EvaluationRunRunScoreV2"
             },
             "default": {},
             "title": "Run Scores",
@@ -863,6 +863,7 @@
           "DATASET_NOT_FOUND",
           "DATASET_TASK_NOT_FOUND",
           "DATASET_RECORD_NOT_FOUND",
+          "DATASET_RECORD_ID_CONFLICT",
           "DATASET_RECORD_FORMAT_ERROR",
           "AGENT_NOT_FOUND",
           "AGENT_MISTRAL_API_ERROR",
@@ -892,7 +893,8 @@
           "OPTIMIZATION_TRIAL_OBSERVATION_ALREADY_EXISTS",
           "TRACES_FILTER_QUERY_PARSE_ERROR",
           "TRACE_NOT_FOUND",
-          "SPAN_NOT_FOUND"
+          "SPAN_NOT_FOUND",
+          "OCSF_NOT_ENABLED"
         ],
         "title": "ObservabilityErrorCode",
         "type": "string"
@@ -1066,6 +1068,20 @@
             ],
             "title": "Direction"
           },
+          "display": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DisplaySpec"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display"
+          },
           "goal": {
             "anyOf": [
               {
@@ -1075,6 +1091,20 @@
                 "type": "null"
               }
             ]
+          },
+          "goals": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/GoalSpec"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goals"
           },
           "id": {
             "format": "uuid",
@@ -1091,6 +1121,20 @@
               }
             ],
             "title": "Max Value"
+          },
+          "metric_directions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MetricDirectionSpec"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metric Directions"
           },
           "min_value": {
             "anyOf": [
@@ -1183,6 +1227,14 @@
       },
       "GoalResult": {
         "properties": {
+          "missing": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/MissingGoalItem"
+            },
+            "title": "Missing",
+            "type": "array"
+          },
           "passed": {
             "anyOf": [
               {
@@ -1254,7 +1306,8 @@
         "title": "RunProjectSummary",
         "type": "object"
       },
-      "EvaluationRunScoreV2": {
+      "EvaluationRunRunScoreV2": {
+        "description": "A run evaluator's score: a per-record score plus its metrics.",
         "properties": {
           "created_at": {
             "format": "date-time",
@@ -1296,6 +1349,14 @@
             "title": "Metadata",
             "type": "object"
           },
+          "metrics": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ScoreMetric"
+            },
+            "title": "Metrics",
+            "type": "array"
+          },
           "rationale": {
             "anyOf": [
               {
@@ -1336,7 +1397,7 @@
           "metadata_",
           "status"
         ],
-        "title": "EvaluationRunScoreV2",
+        "title": "EvaluationRunRunScoreV2",
         "type": "object"
       },
       "EvaluatorStatistics": {
@@ -1518,8 +1579,89 @@
         "title": "GoalSpec",
         "type": "object"
       },
+      "DisplaySpec": {
+        "description": "How the UI renders an evaluator's numeric values (scores, score-scale statistics, goal thresholds).\n\nDisplay only: stored values and computed statistics never change. ``percent`` reads the value as a\nfraction (0.63 renders as 63%), ``integer`` rounds it, ``number`` renders ``decimals`` decimals.\n``unit`` is a free suffix (\"s\", \"ms\", \"chars\"), not allowed with ``percent`` (its ``%`` is the unit).\nAll fields unset = the default rendering.\n\n``metric`` (run evaluators only) names the run evaluator metric this format applies to. Without it, the\nspec formats the main value and is the default format of every metric.",
+        "properties": {
+          "decimals": {
+            "anyOf": [
+              {
+                "maximum": 10,
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decimals"
+          },
+          "format": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DisplayFormat"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metric": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metric"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 20,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "title": "DisplaySpec",
+        "type": "object"
+      },
+      "MetricDirectionSpec": {
+        "description": "Which way a run evaluator metric improves. The main value's direction stays the evaluator's ``direction``.",
+        "properties": {
+          "direction": {
+            "enum": [
+              "maximize",
+              "minimize"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "metric": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Metric",
+            "type": "string"
+          }
+        },
+        "required": [
+          "metric",
+          "direction"
+        ],
+        "title": "MetricDirectionSpec",
+        "type": "object"
+      },
       "SimpleNumericStatisticSpec": {
-        "description": "A scalar numeric reduction with no parameters (``avg``/``sum``/``min``/``max``/``std``/``count``).",
+        "description": "A scalar numeric reduction (``avg``/``sum``/``min``/``max``/``std``/``count``).\n\n``weight_key`` (``avg`` only) turns the mean into a weighted mean, ``sum(w * x) / sum(w)``, where\neach score's weight ``w`` is read from its ``metadata`` under that key. Scores whose weight is\nmissing, non-numeric or negative are left out of that statistic.",
         "properties": {
           "goal": {
             "anyOf": [
@@ -1542,6 +1684,17 @@
             ],
             "title": "Kind",
             "type": "string"
+          },
+          "weight_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight Key"
           }
         },
         "required": [
@@ -1551,7 +1704,7 @@
         "type": "object"
       },
       "PercentileStatisticSpec": {
-        "description": "The ``p``-th percentile (``0 <= p <= 100``), computed with the type-7 algorithm.",
+        "description": "The ``p``-th percentile (``0 &lt;= p &lt;= 100``), computed with the type-7 algorithm.",
         "properties": {
           "goal": {
             "anyOf": [
@@ -1662,6 +1815,63 @@
         "title": "ClassificationStatisticSpec",
         "type": "object"
       },
+      "MissingGoalItem": {
+        "description": "A run evaluator goal on a metric the scorer did not return: it fails, with no number to show.\n\nKept out of ``results`` so ``GoalResultItem.actual`` stays a number for clients that require one.",
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "metric": {
+            "title": "Metric",
+            "type": "string"
+          },
+          "operator": {
+            "title": "Operator",
+            "type": "string"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "target_max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Max"
+          },
+          "target_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Min"
+          }
+        },
+        "required": [
+          "metric",
+          "operator",
+          "message"
+        ],
+        "title": "MissingGoalItem",
+        "type": "object"
+      },
       "GoalResultItem": {
         "properties": {
           "actual": {
@@ -1736,6 +1946,34 @@
           "passed"
         ],
         "title": "GoalResultItem",
+        "type": "object"
+      },
+      "ScoreMetric": {
+        "description": "One named number of a run evaluator score. Stored and sent as an ordered list (JSONB keeps no key order).",
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "name",
+          "value"
+        ],
+        "title": "ScoreMetric",
         "type": "object"
       },
       "NumericStatistics": {
@@ -1901,12 +2139,33 @@
         "title": "UnsupportedStatistics",
         "type": "object"
       },
+      "DisplayFormat": {
+        "description": "How an evaluator's numeric values render: ``percent``, ``integer`` or ``number``.",
+        "enum": [
+          "number",
+          "percent",
+          "integer"
+        ],
+        "title": "DisplayFormat",
+        "type": "string"
+      },
       "ScalarStatisticValue": {
         "description": "A single scalar computed run-level statistic: its canonical id and numeric value.\n\n``value`` is ``None`` when the statistic is not evaluable (e.g. a ``sum`` or percentile over an\nempty numeric sample). A declared ``count`` is always evaluable and is ``0`` on an empty sample.\n\nThe ``type`` discriminator lets future result shapes (e.g. a categorical ``categories`` or a\n``distribution``) join a union without overloading this model; consumers dispatch on ``type``.",
         "properties": {
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "sample_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sample Count"
           },
           "type": {
             "const": "scalar",

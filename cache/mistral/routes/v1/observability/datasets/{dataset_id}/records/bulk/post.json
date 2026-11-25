@@ -1,6 +1,6 @@
 {
-  "description": "Populate the dataset with records from playground conversations",
-  "operationId": "post_dataset_records_from_playground_v1_observability_datasets__dataset_id__imports_from_playground_post",
+  "description": "Creates 1 to 100 records in one transaction: if one record is invalid, none is created. Records are returned in the request order.",
+  "operationId": "create_dataset_records_v1_observability_datasets__dataset_id__records_bulk_post",
   "parameters": [
     {
       "description": "Dataset UUID or workspace-scoped slug. UUID-shaped values are always interpreted as dataset IDs.",
@@ -18,18 +18,18 @@
     "content": {
       "application/json": {
         "schema": {
-          "$ref": "#/components/schemas/ImportDatasetFromPlaygroundRequest"
+          "$ref": "#/components/schemas/CreateDatasetRecordsRequest"
         }
       }
     },
     "required": true
   },
   "responses": {
-    "202": {
+    "201": {
       "content": {
         "application/json": {
           "schema": {
-            "$ref": "#/components/schemas/DatasetImportTask"
+            "$ref": "#/components/schemas/CreateDatasetRecordsResponse"
           }
         }
       },
@@ -86,43 +86,106 @@
       "description": "Unprocessable Entity - Validation error"
     }
   },
-  "summary": "Populate the dataset with records from playground conversations",
+  "summary": "Add several records to the dataset",
   "tags": [
     "beta.observability.datasets"
   ],
   "components": {
     "schemas": {
-      "ImportDatasetFromPlaygroundRequest": {
+      "CreateDatasetRecordsRequest": {
         "properties": {
-          "conversation_ids": {
+          "records": {
+            "description": "Records to add. They are created together: if one is invalid, none is created.",
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/CreateDatasetRecordsItem"
             },
-            "title": "Conversation Ids",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Records",
             "type": "array"
           }
         },
         "required": [
-          "conversation_ids"
+          "records"
         ],
-        "title": "ImportDatasetFromPlaygroundRequest",
+        "title": "CreateDatasetRecordsRequest",
         "type": "object"
       },
-      "DatasetImportTask": {
+      "CreateDatasetRecordsResponse": {
+        "properties": {
+          "records": {
+            "description": "The created records, in the request order.",
+            "items": {
+              "$ref": "#/components/schemas/DatasetRecord"
+            },
+            "title": "Records",
+            "type": "array"
+          }
+        },
+        "required": [
+          "records"
+        ],
+        "title": "CreateDatasetRecordsResponse",
+        "type": "object"
+      },
+      "ObservabilityError": {
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/ObservabilityErrorDetail"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ObservabilityError",
+        "type": "object"
+      },
+      "CreateDatasetRecordsItem": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional client-generated record ID, to retry safely: a record with this ID that already exists in the dataset is returned as is instead of being created again.",
+            "title": "Id"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/DatasetRecordPayload"
+          },
+          "properties": {
+            "additionalProperties": true,
+            "title": "Properties",
+            "type": "object"
+          },
+          "source": {
+            "default": "DIRECT_INPUT",
+            "description": "Caller-declared channel that initiated record creation. This value does not certify that the payload is an unmodified copy of its source.",
+            "enum": [
+              "DIRECT_INPUT",
+              "TELEMETRY_SPAN"
+            ],
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payload"
+        ],
+        "title": "CreateDatasetRecordsItem",
+        "type": "object"
+      },
+      "DatasetRecord": {
         "properties": {
           "created_at": {
             "format": "date-time",
             "title": "Created At",
             "type": "string"
-          },
-          "creator_id": {
-            "format": "uuid",
-            "title": "Creator Id",
-            "type": "string"
-          },
-          "creator_type": {
-            "$ref": "#/components/schemas/PrincipalType",
-            "default": "user"
           },
           "dataset_id": {
             "format": "uuid",
@@ -146,51 +209,20 @@
             "title": "Id",
             "type": "string"
           },
-          "message": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Message"
+          "payload": {
+            "$ref": "#/components/schemas/DatasetRecordPayload"
           },
-          "progress": {
-            "anyOf": [
-              {
-                "maximum": 100,
-                "minimum": 0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Progress"
+          "properties": {
+            "additionalProperties": true,
+            "title": "Properties",
+            "type": "object"
           },
-          "result": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/DatasetImportResult"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "status": {
-            "$ref": "#/components/schemas/BaseTaskStatus"
+          "source": {
+            "$ref": "#/components/schemas/DatasetRecordSource"
           },
           "updated_at": {
             "format": "date-time",
             "title": "Updated At",
-            "type": "string"
-          },
-          "workspace_id": {
-            "format": "uuid",
-            "title": "Workspace Id",
             "type": "string"
           }
         },
@@ -199,75 +231,13 @@
           "created_at",
           "updated_at",
           "deleted_at",
-          "creator_id",
           "dataset_id",
-          "workspace_id",
-          "status"
+          "payload",
+          "properties",
+          "source"
         ],
-        "title": "DatasetImportTask",
+        "title": "DatasetRecord",
         "type": "object"
-      },
-      "ObservabilityError": {
-        "properties": {
-          "detail": {
-            "$ref": "#/components/schemas/ObservabilityErrorDetail"
-          }
-        },
-        "required": [
-          "detail"
-        ],
-        "title": "ObservabilityError",
-        "type": "object"
-      },
-      "PrincipalType": {
-        "enum": [
-          "api_key",
-          "service_account",
-          "user"
-        ],
-        "title": "PrincipalType",
-        "type": "string"
-      },
-      "DatasetImportResult": {
-        "description": "Source-agnostic counts for a completed dataset import.",
-        "properties": {
-          "imported_record_count": {
-            "minimum": 0,
-            "title": "Imported Record Count",
-            "type": "integer"
-          },
-          "requested_record_count": {
-            "minimum": 0,
-            "title": "Requested Record Count",
-            "type": "integer"
-          },
-          "skipped_record_count": {
-            "minimum": 0,
-            "title": "Skipped Record Count",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "requested_record_count",
-          "imported_record_count",
-          "skipped_record_count"
-        ],
-        "title": "DatasetImportResult",
-        "type": "object"
-      },
-      "BaseTaskStatus": {
-        "enum": [
-          "RUNNING",
-          "COMPLETED",
-          "FAILED",
-          "CANCELED",
-          "TERMINATED",
-          "CONTINUED_AS_NEW",
-          "TIMED_OUT",
-          "UNKNOWN"
-        ],
-        "title": "BaseTaskStatus",
-        "type": "string"
       },
       "ObservabilityErrorDetail": {
         "properties": {
@@ -292,6 +262,23 @@
         ],
         "title": "ObservabilityErrorDetail",
         "type": "object"
+      },
+      "DatasetRecordPayload": {
+        "additionalProperties": true,
+        "description": "Caller-authored input object stored on a dataset record.",
+        "title": "DatasetRecordPayload",
+        "type": "object"
+      },
+      "DatasetRecordSource": {
+        "enum": [
+          "EXPLORER",
+          "UPLOADED_FILE",
+          "DIRECT_INPUT",
+          "PLAYGROUND",
+          "TELEMETRY_SPAN"
+        ],
+        "title": "DatasetRecordSource",
+        "type": "string"
       },
       "ObservabilityErrorCode": {
         "enum": [
@@ -320,6 +307,7 @@
           "DATASET_NOT_FOUND",
           "DATASET_TASK_NOT_FOUND",
           "DATASET_RECORD_NOT_FOUND",
+          "DATASET_RECORD_ID_CONFLICT",
           "DATASET_RECORD_FORMAT_ERROR",
           "AGENT_NOT_FOUND",
           "AGENT_MISTRAL_API_ERROR",
@@ -349,7 +337,8 @@
           "OPTIMIZATION_TRIAL_OBSERVATION_ALREADY_EXISTS",
           "TRACES_FILTER_QUERY_PARSE_ERROR",
           "TRACE_NOT_FOUND",
-          "SPAN_NOT_FOUND"
+          "SPAN_NOT_FOUND",
+          "OCSF_NOT_ENABLED"
         ],
         "title": "ObservabilityErrorCode",
         "type": "string"

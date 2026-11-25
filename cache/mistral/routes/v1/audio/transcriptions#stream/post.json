@@ -30,16 +30,6 @@
   "components": {
     "schemas": {
       "AudioTranscriptionRequestStream": {
-        "$defs": {
-          "TimestampGranularity": {
-            "enum": [
-              "segment",
-              "word"
-            ],
-            "title": "TimestampGranularity",
-            "type": "string"
-          }
-        },
         "properties": {
           "context_bias": {
             "default": [],
@@ -163,7 +153,11 @@
                 "transcription.done": "#/components/schemas/TranscriptionStreamDone",
                 "transcription.language": "#/components/schemas/TranscriptionStreamLanguage",
                 "transcription.segment": "#/components/schemas/TranscriptionStreamSegmentDelta",
-                "transcription.text.delta": "#/components/schemas/TranscriptionStreamTextDelta"
+                "transcription.text.delta": "#/components/schemas/TranscriptionStreamTextDelta",
+                "turn.eager_end": "#/components/schemas/TurnDetectionEagerEndEvent",
+                "turn.end": "#/components/schemas/TurnDetectionEndEvent",
+                "turn.resume": "#/components/schemas/TurnDetectionResumeEvent",
+                "turn.start": "#/components/schemas/TurnDetectionStartEvent"
               },
               "propertyName": "type"
             },
@@ -179,12 +173,25 @@
               },
               {
                 "$ref": "#/components/schemas/TranscriptionStreamDone"
+              },
+              {
+                "$ref": "#/components/schemas/TurnDetectionStartEvent"
+              },
+              {
+                "$ref": "#/components/schemas/TurnDetectionEagerEndEvent"
+              },
+              {
+                "$ref": "#/components/schemas/TurnDetectionResumeEvent"
+              },
+              {
+                "$ref": "#/components/schemas/TurnDetectionEndEvent"
               }
             ],
             "title": "Data"
           },
           "event": {
-            "$ref": "#/components/schemas/TranscriptionStreamEventTypes"
+            "$ref": "#/components/schemas/TranscriptionStreamEventTypes",
+            "title": "Event"
           }
         },
         "required": [
@@ -354,12 +361,104 @@
         "title": "TranscriptionStreamDone",
         "type": "object"
       },
+      "TurnDetectionStartEvent": {
+        "additionalProperties": false,
+        "properties": {
+          "time_s": {
+            "minimum": 0,
+            "title": "Time S",
+            "type": "number"
+          },
+          "type": {
+            "const": "turn.start",
+            "default": "turn.start",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "time_s"
+        ],
+        "title": "TurnDetectionStartEvent",
+        "type": "object"
+      },
+      "TurnDetectionEagerEndEvent": {
+        "additionalProperties": false,
+        "properties": {
+          "time_s": {
+            "minimum": 0,
+            "title": "Time S",
+            "type": "number"
+          },
+          "type": {
+            "const": "turn.eager_end",
+            "default": "turn.eager_end",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "time_s"
+        ],
+        "title": "TurnDetectionEagerEndEvent",
+        "type": "object"
+      },
+      "TurnDetectionResumeEvent": {
+        "additionalProperties": false,
+        "properties": {
+          "time_s": {
+            "minimum": 0,
+            "title": "Time S",
+            "type": "number"
+          },
+          "type": {
+            "const": "turn.resume",
+            "default": "turn.resume",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "time_s"
+        ],
+        "title": "TurnDetectionResumeEvent",
+        "type": "object"
+      },
+      "TurnDetectionEndEvent": {
+        "additionalProperties": false,
+        "properties": {
+          "end_reason": {
+            "$ref": "#/components/schemas/TurnDetectionEndReason"
+          },
+          "time_s": {
+            "minimum": 0,
+            "title": "Time S",
+            "type": "number"
+          },
+          "type": {
+            "const": "turn.end",
+            "default": "turn.end",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "time_s",
+          "end_reason"
+        ],
+        "title": "TurnDetectionEndEvent",
+        "type": "object"
+      },
       "TranscriptionStreamEventTypes": {
         "enum": [
           "transcription.language",
           "transcription.segment",
           "transcription.text.delta",
-          "transcription.done"
+          "transcription.done",
+          "turn.start",
+          "turn.eager_end",
+          "turn.resume",
+          "turn.end"
         ],
         "title": "TranscriptionStreamEventTypes",
         "type": "string"
@@ -454,6 +553,16 @@
             "title": "Prompt Tokens",
             "type": "integer"
           },
+          "prompt_tokens_details": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PromptTokensDetails"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "service_tier": {
             "anyOf": [
               {
@@ -478,6 +587,32 @@
           "total_tokens"
         ],
         "title": "UsageInfo",
+        "type": "object"
+      },
+      "TurnDetectionEndReason": {
+        "enum": [
+          "threshold",
+          "timeout"
+        ],
+        "title": "TurnDetectionEndReason",
+        "type": "string"
+      },
+      "PromptTokensDetails": {
+        "additionalProperties": false,
+        "description": "Token usage details for the prompt.",
+        "properties": {
+          "audio_tokens": {
+            "default": 0,
+            "title": "Audio Tokens",
+            "type": "integer"
+          },
+          "cached_tokens": {
+            "default": 0,
+            "title": "Cached Tokens",
+            "type": "integer"
+          }
+        },
+        "title": "PromptTokensDetails",
         "type": "object"
       }
     }
