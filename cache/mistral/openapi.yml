@@ -777,19 +777,12 @@ components:
           anyOf:
             - items:
                 enum:
-                  - billing
                   - user
-                  - contributor
                   - dev
-                  - dev_contributor
                   - mistral_code_user
-                  - vibe_code_cli_user
                   - cloud_user
                   - workspace_contributor
                   - workspace_admin
-                  - observability_viewer
-                  - workflow_executor
-                  - member
                 type: string
               minItems: 1
               type: array
@@ -1049,22 +1042,12 @@ components:
         workspace_role_name:
           anyOf:
             - enum:
-                - billing
                 - user
-                - contributor
                 - dev
-                - dev_contributor
                 - mistral_code_user
-                - vibe_code_cli_user
                 - cloud_user
-                - mistral_cloud_admin
                 - workspace_contributor
                 - workspace_admin
-                - observability_viewer
-                - workflow_executor
-                - secret_revealer
-                - offline_evaluations_manager
-                - member
               type: string
             - type: "null"
           description: Workspace role name to assign to the group. Mutually exclusive with 'workspace_role'.
@@ -1253,7 +1236,66 @@ components:
       title: AdminScimSyncTriggerOUT
       type: object
     AdminUpdateGroupWorkspaceAssignmentIn:
+      description: Either set the group's roles on the Workspace, or add and remove some of them.
       properties:
+        add_role_names:
+          anyOf:
+            - items:
+                enum:
+                  - user
+                  - dev
+                  - mistral_code_user
+                  - cloud_user
+                  - workspace_contributor
+                  - workspace_admin
+                type: string
+              minItems: 1
+              type: array
+            - type: "null"
+          description: Simplified role names to add to the existing roles. Mutually exclusive with 'add_roles'.
+          examples:
+            - - user
+          title: Add Role Names
+        add_roles:
+          anyOf:
+            - items:
+                $ref: "#/components/schemas/StaticWorkspaceRoles"
+              minItems: 1
+              type: array
+            - type: "null"
+          description: Role values to add to the existing roles. Mutually exclusive with 'add_role_names'.
+          examples:
+            - - 48436751-ee56-44bd-8a2d-712233977821
+          title: Add Roles
+        remove_role_names:
+          anyOf:
+            - items:
+                enum:
+                  - user
+                  - dev
+                  - mistral_code_user
+                  - cloud_user
+                  - workspace_contributor
+                  - workspace_admin
+                type: string
+              minItems: 1
+              type: array
+            - type: "null"
+          description: Simplified role names to remove from the existing roles. Mutually exclusive with 'remove_roles'.
+          examples:
+            - - dev
+          title: Remove Role Names
+        remove_roles:
+          anyOf:
+            - items:
+                $ref: "#/components/schemas/StaticWorkspaceRoles"
+              minItems: 1
+              type: array
+            - type: "null"
+          description: Role values to remove from the existing roles. Mutually exclusive with 'remove_role_names'.
+          examples:
+            - - 578584f1-4319-4c88-9948-38a5184483b6
+          title: Remove Roles
         role:
           anyOf:
             - $ref: "#/components/schemas/WorkspaceRole"
@@ -1265,19 +1307,12 @@ components:
           anyOf:
             - items:
                 enum:
-                  - billing
                   - user
-                  - contributor
                   - dev
-                  - dev_contributor
                   - mistral_code_user
-                  - vibe_code_cli_user
                   - cloud_user
                   - workspace_contributor
                   - workspace_admin
-                  - observability_viewer
-                  - workflow_executor
-                  - member
                 type: string
               minItems: 1
               type: array
@@ -1355,6 +1390,8 @@ components:
             - call_source
             - call_type
             - user_agent
+            - resource_id
+            - resource_version
           examples:
             - billing_metric
           title: Field
@@ -1695,6 +1732,40 @@ components:
         - page_size
       title: AdminUserWorkspacesOUT
       type: object
+    AdminWorkspaceGroupGrantOUT:
+      properties:
+        group_id:
+          description: ID of the group assigned to the Workspace.
+          format: uuid
+          title: Group Id
+          type: string
+        group_name:
+          description: Name of the group assigned to the Workspace.
+          examples:
+            - Engineering
+          title: Group Name
+          type: string
+        roles:
+          description: Names of the Workspace roles the group assignment grants.
+          examples:
+            - - user
+          items:
+            enum:
+              - user
+              - dev
+              - mistral_code_user
+              - cloud_user
+              - workspace_contributor
+              - workspace_admin
+            type: string
+          title: Roles
+          type: array
+      required:
+        - group_id
+        - group_name
+        - roles
+      title: AdminWorkspaceGroupGrantOUT
+      type: object
     AdminWorkspaceIn:
       properties:
         add_all_org_members:
@@ -1747,6 +1818,76 @@ components:
           title: Members
       title: AdminWorkspaceMemberIN
       type: object
+    AdminWorkspaceMemberOUT:
+      properties:
+        direct_member:
+          description: Whether the user is a direct member of the Workspace. Members who only belong to it through a group are managed by changing the group.
+          examples:
+            - true
+          title: Direct Member
+          type: boolean
+        email:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Email address of the Workspace member.
+          examples:
+            - alice.martin@example.com
+          title: Email
+        externally_managed:
+          description: Whether the member is managed by an external identity provider, through SSO or SCIM.
+          examples:
+            - false
+          title: Externally Managed
+          type: boolean
+        group_grants:
+          description: Groups assigned to the Workspace that grant the member roles, with the roles each one grants.
+          items:
+            $ref: "#/components/schemas/AdminWorkspaceGroupGrantOUT"
+          title: Group Grants
+          type: array
+        name:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Name of the Workspace member.
+          examples:
+            - Alice Martin
+          title: Name
+        roles:
+          description: Names of the Workspace roles assigned directly to the member.
+          examples:
+            - - workspace_admin
+          items:
+            enum:
+              - user
+              - dev
+              - mistral_code_user
+              - cloud_user
+              - workspace_contributor
+              - workspace_admin
+            type: string
+          title: Roles
+          type: array
+        status:
+          $ref: "#/components/schemas/MemberStatus"
+          description: Account status of the member.
+        user_id:
+          description: User ID of the Workspace member.
+          format: uuid
+          title: User Id
+          type: string
+      required:
+        - user_id
+        - name
+        - email
+        - direct_member
+        - roles
+        - group_grants
+        - externally_managed
+        - status
+      title: AdminWorkspaceMemberOUT
+      type: object
     AdminWorkspaceMemberSingleIN:
       properties:
         role:
@@ -1759,19 +1900,12 @@ components:
         role_name:
           anyOf:
             - enum:
-                - billing
                 - user
-                - contributor
                 - dev
-                - dev_contributor
                 - mistral_code_user
-                - vibe_code_cli_user
                 - cloud_user
                 - workspace_contributor
                 - workspace_admin
-                - observability_viewer
-                - workflow_executor
-                - member
               type: string
             - type: "null"
           deprecated: true
@@ -1781,19 +1915,12 @@ components:
           anyOf:
             - items:
                 enum:
-                  - billing
                   - user
-                  - contributor
                   - dev
-                  - dev_contributor
                   - mistral_code_user
-                  - vibe_code_cli_user
                   - cloud_user
                   - workspace_contributor
                   - workspace_admin
-                  - observability_viewer
-                  - workflow_executor
-                  - member
                 type: string
               minItems: 1
               type: array
@@ -1821,6 +1948,171 @@ components:
       required:
         - user_uuid
       title: AdminWorkspaceMemberSingleIN
+      type: object
+    AdminWorkspaceMemberUpsertIN:
+      properties:
+        members:
+          anyOf:
+            - items:
+                $ref: "#/components/schemas/AdminWorkspaceMemberUpsertSingleIN"
+              type: array
+            - type: "null"
+          description: Workspace members to add or update. 'roles' or 'role_names' replace the member's roles; 'add_*' and 'remove_*' change them without touching the others.
+          title: Members
+      title: AdminWorkspaceMemberUpsertIN
+      type: object
+    AdminWorkspaceMemberUpsertSingleIN:
+      description: Workspace member to add or update, either by setting its roles or by adding and removing some.
+      properties:
+        add_role_names:
+          anyOf:
+            - items:
+                enum:
+                  - user
+                  - dev
+                  - mistral_code_user
+                  - cloud_user
+                  - workspace_contributor
+                  - workspace_admin
+                type: string
+              minItems: 1
+              type: array
+            - type: "null"
+          description: Simplified role names to add to the existing roles. Mutually exclusive with 'add_roles'.
+          examples:
+            - - user
+          title: Add Role Names
+        add_roles:
+          anyOf:
+            - items:
+                $ref: "#/components/schemas/StaticWorkspaceRoles"
+              minItems: 1
+              type: array
+            - type: "null"
+          description: Role values to add to the existing roles. Mutually exclusive with 'add_role_names'.
+          examples:
+            - - 48436751-ee56-44bd-8a2d-712233977821
+          title: Add Roles
+        remove_role_names:
+          anyOf:
+            - items:
+                enum:
+                  - user
+                  - dev
+                  - mistral_code_user
+                  - cloud_user
+                  - workspace_contributor
+                  - workspace_admin
+                type: string
+              minItems: 1
+              type: array
+            - type: "null"
+          description: Simplified role names to remove from the existing roles. Mutually exclusive with 'remove_roles'.
+          examples:
+            - - dev
+          title: Remove Role Names
+        remove_roles:
+          anyOf:
+            - items:
+                $ref: "#/components/schemas/StaticWorkspaceRoles"
+              minItems: 1
+              type: array
+            - type: "null"
+          description: Role values to remove from the existing roles. Mutually exclusive with 'remove_role_names'.
+          examples:
+            - - 578584f1-4319-4c88-9948-38a5184483b6
+          title: Remove Roles
+        role:
+          anyOf:
+            - $ref: "#/components/schemas/WorkspaceRole"
+            - $ref: "#/components/schemas/StaticWorkspaceRoles"
+            - type: "null"
+          deprecated: true
+          description: Deprecated legacy single role value, kept for backward compatibility. Mutually exclusive with 'role_name'.
+        role_name:
+          anyOf:
+            - enum:
+                - user
+                - dev
+                - mistral_code_user
+                - cloud_user
+                - workspace_contributor
+                - workspace_admin
+              type: string
+            - type: "null"
+          deprecated: true
+          description: Deprecated single role name, kept for backward compatibility. Mutually exclusive with 'role'.
+          title: Role Name
+        role_names:
+          anyOf:
+            - items:
+                enum:
+                  - user
+                  - dev
+                  - mistral_code_user
+                  - cloud_user
+                  - workspace_contributor
+                  - workspace_admin
+                type: string
+              minItems: 1
+              type: array
+            - type: "null"
+          description: Simplified role names to assign. Mutually exclusive with 'roles'.
+          title: Role Names
+        roles:
+          anyOf:
+            - items:
+                $ref: "#/components/schemas/WorkspaceRole"
+              minItems: 1
+              type: array
+            - items:
+                $ref: "#/components/schemas/StaticWorkspaceRoles"
+              minItems: 1
+              type: array
+            - type: "null"
+          description: Role values to assign. Mutually exclusive with 'role_names'.
+          title: Roles
+        user_uuid:
+          description: User ID of the Workspace member.
+          format: uuid
+          title: User Uuid
+          type: string
+      required:
+        - user_uuid
+      title: AdminWorkspaceMemberUpsertSingleIN
+      type: object
+    AdminWorkspaceUsersOUT:
+      properties:
+        items:
+          description: Members of the Workspace on this page, direct or through a group.
+          items:
+            $ref: "#/components/schemas/AdminWorkspaceMemberOUT"
+          title: Items
+          type: array
+        page:
+          description: Page number returned.
+          examples:
+            - 1
+          title: Page
+          type: integer
+        page_size:
+          description: Maximum number of results per page.
+          examples:
+            - 25
+          title: Page Size
+          type: integer
+        total:
+          description: Total number of members of the Workspace.
+          examples:
+            - 42
+          title: Total
+          type: integer
+      required:
+        - items
+        - total
+        - page
+        - page_size
+      title: AdminWorkspaceUsersOUT
       type: object
     Agent:
       additionalProperties: false
@@ -2222,10 +2514,8 @@ components:
           type: boolean
         prediction:
           $ref: "#/components/schemas/Prediction"
-          default:
-            content: ""
-            type: content
-          description: Enable users to specify expected results, optimizing response times by leveraging known or predictable content. This approach is especially effective for updating text documents or code files with minimal changes, reducing latency while maintaining high-quality results.
+          deprecated: true
+          description: "Deprecated: the API accepts this field but ignores it, and it will be removed in a future major version."
         presence_penalty:
           anyOf:
             - maximum: 2
@@ -2251,7 +2541,8 @@ components:
           description: Allows toggling between the reasoning mode and no system prompt. When set to `reasoning` the system prompt for reasoning models will be used.
         random_seed:
           anyOf:
-            - minimum: 0
+            - maximum: 9.223372036854776e+18
+              minimum: 0
               type: integer
             - type: "null"
           description: The seed to use for random sampling. If set, different calls will generate deterministic results.
@@ -2290,8 +2581,8 @@ components:
           type: boolean
         tool_choice:
           anyOf:
-            - $ref: "#/components/schemas/ToolChoice"
             - $ref: "#/components/schemas/ToolChoiceEnum"
+            - $ref: "#/components/schemas/NamedToolChoice"
           default: auto
           title: Tool Choice
         tools:
@@ -3004,7 +3295,7 @@ components:
         input_audio:
           anyOf:
             - type: string
-            - format: binary
+            - contentMediaType: application/octet-stream
               type: string
           title: Input Audio
         type:
@@ -3562,13 +3853,6 @@ components:
       title: AudioTranscriptionCapabilities
       type: object
     AudioTranscriptionRequest:
-      $defs:
-        TimestampGranularity:
-          enum:
-            - segment
-            - word
-          title: TimestampGranularity
-          type: string
       properties:
         context_bias:
           default: []
@@ -3646,13 +3930,6 @@ components:
       title: AudioTranscriptionRequest
       type: object
     AudioTranscriptionRequestStream:
-      $defs:
-        TimestampGranularity:
-          enum:
-            - segment
-            - word
-          title: TimestampGranularity
-          type: string
       properties:
         context_bias:
           default: []
@@ -3842,6 +4119,7 @@ components:
         - workspace.create
         - workspace.update
         - workspace.delete
+        - workspace.members.export
         - workspace.member.add
         - workspace.member.remove
         - workspace.member.role.update
@@ -4052,6 +4330,7 @@ components:
         - secrets_manager.secret.revealed
         - secrets_manager.secret.metadata_updated
         - secrets_manager.secret.deleted
+        - secrets_manager.secret.destroyed
         - secrets_manager.secret.version.deleted
         - secrets_manager.secret.version.restored
         - rate_limit.rule.create
@@ -4896,10 +5175,8 @@ components:
           type: boolean
         prediction:
           $ref: "#/components/schemas/Prediction"
-          default:
-            content: ""
-            type: content
-          description: Enable users to specify expected results, optimizing response times by leveraging known or predictable content. This approach is especially effective for updating text documents or code files with minimal changes, reducing latency while maintaining high-quality results.
+          deprecated: true
+          description: "Deprecated: the API accepts this field but ignores it, and it will be removed in a future major version."
         presence_penalty:
           anyOf:
             - maximum: 2
@@ -4925,7 +5202,8 @@ components:
           description: Allows toggling between the reasoning mode and no system prompt. When set to `reasoning` the system prompt for reasoning models will be used.
         random_seed:
           anyOf:
-            - minimum: 0
+            - maximum: 9.223372036854776e+18
+              minimum: 0
               type: integer
             - type: "null"
           description: The seed to use for random sampling. If set, different calls will generate deterministic results.
@@ -4976,8 +5254,8 @@ components:
           title: Temperature
         tool_choice:
           anyOf:
-            - $ref: "#/components/schemas/ToolChoice"
             - $ref: "#/components/schemas/ToolChoiceEnum"
+            - $ref: "#/components/schemas/NamedToolChoice"
           default: auto
           description: 'Controls which (if any) tool is called by the model. `none` means the model will not call any tool and instead generates a message. `auto` means the model can pick between generating a message or calling one or more tools. `any` or `required` means the model must call one or more tools. Specifying a particular tool via `{"type": "function", "function": {"name": "my_function"}}` forces the model to call that tool.'
           title: Tool Choice
@@ -5145,7 +5423,7 @@ components:
                     - $ref: "#/components/schemas/ToolMessage"
                 type: array
               type: array
-          description: Chat to classify
+          description: Chat to classify.
           title: Input
         model:
           title: Model
@@ -5816,6 +6094,7 @@ components:
         - connectors_count_limit_reached
         - credentials_rejected
         - server_unreachable
+        - custom_connectors_disabled
       title: ConnectorErrorCode
       type: string
     ConnectorErrorResponse:
@@ -6902,12 +7181,71 @@ components:
         - payload
       title: CreateDatasetRecordRequest
       type: object
+    CreateDatasetRecordsItem:
+      properties:
+        id:
+          anyOf:
+            - format: uuid
+              type: string
+            - type: "null"
+          description: "Optional client-generated record ID, to retry safely: a record with this ID that already exists in the dataset is returned as is instead of being created again."
+          title: Id
+        payload:
+          $ref: "#/components/schemas/DatasetRecordPayload"
+        properties:
+          additionalProperties: true
+          title: Properties
+          type: object
+        source:
+          default: DIRECT_INPUT
+          description: Caller-declared channel that initiated record creation. This value does not certify that the payload is an unmodified copy of its source.
+          enum:
+            - DIRECT_INPUT
+            - TELEMETRY_SPAN
+          title: Source
+          type: string
+      required:
+        - payload
+      title: CreateDatasetRecordsItem
+      type: object
+    CreateDatasetRecordsRequest:
+      properties:
+        records:
+          description: "Records to add. They are created together: if one is invalid, none is created."
+          items:
+            $ref: "#/components/schemas/CreateDatasetRecordsItem"
+          maxItems: 100
+          minItems: 1
+          title: Records
+          type: array
+      required:
+        - records
+      title: CreateDatasetRecordsRequest
+      type: object
+    CreateDatasetRecordsResponse:
+      properties:
+        records:
+          description: The created records, in the request order.
+          items:
+            $ref: "#/components/schemas/DatasetRecord"
+          title: Records
+          type: array
+      required:
+        - records
+      title: CreateDatasetRecordsResponse
+      type: object
     CreateDatasetRequest:
       properties:
         description:
           maxLength: 2000
           title: Description
           type: string
+        metadata:
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+          default: {}
+          title: Metadata
+          type: object
         name:
           maxLength: 50
           minLength: 5
@@ -6917,6 +7255,19 @@ components:
         - name
         - description
       title: CreateDatasetRequest
+      type: object
+    CreateDeploymentArchiveRequest:
+      description: The size of the gzipped tar a managed deployment will build from.
+      properties:
+        size:
+          description: Size of the gzipped tar in bytes, at most 256 MiB. The upload URL accepts exactly this size.
+          exclusiveMinimum: 0
+          maximum: 268435456.0
+          title: Size
+          type: integer
+      required:
+        - size
+      title: CreateDeploymentArchiveRequest
       type: object
     CreateDeploymentRequest:
       properties:
@@ -7126,13 +7477,6 @@ components:
               type: object
             - type: "null"
           title: Pipeline Composition
-        target_indexes:
-          anyOf:
-            - items:
-                $ref: "#/components/schemas/IngestionPipelineTargetIndexRef"
-              type: array
-            - type: "null"
-          title: Target Indexes
       required:
         - name
       title: CreateIngestionPipelineConfigurationRequest
@@ -7966,23 +8310,34 @@ components:
       type: object
     CreateWebhook:
       properties:
+        description:
+          anyOf:
+            - maxLength: 1024
+              type: string
+            - type: "null"
+          description: What this webhook is used for
+          title: Description
         encryption_key:
           anyOf:
-            - type: string
+            - maxLength: 16384
+              minLength: 15
+              type: string
             - type: "null"
           description: Encryption key used to decrypt webhook payloads
           title: Encryption Key
         event_id_pattern:
           anyOf:
-            - type: string
+            - maxLength: 1024
+              type: string
             - type: "null"
-          description: Pattern for a unique event identifier used to deduplicate deliveries, with {body.<path>} and {headers.<Header-Name>} placeholders, eg {body.id} or {body.event_id}.{headers.X-Delivery-Id}. Defaults to a hash of the request body
+          description: Pattern for a unique event identifier used to deduplicate deliveries, with {body.&lt;path&gt;} and {headers.&lt;Header-Name&gt;} placeholders, eg {body.id} or {body.event_id}.{headers.X-Delivery-Id}. Defaults to a hash of the request body
           title: Event Id Pattern
         event_type_pattern:
           anyOf:
-            - type: string
+            - maxLength: 1024
+              type: string
             - type: "null"
-          description: Pattern for the event type, with {body.<path>} and {headers.<Header-Name>} placeholders, eg {body.type} or {headers.X-GitHub-Event}
+          description: Pattern for the event type, with {body.&lt;path&gt;} and {headers.&lt;Header-Name&gt;} placeholders, eg {body.type} or {headers.X-GitHub-Event}
           title: Event Type Pattern
         expires_at:
           anyOf:
@@ -7992,6 +8347,8 @@ components:
           title: Expires At
         name:
           description: Human-readable name for this webhook
+          maxLength: 256
+          minLength: 1
           title: Name
           type: string
         owner_type:
@@ -8001,7 +8358,9 @@ components:
           $ref: "#/components/schemas/WebhookProvider"
         secret:
           anyOf:
-            - type: string
+            - maxLength: 1024
+              minLength: 15
+              type: string
             - type: "null"
           description: Signing secret provided by the third-party provider
           title: Secret
@@ -8011,7 +8370,8 @@ components:
             - type: "null"
         signature_extractor_regex:
           anyOf:
-            - type: string
+            - maxLength: 1024
+              type: string
             - type: "null"
           description: Regex to extract signature, eg sha256=(.*)
           title: Signature Extractor Regex
@@ -8021,36 +8381,52 @@ components:
             - type: "null"
         signature_header_name:
           anyOf:
-            - type: string
+            - maxLength: 256
+              type: string
             - type: "null"
           title: Signature Header Name
         signature_payload_pattern:
           anyOf:
-            - type: string
+            - maxLength: 1024
+              type: string
             - type: "null"
           description: Pattern for signature payload, eg {body} or {timestamp}.{body}
           title: Signature Payload Pattern
         success_status_code:
           anyOf:
-            - type: integer
+            - maximum: 299
+              minimum: 200
+              type: integer
             - type: "null"
+          description: HTTP status code returned for accepted deliveries, eg 200
           title: Success Status Code
         timestamp_extractor_regex:
           anyOf:
-            - type: string
+            - maxLength: 1024
+              type: string
             - type: "null"
-          description: Regex to extract the timestamp from the signature header, used as {timestamp}, eg t=([^,]+)
+          description: Regex to extract the timestamp from the rendered timestamp_pattern (the signature header by default), used as {timestamp}, eg t=([^,]+). Defaults to the whole value when timestamp_pattern is set
           title: Timestamp Extractor Regex
+        timestamp_pattern:
+          anyOf:
+            - maxLength: 1024
+              type: string
+            - type: "null"
+          description: Pattern for the timestamp used as {timestamp}, with {body.&lt;path&gt;} and {headers.&lt;Header-Name&gt;} placeholders, eg {headers.X-Slack-Request-Timestamp} or {body.webhookTimestamp}. Defaults to the signature header when timestamp_extractor_regex is set
+          title: Timestamp Pattern
         url_verification_token:
           anyOf:
-            - minLength: 1
+            - maxLength: 1024
+              minLength: 1
               type: string
             - type: "null"
           description: Token the provider echoes back when verifying the URL. Required for WhatsApp (paste the same value in the Verify token field of the Meta App Dashboard), forbidden for other providers
           title: Url Verification Token
         validity_period_second:
           anyOf:
-            - type: integer
+            - exclusiveMinimum: 0
+              maximum: 604800
+              type: integer
             - type: "null"
           description: Maximum allowed drift in seconds between the signed timestamp and reception time, eg 300
           title: Validity Period Second
@@ -8841,6 +9217,11 @@ components:
           format: uuid
           title: Id
           type: string
+        metadata:
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+          title: Metadata
+          type: object
         name:
           title: Name
           type: string
@@ -8978,6 +9359,11 @@ components:
           format: uuid
           title: Id
           type: string
+        metadata:
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+          title: Metadata
+          type: object
         name:
           title: Name
           type: string
@@ -9338,6 +9724,30 @@ components:
         - archive_id
       title: DeploymentArchiveResponse
       type: object
+    DeploymentArchiveUploadResponse:
+      description: An empty archive, and where to upload the tarball a managed deployment then builds from.
+      properties:
+        archive_id:
+          description: Pass it as the spec's `archive_id` once the upload has finished.
+          format: uuid
+          title: Archive Id
+          type: string
+        upload_headers:
+          additionalProperties:
+            type: string
+          description: Headers the PUT must send for the signed URL to accept it.
+          title: Upload Headers
+          type: object
+        upload_url:
+          description: A signed URL to PUT the tarball to. It grants write access, so keep it secret.
+          title: Upload Url
+          type: string
+      required:
+        - archive_id
+        - upload_url
+        - upload_headers
+      title: DeploymentArchiveUploadResponse
+      type: object
     DeploymentBuildState:
       properties:
         commit_sha:
@@ -9609,7 +10019,7 @@ components:
                 $ref: "#/components/schemas/DeploymentSecretBinding"
               type: array
             - type: "null"
-          description: "Secrets to bind to the worker, as 'secret:workspace:<NAME>' references. Each is available during build and run: as a Dockerfile build arg (declare a matching 'ARG') and as an env var. On update, the field carries the complete set: send the full list to rebind, an empty list to unbind all, omit it to leave the bindings unchanged."
+          description: "Secrets to bind to the worker, as 'secret:workspace:&lt;NAME&gt;' references. Each is available during build and run: as a Dockerfile build arg (declare a matching 'ARG') and as an env var. On update, the field carries the complete set: send the full list to rebind, an empty list to unbind all, omit it to leave the bindings unchanged."
           title: Secrets
         type:
           default: mistral_cloud
@@ -9777,7 +10187,7 @@ components:
           title: Env Var Name
           type: string
         reference:
-          description: Secret reference as 'secret:workspace:<NAME>'. Resolved at boot by the runtime-init container; the value never reaches the control plane.
+          description: Secret reference as 'secret:workspace:&lt;NAME&gt;'. Resolved at boot by the runtime-init container; the value never reaches the control plane.
           title: Reference
           type: string
       required:
@@ -9867,7 +10277,7 @@ components:
           anyOf:
             - type: string
             - type: "null"
-          description: "Repository to build the worker from, set instead of 'archive_id': a GitHub repository (`https://github.com/<owner>/<repo>`) or a repository on the Mistral git server (`https://api.globalaegis.net/v1/git/<workspace>/<repo>.git`). On the git server you must be able to read the repository; the worker builds from an archive of 'revision' and 'build_directory'."
+          description: "Repository to build the worker from, set instead of 'archive_id': a GitHub repository (`https://github.com/&lt;owner&gt;/&lt;repo&gt;`) or a repository on the Mistral git server (`https://api.globalaegis.net/v1/git/&lt;workspace&gt;/&lt;repo&gt;.git`). On the git server you must be able to read the repository; the worker builds from an archive of 'revision' and 'build_directory'."
           title: Repository Url
         requested_roles:
           anyOf:
@@ -9994,6 +10404,53 @@ components:
         - category
         - confidence
       title: DetectionPattern
+      type: object
+    DisplayFormat:
+      description: "How an evaluator's numeric values render: ``percent``, ``integer`` or ``number``."
+      enum:
+        - number
+        - percent
+        - integer
+      title: DisplayFormat
+      type: string
+    DisplaySpec:
+      description: |-
+        How the UI renders an evaluator's numeric values (scores, score-scale statistics, goal thresholds).
+
+        Display only: stored values and computed statistics never change. ``percent`` reads the value as a
+        fraction (0.63 renders as 63%), ``integer`` rounds it, ``number`` renders ``decimals`` decimals.
+        ``unit`` is a free suffix ("s", "ms", "chars"), not allowed with ``percent`` (its ``%`` is the unit).
+        All fields unset = the default rendering.
+
+        ``metric`` (run evaluators only) names the run evaluator metric this format applies to. Without it, the
+        spec formats the main value and is the default format of every metric.
+      properties:
+        decimals:
+          anyOf:
+            - maximum: 10
+              minimum: 0
+              type: integer
+            - type: "null"
+          title: Decimals
+        format:
+          anyOf:
+            - $ref: "#/components/schemas/DisplayFormat"
+            - type: "null"
+        metric:
+          anyOf:
+            - maxLength: 100
+              minLength: 1
+              type: string
+            - type: "null"
+          title: Metric
+        unit:
+          anyOf:
+            - maxLength: 20
+              minLength: 1
+              type: string
+            - type: "null"
+          title: Unit
+      title: DisplaySpec
       type: object
     DistanceMetric:
       enum:
@@ -10275,6 +10732,12 @@ components:
         - ubinary
       title: EmbeddingDtype
       type: string
+    EmbeddingInput:
+      anyOf:
+        - type: string
+        - $ref: "#/components/schemas/ImageURLChunk"
+        - $ref: "#/components/schemas/AudioChunk"
+      title: EmbeddingInput
     EmbeddingMismatchResponse:
       properties:
         expected:
@@ -10303,8 +10766,14 @@ components:
         input:
           anyOf:
             - type: string
+            - $ref: "#/components/schemas/ImageURLChunk"
+            - $ref: "#/components/schemas/AudioChunk"
             - items:
                 type: string
+              type: array
+            - items:
+                $ref: "#/components/schemas/EmbeddingInput"
+              minItems: 1
               type: array
           description: Text to embed.
           example:
@@ -10774,6 +11243,65 @@ components:
         - input
       title: EvaluationRunRecordV2Response
       type: object
+    EvaluationRunRunScoreV2:
+      description: "A run evaluator's score: a per-record score plus its metrics."
+      properties:
+        created_at:
+          format: date-time
+          title: Created At
+          type: string
+        deleted_at:
+          anyOf:
+            - format: date-time
+              type: string
+            - type: "null"
+          title: Deleted At
+        error:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Error
+        id:
+          format: uuid
+          title: Id
+          type: string
+        metadata_:
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+          title: Metadata
+          type: object
+        metrics:
+          default: []
+          items:
+            $ref: "#/components/schemas/ScoreMetric"
+          title: Metrics
+          type: array
+        rationale:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Rationale
+        status:
+          title: Status
+          type: string
+        updated_at:
+          format: date-time
+          title: Updated At
+          type: string
+        value:
+          anyOf:
+            - $ref: "#/components/schemas/JsonValue"
+            - type: "null"
+      required:
+        - id
+        - created_at
+        - updated_at
+        - deleted_at
+        - value
+        - metadata_
+        - status
+      title: EvaluationRunRunScoreV2
+      type: object
     EvaluationRunScoreV2:
       properties:
         created_at:
@@ -10922,7 +11450,7 @@ components:
           title: Run Info
         run_scores:
           additionalProperties:
-            $ref: "#/components/schemas/EvaluationRunScoreV2"
+            $ref: "#/components/schemas/EvaluationRunRunScoreV2"
           default: {}
           title: Run Scores
           type: object
@@ -11068,7 +11596,7 @@ components:
           title: Run Info
         run_scores:
           additionalProperties:
-            $ref: "#/components/schemas/EvaluationRunScoreV2"
+            $ref: "#/components/schemas/EvaluationRunRunScoreV2"
           default: {}
           title: Run Scores
           type: object
@@ -11227,10 +11755,24 @@ components:
               type: string
             - type: "null"
           title: Direction
+        display:
+          anyOf:
+            - items:
+                $ref: "#/components/schemas/DisplaySpec"
+              type: array
+            - type: "null"
+          title: Display
         goal:
           anyOf:
             - $ref: "#/components/schemas/GoalSpec"
             - type: "null"
+        goals:
+          anyOf:
+            - items:
+                $ref: "#/components/schemas/GoalSpec"
+              type: array
+            - type: "null"
+          title: Goals
         id:
           format: uuid
           title: Id
@@ -11240,6 +11782,13 @@ components:
             - type: number
             - type: "null"
           title: Max Value
+        metric_directions:
+          anyOf:
+            - items:
+                $ref: "#/components/schemas/MetricDirectionSpec"
+              type: array
+            - type: "null"
+          title: Metric Directions
         min_value:
           anyOf:
             - type: number
@@ -11642,7 +12191,8 @@ components:
           title: Prompt Cache Key
         random_seed:
           anyOf:
-            - minimum: 0
+            - maximum: 9.223372036854776e+18
+              minimum: 0
               type: integer
             - type: "null"
           description: The seed to use for random sampling. If set, different calls will generate deterministic results.
@@ -12458,101 +13008,6 @@ components:
         - vibe_budget
         - api_budget
       title: GetBudgetResponse
-      type: object
-    GetDeploymentSummariesResponse:
-      properties:
-        deployments:
-          items:
-            $ref: "#/components/schemas/GetDeploymentSummariesResponseDeployment"
-          title: Deployments
-          type: array
-      required:
-        - deployments
-      title: GetDeploymentSummariesResponse
-      type: object
-    GetDeploymentSummariesResponseDeployment:
-      properties:
-        created_at:
-          format: date-time
-          title: Created At
-          type: string
-        creator_id:
-          title: Creator Id
-          type: string
-        deployment:
-          discriminator:
-            mapping:
-              vespa: "#/components/schemas/GetDeploymentSummariesResponseVespaDeployment"
-            propertyName: type
-          oneOf:
-            - $ref: "#/components/schemas/GetDeploymentSummariesResponseVespaDeployment"
-          title: Deployment
-        document_count:
-          title: Document Count
-          type: integer
-        id:
-          format: uuid
-          title: Id
-          type: string
-        modified_at:
-          format: date-time
-          title: Modified At
-          type: string
-        name:
-          title: Name
-          type: string
-        status:
-          enum:
-            - online
-            - offline
-          title: Status
-          type: string
-      required:
-        - id
-        - name
-        - creator_id
-        - document_count
-        - status
-        - created_at
-        - modified_at
-        - deployment
-      title: GetDeploymentSummariesResponseDeployment
-      type: object
-    GetDeploymentSummariesResponseVespaDeployment:
-      properties:
-        indexes:
-          items:
-            $ref: "#/components/schemas/GetDeploymentSummariesResponseVespaIndex"
-          title: Indexes
-          type: array
-        type:
-          const: vespa
-          default: vespa
-          title: Type
-          type: string
-      required:
-        - indexes
-      title: GetDeploymentSummariesResponseVespaDeployment
-      type: object
-    GetDeploymentSummariesResponseVespaIndex:
-      properties:
-        document_count:
-          anyOf:
-            - type: integer
-            - type: "null"
-          title: Document Count
-        id:
-          format: uuid
-          title: Id
-          type: string
-        name:
-          title: Name
-          type: string
-      required:
-        - id
-        - name
-        - document_count
-      title: GetDeploymentSummariesResponseVespaIndex
       type: object
     GetFileResponse:
       properties:
@@ -13507,6 +13962,12 @@ components:
       type: object
     GoalResult:
       properties:
+        missing:
+          default: []
+          items:
+            $ref: "#/components/schemas/MissingGoalItem"
+          title: Missing
+          type: array
         passed:
           anyOf:
             - type: boolean
@@ -14289,17 +14750,6 @@ components:
         - file_id
       title: ImportDatasetFromFileRequest
       type: object
-    ImportDatasetFromPlaygroundRequest:
-      properties:
-        conversation_ids:
-          items:
-            type: string
-          title: Conversation Ids
-          type: array
-      required:
-        - conversation_ids
-      title: ImportDatasetFromPlaygroundRequest
-      type: object
     ImportDatasetFromSpansRequest:
       properties:
         mapping_contract:
@@ -14457,20 +14907,6 @@ components:
         - total_chunks_count
         - pipeline_composition
       title: IngestionPipelineConfiguration
-      type: object
-    IngestionPipelineTargetIndexRef:
-      properties:
-        name:
-          title: Name
-          type: string
-        type:
-          const: vespa
-          default: vespa
-          title: Type
-          type: string
-      required:
-        - name
-      title: IngestionPipelineTargetIndexRef
       type: object
     InputEntries:
       items:
@@ -16824,6 +17260,25 @@ components:
         - aggregation
       title: MetricDefinition
       type: object
+    MetricDirectionSpec:
+      description: Which way a run evaluator metric improves. The main value's direction stays the evaluator's ``direction``.
+      properties:
+        direction:
+          enum:
+            - maximize
+            - minimize
+          title: Direction
+          type: string
+        metric:
+          maxLength: 100
+          minLength: 1
+          title: Metric
+          type: string
+      required:
+        - metric
+        - direction
+      title: MetricDirectionSpec
+      type: object
     MissingEmbeddingResponse:
       properties:
         type:
@@ -16846,6 +17301,42 @@ components:
       required:
         - name
       title: MissingFieldResponse
+      type: object
+    MissingGoalItem:
+      description: |-
+        A run evaluator goal on a metric the scorer did not return: it fails, with no number to show.
+
+        Kept out of ``results`` so ``GoalResultItem.actual`` stays a number for clients that require one.
+      properties:
+        message:
+          title: Message
+          type: string
+        metric:
+          title: Metric
+          type: string
+        operator:
+          title: Operator
+          type: string
+        target:
+          anyOf:
+            - type: number
+            - type: "null"
+          title: Target
+        target_max:
+          anyOf:
+            - type: number
+            - type: "null"
+          title: Target Max
+        target_min:
+          anyOf:
+            - type: number
+            - type: "null"
+          title: Target Min
+      required:
+        - metric
+        - operator
+        - message
+      title: MissingGoalItem
       type: object
     MistralEmbeddingModel:
       properties:
@@ -17242,6 +17733,43 @@ components:
           type: object
       title: ModerationObject
       type: object
+    ModerationRequest:
+      additionalProperties: false
+      properties:
+        input:
+          anyOf:
+            - type: string
+            - items:
+                type: string
+              type: array
+          description: Text to moderate.
+          title: Input
+        metadata:
+          anyOf:
+            - additionalProperties: true
+              type: object
+            - type: "null"
+          title: Metadata
+        model:
+          description: ID of the model to use.
+          examples:
+            - mistral-moderation-latest
+          title: Model
+          type: string
+        queries:
+          anyOf:
+            - additionalProperties:
+                type: string
+              minProperties: 1
+              type: object
+            - type: "null"
+          description: Named moderation queries to evaluate.
+          title: Queries
+      required:
+        - input
+        - model
+      title: ModerationRequest
+      type: object
     ModerationResponse:
       properties:
         id:
@@ -17258,6 +17786,18 @@ components:
         - model
         - results
       title: ModerationResponse
+      type: object
+    NamedToolChoice:
+      additionalProperties: false
+      properties:
+        function:
+          $ref: "#/components/schemas/FunctionName"
+        type:
+          $ref: "#/components/schemas/ToolTypes"
+          default: function
+      required:
+        - function
+      title: NamedToolChoice
       type: object
     NavigateRequest:
       additionalProperties: false
@@ -18769,6 +19309,7 @@ components:
         - DATASET_NOT_FOUND
         - DATASET_TASK_NOT_FOUND
         - DATASET_RECORD_NOT_FOUND
+        - DATASET_RECORD_ID_CONFLICT
         - DATASET_RECORD_FORMAT_ERROR
         - AGENT_NOT_FOUND
         - AGENT_MISTRAL_API_ERROR
@@ -18799,6 +19340,7 @@ components:
         - TRACES_FILTER_QUERY_PARSE_ERROR
         - TRACE_NOT_FOUND
         - SPAN_NOT_FOUND
+        - OCSF_NOT_ENABLED
       title: ObservabilityErrorCode
       type: string
     ObservabilityErrorDetail:
@@ -20220,7 +20762,7 @@ components:
       title: PartialScheduleDefinition
       type: object
     PercentileStatisticSpec:
-      description: The ``p``-th percentile (``0 <= p <= 100``), computed with the type-7 algorithm.
+      description: The ``p``-th percentile (``0 &lt;= p &lt;= 100``), computed with the type-7 algorithm.
       properties:
         goal:
           anyOf:
@@ -20837,6 +21379,20 @@ components:
         - content
       title: PromptDefinition
       type: object
+    PromptTokensDetails:
+      additionalProperties: false
+      description: Token usage details for the prompt.
+      properties:
+        audio_tokens:
+          default: 0
+          title: Audio Tokens
+          type: integer
+        cached_tokens:
+          default: 0
+          title: Cached Tokens
+          type: integer
+      title: PromptTokensDetails
+      type: object
     PromptVariable:
       additionalProperties: false
       properties:
@@ -21212,116 +21768,6 @@ components:
         - reference_ids
       title: ReferenceChunk
       type: object
-    RegisterDeploymentRequestDeployment:
-      properties:
-        deployment:
-          discriminator:
-            mapping:
-              vespa: "#/components/schemas/RegisterDeploymentRequestVespaDeployment"
-            propertyName: type
-          oneOf:
-            - $ref: "#/components/schemas/RegisterDeploymentRequestVespaDeployment"
-          title: Deployment
-        name:
-          title: Name
-          type: string
-        status:
-          default: offline
-          enum:
-            - online
-            - offline
-          title: Status
-          type: string
-      required:
-        - name
-        - deployment
-      title: RegisterDeploymentRequestDeployment
-      type: object
-    RegisterDeploymentRequestVespaDeployment:
-      properties:
-        indexes:
-          items:
-            $ref: "#/components/schemas/RegisterDeploymentRequestVespaIndex"
-          title: Indexes
-          type: array
-        query_url:
-          title: Query Url
-          type: string
-        type:
-          const: vespa
-          default: vespa
-          title: Type
-          type: string
-        vespa_version:
-          title: Vespa Version
-          type: string
-      required:
-        - vespa_version
-        - indexes
-        - query_url
-      title: RegisterDeploymentRequestVespaDeployment
-      type: object
-    RegisterDeploymentRequestVespaField:
-      properties:
-        index_type:
-          anyOf:
-            - $ref: "#/components/schemas/SchemaFieldIndex"
-            - type: "null"
-        multidimensional:
-          title: Multidimensional
-          type: boolean
-        name:
-          title: Name
-          type: string
-        ranking:
-          $ref: "#/components/schemas/SchemaFieldRankingType"
-        storage:
-          $ref: "#/components/schemas/SchemaFieldStorage"
-        type:
-          $ref: "#/components/schemas/SchemaFieldDataType"
-      required:
-        - name
-        - type
-        - storage
-        - ranking
-        - index_type
-        - multidimensional
-      title: RegisterDeploymentRequestVespaField
-      type: object
-    RegisterDeploymentRequestVespaIndex:
-      properties:
-        embedding_dimensions:
-          anyOf:
-            - type: integer
-            - type: "null"
-          title: Embedding Dimensions
-        fields:
-          items:
-            $ref: "#/components/schemas/RegisterDeploymentRequestVespaField"
-          title: Fields
-          type: array
-        name:
-          title: Name
-          type: string
-        sd:
-          title: Sd
-          type: string
-      required:
-        - name
-        - fields
-        - sd
-      title: RegisterDeploymentRequestVespaIndex
-      type: object
-    RegisterSearchIndexResponseIndex:
-      properties:
-        id:
-          format: uuid
-          title: Id
-          type: string
-      required:
-        - id
-      title: RegisterSearchIndexResponseIndex
-      type: object
     RegistrySharingScope:
       enum:
         - sharing_scope_unspecified
@@ -21611,7 +22057,7 @@ components:
       type: object
     ResponseFormat:
       additionalProperties: false
-      description: 'Specify the format that the model must output. By default it will use `{ "type": "text" }`. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is in JSON. When using JSON mode you MUST also instruct the model to produce JSON yourself with a system or a user message. Setting to `{ "type": "json_schema" }` enables JSON schema mode, which guarantees the message the model generates is in JSON and follows the schema you provide.'
+      description: 'Specify the format that the model must output. By default it will use `{ "type": "text" }`. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is in JSON. When using JSON mode you MUST also instruct the model to produce JSON yourself with a system or a user message. Setting to `{ "type": "json_schema" }` enables JSON schema mode, which guarantees the message the model generates is in JSON and follows the schema you provide. Note: on third-party models (for example GLM), the schema is still enforced, but field descriptions may not influence the output; put field-level requirements in the prompt.'
       examples:
         - type: text
         - type: json_object
@@ -23614,22 +24060,22 @@ components:
         data:
           discriminator:
             mapping:
-              error: "#/components/schemas/ResponseErrorEvent"
+              error: "#/components/schemas/ResponsesErrorEvent"
               response.completed: "#/components/schemas/ResponsesCompletedEvent"
-              response.content_part.added: "#/components/schemas/ResponseContentPartAddedEvent"
-              response.content_part.done: "#/components/schemas/ResponseContentPartDoneEvent"
+              response.content_part.added: "#/components/schemas/ResponsesContentPartAddedEvent"
+              response.content_part.done: "#/components/schemas/ResponsesContentPartDoneEvent"
               response.created: "#/components/schemas/ResponsesCreatedEvent"
               response.failed: "#/components/schemas/ResponsesFailedEvent"
-              response.function_call_arguments.delta: "#/components/schemas/ResponseFunctionCallArgumentsDeltaEvent"
-              response.function_call_arguments.done: "#/components/schemas/ResponseFunctionCallArgumentsDoneEvent"
+              response.function_call_arguments.delta: "#/components/schemas/ResponsesFunctionCallArgumentsDeltaEvent"
+              response.function_call_arguments.done: "#/components/schemas/ResponsesFunctionCallArgumentsDoneEvent"
               response.in_progress: "#/components/schemas/ResponsesInProgressEvent"
               response.incomplete: "#/components/schemas/ResponsesIncompleteEvent"
               response.output_item.added: "#/components/schemas/ResponsesOutputItemAddedEvent"
               response.output_item.done: "#/components/schemas/ResponsesOutputItemDoneEvent"
-              response.output_text.delta: "#/components/schemas/ResponseTextDeltaEvent"
-              response.output_text.done: "#/components/schemas/ResponseTextDoneEvent"
-              response.reasoning_text.delta: "#/components/schemas/ResponseReasoningTextDeltaEvent"
-              response.reasoning_text.done: "#/components/schemas/ResponseReasoningTextDoneEvent"
+              response.output_text.delta: "#/components/schemas/ResponsesTextDeltaEvent"
+              response.output_text.done: "#/components/schemas/ResponsesTextDoneEvent"
+              response.reasoning_text.delta: "#/components/schemas/ResponsesReasoningTextDeltaEvent"
+              response.reasoning_text.done: "#/components/schemas/ResponsesReasoningTextDoneEvent"
             propertyName: type
           oneOf:
             - $ref: "#/components/schemas/ResponsesCreatedEvent"
@@ -24427,6 +24873,11 @@ components:
         id:
           title: Id
           type: string
+        sample_count:
+          anyOf:
+            - type: integer
+            - type: "null"
+          title: Sample Count
         type:
           const: scalar
           default: scalar
@@ -24815,41 +25266,6 @@ components:
         - execution_id
       title: ScheduleRecentExecution
       type: object
-    SchemaFieldDataType:
-      enum:
-        - int
-        - bool
-        - string
-        - embedding
-        - long
-        - float
-      title: SchemaFieldDataType
-      type: string
-    SchemaFieldIndex:
-      enum:
-        - ann
-        - bm25
-        - attribute
-      title: SchemaFieldIndex
-      type: string
-    SchemaFieldRankingType:
-      enum:
-        - count
-        - embedding
-        - timestamp
-        - text
-        - string
-        - bool
-        - int
-        - language
-      title: SchemaFieldRankingType
-      type: string
-    SchemaFieldStorage:
-      enum:
-        - in_memory
-        - on_disk
-      title: SchemaFieldStorage
-      type: string
     ScimSyncGroupActionOut:
       properties:
         group:
@@ -25033,6 +25449,24 @@ components:
           title: Filters
           type: array
       title: ScoreFilterGroup
+      type: object
+    ScoreMetric:
+      description: One named number of a run evaluator score. Stored and sent as an ordered list (JSONB keeps no key order).
+      properties:
+        name:
+          maxLength: 100
+          minLength: 1
+          title: Name
+          type: string
+        value:
+          anyOf:
+            - type: integer
+            - type: number
+          title: Value
+      required:
+        - name
+        - value
+      title: ScoreMetric
       type: object
     ScoreOperator:
       enum:
@@ -25611,6 +26045,23 @@ components:
       type: object
     SignalInvocationBody:
       properties:
+        call_context:
+          anyOf:
+            - additionalProperties:
+                anyOf:
+                  - type: boolean
+                  - maximum: 9007199254740991.0
+                    minimum: -9007199254740991.0
+                    type: integer
+                  - pattern: ^[A-Za-z0-9._:@/-]{1,256}$
+                    type: string
+              maxProperties: 16
+              propertyNames:
+                pattern: ^[a-z][a-z0-9_]{0,63}$
+              type: object
+            - type: "null"
+          description: "Cleartext technical values (ids, flags) for the code this call runs, read with `get_call_context()`. Not covered by payload encryption: never put customer content here."
+          title: Call Context
         input:
           additionalProperties: true
           anyOf:
@@ -25637,7 +26088,12 @@ components:
       title: SignalWorkflowResponse
       type: object
     SimpleNumericStatisticSpec:
-      description: A scalar numeric reduction with no parameters (``avg``/``sum``/``min``/``max``/``std``/``count``).
+      description: |-
+        A scalar numeric reduction (``avg``/``sum``/``min``/``max``/``std``/``count``).
+
+        ``weight_key`` (``avg`` only) turns the mean into a weighted mean, ``sum(w * x) / sum(w)``, where
+        each score's weight ``w`` is read from its ``metadata`` under that key. Scores whose weight is
+        missing, non-numeric or negative are left out of that statistic.
       properties:
         goal:
           anyOf:
@@ -25653,6 +26109,11 @@ components:
             - count
           title: Kind
           type: string
+        weight_key:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Weight Key
       required:
         - kind
       title: SimpleNumericStatisticSpec
@@ -26032,6 +26493,12 @@ components:
         - usage
       title: SpeechStreamDone
       type: object
+    SpeechStreamEventTypes:
+      enum:
+        - speech.audio.delta
+        - speech.audio.done
+      title: SpeechStreamEventTypes
+      type: string
     SpeechUserTurn:
       additionalProperties: false
       properties:
@@ -26073,23 +26540,12 @@ components:
       type: object
     StaticWorkspaceRoles:
       enum:
-        - d7ea77c5-9260-41d0-ab26-52b5add3ee56
         - 48436751-ee56-44bd-8a2d-712233977821
-        - 375cd0db-3bbe-4b79-80f3-954ccf04f3d1
         - 578584f1-4319-4c88-9948-38a5184483b6
-        - d79b3027-4eb2-4521-8722-825acfee7d8b
         - 252a0825-40b9-4b98-be80-7658956f13e9
-        - 50023ca6-3db1-41bc-8c10-f0ae6f460fba
         - 17aa61c5-1c61-477e-a40a-e52c8ccd74b9
-        - 348fc8da-f6da-4464-ad3e-af7bc137e221
         - b23cd6e0-91cd-4a8a-9869-b30366bf3966
         - 731eb2be-a74f-4070-b797-35bf7009e553
-        - ff86d432-7f27-47f8-b02f-b5c102ef6a55
-        - 0f9acbf6-93b5-42c7-a227-fc7652755f65
-        - 94ef59cf-56bf-4383-9dd6-1fee77d370af
-        - 24b51cb8-72fe-411c-8652-c719c7270ca2
-        - 7e69e493-caf6-4671-af60-84951754d9fc
-        - b23cd6e0-91cd-4a8a-9869-b30366bf3966
       title: StaticWorkspaceRoles
       type: string
     StreamError:
@@ -26216,7 +26672,47 @@ components:
         - GP
       title: SubscriptionStatus
       type: string
+    SummaryChunk:
+      description: Regular content.
+      properties:
+        content:
+          title: Content
+          type: string
+      required:
+        - content
+      title: SummaryChunk
+      type: object
+    SummaryError:
+      description: If an error is encountered while streaming responses this is returned.
+      properties:
+        error:
+          title: Error
+          type: string
+      required:
+        - error
+      title: SummaryError
+      type: object
+    SummaryMetadata:
+      description: Summary content. Expected to be the first value returned.
+      properties:
+        status:
+          $ref: "#/components/schemas/SummaryStatus1"
+        translated:
+          title: Translated
+          type: boolean
+      required:
+        - status
+        - translated
+      title: SummaryMetadata
+      type: object
     SummaryStatus:
+      enum:
+        - handwritten
+        - generated
+        - generated_confirmed
+      title: SummaryStatus
+      type: string
+    SummaryStatus1:
       enum:
         - handwritten
         - generated
@@ -27092,7 +27588,6 @@ components:
         function:
           $ref: "#/components/schemas/FunctionCall"
         id:
-          default: "null"
           title: Id
           type: string
         index:
@@ -27122,19 +27617,6 @@ components:
         - tool_call_id
         - confirmation
       title: ToolCallConfirmation
-      type: object
-    ToolChoice:
-      additionalProperties: false
-      description: ToolChoice is either a ToolChoiceEnum or a ToolChoice
-      properties:
-        function:
-          $ref: "#/components/schemas/FunctionName"
-        type:
-          $ref: "#/components/schemas/ToolTypes"
-          default: function
-      required:
-        - function
-      title: ToolChoice
       type: object
     ToolChoiceEnum:
       enum:
@@ -27651,6 +28133,10 @@ components:
         - transcription.segment
         - transcription.text.delta
         - transcription.done
+        - turn.start
+        - turn.eager_end
+        - turn.resume
+        - turn.end
       title: TranscriptionStreamEventTypes
       type: string
     TranscriptionStreamEvents:
@@ -27663,15 +28149,24 @@ components:
               transcription.language: "#/components/schemas/TranscriptionStreamLanguage"
               transcription.segment: "#/components/schemas/TranscriptionStreamSegmentDelta"
               transcription.text.delta: "#/components/schemas/TranscriptionStreamTextDelta"
+              turn.eager_end: "#/components/schemas/TurnDetectionEagerEndEvent"
+              turn.end: "#/components/schemas/TurnDetectionEndEvent"
+              turn.resume: "#/components/schemas/TurnDetectionResumeEvent"
+              turn.start: "#/components/schemas/TurnDetectionStartEvent"
             propertyName: type
           oneOf:
             - $ref: "#/components/schemas/TranscriptionStreamTextDelta"
             - $ref: "#/components/schemas/TranscriptionStreamLanguage"
             - $ref: "#/components/schemas/TranscriptionStreamSegmentDelta"
             - $ref: "#/components/schemas/TranscriptionStreamDone"
+            - $ref: "#/components/schemas/TurnDetectionStartEvent"
+            - $ref: "#/components/schemas/TurnDetectionEagerEndEvent"
+            - $ref: "#/components/schemas/TurnDetectionResumeEvent"
+            - $ref: "#/components/schemas/TurnDetectionEndEvent"
           title: Data
         event:
           $ref: "#/components/schemas/TranscriptionStreamEventTypes"
+          title: Event
       required:
         - event
         - data
@@ -28046,6 +28541,79 @@ components:
             - type: "null"
       title: TurbineToolMeta
       type: object
+    TurnDetectionEagerEndEvent:
+      additionalProperties: false
+      properties:
+        time_s:
+          minimum: 0
+          title: Time S
+          type: number
+        type:
+          const: turn.eager_end
+          default: turn.eager_end
+          title: Type
+          type: string
+      required:
+        - time_s
+      title: TurnDetectionEagerEndEvent
+      type: object
+    TurnDetectionEndEvent:
+      additionalProperties: false
+      properties:
+        end_reason:
+          $ref: "#/components/schemas/TurnDetectionEndReason"
+        time_s:
+          minimum: 0
+          title: Time S
+          type: number
+        type:
+          const: turn.end
+          default: turn.end
+          title: Type
+          type: string
+      required:
+        - time_s
+        - end_reason
+      title: TurnDetectionEndEvent
+      type: object
+    TurnDetectionEndReason:
+      enum:
+        - threshold
+        - timeout
+      title: TurnDetectionEndReason
+      type: string
+    TurnDetectionResumeEvent:
+      additionalProperties: false
+      properties:
+        time_s:
+          minimum: 0
+          title: Time S
+          type: number
+        type:
+          const: turn.resume
+          default: turn.resume
+          title: Type
+          type: string
+      required:
+        - time_s
+      title: TurnDetectionResumeEvent
+      type: object
+    TurnDetectionStartEvent:
+      additionalProperties: false
+      properties:
+        time_s:
+          minimum: 0
+          title: Time S
+          type: number
+        type:
+          const: turn.start
+          default: turn.start
+          title: Type
+          type: string
+      required:
+        - time_s
+      title: TurnDetectionStartEvent
+      type: object
     UnarchiveModelResponse:
       properties:
         archived:
@@ -28186,9 +28754,18 @@ components:
               type: string
             - type: "null"
           title: Description
+        metadata:
+          anyOf:
+            - additionalProperties:
+                $ref: "#/components/schemas/JsonValue"
+              type: object
+            - type: "null"
+          title: Metadata
         name:
           anyOf:
-            - type: string
+            - maxLength: 50
+              minLength: 5
+              type: string
             - type: "null"
           title: Name
       title: UpdateDatasetRequest
@@ -28340,6 +28917,23 @@ components:
       type: object
     UpdateInvocationBody:
       properties:
+        call_context:
+          anyOf:
+            - additionalProperties:
+                anyOf:
+                  - type: boolean
+                  - maximum: 9007199254740991.0
+                    minimum: -9007199254740991.0
+                    type: integer
+                  - pattern: ^[A-Za-z0-9._:@/-]{1,256}$
+                    type: string
+              maxProperties: 16
+              propertyNames:
+                pattern: ^[a-z][a-z0-9_]{0,63}$
+              type: object
+            - type: "null"
+          description: "Cleartext technical values (ids, flags) for the code this call runs, read with `get_call_context()`. Not covered by payload encryption: never put customer content here."
+          title: Call Context
         input:
           anyOf:
             - $ref: "#/components/schemas/NetworkEncodedInput"
@@ -28381,53 +28975,6 @@ components:
       required:
         - schema
       title: UpdateManagedIndexRequest
-      type: object
-    UpdateMetricsRequestDeploymentMetricsOffline:
-      properties:
-        clear_metrics:
-          default: false
-          title: Clear Metrics
-          type: boolean
-        status:
-          const: offline
-          title: Status
-          type: string
-      required:
-        - status
-      title: UpdateMetricsRequestDeploymentMetricsOffline
-      type: object
-    UpdateMetricsRequestDeploymentMetricsOnline:
-      properties:
-        document_count:
-          title: Document Count
-          type: integer
-        index_metrics:
-          items:
-            $ref: "#/components/schemas/UpdateMetricsRequestIndexMetrics"
-          title: Index Metrics
-          type: array
-        status:
-          const: online
-          title: Status
-          type: string
-      required:
-        - status
-        - document_count
-        - index_metrics
-      title: UpdateMetricsRequestDeploymentMetricsOnline
-      type: object
-    UpdateMetricsRequestIndexMetrics:
-      properties:
-        document_count:
-          title: Document Count
-          type: integer
-        name:
-          title: Name
-          type: string
-      required:
-        - name
-        - document_count
-      title: UpdateMetricsRequestIndexMetrics
       type: object
     UpdateModelRequest:
       properties:
@@ -28584,6 +29131,10 @@ components:
           default: 0
           title: Prompt Tokens
           type: integer
+        prompt_tokens_details:
+          anyOf:
+            - $ref: "#/components/schemas/PromptTokensDetails"
+            - type: "null"
         service_tier:
           anyOf:
             - type: string
@@ -28879,6 +29430,8 @@ components:
                   - call_type
                   - user_agent
                   - customer_tier
+                  - resource_id
+                  - resource_version
                 type: string
               type: array
             - type: "null"
@@ -29182,6 +29735,8 @@ components:
                   - call_type
                   - user_agent
                   - customer_tier
+                  - resource_id
+                  - resource_version
                 type: string
               type: array
             - type: "null"
@@ -29415,6 +29970,22 @@ components:
           examples:
             - organization-id
           title: Organization Id
+        resource_id:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: ID of the resource the usage is attributed to, such as a workflow ID.
+          examples:
+            - 0199a6f5-7c3e-7b1a-9d2e-4f5a6b7c8d9e
+          title: Resource Id
+        resource_version:
+          anyOf:
+            - type: string
+            - type: "null"
+          description: Version of the resource the usage is attributed to, when the resource is versioned.
+          examples:
+            - "1"
+          title: Resource Version
         service_account_id:
           anyOf:
             - type: string
@@ -31189,6 +31760,11 @@ components:
           format: uuid
           title: Creator Id
           type: string
+        description:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Description
         event_id_pattern:
           anyOf:
             - type: string
@@ -31262,6 +31838,11 @@ components:
             - type: string
             - type: "null"
           title: Timestamp Extractor Regex
+        timestamp_pattern:
+          anyOf:
+            - type: string
+            - type: "null"
+          title: Timestamp Pattern
         updated_at:
           format: date-time
           title: Updated At
@@ -32292,6 +32873,23 @@ components:
       type: object
     WorkflowExecutionRequest:
       properties:
+        call_context:
+          anyOf:
+            - additionalProperties:
+                anyOf:
+                  - type: boolean
+                  - maximum: 9007199254740991.0
+                    minimum: -9007199254740991.0
+                    type: integer
+                  - pattern: ^[A-Za-z0-9._:@/-]{1,256}$
+                    type: string
+              maxProperties: 16
+              propertyNames:
+                pattern: ^[a-z][a-z0-9_]{0,63}$
+              type: object
+            - type: "null"
+          description: "Cleartext technical values (ids, flags) for the code this call runs, read with `get_call_context()`. Not covered by payload encryption: never put customer content here."
+          title: Call Context
         custom_tracing_attributes:
           anyOf:
             - additionalProperties:
@@ -34769,19 +35367,12 @@ paths:
           schema:
             anyOf:
               - enum:
-                  - billing
                   - user
-                  - contributor
                   - dev
-                  - dev_contributor
                   - mistral_code_user
-                  - vibe_code_cli_user
                   - cloud_user
                   - workspace_contributor
                   - workspace_admin
-                  - observability_viewer
-                  - workflow_executor
-                  - member
                 type: string
               - type: "null"
             description: Filter groups to those holding this role on a Workspace. When combined with workspace_uuid, the role must be held on that Workspace. Assignments to archived Workspaces never match.
@@ -35154,7 +35745,12 @@ paths:
       tags:
         - beta.admin.user-groups
     patch:
-      description: Update the workspace role assignment for a user group.
+      description: |-
+        Update the workspace role assignment for a user group.
+
+        Either set the group's roles with `role_names` or `roles`, which replaces all the roles it has on the
+        Workspace, or change them with `add_role_names`/`add_roles` and `remove_role_names`/`remove_roles`, which
+        keeps its other roles.
       operationId: users_admin_user_groups_update_group_workspace_assignment
       parameters:
         - description: User group ID.
@@ -35512,6 +36108,7 @@ paths:
             examples:
               - 1
             exclusiveMinimum: 0
+            maximum: 1e+06
             title: Page
             type: integer
         - description: Maximum number of results per page.
@@ -35562,6 +36159,7 @@ paths:
             default: 1
             description: Page number to return.
             exclusiveMinimum: 0
+            maximum: 1e+06
             title: Page
             type: integer
         - description: Maximum number of results per page.
@@ -35740,8 +36338,78 @@ paths:
       tags:
         - beta.admin.workspaces
   /v1/admin/workspaces/{workspace_uuid}/users:
+    get:
+      description: List the members of a Workspace, direct or through a group, with their roles.
+      operationId: users_api_admin_workspaces_list_workspace_users
+      parameters:
+        - description: Workspace ID.
+          in: path
+          name: workspace_uuid
+          required: true
+          schema:
+            description: Workspace ID.
+            format: uuid
+            title: Workspace Uuid
+            type: string
+        - description: Page number to return.
+          examples: {}
+          in: query
+          name: page
+          required: false
+          schema:
+            default: 1
+            description: Page number to return.
+            examples:
+              - 1
+            exclusiveMinimum: 0
+            maximum: 1e+06
+            title: Page
+            type: integer
+        - description: Maximum number of results per page.
+          examples: {}
+          in: query
+          name: page_size
+          required: false
+          schema:
+            default: 25
+            description: Maximum number of results per page.
+            examples:
+              - 25
+            exclusiveMinimum: 0
+            maximum: 100
+            title: Page Size
+            type: integer
+        - description: Whether to include deactivated and blocked members.
+          examples: {}
+          in: query
+          name: include_inactive
+          required: false
+          schema:
+            default: false
+            description: Whether to include deactivated and blocked members.
+            examples:
+              - false
+            title: Include Inactive
+            type: boolean
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWorkspaceUsersOUT"
+          description: OK
+      security:
+        - AdminApiKey: []
+      summary: List Workspace Users
+      tags:
+        - beta.admin.workspaces
     patch:
-      description: Add or update Workspace members.
+      description: |-
+        Add or update Workspace members.
+
+        For each member, either set its roles with `roles` or `role_names`, which replaces all the roles it has in
+        the Workspace, or change them with `add_roles`/`add_role_names` and `remove_roles`/`remove_role_names`,
+        which keeps its other roles. Users who are not yet members are added with the given roles.
       operationId: users_api_admin_workspaces_add_or_update_users_workspaces
       parameters:
         - description: Workspace ID.
@@ -35757,7 +36425,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AdminWorkspaceMemberIN"
+              $ref: "#/components/schemas/AdminWorkspaceMemberUpsertIN"
         required: true
       responses:
         "200":
@@ -36822,136 +37490,6 @@ paths:
                 type: object
             text/event-stream:
               schema:
-                $defs:
-                  CompletionTokensDetails:
-                    additionalProperties: false
-                    description: |-
-                      Token usage details for the completion.
-
-                      ``reasoning_tokens`` is ``None`` when the provider did not report a count.
-                      Preserve that distinction instead of inventing a measured zero: ``0`` means
-                      "reasoning off, confirmed by the provider", ``None`` means "unknown".
-                    properties:
-                      reasoning_tokens:
-                        anyOf:
-                          - type: integer
-                          - type: "null"
-                        title: Reasoning Tokens
-                    title: CompletionTokensDetails
-                    type: object
-                  MessageTokens:
-                    additionalProperties: false
-                    description: Information on a single message included in a tokenized prompt as part of an InstructRequest.
-                    properties:
-                      role:
-                        $ref: "#/$defs/Roles"
-                      settings_tokens:
-                        anyOf:
-                          - type: integer
-                          - type: "null"
-                        title: Settings Tokens
-                      total_tokens:
-                        anyOf:
-                          - type: integer
-                          - type: "null"
-                        title: Total Tokens
-                      truncated:
-                        default: false
-                        title: Truncated
-                        type: boolean
-                      usage_count:
-                        default: 1
-                        title: Usage Count
-                        type: integer
-                    required:
-                      - role
-                    title: MessageTokens
-                    type: object
-                  PromptTokensDetails:
-                    additionalProperties: false
-                    description: Token usage details for the prompt.
-                    properties:
-                      audio_tokens:
-                        default: 0
-                        title: Audio Tokens
-                        type: integer
-                      cached_tokens:
-                        default: 0
-                        title: Cached Tokens
-                        type: integer
-                      messages:
-                        items:
-                          $ref: "#/$defs/MessageTokens"
-                        title: Messages
-                        type: array
-                    title: PromptTokensDetails
-                    type: object
-                  Roles:
-                    enum:
-                      - system
-                      - user
-                      - assistant
-                      - tool
-                    title: Roles
-                    type: string
-                  SpeechStreamEventTypes:
-                    enum:
-                      - speech.audio.delta
-                      - speech.audio.done
-                    title: SpeechStreamEventTypes
-                    type: string
-                  UsageInfo:
-                    additionalProperties: false
-                    properties:
-                      completion_tokens:
-                        anyOf:
-                          - type: integer
-                          - type: "null"
-                        default: 0
-                        title: Completion Tokens
-                      completion_tokens_details:
-                        anyOf:
-                          - $ref: "#/$defs/CompletionTokensDetails"
-                          - type: "null"
-                      num_cached_tokens:
-                        anyOf:
-                          - type: integer
-                          - type: "null"
-                        title: Num Cached Tokens
-                      prompt_audio_seconds:
-                        anyOf:
-                          - type: integer
-                          - type: "null"
-                        title: Prompt Audio Seconds
-                      prompt_token_details:
-                        anyOf:
-                          - $ref: "#/$defs/PromptTokensDetails"
-                          - type: "null"
-                      prompt_tokens:
-                        default: 0
-                        title: Prompt Tokens
-                        type: integer
-                      prompt_tokens_details:
-                        anyOf:
-                          - $ref: "#/$defs/PromptTokensDetails"
-                          - type: "null"
-                      request_count:
-                        anyOf:
-                          - type: integer
-                          - type: "null"
-                        title: Request Count
-                      service_tier:
-                        anyOf:
-                          - type: string
-                          - type: "null"
-                        description: "The service tier at which the request was processed: standard or priority."
-                        title: Service Tier
-                      total_tokens:
-                        default: 0
-                        title: Total Tokens
-                        type: integer
-                    title: UsageInfo
-                    type: object
                 additionalProperties: false
                 properties:
                   data:
@@ -36965,7 +37503,7 @@ paths:
                       - $ref: "#/components/schemas/SpeechStreamDone"
                     title: Data
                   event:
-                    $ref: "#/$defs/SpeechStreamEventTypes"
+                    $ref: "#/components/schemas/SpeechStreamEventTypes"
                 required:
                   - event
                   - data
@@ -37498,6 +38036,13 @@ paths:
       requestBody:
         content:
           application/json:
+            examples:
+              chat:
+                value:
+                  messages:
+                    - content: Who is the best French painter? Answer in one short sentence.
+                      role: user
+                  model: mistral-large-latest
             schema:
               $ref: "#/components/schemas/ChatCompletionRequest"
         required: true
@@ -37802,13 +38347,13 @@ paths:
                 type: string
               - type: "null"
             title: Credentials Title
-        - description: Only valid with method_type=oauth2. When true, returns a GitHub App installation URL (https://github.com/apps/<slug>/installations/new) if the connector has the proper configuration The Github application needs to have 'Request user authorization (OAuth) during installation' enabled to perform the proper auth loop.
+        - description: Only valid with method_type=oauth2. When true, returns a GitHub App installation URL (https://github.com/apps/&lt;slug&gt;/installations/new) if the connector has the proper configuration The Github application needs to have 'Request user authorization (OAuth) during installation' enabled to perform the proper auth loop.
           in: query
           name: github_installation_link
           required: false
           schema:
             default: false
-            description: Only valid with method_type=oauth2. When true, returns a GitHub App installation URL (https://github.com/apps/<slug>/installations/new) if the connector has the proper configuration The Github application needs to have 'Request user authorization (OAuth) during installation' enabled to perform the proper auth loop.
+            description: Only valid with method_type=oauth2. When true, returns a GitHub App installation URL (https://github.com/apps/&lt;slug&gt;/installations/new) if the connector has the proper configuration The Github application needs to have 'Request user authorization (OAuth) during installation' enabled to perform the proper auth loop.
             title: Github Installation Link
             type: boolean
       responses:
@@ -38621,12 +39166,16 @@ paths:
               schema:
                 $ref: "#/components/schemas/ListManagedIndexesResponse"
           description: Successful Response
+        "403":
+          description: Permission denied
         "422":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/HTTPValidationError"
           description: Validation Error
+        "503":
+          description: Temporarily unavailable; retry later
       summary: List managed indexes
       tags:
         - beta.context.search_indexes
@@ -38665,7 +39214,7 @@ paths:
               schema:
                 type: string
         "403":
-          description: The organization has reached its index limit
+          description: The organization has reached its index limit, or permission denied
         "409":
           description: An index with the same name already exists
         "422":
@@ -38674,6 +39223,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/HTTPValidationError"
           description: Validation Error
+        "503":
+          description: Temporarily unavailable; retry later
       summary: Create a managed index
       tags:
         - beta.context.search_indexes
@@ -38695,6 +39246,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteManagedIndexResponse"
           description: Index marked for deletion
+        "403":
+          description: Permission denied
         "404":
           description: Index not found
         "409":
@@ -38705,6 +39258,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/HTTPValidationError"
           description: Validation Error
+        "503":
+          description: Temporarily unavailable; retry later
       summary: Delete a managed index
       tags:
         - beta.context.search_indexes
@@ -38725,6 +39280,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ManagedIndexResponse"
           description: Successful Response
+        "403":
+          description: Permission denied
         "404":
           description: Index not found
         "422":
@@ -38733,6 +39290,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/HTTPValidationError"
           description: Validation Error
+        "503":
+          description: Temporarily unavailable; retry later
       summary: Get a managed index
       tags:
         - beta.context.search_indexes
@@ -38759,12 +39318,16 @@ paths:
               schema:
                 $ref: "#/components/schemas/ManagedIndexResponse"
           description: Schema recorded and queued
+        "403":
+          description: Permission denied
         "404":
           description: Index not found
         "409":
           description: Index is not ready, or another update won the race
         "422":
           description: The change cannot be applied to an existing index
+        "503":
+          description: Temporarily unavailable; retry later
       summary: Update a managed index schema
       tags:
         - beta.context.search_indexes
@@ -38792,6 +39355,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/NavigationResponse"
           description: Successful Response
+        "403":
+          description: Permission denied
         "404":
           description: Index not found, or source/chunk does not exist in the index
         "409":
@@ -38804,6 +39369,8 @@ paths:
           description: Validation Error
         "500":
           description: Navigation query failed during execution
+        "503":
+          description: Temporarily unavailable; retry later
       summary: Get a single chunk by id
       tags:
         - beta.context.search_indexes
@@ -38831,6 +39398,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/DeleteDocumentsResponse"
           description: Successful Response
+        "403":
+          description: Permission denied
         "404":
           description: Index not found
         "409":
@@ -38841,6 +39410,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/HTTPValidationError"
           description: Validation Error
+        "503":
+          description: Temporarily unavailable; retry later
       summary: Delete documents from a managed index
       tags:
         - beta.context.search_indexes
@@ -38868,7 +39439,7 @@ paths:
                 $ref: "#/components/schemas/IngestDocumentsResponse"
           description: Successful Response
         "403":
-          description: Index has reached its chunk limit
+          description: Index has reached its chunk limit, or permission denied
         "404":
           description: Index not found
         "409":
@@ -38879,6 +39450,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/HTTPValidationError"
           description: Validation Error
+        "503":
+          description: Temporarily unavailable; retry later
       summary: Ingest documents into a managed index
       tags:
         - beta.context.search_indexes
@@ -38906,6 +39479,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/NavigationResponse"
           description: Successful Response
+        "403":
+          description: Permission denied
         "404":
           description: Index not found, or source/chunk does not exist in the index
         "409":
@@ -38918,6 +39493,8 @@ paths:
           description: Validation Error
         "500":
           description: Navigation query failed during execution
+        "503":
+          description: Temporarily unavailable; retry later
       summary: Grep for a pattern within a source
       tags:
         - beta.context.search_indexes
@@ -38945,6 +39522,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/NavigationResponse"
           description: Successful Response
+        "403":
+          description: Permission denied
         "404":
           description: Index not found, or source/chunk does not exist in the index
         "409":
@@ -38957,6 +39536,8 @@ paths:
           description: Validation Error
         "500":
           description: Navigation query failed during execution
+        "503":
+          description: Temporarily unavailable; retry later
       summary: Navigate to adjacent chunks
       tags:
         - beta.context.search_indexes
@@ -38984,6 +39565,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/NavigationResponse"
           description: Successful Response
+        "403":
+          description: Permission denied
         "404":
           description: Index not found, or source/chunk does not exist in the index
         "409":
@@ -38996,6 +39579,8 @@ paths:
           description: Validation Error
         "500":
           description: Navigation query failed during execution
+        "503":
+          description: Temporarily unavailable; retry later
       summary: Read chunks within a span
       tags:
         - beta.context.search_indexes
@@ -39047,6 +39632,10 @@ paths:
                 title: Response 400 Search Index V1 Context Search Indexes  Index Name  Search Post
                 type: array
           description: Invalid search query
+        "402":
+          description: Query embedding payment required
+        "403":
+          description: Permission denied
         "404":
           description: Index not found
         "409":
@@ -39061,6 +39650,8 @@ paths:
           description: Query embedding rate limited
         "500":
           description: Search execution failed
+        "503":
+          description: Temporarily unavailable; retry later
       summary: Search a managed index
       tags:
         - beta.context.search_indexes
@@ -39112,6 +39703,8 @@ paths:
           description: Validation Error
         "500":
           description: Internal server error
+        "503":
+          description: Temporarily unavailable; retry later
       summary: Get Managed Index Summary
       tags:
         - beta.context.search_indexes
@@ -39162,51 +39755,10 @@ paths:
           content:
             application/x-ndjson:
               schema:
-                $defs:
-                  SummaryChunk:
-                    description: Regular content.
-                    properties:
-                      content:
-                        title: Content
-                        type: string
-                    required:
-                      - content
-                    title: SummaryChunk
-                    type: object
-                  SummaryError:
-                    description: If an error is encountered while streaming responses this is returned.
-                    properties:
-                      error:
-                        title: Error
-                        type: string
-                    required:
-                      - error
-                    title: SummaryError
-                    type: object
-                  SummaryMetadata:
-                    description: Summary content. Expected to be the first value returned.
-                    properties:
-                      status:
-                        $ref: "#/$defs/SummaryStatus"
-                      translated:
-                        title: Translated
-                        type: boolean
-                    required:
-                      - status
-                      - translated
-                    title: SummaryMetadata
-                    type: object
-                  SummaryStatus:
-                    enum:
-                      - handwritten
-                      - generated
-                      - generated_confirmed
-                    title: SummaryStatus
-                    type: string
                 anyOf:
-                  - $ref: "#/$defs/SummaryMetadata"
-                  - $ref: "#/$defs/SummaryChunk"
-                  - $ref: "#/$defs/SummaryError"
+                  - $ref: "#/components/schemas/SummaryMetadata"
+                  - $ref: "#/components/schemas/SummaryChunk"
+                  - $ref: "#/components/schemas/SummaryError"
                 title: SummaryStreamTypes
           description: Successful Response
         "400":
@@ -39223,6 +39775,8 @@ paths:
           description: Validation Error
         "500":
           description: Internal server error
+        "503":
+          description: Temporarily unavailable; retry later
       summary: Generate a summary field for a managed index
       tags:
         - beta.context.search_indexes
@@ -39278,6 +39832,8 @@ paths:
           description: Validation Error
         "500":
           description: Internal server error
+        "503":
+          description: Temporarily unavailable; retry later
       summary: Set Managed Index Summary
       tags:
         - beta.context.search_indexes
@@ -39811,6 +40367,11 @@ paths:
       requestBody:
         content:
           multipart/form-data:
+            examples:
+              userExample:
+                value:
+                  file: example.file
+                  purpose: batch
             schema:
               properties:
                 expiry:
@@ -41065,7 +41626,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ClassificationRequest"
+              $ref: "#/components/schemas/ModerationRequest"
         required: true
       responses:
         "200":
@@ -41833,65 +42394,6 @@ paths:
       summary: Populate the dataset with records from an uploaded file
       tags:
         - beta.observability.datasets
-  /v1/observability/datasets/{dataset_id}/imports/from-playground:
-    post:
-      description: Populate the dataset with records from playground conversations
-      operationId: post_dataset_records_from_playground_v1_observability_datasets__dataset_id__imports_from_playground_post
-      parameters:
-        - description: Dataset UUID or workspace-scoped slug. UUID-shaped values are always interpreted as dataset IDs.
-          in: path
-          name: dataset_id
-          required: true
-          schema:
-            description: Dataset UUID or workspace-scoped slug. UUID-shaped values are always interpreted as dataset IDs.
-            title: Dataset Id
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ImportDatasetFromPlaygroundRequest"
-        required: true
-      responses:
-        "202":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/DatasetImportTask"
-          description: Successful Response
-        "400":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Bad Request - Invalid request parameters or data
-        "404":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Not Found - Resource does not exist
-        "408":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Request Timeout - Operation timed out
-        "409":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Conflict - Resource conflict
-        "422":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ObservabilityError"
-          description: Unprocessable Entity - Validation error
-      summary: Populate the dataset with records from playground conversations
-      tags:
-        - beta.observability.datasets
   /v1/observability/datasets/{dataset_id}/imports/from-spans:
     post:
       description: Starts an asynchronous import of the requested telemetry spans. References not returned by the tenant-scoped telemetry query are skipped without distinguishing absence from access restrictions.
@@ -42077,6 +42579,65 @@ paths:
                 $ref: "#/components/schemas/ObservabilityError"
           description: Unprocessable Entity - Validation error
       summary: Add a record to the dataset
+      tags:
+        - beta.observability.datasets
+  /v1/observability/datasets/{dataset_id}/records/bulk:
+    post:
+      description: "Creates 1 to 100 records in one transaction: if one record is invalid, none is created. Records are returned in the request order."
+      operationId: create_dataset_records_v1_observability_datasets__dataset_id__records_bulk_post
+      parameters:
+        - description: Dataset UUID or workspace-scoped slug. UUID-shaped values are always interpreted as dataset IDs.
+          in: path
+          name: dataset_id
+          required: true
+          schema:
+            description: Dataset UUID or workspace-scoped slug. UUID-shaped values are always interpreted as dataset IDs.
+            title: Dataset Id
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDatasetRecordsRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateDatasetRecordsResponse"
+          description: Successful Response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Bad Request - Invalid request parameters or data
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Not Found - Resource does not exist
+        "408":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Request Timeout - Operation timed out
+        "409":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Conflict - Resource conflict
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ObservabilityError"
+          description: Unprocessable Entity - Validation error
+      summary: Add several records to the dataset
       tags:
         - beta.observability.datasets
   /v1/observability/datasets/{dataset_id}/tasks:
@@ -45241,136 +45802,6 @@ paths:
       summary: OCR
       tags:
         - ocr
-  /v1/rag/deployments:
-    get:
-      description: Fetch all indexes available to a user
-      operationId: get_deployment_summaries_v1_rag_deployments_get
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GetDeploymentSummariesResponse"
-          description: Successful Response
-        "400":
-          description: Invalid request
-        "403":
-          description: Unauthorized
-        "404":
-          description: Index not found
-        "500":
-          description: Internal server error
-      summary: Get Deployment Summaries
-      tags:
-        - beta.rag.search_indexes
-    put:
-      description: Register (or re-register) a search index
-      operationId: register_deployment_v1_rag_deployments_put
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RegisterDeploymentRequestDeployment"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RegisterSearchIndexResponseIndex"
-          description: Successful Response
-        "400":
-          description: Invalid request
-        "403":
-          description: Unauthorized
-        "404":
-          description: Index not found
-        "422":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HTTPValidationError"
-          description: Validation Error
-        "500":
-          description: Internal server error
-      summary: Register (or re-register) a search index
-      tags:
-        - beta.rag.search_indexes
-  /v1/rag/deployments/{deployment_id}:
-    delete:
-      description: Delete all information about a deployment
-      operationId: unregister_deployment_v1_rag_deployments__deployment_id__delete
-      parameters:
-        - in: path
-          name: deployment_id
-          required: true
-          schema:
-            format: uuid
-            title: Deployment Id
-            type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema: {}
-          description: Successful Response
-        "400":
-          description: Invalid request
-        "403":
-          description: Unauthorized
-        "404":
-          description: Index not found
-        "422":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HTTPValidationError"
-          description: Validation Error
-        "500":
-          description: Internal server error
-      summary: Unregister Deployment
-      tags:
-        - beta.rag.search_indexes
-  /v1/rag/deployments/{deployment_id}/metrics:
-    put:
-      description: Update the metrics for a given index
-      operationId: update_index_metrics_v1_rag_deployments__deployment_id__metrics_put
-      parameters:
-        - in: path
-          name: deployment_id
-          required: true
-          schema:
-            format: uuid
-            title: Deployment Id
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              anyOf:
-                - $ref: "#/components/schemas/UpdateMetricsRequestDeploymentMetricsOnline"
-                - $ref: "#/components/schemas/UpdateMetricsRequestDeploymentMetricsOffline"
-              title: Metrics Data
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema: {}
-          description: Successful Response
-        "400":
-          description: Invalid request
-        "403":
-          description: Unauthorized
-        "404":
-          description: Index not found
-        "422":
-          description: Attempted to update unknown index
-        "500":
-          description: Internal server error
-      summary: Update Index Metrics
-      tags:
-        - beta.rag.search_indexes
   /v1/rag/ingestion_pipeline_configurations:
     get:
       description: For the current workspace, lists all of the registered ingestion pipeline configurations.
@@ -46677,6 +47108,35 @@ paths:
                 $ref: "#/components/schemas/HTTPValidationError"
           description: Validation Error
       summary: Create Deployment
+      tags:
+        - workflows.deployments
+  /v1/workflows/deployments/archives:
+    post:
+      description: |-
+        Create an empty archive, with a signed URL to upload the tarball a managed deployment builds from.
+
+        PUT the gzipped tar to `upload_url` with `upload_headers`, then pass `archive_id` in the spec on create or update.
+      operationId: create_deployment_archive_v1_workflows_deployments_archives_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDeploymentArchiveRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeploymentArchiveUploadResponse"
+          description: Successful Response
+        "422":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HTTPValidationError"
+          description: Validation Error
+      summary: Create Deployment Archive
       tags:
         - workflows.deployments
   /v1/workflows/deployments/{deployment_id}/unharden:
@@ -48410,7 +48870,7 @@ paths:
               - type: "null"
             description: Include runs with start_time >= value
             title: Start Time After
-        - description: Include runs with start_time <= value
+        - description: Include runs with start_time &lt;= value
           in: query
           name: start_time_before
           required: false
@@ -48419,7 +48879,7 @@ paths:
               - format: date-time
                 type: string
               - type: "null"
-            description: Include runs with start_time <= value
+            description: Include runs with start_time &lt;= value
             title: Start Time Before
         - description: Include runs with end_time >= value. Running executions (no end_time) are excluded; use the status filter to include them.
           in: query
@@ -48432,7 +48892,7 @@ paths:
               - type: "null"
             description: Include runs with end_time >= value. Running executions (no end_time) are excluded; use the status filter to include them.
             title: End Time After
-        - description: Include runs with end_time <= value. Running executions (no end_time) are excluded; use the status filter to include them.
+        - description: Include runs with end_time &lt;= value. Running executions (no end_time) are excluded; use the status filter to include them.
           in: query
           name: end_time_before
           required: false
@@ -48441,7 +48901,7 @@ paths:
               - format: date-time
                 type: string
               - type: "null"
-            description: Include runs with end_time <= value. Running executions (no end_time) are excluded; use the status filter to include them.
+            description: Include runs with end_time &lt;= value. Running executions (no end_time) are excluded; use the status filter to include them.
             title: End Time Before
         - description: Filter by user id. Use 'current' to filter by the authenticated user
           in: query
@@ -50159,9 +50619,6 @@ tags:
   - description: (beta) RAG API - ingestion pipeline configurations.
     name: beta.rag.ingestion_pipeline_configurations
     x-displayName: (beta) RAG - Ingestion Pipeline Configurations
-  - description: (beta) RAG API - search indexes.
-    name: beta.rag.search_indexes
-    x-displayName: (beta) RAG - Search Indexes
   - description: (beta) Service Accounts API.
     name: beta.service_accounts
     x-displayName: (beta) Service Accounts

@@ -1,5 +1,5 @@
 {
-  "description": "Add or update Workspace members.",
+  "description": "Add or update Workspace members.\n\nFor each member, either set its roles with `roles` or `role_names`, which replaces all the roles it has in\nthe Workspace, or change them with `add_roles`/`add_role_names` and `remove_roles`/`remove_role_names`,\nwhich keeps its other roles. Users who are not yet members are added with the given roles.",
   "operationId": "users_api_admin_workspaces_add_or_update_users_workspaces",
   "parameters": [
     {
@@ -19,7 +19,7 @@
     "content": {
       "application/json": {
         "schema": {
-          "$ref": "#/components/schemas/AdminWorkspaceMemberIN"
+          "$ref": "#/components/schemas/AdminWorkspaceMemberUpsertIN"
         }
       }
     },
@@ -48,13 +48,13 @@
   ],
   "components": {
     "schemas": {
-      "AdminWorkspaceMemberIN": {
+      "AdminWorkspaceMemberUpsertIN": {
         "properties": {
           "members": {
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/AdminWorkspaceMemberSingleIN"
+                  "$ref": "#/components/schemas/AdminWorkspaceMemberUpsertSingleIN"
                 },
                 "type": "array"
               },
@@ -62,11 +62,11 @@
                 "type": "null"
               }
             ],
-            "description": "Workspace members to add or update.",
+            "description": "Workspace members to add or update. 'roles' or 'role_names' replace the member's roles; 'add_*' and 'remove_*' change them without touching the others.",
             "title": "Members"
           }
         },
-        "title": "AdminWorkspaceMemberIN",
+        "title": "AdminWorkspaceMemberUpsertIN",
         "type": "object"
       },
       "AddOrUpdateUsersToWorkspaceOUT": {
@@ -89,8 +89,109 @@
         "title": "AddOrUpdateUsersToWorkspaceOUT",
         "type": "object"
       },
-      "AdminWorkspaceMemberSingleIN": {
+      "AdminWorkspaceMemberUpsertSingleIN": {
+        "description": "Workspace member to add or update, either by setting its roles or by adding and removing some.",
         "properties": {
+          "add_role_names": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "user",
+                    "dev",
+                    "mistral_code_user",
+                    "cloud_user",
+                    "workspace_contributor",
+                    "workspace_admin"
+                  ],
+                  "type": "string"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Simplified role names to add to the existing roles. Mutually exclusive with 'add_roles'.",
+            "examples": [
+              [
+                "user"
+              ]
+            ],
+            "title": "Add Role Names"
+          },
+          "add_roles": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/StaticWorkspaceRoles"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Role values to add to the existing roles. Mutually exclusive with 'add_role_names'.",
+            "examples": [
+              [
+                "48436751-ee56-44bd-8a2d-712233977821"
+              ]
+            ],
+            "title": "Add Roles"
+          },
+          "remove_role_names": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "user",
+                    "dev",
+                    "mistral_code_user",
+                    "cloud_user",
+                    "workspace_contributor",
+                    "workspace_admin"
+                  ],
+                  "type": "string"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Simplified role names to remove from the existing roles. Mutually exclusive with 'remove_roles'.",
+            "examples": [
+              [
+                "dev"
+              ]
+            ],
+            "title": "Remove Role Names"
+          },
+          "remove_roles": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/StaticWorkspaceRoles"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Role values to remove from the existing roles. Mutually exclusive with 'remove_role_names'.",
+            "examples": [
+              [
+                "578584f1-4319-4c88-9948-38a5184483b6"
+              ]
+            ],
+            "title": "Remove Roles"
+          },
           "role": {
             "anyOf": [
               {
@@ -110,19 +211,12 @@
             "anyOf": [
               {
                 "enum": [
-                  "billing",
                   "user",
-                  "contributor",
                   "dev",
-                  "dev_contributor",
                   "mistral_code_user",
-                  "vibe_code_cli_user",
                   "cloud_user",
                   "workspace_contributor",
-                  "workspace_admin",
-                  "observability_viewer",
-                  "workflow_executor",
-                  "member"
+                  "workspace_admin"
                 ],
                 "type": "string"
               },
@@ -139,19 +233,12 @@
               {
                 "items": {
                   "enum": [
-                    "billing",
                     "user",
-                    "contributor",
                     "dev",
-                    "dev_contributor",
                     "mistral_code_user",
-                    "vibe_code_cli_user",
                     "cloud_user",
                     "workspace_contributor",
-                    "workspace_admin",
-                    "observability_viewer",
-                    "workflow_executor",
-                    "member"
+                    "workspace_admin"
                   ],
                   "type": "string"
                 },
@@ -198,8 +285,20 @@
         "required": [
           "user_uuid"
         ],
-        "title": "AdminWorkspaceMemberSingleIN",
+        "title": "AdminWorkspaceMemberUpsertSingleIN",
         "type": "object"
+      },
+      "StaticWorkspaceRoles": {
+        "enum": [
+          "48436751-ee56-44bd-8a2d-712233977821",
+          "578584f1-4319-4c88-9948-38a5184483b6",
+          "252a0825-40b9-4b98-be80-7658956f13e9",
+          "17aa61c5-1c61-477e-a40a-e52c8ccd74b9",
+          "b23cd6e0-91cd-4a8a-9869-b30366bf3966",
+          "731eb2be-a74f-4070-b797-35bf7009e553"
+        ],
+        "title": "StaticWorkspaceRoles",
+        "type": "string"
       },
       "WorkspaceRole": {
         "enum": [
@@ -207,29 +306,6 @@
           "M"
         ],
         "title": "WorkspaceRole",
-        "type": "string"
-      },
-      "StaticWorkspaceRoles": {
-        "enum": [
-          "d7ea77c5-9260-41d0-ab26-52b5add3ee56",
-          "48436751-ee56-44bd-8a2d-712233977821",
-          "375cd0db-3bbe-4b79-80f3-954ccf04f3d1",
-          "578584f1-4319-4c88-9948-38a5184483b6",
-          "d79b3027-4eb2-4521-8722-825acfee7d8b",
-          "252a0825-40b9-4b98-be80-7658956f13e9",
-          "50023ca6-3db1-41bc-8c10-f0ae6f460fba",
-          "17aa61c5-1c61-477e-a40a-e52c8ccd74b9",
-          "348fc8da-f6da-4464-ad3e-af7bc137e221",
-          "b23cd6e0-91cd-4a8a-9869-b30366bf3966",
-          "731eb2be-a74f-4070-b797-35bf7009e553",
-          "ff86d432-7f27-47f8-b02f-b5c102ef6a55",
-          "0f9acbf6-93b5-42c7-a227-fc7652755f65",
-          "94ef59cf-56bf-4383-9dd6-1fee77d370af",
-          "24b51cb8-72fe-411c-8652-c719c7270ca2",
-          "7e69e493-caf6-4671-af60-84951754d9fc",
-          "b23cd6e0-91cd-4a8a-9869-b30366bf3966"
-        ],
-        "title": "StaticWorkspaceRoles",
         "type": "string"
       }
     }
