@@ -1,12 +1,12 @@
 {
-  "description": "\nComputes cost estimates using one of two methods:\n\n**1. Historical API Price** (`historical_api_price`):\n- Based on historical pricing per API call from past usage patterns\n- Takes `call_quantity` (number of API calls) per endpoint\n- Useful for estimating based on actual historical usage patterns\n- Example: \"How much will 100 calls to flux/dev cost?\"\n\n**2. Unit Price** (`unit_price`):\n- Based on unit price × expected billing units from pricing service\n- Takes `unit_quantity` (number of billing units like images/videos) per endpoint\n- Useful when you know the expected output quantity\n- Example: \"How much will 50 images from flux/dev cost?\"\n\n**Authentication:** Required. Users must provide a valid API key.\nCustom pricing or discounts may be applied based on account status.\n\n**Common Use Cases:**\n- Pre-calculate costs for batch operations\n- Display cost estimates in user interfaces\n- Budget planning and cost optimization\n\nSee [fal.ai pricing](https://fal.ai/pricing) for more details.\n    \n\n**Required permissions:** none. Any authenticated caller can use this API.",
+  "description": "\nEstimates what requests would cost before you run them.\n\n**Request-based estimates** (`items`): send each request's endpoint and\ninput, and get back what it would cost if it succeeds. Each endpoint's own\nestimate reads the input to predict what the request uses (images, seconds,\ncharacters, ...), and the same pricing that bills the request prices it.\nAmounts are decimal strings in USD **before percentage discounts**; your\naccount's discount is applied at billing. An estimate is advisory, not a price\nlock, and estimating is never billed.\n\n- Up to 20 items per call, one request each\n- Items are priced on their own: one that can't be priced reports why in its\n  `error` and never fails the others\n- `status` is `partial` when something can't be predicted from the input\n  (see `warnings`); `rated_amount` then sums only what can\n- Endpoints without request-based pricing yet return `pricing_not_configured`\n  or `estimate_not_registered`\n\n**Deprecated:** `estimate_type` with `historical_api_price` (calls ×\nhistorical cost per call) or `unit_price` (units × one unit price). They keep\nworking for now; use `items` instead.\n\n**Authentication:** Required. Users must provide a valid API key.\n\nSee [fal.ai pricing](https://fal.ai/pricing) for more details.\n    \n\n**Required permissions:** none. Any authenticated caller can use this API.",
   "operationId": "estimatePricing",
   "requestBody": {
     "content": {
       "application/json": {
         "examples": {
           "historical": {
-            "summary": "Historical API price estimate",
+            "summary": "Historical API price estimate (deprecated)",
             "value": {
               "endpoints": {
                 "fal-ai/flux/dev": {
@@ -19,8 +19,21 @@
               "estimate_type": "historical_api_price"
             }
           },
+          "items": {
+            "summary": "Request-based estimate",
+            "value": {
+              "items": [
+                {
+                  "endpoint_id": "xai/tts/v1",
+                  "input": {
+                    "text": "Hello from fal"
+                  }
+                }
+              ]
+            }
+          },
           "unit_price": {
-            "summary": "Unit price estimate",
+            "summary": "Unit price estimate (deprecated)",
             "value": {
               "endpoints": {
                 "fal-ai/flux-pro": {
@@ -35,18 +48,43 @@
           }
         },
         "schema": {
-          "example": {
-            "endpoints": {
-              "fal-ai/flux/dev": {
-                "call_quantity": 100
+          "anyOf": [
+            {
+              "additionalProperties": false,
+              "description": "Request-based estimate: prices each request from its input, as its endpoint would bill it.",
+              "properties": {
+                "items": {
+                  "description": "The requests to price, 1 to 20. Each is priced on its own: one that can't be priced never fails the others.",
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "endpoint_id": {
+                        "description": "The endpoint as you would call it, e.g. 'xai/tts/v1'. Aliases are priced under the name called.",
+                        "minLength": 1,
+                        "type": "string"
+                      },
+                      "input": {
+                        "additionalProperties": {},
+                        "description": "The request body you would send to the endpoint. The endpoint's own estimate reads it to predict what the request uses.",
+                        "type": "object"
+                      }
+                    },
+                    "required": [
+                      "endpoint_id",
+                      "input"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 20,
+                  "minItems": 1,
+                  "type": "array"
+                }
               },
-              "fal-ai/flux/schnell": {
-                "call_quantity": 50
-              }
+              "required": [
+                "items"
+              ],
+              "type": "object"
             },
-            "estimate_type": "historical_api_price"
-          },
-          "oneOf": [
             {
               "description": "Historical API price estimate: Calculates cost based on historical pricing per API call. Useful for estimating costs based on actual usage patterns.",
               "properties": {
@@ -115,7 +153,17 @@
               ],
               "type": "object"
             }
-          ]
+          ],
+          "example": {
+            "items": [
+              {
+                "endpoint_id": "xai/tts/v1",
+                "input": {
+                  "text": "Hello from fal"
+                }
+              }
+            ]
+          }
         }
       }
     }
@@ -126,15 +174,61 @@
         "application/json": {
           "examples": {
             "historical": {
-              "summary": "Historical API price estimate result",
+              "summary": "Historical API price estimate result (deprecated)",
               "value": {
                 "currency": "USD",
                 "estimate_type": "historical_api_price",
                 "total_cost": 3.75
               }
             },
+            "items": {
+              "summary": "Request-based estimate result",
+              "value": {
+                "confidence": "exact",
+                "currency": "USD",
+                "estimated_at": "2026-11-25T17:14:40.118Z",
+                "items": [
+                  {
+                    "basis": "input",
+                    "count": 1,
+                    "endpoint_id": "xai/tts/v1",
+                    "error": null,
+                    "index": 0,
+                    "per_request": {
+                      "clamped": null,
+                      "components": [
+                        {
+                          "amount": "0.00021",
+                          "billing_unit": {
+                            "kind": "unit",
+                            "name": "character"
+                          },
+                          "component_key": 0,
+                          "confidence": "exact",
+                          "dimensions": [],
+                          "metric": "characters",
+                          "quantity": "14",
+                          "rate": "0.000015"
+                        }
+                      ],
+                      "confidence": "exact",
+                      "known_confidence": "exact",
+                      "maximum": null,
+                      "minimum": null,
+                      "rated_amount": "0.000210000"
+                    },
+                    "priced_as": "xai/tts/v1",
+                    "rated_amount": "0.000210000",
+                    "status": "complete",
+                    "warnings": []
+                  }
+                ],
+                "rated_amount": "0.000210000",
+                "status": "complete"
+              }
+            },
             "unit_price": {
-              "summary": "Unit price estimate result",
+              "summary": "Unit price estimate result (deprecated)",
               "value": {
                 "currency": "USD",
                 "estimate_type": "unit_price",
@@ -143,39 +237,395 @@
             }
           },
           "schema": {
-            "description": "Cost estimation response with total cost",
-            "example": {
-              "currency": "USD",
-              "estimate_type": "historical_api_price",
-              "total_cost": 3.75
-            },
-            "properties": {
-              "currency": {
-                "description": "Three-letter currency code (ISO 4217, e.g., 'USD')",
-                "maxLength": 3,
-                "minLength": 3,
-                "type": "string"
-              },
-              "estimate_type": {
-                "description": "The type of estimate that was performed",
-                "enum": [
-                  "historical_api_price",
-                  "unit_price"
+            "anyOf": [
+              {
+                "description": "Request-based estimate: what each request would cost if it succeeds, before percentage discounts. Advisory, not a price lock; estimating is never billed.",
+                "properties": {
+                  "confidence": {
+                    "description": "exact: decided by the input. statistical: predicted, the run may differ. unavailable: can't be known before the run.",
+                    "enum": [
+                      "exact",
+                      "statistical",
+                      "unavailable"
+                    ],
+                    "type": "string"
+                  },
+                  "currency": {
+                    "description": "Three-letter currency code (ISO 4217), 'USD'.",
+                    "maxLength": 3,
+                    "minLength": 3,
+                    "type": "string"
+                  },
+                  "estimated_at": {
+                    "description": "When the estimate was made (ISO 8601).",
+                    "type": "string"
+                  },
+                  "items": {
+                    "description": "In request order.",
+                    "items": {
+                      "properties": {
+                        "basis": {
+                          "description": "What the item was priced from: 'input'.",
+                          "type": "string"
+                        },
+                        "count": {
+                          "description": "Requests priced; always 1 for now.",
+                          "type": "integer"
+                        },
+                        "endpoint_id": {
+                          "description": "The endpoint as sent.",
+                          "type": "string"
+                        },
+                        "error": {
+                          "description": "Why the item has no quote; null unless status is unavailable.",
+                          "properties": {
+                            "errors": {
+                              "description": "For invalid_input, why the input is invalid.",
+                              "items": {
+                                "properties": {
+                                  "ctx": {
+                                    "additionalProperties": {},
+                                    "description": "Details of the constraint.",
+                                    "type": "object"
+                                  },
+                                  "input": {
+                                    "description": "The offending value."
+                                  },
+                                  "loc": {
+                                    "description": "Where in the input.",
+                                    "items": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string"
+                                        },
+                                        {
+                                          "type": "number"
+                                        }
+                                      ]
+                                    },
+                                    "type": "array"
+                                  },
+                                  "msg": {
+                                    "description": "What is wrong.",
+                                    "type": "string"
+                                  },
+                                  "type": {
+                                    "description": "Machine-readable error type.",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "loc",
+                                  "msg",
+                                  "type"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "message": {
+                              "description": "Human-readable reason.",
+                              "type": "string"
+                            },
+                            "type": {
+                              "description": "Machine-readable reason.",
+                              "enum": [
+                                "endpoint_not_found",
+                                "invalid_input",
+                                "estimate_not_registered",
+                                "schema_mismatch",
+                                "pricing_not_configured",
+                                "pricing_unloadable",
+                                "quantity_unavailable",
+                                "estimator_error"
+                              ],
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "type",
+                            "message"
+                          ],
+                          "type": [
+                            "object",
+                            "null"
+                          ]
+                        },
+                        "index": {
+                          "description": "The item's position in the request; endpoint IDs can repeat.",
+                          "type": "integer"
+                        },
+                        "per_request": {
+                          "description": "One request's price; null when status is unavailable.",
+                          "properties": {
+                            "clamped": {
+                              "description": "'minimum' or 'maximum' when that bound set rated_amount; null when neither did.",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "components": {
+                              "description": "What one request uses and what each part costs.",
+                              "items": {
+                                "properties": {
+                                  "amount": {
+                                    "description": "Decimal string; null when the quantity or rate is.",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "billing_unit": {
+                                    "description": "The unit the rate is per; null when unknown.",
+                                    "properties": {
+                                      "kind": {
+                                        "description": "'unit', or 'block' for a unit of several.",
+                                        "type": "string"
+                                      },
+                                      "name": {
+                                        "description": "The unit's name, e.g. 'character'.",
+                                        "type": "string"
+                                      },
+                                      "size": {
+                                        "description": "For a block unit, how many of the quantity's units it holds.",
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "name"
+                                    ],
+                                    "type": [
+                                      "object",
+                                      "null"
+                                    ]
+                                  },
+                                  "component_key": {
+                                    "description": "Which of the formula's components this is.",
+                                    "type": "integer"
+                                  },
+                                  "confidence": {
+                                    "description": "exact: decided by the input. statistical: predicted, the run may differ. unavailable: can't be known before the run.",
+                                    "enum": [
+                                      "exact",
+                                      "statistical",
+                                      "unavailable"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "dimensions": {
+                                    "description": "Name and value pairs that select the rate, e.g. ['resolution', '2K'].",
+                                    "items": {
+                                      "items": {
+                                        "type": "string"
+                                      },
+                                      "type": "array"
+                                    },
+                                    "type": "array"
+                                  },
+                                  "metric": {
+                                    "description": "What is counted, e.g. 'characters'.",
+                                    "type": "string"
+                                  },
+                                  "quantity": {
+                                    "description": "Decimal string; null when it can't be predicted.",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "rate": {
+                                    "description": "Decimal string; null when it can't be predicted.",
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "component_key",
+                                  "metric",
+                                  "billing_unit",
+                                  "quantity",
+                                  "rate",
+                                  "dimensions",
+                                  "amount",
+                                  "confidence"
+                                ],
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            "confidence": {
+                              "description": "exact: decided by the input. statistical: predicted, the run may differ. unavailable: can't be known before the run.",
+                              "enum": [
+                                "exact",
+                                "statistical",
+                                "unavailable"
+                              ],
+                              "type": "string"
+                            },
+                            "known_confidence": {
+                              "description": "The confidence of the parts that are known.",
+                              "enum": [
+                                "exact",
+                                "statistical",
+                                "unavailable"
+                              ],
+                              "type": "string"
+                            },
+                            "maximum": {
+                              "description": "The price's upper bound, if the pricing has one.",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "minimum": {
+                              "description": "The price's lower bound, if the pricing has one.",
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "rated_amount": {
+                              "description": "One request's known amounts summed, in USD as a decimal string with 9 places, before percentage discounts.",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "components",
+                            "rated_amount",
+                            "clamped",
+                            "confidence",
+                            "known_confidence",
+                            "minimum",
+                            "maximum"
+                          ],
+                          "type": [
+                            "object",
+                            "null"
+                          ]
+                        },
+                        "priced_as": {
+                          "description": "The endpoint whose pricing priced the item.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "rated_amount": {
+                          "description": "The request's price, in USD as a decimal string with 9 places, before percentage discounts.",
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "status": {
+                          "description": "complete: fully priced. partial: something can't be estimated, see warnings. unavailable: no quote, see error.",
+                          "enum": [
+                            "complete",
+                            "partial",
+                            "unavailable"
+                          ],
+                          "type": "string"
+                        },
+                        "warnings": {
+                          "description": "What couldn't be estimated, for a partial item.",
+                          "items": {
+                            "properties": {
+                              "message": {
+                                "description": "What the warning means.",
+                                "type": "string"
+                              },
+                              "type": {
+                                "description": "Machine-readable warning type.",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "message"
+                            ],
+                            "type": "object"
+                          },
+                          "type": "array"
+                        }
+                      },
+                      "required": [
+                        "index",
+                        "endpoint_id",
+                        "count",
+                        "basis",
+                        "status",
+                        "warnings",
+                        "error",
+                        "rated_amount",
+                        "per_request",
+                        "priced_as"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "rated_amount": {
+                    "description": "The items' sum; null when any item is unavailable, in USD as a decimal string with 9 places, before percentage discounts.",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "status": {
+                    "description": "complete only if every item is.",
+                    "enum": [
+                      "complete",
+                      "partial"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "estimated_at",
+                  "status",
+                  "confidence",
+                  "rated_amount",
+                  "items"
                 ],
-                "type": "string"
+                "type": "object"
               },
-              "total_cost": {
-                "description": "Total estimated cost across all endpoints",
-                "minimum": 0,
-                "type": "number"
+              {
+                "deprecated": true,
+                "description": "Cost estimation response with total cost",
+                "properties": {
+                  "currency": {
+                    "description": "Three-letter currency code (ISO 4217, e.g., 'USD')",
+                    "maxLength": 3,
+                    "minLength": 3,
+                    "type": "string"
+                  },
+                  "estimate_type": {
+                    "description": "The type of estimate that was performed",
+                    "enum": [
+                      "historical_api_price",
+                      "unit_price"
+                    ],
+                    "type": "string"
+                  },
+                  "total_cost": {
+                    "description": "Total estimated cost across all endpoints",
+                    "minimum": 0,
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "estimate_type",
+                  "total_cost",
+                  "currency"
+                ],
+                "type": "object"
               }
-            },
-            "required": [
-              "estimate_type",
-              "total_cost",
-              "currency"
-            ],
-            "type": "object"
+            ]
           }
         }
       },
